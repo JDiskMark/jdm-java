@@ -1,4 +1,4 @@
-jDiskMark is a disk io utility written in java. 
+jDiskMark is a disk benchmark utility written in java. 
 
 
 == Builds == 
