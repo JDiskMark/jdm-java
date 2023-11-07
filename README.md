@@ -1,4 +1,4 @@
-# jDiskMark v0.4 (Windows/MacOS/Linux)
+# jDiskMark v0.4 (Windows/Mac/Linux)
 
 Cross platform disk benchmark utility written in java.
 
