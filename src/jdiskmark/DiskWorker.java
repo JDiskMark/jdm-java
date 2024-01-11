@@ -1,6 +1,7 @@
 
 package jdiskmark;
 
+import jakarta.persistence.EntityManager;
 import static jdiskmark.App.KILOBYTE;
 import static jdiskmark.App.MEGABYTE;
 import static jdiskmark.App.blockSizeKb;
@@ -19,7 +20,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.persistence.EntityManager;
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
 
@@ -142,16 +142,17 @@ public class DiskWorker extends SwingWorker <Boolean, DiskMark> {
             Gui.runPanel.addRun(run);
         }
         
-        
         // try renaming all files to clear catch
         if (App.readTest && App.writeTest && !isCancelled()) {
             JOptionPane.showMessageDialog(Gui.mainFrame, 
-                "For valid READ measurements please clear the disk cache by\n" +
-                "using the included RAMMap.exe or flushmem.exe utilities.\n" +
-                "Removable drives can be disconnected and reconnected.\n" +
-                "For system drives use the WRITE and READ operations \n" +
-                "independantly by doing a cold reboot after the WRITE",
-                "Clear Disk Cache Now",JOptionPane.PLAIN_MESSAGE);
+                    """
+                    For valid READ measurements please clear the disk cache by
+                    using the included RAMMap.exe or flushmem.exe utilities.
+                    Removable drives can be disconnected and reconnected.
+                    For system drives use the WRITE and READ operations 
+                    independantly by doing a cold reboot after the WRITE""",
+                    "Clear Disk Cache Now",
+                    JOptionPane.PLAIN_MESSAGE);
         }
         
         if (App.readTest) {

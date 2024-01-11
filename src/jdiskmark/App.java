@@ -1,7 +1,6 @@
 
 package jdiskmark;
 
-import java.beans.PropertyChangeEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -147,27 +146,27 @@ public class App {
         value = p.getProperty("locationDir", System.getProperty("user.home"));
         locationDir = new File(value);        
         value = p.getProperty("multiFile", String.valueOf(multiFile));
-        multiFile = Boolean.valueOf(value);
+        multiFile = Boolean.parseBoolean(value);
         value = p.getProperty("autoRemoveData", String.valueOf(autoRemoveData));
-        autoRemoveData = Boolean.valueOf(value);
+        autoRemoveData = Boolean.parseBoolean(value);
         value = p.getProperty("autoReset", String.valueOf(autoReset));
-        autoReset = Boolean.valueOf(value);
+        autoReset = Boolean.parseBoolean(value);
         value = p.getProperty("blockSequence", String.valueOf(blockSequence));
         blockSequence = DiskRun.BlockSequence.valueOf(value);
         value = p.getProperty("showMaxMin", String.valueOf(showMaxMin));
-        showMaxMin = Boolean.valueOf(value);
+        showMaxMin = Boolean.parseBoolean(value);
         value = p.getProperty("numOfFiles", String.valueOf(numOfMarks));
-        numOfMarks = Integer.valueOf(value);
+        numOfMarks = Integer.parseInt(value);
         value = p.getProperty("numOfBlocks", String.valueOf(numOfBlocks));
-        numOfBlocks = Integer.valueOf(value);
+        numOfBlocks = Integer.parseInt(value);
         value = p.getProperty("blockSizeKb", String.valueOf(blockSizeKb));
-        blockSizeKb = Integer.valueOf(value);
+        blockSizeKb = Integer.parseInt(value);
         value = p.getProperty("writeTest", String.valueOf(writeTest));
-        writeTest = Boolean.valueOf(value);
+        writeTest = Boolean.parseBoolean(value);
         value = p.getProperty("readTest", String.valueOf(readTest));
-        readTest = Boolean.valueOf(value);
+        readTest = Boolean.parseBoolean(value);
         value = p.getProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
-        writeSyncEnable = Boolean.valueOf(value);
+        writeSyncEnable = Boolean.parseBoolean(value);
     }
     
     public static void saveConfig() {
@@ -276,23 +275,20 @@ public class App {
         
         //7. start disk worker thread
         worker = new DiskWorker();
-        worker.addPropertyChangeListener((final PropertyChangeEvent event) -> {
+        worker.addPropertyChangeListener((final var event) -> {
             switch (event.getPropertyName()) {
-                case "progress":
+                case "progress" -> {
                     int value = (Integer)event.getNewValue();
                     Gui.progressBar.setValue(value);
                     long kbProcessed = (value) * App.targetTxSizeKb() / 100;
                     Gui.progressBar.setString(String.valueOf(kbProcessed)+" / "+String.valueOf(App.targetTxSizeKb()));
-                    break;
-                case "state":
+                }
+                case "state" -> {
                     switch ((StateValue) event.getNewValue()) {
-                        case STARTED:
-                            Gui.progressBar.setString("0 / "+String.valueOf(App.targetTxSizeKb()));
-                            break;
-                        case DONE:
-                            break;
+                        case STARTED -> Gui.progressBar.setString("0 / "+String.valueOf(App.targetTxSizeKb()));
+                        case DONE -> {}
                     } // end inner switch
-                    break;
+                }
             }
         });
         worker.execute();

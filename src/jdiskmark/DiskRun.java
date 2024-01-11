@@ -1,23 +1,23 @@
 
 package jdiskmark;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 import java.io.Serializable;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EntityManager;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
 
 /**
  *
@@ -31,10 +31,11 @@ import javax.persistence.TemporalType;
 public class DiskRun implements Serializable {
     
     static final DecimalFormat DF = new DecimalFormat("###.##");
-    static final DateFormat DATE_FORMAT = new SimpleDateFormat("EEE, MMM d HH:mm:ss");
+    //previous date format "EEE, MMM d HH:mm:ss" >>>  Thu, Jan 20 21:45:01
+    static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     
     static public enum IOMode { READ, WRITE, READ_WRITE; }
-    static public enum BlockSequence {SEQUENTIAL, RANDOM; }
+    static public enum BlockSequence { SEQUENTIAL, RANDOM; }
 
     @Column
     @Id

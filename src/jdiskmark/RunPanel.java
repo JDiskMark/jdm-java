@@ -1,8 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package jdiskmark;
 
 import java.awt.event.ComponentAdapter;
@@ -10,7 +6,6 @@ import java.awt.event.ComponentEvent;
 import javax.swing.table.DefaultTableModel;
 
 /**
- *
  * @author James
  */
 public class RunPanel extends javax.swing.JPanel {
@@ -48,7 +43,7 @@ public class RunPanel extends javax.swing.JPanel {
 
             },
             new String [] {
-                "Disk Info", "IO Mode", "Block Order", "Marks", "Blocks", "B. Size", "Tx Size", "Start Time", "Duration", "Max (MB/s)", "Min (MB/s)", "Avg (MB/s)"
+                "Disk Information", "IO Mode", "Block Order", "Marks", "Blocks", "B. Size", "Tx Size", "Start Time", "Duration", "Max (MB/s)", "Min (MB/s)", "Avg (MB/s)"
             }
         ) {
             boolean[] canEdit = new boolean [] {
@@ -61,15 +56,15 @@ public class RunPanel extends javax.swing.JPanel {
         });
         jScrollPane1.setViewportView(runTable);
         if (runTable.getColumnModel().getColumnCount() > 0) {
-            runTable.getColumnModel().getColumn(0).setPreferredWidth(35);
-            runTable.getColumnModel().getColumn(1).setPreferredWidth(25);
-            runTable.getColumnModel().getColumn(2).setPreferredWidth(50);
-            runTable.getColumnModel().getColumn(3).setPreferredWidth(7);
-            runTable.getColumnModel().getColumn(4).setPreferredWidth(10);
-            runTable.getColumnModel().getColumn(5).setPreferredWidth(10);
+            runTable.getColumnModel().getColumn(0).setPreferredWidth(170);
+            runTable.getColumnModel().getColumn(1).setPreferredWidth(20);
+            runTable.getColumnModel().getColumn(2).setPreferredWidth(40);
+            runTable.getColumnModel().getColumn(3).setPreferredWidth(6);
+            runTable.getColumnModel().getColumn(4).setPreferredWidth(6);
+            runTable.getColumnModel().getColumn(5).setPreferredWidth(6);
             runTable.getColumnModel().getColumn(6).setPreferredWidth(10);
-            runTable.getColumnModel().getColumn(7).setPreferredWidth(100);
-            runTable.getColumnModel().getColumn(8).setPreferredWidth(20);
+            runTable.getColumnModel().getColumn(7).setPreferredWidth(90);
+            runTable.getColumnModel().getColumn(8).setPreferredWidth(6);
             runTable.getColumnModel().getColumn(9).setPreferredWidth(32);
             runTable.getColumnModel().getColumn(10).setPreferredWidth(32);
             runTable.getColumnModel().getColumn(11).setPreferredWidth(32);

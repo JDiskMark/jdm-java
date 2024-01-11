@@ -616,19 +616,19 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_startButtonActionPerformed
 
     private void blockSizeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_blockSizeComboActionPerformed
-        App.blockSizeKb = Integer.valueOf((String) blockSizeCombo.getSelectedItem());
+        App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
         fileSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
         totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
     }//GEN-LAST:event_blockSizeComboActionPerformed
 
     private void numBlocksComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_numBlocksComboActionPerformed
-        App.numOfBlocks = Integer.valueOf((String) numBlocksCombo.getSelectedItem());
+        App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
         fileSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
         totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
     }//GEN-LAST:event_numBlocksComboActionPerformed
 
     private void numFilesComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_numFilesComboActionPerformed
-        App.numOfMarks = Integer.valueOf((String) numFilesCombo.getSelectedItem());
+        App.numOfMarks = Integer.parseInt((String) numFilesCombo.getSelectedItem());
         fileSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
         totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
     }//GEN-LAST:event_numFilesComboActionPerformed
@@ -782,9 +782,9 @@ public final class MainFrame extends javax.swing.JFrame {
         App.readTest = modeStr.contains("read");
         App.writeTest = modeStr.contains("write");
         App.blockSequence = (DiskRun.BlockSequence)orderComboBox.getSelectedItem();
-        App.numOfMarks = Integer.valueOf((String) numFilesCombo.getSelectedItem());
-        App.numOfBlocks = Integer.valueOf((String) numBlocksCombo.getSelectedItem());
-        App.blockSizeKb = Integer.valueOf((String) blockSizeCombo.getSelectedItem());
+        App.numOfMarks = Integer.parseInt((String) numFilesCombo.getSelectedItem());
+        App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
+        App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
         fileSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
         totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
     }

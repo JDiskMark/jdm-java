@@ -1,4 +1,4 @@
-# jDiskMark v0.4 (Windows/Mac/Linux)
+# jDiskMark v0.5 (Windows/Mac/Linux)
 
 Cross platform disk benchmark utility written in java.
 
@@ -18,7 +18,7 @@ https://sourceforge.net/projects/jdiskmark/
 
 ## Usage
 
-1. Requires java 8.
+1. Requires java 21.
 
 2. to run:
    ```
@@ -51,6 +51,12 @@ https://sourceforge.net/projects/jdiskmark/
    - windows: via powershell query
    - linux:   via "df /data/path" & "lsblk /dev/path --output MODEL"
    - osx:     via "df /data/path" & "diskutil info /dev/disk1"
+
+### v0.5
+ - update for java 21 LTS w NetBeans 20 environment
+   - eclipselink 4.0, jpa 3.1, modelgen 5.6, annotations 3.1, xml.bind 4.0
+ - increased disk info default col width to 170
+ - time format updated to "yyyy-MM-dd HH:mm:ss"
 
 ### Desired Features
  - update windows drive model parsing script to adapt to differing script output

@@ -28,19 +28,19 @@ public class DiskMark {
         return "Mark("+type+"): "+markNum+" bwMbSec: "+getBwMbSec()+" avg: "+getAvg();
     }
     
-    String getBwMbSec() {
+    public String getBwMbSec() {
         return df.format(bwMbSec);
     }
     
-    String getMin() {
+    public String getMin() {
         return df.format(cumMin);
     }
     
-    String getMax() {
+    public String getMax() {
         return df.format(cumMax);
     }
     
-    String getAvg() {
+    public String getAvg() {
         return df.format(cumAvg);
     }
 }
