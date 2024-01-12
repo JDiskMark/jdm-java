@@ -28,21 +28,12 @@ https://sourceforge.net/projects/jdiskmark/
 
 ## Release Notes
 
-### v0.1
- - initial release
-
-### v0.2
- - auto generate zip release ie. jdiskmark-v0.2.zip
- - added tabbed pane near bottom to organize new controls
- - format excessive decimal places
- - show recent runs (not persisted)
- - default to nimbus look and feel
-
-### v0.3
- - persist recent run with embedded derby db
- - remove "transfer mark number" from graph
- - changed graph background to dark gray
- - resizing main frame stretches tabbed pane instead of empty panel
+### v0.5
+ - update for java 21 LTS w NetBeans 20 environment
+   - eclipselink 4.0, jpa 3.1, modelgen 5.6, annotations 3.1, xml.bind 4.0
+ - increased drive information default col width to 170
+ - time format updated to "yyyy-MM-dd HH:mm:ss"
+ - default to 200 marks
 
 ### v0.4
  - updated eclipselink to 2.6 allows auto schema update
@@ -52,13 +43,25 @@ https://sourceforge.net/projects/jdiskmark/
    - linux:   via "df /data/path" & "lsblk /dev/path --output MODEL"
    - osx:     via "df /data/path" & "diskutil info /dev/disk1"
 
-### v0.5
- - update for java 21 LTS w NetBeans 20 environment
-   - eclipselink 4.0, jpa 3.1, modelgen 5.6, annotations 3.1, xml.bind 4.0
- - increased disk info default col width to 170
- - time format updated to "yyyy-MM-dd HH:mm:ss"
+### v0.3
+ - persist recent run with embedded derby db
+ - remove "transfer mark number" from graph
+ - changed graph background to dark gray
+ - resizing main frame stretches tabbed pane instead of empty panel
 
-### Desired Features
+### v0.2
+ - auto generate zip release ie. jdiskmark-v0.2.zip
+ - added tabbed pane near bottom to organize new controls
+ - format excessive decimal places
+ - show recent runs (not persisted)
+ - default to nimbus look and feel
+
+### v0.1
+ - initial release
+
+### Proposed Features
+ - upload benchmarks to jdiskmark.net portal (anonymous/w login)
+ - store benchmark data for each run and load when selected
  - update windows drive model parsing script to adapt to differing script output
  - disk access time (ms)
  - disk capacity and drive letter (available on windows)

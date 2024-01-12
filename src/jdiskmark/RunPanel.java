@@ -43,7 +43,7 @@ public class RunPanel extends javax.swing.JPanel {
 
             },
             new String [] {
-                "Disk Information", "IO Mode", "Block Order", "Marks", "Blocks", "B. Size", "Tx Size", "Start Time", "Duration", "Max (MB/s)", "Min (MB/s)", "Avg (MB/s)"
+                "Drive Information", "IO Mode", "Block Order", "Marks", "Blocks", "B. Size", "Tx Size", "Start Time", "Duration", "Max (MB/s)", "Min (MB/s)", "Avg (MB/s)"
             }
         ) {
             boolean[] canEdit = new boolean [] {
