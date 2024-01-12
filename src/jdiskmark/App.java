@@ -97,8 +97,6 @@ public class App {
         try {
             bp.load(new FileInputStream("build.properties"));
             version = bp.getProperty("version");
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -137,8 +135,6 @@ public class App {
         try {
             InputStream is = new FileInputStream(pFile);
             p.load(is);
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -186,8 +182,6 @@ public class App {
         try {
             OutputStream out = new FileOutputStream(new File(PROPERTIESFILE));
             p.store(out, "jDiskMark Properties File");
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(SelectFrame.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
             Logger.getLogger(SelectFrame.class.getName()).log(Level.SEVERE, null, ex);
         }

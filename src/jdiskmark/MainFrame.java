@@ -388,7 +388,7 @@ public final class MainFrame extends javax.swing.JFrame {
                 .addGap(0, 6, Short.MAX_VALUE))
         );
 
-        tabbedPane.addTab("Previous Runs", runPanel);
+        tabbedPane.addTab("Benchmarks", runPanel);
 
         msgTextArea.setEditable(false);
         msgTextArea.setColumns(20);

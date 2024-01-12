@@ -594,8 +594,8 @@
         <Component class="jdiskmark.RunPanel" name="runPanel">
           <Constraints>
             <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout$JTabbedPaneConstraintsDescription">
-              <JTabbedPaneConstraints tabName="Previous Runs">
-                <Property name="tabTitle" type="java.lang.String" value="Previous Runs"/>
+              <JTabbedPaneConstraints tabName="Benchmarks">
+                <Property name="tabTitle" type="java.lang.String" value="Benchmarks"/>
               </JTabbedPaneConstraints>
             </Constraint>
           </Constraints>
