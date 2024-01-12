@@ -49,7 +49,7 @@ public class App {
     public static boolean readTest = false;
     public static boolean writeTest = true;
     public static DiskRun.BlockSequence blockSequence = DiskRun.BlockSequence.SEQUENTIAL;
-    public static int numOfMarks = 25;      // desired number of marks
+    public static int numOfMarks = 200;     // desired number of marks
     public static int numOfBlocks = 32;     // desired number of blocks
     public static int blockSizeKb = 512;    // size of a block in KBs
     
