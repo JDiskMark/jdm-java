@@ -34,6 +34,7 @@ https://sourceforge.net/projects/jdiskmark/
  - increased drive information default col width to 170
  - time format updated to "yyyy-MM-dd HH:mm:ss"
  - default to 200 marks
+ - replace Date with LocalDateTime to avoid deprecated Temporal annotation
 
 ### v0.4
  - updated eclipselink to 2.6 allows auto schema update

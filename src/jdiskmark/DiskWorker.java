@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
@@ -131,7 +132,7 @@ public class DiskWorker extends SwingWorker <Boolean, DiskMark> {
                 run.runMax = wMark.cumMax;
                 run.runMin = wMark.cumMin;
                 run.runAvg = wMark.cumAvg;
-                run.endTime = new Date();
+                run.endTime = LocalDateTime.now();
             }
             
             EntityManager em = EM.getEntityManager();
@@ -214,7 +215,7 @@ public class DiskWorker extends SwingWorker <Boolean, DiskMark> {
                 run.runMax = rMark.cumMax;
                 run.runMin = rMark.cumMin;
                 run.runAvg = rMark.cumAvg;
-                run.endTime = new Date();
+                run.endTime = LocalDateTime.now();
             }
             
             EntityManager em = EM.getEntityManager();

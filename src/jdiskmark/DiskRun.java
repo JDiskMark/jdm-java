@@ -2,6 +2,7 @@
 package jdiskmark;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.GeneratedValue;
@@ -10,17 +11,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 import java.io.Serializable;
-import java.text.DateFormat;
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import static java.time.temporal.ChronoUnit.SECONDS;
+//import java.util.Date;
 import java.util.List;
 
 /**
- *
+ * This is also referred to as a Benchmark
  */
 @Entity
 @Table(name="DiskRun")
@@ -32,7 +32,7 @@ public class DiskRun implements Serializable {
     
     static final DecimalFormat DF = new DecimalFormat("###.##");
     //previous date format "EEE, MMM d HH:mm:ss" >>>  Thu, Jan 20 21:45:01
-    static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
     static public enum IOMode { READ, WRITE, READ_WRITE; }
     static public enum BlockSequence { SEQUENTIAL, RANDOM; }
@@ -57,12 +57,12 @@ public class DiskRun implements Serializable {
     int blockSize = 0;
     @Column
     long txSize = 0;
-    @Temporal(TemporalType.TIMESTAMP)
+    @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column
-    Date startTime;
-    @Temporal(TemporalType.TIMESTAMP)
+    LocalDateTime startTime;
+    @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column
-    Date endTime = null;
+    LocalDateTime  endTime = null;
     @Column
     int totalMarks = 0;
     @Column
@@ -78,11 +78,11 @@ public class DiskRun implements Serializable {
     }
     
     public DiskRun() {
-        this.startTime = new Date();
+        startTime = LocalDateTime.now();
     }
     
     DiskRun(IOMode type, BlockSequence order) {
-        this.startTime = new Date();
+        startTime = LocalDateTime.now();
         ioMode = type;
         blockOrder = order;
     }
@@ -90,7 +90,7 @@ public class DiskRun implements Serializable {
     // display friendly methods
     
     public String getStartTimeString() {
-        return DATE_FORMAT.format(startTime);
+        return startTime.format(DATE_FORMAT);
     }
     
     public String getMin() {
@@ -121,8 +121,7 @@ public class DiskRun implements Serializable {
         if (endTime == null) {
             return "unknown";
         }
-        long duration = endTime.getTime() - startTime.getTime();
-        long diffSeconds = duration / 1000 % 60;
+        long diffSeconds = startTime.until(endTime, SECONDS);
         return String.valueOf(diffSeconds) + "s";
     }
     
