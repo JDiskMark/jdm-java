@@ -10,7 +10,7 @@ public class DiskMark {
     
     static DecimalFormat df = new DecimalFormat("###.###");
     
-    public enum MarkType { READ,WRITE; }
+    public enum MarkType { READ, WRITE; }
     
     DiskMark(MarkType type) {
         this.type=type;
@@ -25,7 +25,8 @@ public class DiskMark {
     
     @Override
     public String toString() {
-        return "Mark("+type+"): "+markNum+" bwMbSec: "+getBwMbSec()+" avg: "+getAvg();
+        return "Mark(" + type + "): " + markNum + " bwMbSec: " + getBwMbSec() 
+                + " avg: " + getAvg();
     }
     
     public String getBwMbSec() {

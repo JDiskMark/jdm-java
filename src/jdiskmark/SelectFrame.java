@@ -57,16 +57,15 @@ public class SelectFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jFileChooser1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jFileChooser1ActionPerformed
-        // TODO add your handling code here:
         System.out.println(evt);
         switch (evt.getActionCommand()) {
-            case "ApproveSelection":
+            case "ApproveSelection" -> {
                 App.locationDir = jFileChooser1.getSelectedFile();
                 App.saveConfig();
                 Gui.mainFrame.setLocation(App.locationDir.getAbsolutePath());
-                break;
-            case "CancelSelection":
-                break;
+            }
+            case "CancelSelection" -> {
+            }
         }
         Gui.selFrame.setVisible(false);
         Gui.selFrame.dispose();

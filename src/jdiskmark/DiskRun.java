@@ -74,7 +74,7 @@ public class DiskRun implements Serializable {
     
     @Override
     public String toString() {
-        return "Run("+ioMode+","+blockOrder+"): "+totalMarks+" run avg: "+runAvg;
+        return "Run(" + ioMode + "," + blockOrder + "): " + totalMarks + " run avg: " + runAvg;
     }
     
     public DiskRun() {
