@@ -19,6 +19,7 @@ https://sourceforge.net/projects/jdiskmark/
 ## Usage
 
 1. Requires java 21.
+   https://www.oracle.com/java/technologies/downloads/
 
 2. to run:
    ```
@@ -34,7 +35,7 @@ https://sourceforge.net/projects/jdiskmark/
  - increased drive information default col width to 170
  - time format updated to "yyyy-MM-dd HH:mm:ss"
  - default to 200 marks
- - replace Date with LocalDateTime to avoid deprecated Temporal annotation
+ - replace Date w LocalDateTime to avoid deprecated @Temporal
 
 ### v0.4
  - updated eclipselink to 2.6 allows auto schema update
