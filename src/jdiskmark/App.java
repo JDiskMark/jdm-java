@@ -42,13 +42,14 @@ public class App {
     public static boolean autoRemoveData = false;
     public static boolean autoReset = true;
     public static boolean showMaxMin = true;
+    public static boolean showDriveAccess = false;
     public static boolean writeSyncEnable = true;
     
     // run configuration
     public static boolean readTest = false;
     public static boolean writeTest = true;
     public static DiskRun.BlockSequence blockSequence = DiskRun.BlockSequence.SEQUENTIAL;
-    public static int numOfMarks = 200;     // desired number of marks
+    public static int numOfSamples = 200;     // desired number of marks
     public static int numOfBlocks = 32;     // desired number of blocks
     public static int blockSizeKb = 512;    // size of a block in KBs
     
@@ -150,8 +151,10 @@ public class App {
         blockSequence = DiskRun.BlockSequence.valueOf(value);
         value = p.getProperty("showMaxMin", String.valueOf(showMaxMin));
         showMaxMin = Boolean.parseBoolean(value);
-        value = p.getProperty("numOfFiles", String.valueOf(numOfMarks));
-        numOfMarks = Integer.parseInt(value);
+        value = p.getProperty("showDriveAccess", String.valueOf(showDriveAccess));
+        showDriveAccess = Boolean.parseBoolean(value);
+        value = p.getProperty("numOfSamples", String.valueOf(numOfSamples));
+        numOfSamples = Integer.parseInt(value);
         value = p.getProperty("numOfBlocks", String.valueOf(numOfBlocks));
         numOfBlocks = Integer.parseInt(value);
         value = p.getProperty("blockSizeKb", String.valueOf(blockSizeKb));
@@ -171,7 +174,8 @@ public class App {
         p.setProperty("autoReset", String.valueOf(autoReset));
         p.setProperty("blockSequence", String.valueOf(blockSequence));
         p.setProperty("showMaxMin", String.valueOf(showMaxMin));
-        p.setProperty("numOfFiles", String.valueOf(numOfMarks));
+        p.setProperty("showDriveAccess", String.valueOf(showDriveAccess));
+        p.setProperty("numOfSamples", String.valueOf(numOfSamples));
         p.setProperty("numOfBlocks", String.valueOf(numOfBlocks));
         p.setProperty("blockSizeKb", String.valueOf(blockSizeKb));
         p.setProperty("writeTest", String.valueOf(writeTest));
@@ -197,7 +201,7 @@ public class App {
         sb.append("autoReset: ").append(autoReset).append('\n');
         sb.append("blockSequence: ").append(blockSequence).append('\n');
         sb.append("showMaxMin: ").append(showMaxMin).append('\n');
-        sb.append("numOfFiles: ").append(numOfMarks).append('\n');
+        sb.append("numOfFiles: ").append(numOfSamples).append('\n');
         sb.append("numOfBlocks: ").append(numOfBlocks).append('\n');
         sb.append("blockSizeKb: ").append(blockSizeKb).append('\n');
         return sb.toString();
@@ -233,7 +237,7 @@ public class App {
     
     public static void startBenchmark() {
         
-        //1. check that there isn't already a worker in progress
+        // 1. check that there isn't already a worker in progress
         if (state == State.DISK_TEST_STATE) {
             //if (!worker.isCancelled() && !worker.isDone()) {
                 msg("Test in progress, aborting...");
@@ -241,20 +245,20 @@ public class App {
             //}
         }
         
-        //2. check can write to location
+        // 2. check can write to location
         if (locationDir.canWrite() == false) {
             msg("Selected directory can not be written to... aborting");
             return;
         }
         
-        //3. update state
+        // 3. update state
         state = State.DISK_TEST_STATE;
         Gui.mainFrame.adjustSensitivity();
         
-        //4. create data dir reference
+        // 4. create data dir reference
         dataDir = new File (locationDir.getAbsolutePath()+File.separator+DATADIRNAME);
         
-        //5. remove existing test data if exist
+        // 5. remove existing test data if exist
         if (App.autoRemoveData && dataDir.exists()) {
             if (dataDir.delete()) {
                 msg("removed existing data dir");
@@ -263,10 +267,10 @@ public class App {
             }
         }
         
-        //6. create data dir if not already present
+        // 6. create data dir if not already present
         if (dataDir.exists() == false) { dataDir.mkdirs(); }
         
-        //7. start disk worker thread
+        // 7. start disk worker thread
         worker = new DiskWorker();
         worker.addPropertyChangeListener((final var event) -> {
             switch (event.getPropertyName()) {
@@ -292,38 +296,38 @@ public class App {
     }
     
     public static long targetTxSizeKb() {
-        return blockSizeKb * numOfBlocks * numOfMarks;
+        return blockSizeKb * numOfBlocks * numOfSamples;
     }
     
     public static void updateMetrics(DiskMark mark) {
-        if (mark.type==DiskMark.MarkType.WRITE) {
-            if (wMax==-1 || wMax < mark.bwMbSec) {
+        if (mark.type == DiskMark.MarkType.WRITE) {
+            if (wMax == -1 || wMax < mark.bwMbSec) {
                 wMax = mark.bwMbSec;
             }
-            if (wMin==-1 || wMin > mark.bwMbSec) {
+            if (wMin == -1 || wMin > mark.bwMbSec) {
                 wMin = mark.bwMbSec;
             }
-            if (wAvg==-1) {
+            if (wAvg == -1) {
                 wAvg = mark.bwMbSec;
             } else {
                 int n = mark.markNum;
-                wAvg = (((double)(n-1)*wAvg)+mark.bwMbSec)/(double)n;
+                wAvg = (((double)(n - 1) * wAvg) + mark.bwMbSec) / (double)n;
             }
             mark.cumAvg = wAvg;
             mark.cumMax = wMax;
             mark.cumMin = wMin;
         } else {
-            if (rMax==-1 || rMax < mark.bwMbSec) {
+            if (rMax == -1 || rMax < mark.bwMbSec) {
                 rMax = mark.bwMbSec;
             }
-            if (rMin==-1 || rMin > mark.bwMbSec) {
+            if (rMin == -1 || rMin > mark.bwMbSec) {
                 rMin = mark.bwMbSec;
             }
-            if (rAvg==-1) {
+            if (rAvg == -1) {
                 rAvg = mark.bwMbSec;
             } else {
                 int n = mark.markNum;
-                rAvg = (((double)(n-1)*rAvg)+mark.bwMbSec)/(double)n;
+                rAvg = (((double)(n-1) * rAvg) + mark.bwMbSec) / (double)n;
             }
             mark.cumAvg = rAvg;
             mark.cumMax = rMax;

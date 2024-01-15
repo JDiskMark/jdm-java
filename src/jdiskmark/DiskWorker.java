@@ -9,7 +9,6 @@ import static jdiskmark.App.msg;
 import static jdiskmark.App.numOfBlocks;
 import static jdiskmark.App.testFile;
 import static jdiskmark.App.dataDir;
-import static jdiskmark.App.numOfMarks;
 import static jdiskmark.DiskMark.MarkType.READ;
 import static jdiskmark.DiskMark.MarkType.WRITE;
 import java.io.File;
@@ -21,6 +20,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
+import static jdiskmark.App.numOfSamples;
 
 /**
  * Thread running the disk benchmarking. only one of these threads can run at
@@ -33,15 +33,15 @@ public class DiskWorker extends SwingWorker <Boolean, DiskMark> {
         
         System.out.println("*** starting new worker thread");
         msg("Running readTest " + App.readTest + "   writeTest " + App.writeTest);
-        msg("num files: " + App.numOfMarks + ", num blks: " + App.numOfBlocks
+        msg("num files: " + App.numOfSamples + ", num blks: " + App.numOfBlocks
                 + ", blk size (kb): " + App.blockSizeKb + ", blockSequence: "
                 + App.blockSequence);
         
         int wUnitsComplete = 0;
         int rUnitsComplete = 0;
         int unitsComplete;
-        int wUnitsTotal = App.writeTest ? numOfBlocks * numOfMarks : 0;
-        int rUnitsTotal = App.readTest ? numOfBlocks * numOfMarks : 0;
+        int wUnitsTotal = App.writeTest ? numOfBlocks * numOfSamples : 0;
+        int rUnitsTotal = App.readTest ? numOfBlocks * numOfSamples : 0;
         int unitsTotal = wUnitsTotal + rUnitsTotal;
         float percentComplete;
         
@@ -66,7 +66,7 @@ public class DiskWorker extends SwingWorker <Boolean, DiskMark> {
         
         if (App.writeTest) {
             DiskRun run = new DiskRun(DiskRun.IOMode.WRITE, App.blockSequence);
-            run.numMarks = App.numOfMarks;
+            run.numMarks = App.numOfSamples;
             run.numBlocks = App.numOfBlocks;
             run.blockSize = App.blockSizeKb;
             run.txSize = App.targetTxSizeKb();
@@ -80,7 +80,7 @@ public class DiskWorker extends SwingWorker <Boolean, DiskMark> {
             if (App.multiFile == false) {
                 testFile = new File(dataDir.getAbsolutePath()+File.separator + "testdata.jdm");
             }            
-            for (int m=startFileNum; m<startFileNum+App.numOfMarks && !isCancelled(); m++) {
+            for (int m = startFileNum; m < startFileNum+App.numOfSamples && !isCancelled(); m++) {
                 
                 if (App.multiFile == true) {
                     testFile = new File(dataDir.getAbsolutePath()
@@ -107,7 +107,7 @@ public class DiskWorker extends SwingWorker <Boolean, DiskMark> {
                             totalBytesWrittenInMark += blockSize;
                             wUnitsComplete++;
                             unitsComplete = rUnitsComplete + wUnitsComplete;
-                            percentComplete = (float)unitsComplete/(float)unitsTotal * 100f;
+                            percentComplete = (float)unitsComplete / (float)unitsTotal * 100f;
                             setProgress((int)percentComplete);
                         }
                     }
@@ -116,6 +116,7 @@ public class DiskWorker extends SwingWorker <Boolean, DiskMark> {
                 }
                 long endTime = System.nanoTime();
                 long elapsedTimeNs = endTime - startTime;
+                wMark.elapsedTimeMs = (elapsedTimeNs / 1000000f) / numOfBlocks;
                 double sec = (double)elapsedTimeNs / (double)1000000000;
                 double mbWritten = (double)totalBytesWrittenInMark / (double)MEGABYTE;
                 wMark.bwMbSec = mbWritten / sec;
@@ -154,7 +155,7 @@ public class DiskWorker extends SwingWorker <Boolean, DiskMark> {
         
         if (App.readTest) {
             DiskRun run = new DiskRun(DiskRun.IOMode.READ, App.blockSequence);
-            run.numMarks = App.numOfMarks;
+            run.numMarks = App.numOfSamples;
             run.numBlocks = App.numOfBlocks;
             run.blockSize = App.blockSizeKb;
             run.txSize = App.targetTxSizeKb();
@@ -165,7 +166,7 @@ public class DiskWorker extends SwingWorker <Boolean, DiskMark> {
             Gui.chartPanel.getChart().getTitle().setVisible(true);
             Gui.chartPanel.getChart().getTitle().setText(run.getDiskInfo());
             
-            for (int m = startFileNum; m < startFileNum + App.numOfMarks && !isCancelled(); m++) {
+            for (int m = startFileNum; m < startFileNum + App.numOfSamples && !isCancelled(); m++) {
                 
                 if (App.multiFile == true) {
                     testFile = new File(dataDir.getAbsolutePath()
@@ -189,7 +190,7 @@ public class DiskWorker extends SwingWorker <Boolean, DiskMark> {
                             totalBytesReadInMark += blockSize;
                             rUnitsComplete++;
                             unitsComplete = rUnitsComplete + wUnitsComplete;
-                            percentComplete = (float)unitsComplete/(float)unitsTotal * 100f;
+                            percentComplete = (float)unitsComplete / (float)unitsTotal * 100f;
                             setProgress((int)percentComplete);
                         }
                     }
@@ -198,7 +199,8 @@ public class DiskWorker extends SwingWorker <Boolean, DiskMark> {
                 }
                 long endTime = System.nanoTime();
                 long elapsedTimeNs = endTime - startTime;
-                double sec = (double)elapsedTimeNs / (double)1000000000;
+                rMark.elapsedTimeMs = (elapsedTimeNs / 1_000_000f) / (float)numOfBlocks;
+                double sec = (double)elapsedTimeNs / (double)1_000_000_000;
                 double mbRead = (double) totalBytesReadInMark / (double) MEGABYTE;
                 rMark.bwMbSec = mbRead / sec;
                 msg("m:" + m + " READ IO is " + rMark.bwMbSec + " MB/s    "
@@ -219,14 +221,14 @@ public class DiskWorker extends SwingWorker <Boolean, DiskMark> {
             
             Gui.runPanel.addRun(run);
         }
-        App.nextMarkNumber += App.numOfMarks;      
+        App.nextMarkNumber += App.numOfSamples;      
         return true;
     }
     
     @Override
     protected void process(List<DiskMark> markList) {
-        markList.stream().forEach((m) -> {
-            if (m.type==DiskMark.MarkType.WRITE) {
+        markList.stream().forEach((DiskMark m) -> {
+            if (m.type == DiskMark.MarkType.WRITE) {
                 Gui.addWriteMark(m);
             } else {
                 Gui.addReadMark(m);

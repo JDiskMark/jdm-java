@@ -36,6 +36,7 @@ https://sourceforge.net/projects/jdiskmark/
  - time format updated to "yyyy-MM-dd HH:mm:ss"
  - default to 200 marks
  - replace Date w LocalDateTime to avoid deprecated @Temporal
+ - disk access time (ms) - disabled by default
 
 ### v0.4
  - updated eclipselink to 2.6 allows auto schema update
@@ -62,10 +63,9 @@ https://sourceforge.net/projects/jdiskmark/
  - initial release
 
 ### Proposed Features
- - upload benchmarks to jdiskmark.net portal (anonymous/w login)
  - store benchmark data for each run and load when selected
+ - upload benchmarks to jdiskmark.net portal (anonymous/w login)
  - update windows drive model parsing script to adapt to differing script output
- - disk access time (ms)
  - disk capacity and drive letter (available on windows)
  - auto clear disk cache windows, linux, osx
    - linux: sync && echo 1 > /proc/sys/vm/drop_caches

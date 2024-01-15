@@ -16,7 +16,6 @@ import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import static java.time.temporal.ChronoUnit.SECONDS;
-//import java.util.Date;
 import java.util.List;
 
 /**
@@ -113,7 +112,7 @@ public class DiskRun implements Serializable {
         return runAvg == -1 ? "- -" : DF.format(runAvg);
     }
     
-    public void SetAvg(double avg) {
+    public void setAvg(double avg) {
         runAvg = avg;
     }
     

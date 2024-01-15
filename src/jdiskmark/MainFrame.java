@@ -17,7 +17,7 @@ import javax.swing.text.DefaultCaret;
  */
 public final class MainFrame extends javax.swing.JFrame {
 
-    DecimalFormat df = new DecimalFormat("###.###");
+    DecimalFormat df = new DecimalFormat("###.##");
     
     /**
      * Creates new form MainFrame
@@ -59,6 +59,7 @@ public final class MainFrame extends javax.swing.JFrame {
         autoRemoveCheckBoxMenuItem.setSelected(App.autoRemoveData);
         autoResetCheckBoxMenuItem.setSelected(App.autoReset);
         showMaxMinCheckBoxMenuItem.setSelected(App.showMaxMin);
+        showAccessCheckBoxMenuItem.setSelected(App.showDriveAccess);
         writeSyncCheckBoxMenuItem.setSelected(App.writeSyncEnable);
         
         String modeStr = "unset";
@@ -71,7 +72,7 @@ public final class MainFrame extends javax.swing.JFrame {
         //String blockOrderStr = App.randomEnable ? "random":"sequential";
         orderComboBox.setSelectedItem(App.blockSequence);
         
-        numFilesCombo.setSelectedItem(String.valueOf(App.numOfMarks));
+        numFilesCombo.setSelectedItem(String.valueOf(App.numOfSamples));
         numBlocksCombo.setSelectedItem(String.valueOf(App.numOfBlocks));
         blockSizeCombo.setSelectedItem(String.valueOf(App.blockSizeKb)); 
     }
@@ -86,7 +87,6 @@ public final class MainFrame extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jButton1 = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
         mountPanel = new javax.swing.JPanel();
         controlsPanel = new javax.swing.JPanel();
@@ -119,13 +119,13 @@ public final class MainFrame extends javax.swing.JFrame {
         rAvgLabel = new javax.swing.JLabel();
         tabbedPane = new javax.swing.JTabbedPane();
         runPanel = new jdiskmark.RunPanel();
-        eventScrollPane = new javax.swing.JScrollPane();
-        msgTextArea = new javax.swing.JTextArea();
         locationPanel = new javax.swing.JPanel();
         chooseButton = new javax.swing.JButton();
         locationText = new javax.swing.JTextField();
         openLocButton = new javax.swing.JButton();
         jLabel15 = new javax.swing.JLabel();
+        eventScrollPane = new javax.swing.JScrollPane();
+        msgTextArea = new javax.swing.JTextArea();
         progressPanel = new javax.swing.JPanel();
         jLabel7 = new javax.swing.JLabel();
         totalTxProgBar = new javax.swing.JProgressBar();
@@ -142,11 +142,10 @@ public final class MainFrame extends javax.swing.JFrame {
         autoRemoveCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         autoResetCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         showMaxMinCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
+        showAccessCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         writeSyncCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         helpMenu = new javax.swing.JMenu();
         jMenuItem2 = new javax.swing.JMenuItem();
-
-        jButton1.setText("jButton1");
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("jDiskMark");
@@ -202,7 +201,7 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
 
-        jLabel8.setText("No. Marks");
+        jLabel8.setText("No. Samples");
 
         numFilesCombo.setEditable(true);
         numFilesCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "25", "50", "75", "100", "150", "200", "250", "300", "350", "400", "450", "500", "1000" }));
@@ -390,15 +389,6 @@ public final class MainFrame extends javax.swing.JFrame {
 
         tabbedPane.addTab("Benchmarks", runPanel);
 
-        msgTextArea.setEditable(false);
-        msgTextArea.setColumns(20);
-        msgTextArea.setFont(new java.awt.Font("Monospaced", 0, 11)); // NOI18N
-        msgTextArea.setRows(5);
-        msgTextArea.setTabSize(4);
-        eventScrollPane.setViewportView(msgTextArea);
-
-        tabbedPane.addTab("Event Log", eventScrollPane);
-
         chooseButton.setText("Browse");
         chooseButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -445,6 +435,15 @@ public final class MainFrame extends javax.swing.JFrame {
         );
 
         tabbedPane.addTab("Data Location", locationPanel);
+
+        msgTextArea.setEditable(false);
+        msgTextArea.setColumns(20);
+        msgTextArea.setFont(new java.awt.Font("Monospaced", 0, 11)); // NOI18N
+        msgTextArea.setRows(5);
+        msgTextArea.setTabSize(4);
+        eventScrollPane.setViewportView(msgTextArea);
+
+        tabbedPane.addTab("Event Log", eventScrollPane);
 
         jLabel7.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabel7.setText("Total Tx (KB)");
@@ -553,6 +552,15 @@ public final class MainFrame extends javax.swing.JFrame {
         });
         optionMenu.add(showMaxMinCheckBoxMenuItem);
 
+        showAccessCheckBoxMenuItem.setSelected(true);
+        showAccessCheckBoxMenuItem.setText("Show Access Time");
+        showAccessCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                showAccessCheckBoxMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(showAccessCheckBoxMenuItem);
+
         writeSyncCheckBoxMenuItem.setSelected(true);
         writeSyncCheckBoxMenuItem.setText("Write Sync");
         writeSyncCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -607,13 +615,12 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_chooseButtonActionPerformed
 
     private void startButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startButtonActionPerformed
-        if (App.state==App.State.DISK_TEST_STATE) {
+        if (App.state == App.State.DISK_TEST_STATE) {
             App.cancelBenchmark();
-        } else if (App.state==App.State.IDLE_STATE) {
+        } else if (App.state == App.State.IDLE_STATE) {
             applyTestParams();
             App.startBenchmark();
         }
-        
     }//GEN-LAST:event_startButtonActionPerformed
 
     private void blockSizeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_blockSizeComboActionPerformed
@@ -629,7 +636,7 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_numBlocksComboActionPerformed
 
     private void numFilesComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_numFilesComboActionPerformed
-        App.numOfMarks = Integer.parseInt((String) numFilesCombo.getSelectedItem());
+        App.numOfSamples = Integer.parseInt((String) numFilesCombo.getSelectedItem());
         fileSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
         totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
     }//GEN-LAST:event_numFilesComboActionPerformed
@@ -651,7 +658,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
         JOptionPane.showMessageDialog(Gui.mainFrame, 
-                "jDiskMark "+App.getVersion(),"About...",JOptionPane.PLAIN_MESSAGE);
+                "jDiskMark " + App.getVersion(), "About...", JOptionPane.PLAIN_MESSAGE);
     }//GEN-LAST:event_jMenuItem2ActionPerformed
 
     private void openLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openLocButtonActionPerformed
@@ -707,6 +714,11 @@ public final class MainFrame extends javax.swing.JFrame {
         App.clearSavedRuns();
     }//GEN-LAST:event_clearRunsItemActionPerformed
 
+    private void showAccessCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showAccessCheckBoxMenuItemActionPerformed
+        App.showDriveAccess = showAccessCheckBoxMenuItem.getState();
+        App.saveConfig();
+    }//GEN-LAST:event_showAccessCheckBoxMenuItemActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JCheckBoxMenuItem autoRemoveCheckBoxMenuItem;
@@ -721,7 +733,6 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenu fileMenu;
     private javax.swing.JLabel fileSizeLabel;
     private javax.swing.JMenu helpMenu;
-    private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -760,6 +771,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JButton resetButton;
     private javax.swing.JMenuItem resetSequenceMenuItem;
     private jdiskmark.RunPanel runPanel;
+    private javax.swing.JCheckBoxMenuItem showAccessCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem showMaxMinCheckBoxMenuItem;
     private javax.swing.JButton startButton;
     private javax.swing.JTabbedPane tabbedPane;
@@ -783,7 +795,7 @@ public final class MainFrame extends javax.swing.JFrame {
         App.readTest = modeStr.contains("read");
         App.writeTest = modeStr.contains("write");
         App.blockSequence = (DiskRun.BlockSequence)orderComboBox.getSelectedItem();
-        App.numOfMarks = Integer.parseInt((String) numFilesCombo.getSelectedItem());
+        App.numOfSamples = Integer.parseInt((String) numFilesCombo.getSelectedItem());
         App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
         App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
         fileSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));

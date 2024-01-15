@@ -22,6 +22,7 @@ public class DiskMark {
     double cumMin = 0;
     double cumMax = 0;
     double cumAvg = 0;
+    double elapsedTimeMs;
     
     @Override
     public String toString() {
