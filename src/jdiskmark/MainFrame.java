@@ -221,7 +221,7 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
 
-        jLabel9.setText("Mark Size (KB)");
+        jLabel9.setText("Sample Size (KB)");
 
         fileSizeLabel.setText("- -");
 
@@ -434,7 +434,7 @@ public final class MainFrame extends javax.swing.JFrame {
                 .addContainerGap(140, Short.MAX_VALUE))
         );
 
-        tabbedPane.addTab("Data Location", locationPanel);
+        tabbedPane.addTab("Drive Location", locationPanel);
 
         msgTextArea.setEditable(false);
         msgTextArea.setColumns(20);

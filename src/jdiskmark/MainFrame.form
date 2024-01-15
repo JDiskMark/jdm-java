@@ -502,7 +502,7 @@
             </Component>
             <Component class="javax.swing.JLabel" name="jLabel9">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Mark Size (KB)"/>
+                <Property name="text" type="java.lang.String" value="Sample Size (KB)"/>
               </Properties>
             </Component>
             <Component class="javax.swing.JLabel" name="fileSizeLabel">
@@ -607,8 +607,8 @@
         <Container class="javax.swing.JPanel" name="locationPanel">
           <Constraints>
             <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout$JTabbedPaneConstraintsDescription">
-              <JTabbedPaneConstraints tabName="Data Location">
-                <Property name="tabTitle" type="java.lang.String" value="Data Location"/>
+              <JTabbedPaneConstraints tabName="Drive Location">
+                <Property name="tabTitle" type="java.lang.String" value="Drive Location"/>
               </JTabbedPaneConstraints>
             </Constraint>
           </Constraints>
