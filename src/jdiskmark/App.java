@@ -49,14 +49,15 @@ public class App {
     public static boolean readTest = false;
     public static boolean writeTest = true;
     public static Benchmark.BlockSequence blockSequence = Benchmark.BlockSequence.SEQUENTIAL;
-    public static int numOfSamples = 200;     // desired number of marks
+    public static int numOfSamples = 200;   // desired number of samples
     public static int numOfBlocks = 32;     // desired number of blocks
     public static int blockSizeKb = 512;    // size of a block in KBs
     
     public static BenchmarkWorker worker = null;
-    public static int nextSampleNumber = 1;   // number of the next mark
+    public static int nextSampleNumber = 1;   // number of the next sample
     public static double wMax = -1, wMin = -1, wAvg = -1;
     public static double rMax = -1, rMin = -1, rAvg = -1;
+    public static double accAvg = -1;
     
     /**
      * @param args the command line arguments
@@ -256,7 +257,7 @@ public class App {
         Gui.mainFrame.adjustSensitivity();
         
         // 4. create data dir reference
-        dataDir = new File (locationDir.getAbsolutePath()+File.separator+DATADIRNAME);
+        dataDir = new File (locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
         
         // 5. remove existing test data if exist
         if (App.autoRemoveData && dataDir.exists()) {
@@ -278,11 +279,11 @@ public class App {
                     int value = (Integer)event.getNewValue();
                     Gui.progressBar.setValue(value);
                     long kbProcessed = (value) * App.targetTxSizeKb() / 100;
-                    Gui.progressBar.setString(String.valueOf(kbProcessed)+" / "+String.valueOf(App.targetTxSizeKb()));
+                    Gui.progressBar.setString(String.valueOf(kbProcessed) + " / " + String.valueOf(App.targetTxSizeKb()));
                 }
                 case "state" -> {
                     switch ((StateValue) event.getNewValue()) {
-                        case STARTED -> Gui.progressBar.setString("0 / "+String.valueOf(App.targetTxSizeKb()));
+                        case STARTED -> Gui.progressBar.setString("0 / " + String.valueOf(App.targetTxSizeKb()));
                         case DONE -> {}
                     } // end inner switch
                 }
@@ -299,39 +300,51 @@ public class App {
         return blockSizeKb * numOfBlocks * numOfSamples;
     }
     
-    public static void updateMetrics(Sample mark) {
-        if (mark.type == Sample.SampleType.WRITE) {
-            if (wMax == -1 || wMax < mark.bwMbSec) {
-                wMax = mark.bwMbSec;
+    public static void updateMetrics(Sample s) {
+        if (s.type == Sample.Type.WRITE) {
+            if (wMax == -1 || wMax < s.bwMbSec) {
+                wMax = s.bwMbSec;
             }
-            if (wMin == -1 || wMin > mark.bwMbSec) {
-                wMin = mark.bwMbSec;
+            if (wMin == -1 || wMin > s.bwMbSec) {
+                wMin = s.bwMbSec;
             }
+            
+            // cumulative average bw
             if (wAvg == -1) {
-                wAvg = mark.bwMbSec;
+                wAvg = s.bwMbSec;
             } else {
-                int n = mark.sampleNum;
-                wAvg = (((double)(n - 1) * wAvg) + mark.bwMbSec) / (double)n;
+                int n = s.sampleNum;
+                wAvg = (((double)(n - 1) * wAvg) + s.bwMbSec) / (double)n;
             }
-            mark.cumAvg = wAvg;
-            mark.cumMax = wMax;
-            mark.cumMin = wMin;
+            
+            // cumulative access time
+            if (accAvg == -1) {
+                accAvg = s.accessTimeMs;
+            } else {
+                int n = s.sampleNum;
+                accAvg = (((double)(n - 1) * accAvg) + s.accessTimeMs) / (double)n;
+            }
+            
+            s.cumAvg = wAvg;
+            s.cumMax = wMax;
+            s.cumMin = wMin;
+            s.cumAccTimeMs = accAvg;
         } else {
-            if (rMax == -1 || rMax < mark.bwMbSec) {
-                rMax = mark.bwMbSec;
+            if (rMax == -1 || rMax < s.bwMbSec) {
+                rMax = s.bwMbSec;
             }
-            if (rMin == -1 || rMin > mark.bwMbSec) {
-                rMin = mark.bwMbSec;
+            if (rMin == -1 || rMin > s.bwMbSec) {
+                rMin = s.bwMbSec;
             }
             if (rAvg == -1) {
-                rAvg = mark.bwMbSec;
+                rAvg = s.bwMbSec;
             } else {
-                int n = mark.sampleNum;
-                rAvg = (((double)(n-1) * rAvg) + mark.bwMbSec) / (double)n;
+                int n = s.sampleNum;
+                rAvg = (((double)(n-1) * rAvg) + s.bwMbSec) / (double)n;
             }
-            mark.cumAvg = rAvg;
-            mark.cumMax = rMax;
-            mark.cumMin = rMin;
+            s.cumAvg = rAvg;
+            s.cumMax = rMax;
+            s.cumMin = rMin;
         }
     }
     

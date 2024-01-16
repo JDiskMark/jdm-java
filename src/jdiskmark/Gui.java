@@ -63,6 +63,7 @@ public final class Gui {
         msDataset.addSeries(wDrvAccess);
         msDataset.addSeries(rDrvAccess);
         
+        // setup plot
         XYPlot plot = new XYPlot();
         plot.setBackgroundPaint(Color.DARK_GRAY);
         plot.setOutlinePaint(Color.WHITE);
@@ -89,6 +90,7 @@ public final class Gui {
         msRenderer.setSeriesPaint(0, Color.CYAN);       // w acc
         msRenderer.setSeriesPaint(1, Color.MAGENTA);    // r acc
         
+        // link renderers to the plot
         plot.setRenderer(0, bwRenderer);
         plot.setRenderer(1, msRenderer);
         
@@ -138,31 +140,31 @@ public final class Gui {
         return chartPanel;
     }
     
-    public static void addWriteMark(Sample mark) {
-        wSeries.add(mark.sampleNum, mark.bwMbSec);
-        wAvgSeries.add(mark.sampleNum, mark.cumAvg);
+    public static void addWriteSample(Sample s) {
+        wSeries.add(s.sampleNum, s.bwMbSec);
+        wAvgSeries.add(s.sampleNum, s.cumAvg);
         if (App.showMaxMin) {
-            wMaxSeries.add(mark.sampleNum, mark.cumMax);
-            wMinSeries.add(mark.sampleNum, mark.cumMin);
+            wMaxSeries.add(s.sampleNum, s.cumMax);
+            wMinSeries.add(s.sampleNum, s.cumMin);
         }
         if (App.showDriveAccess) {
-            wDrvAccess.add(mark.sampleNum, mark.elapsedTimeMs);
+            wDrvAccess.add(s.sampleNum, s.accessTimeMs);
         }
         Gui.mainFrame.refreshWriteMetrics();
-        System.out.println(mark.toString());
+        System.out.println(s.toString());
     }
-    public static void addReadMark(Sample mark) {
-        rSeries.add(mark.sampleNum, mark.bwMbSec);
-        rAvgSeries.add(mark.sampleNum, mark.cumAvg);
+    public static void addReadSample(Sample s) {
+        rSeries.add(s.sampleNum, s.bwMbSec);
+        rAvgSeries.add(s.sampleNum, s.cumAvg);
         if (App.showMaxMin) {
-            rMaxSeries.add(mark.sampleNum, mark.cumMax);
-            rMinSeries.add(mark.sampleNum, mark.cumMin);
+            rMaxSeries.add(s.sampleNum, s.cumMax);
+            rMinSeries.add(s.sampleNum, s.cumMin);
         }
         if (App.showDriveAccess) {
-            rDrvAccess.add(mark.sampleNum, mark.elapsedTimeMs);
+            rDrvAccess.add(s.sampleNum, s.accessTimeMs);
         }
         Gui.mainFrame.refreshReadMetrics();
-        System.out.println(mark.toString());
+        System.out.println(s.toString());
     }
     
     public static void resetTestData() {

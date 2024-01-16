@@ -9,8 +9,8 @@ import static jdiskmark.App.msg;
 import static jdiskmark.App.numOfBlocks;
 import static jdiskmark.App.testFile;
 import static jdiskmark.App.dataDir;
-import static jdiskmark.Sample.SampleType.READ;
-import static jdiskmark.Sample.SampleType.WRITE;
+import static jdiskmark.Sample.Type.READ;
+import static jdiskmark.Sample.Type.WRITE;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -73,10 +73,10 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
             run.txSize = App.targetTxSizeKb();
             run.setDriveInfo(Util.getDriveInfo(dataDir));
             
-            msg("drive info: (" + run.getDiskInfo() + ")");
+            msg("drive info: (" + run.getDriveInfo() + ")");
             
             Gui.chartPanel.getChart().getTitle().setVisible(true);
-            Gui.chartPanel.getChart().getTitle().setText(run.getDiskInfo());
+            Gui.chartPanel.getChart().getTitle().setText(run.getDriveInfo());
             
             if (App.multiFile == false) {
                 testFile = new File(dataDir.getAbsolutePath() + File.separator + "testdata.jdm");
@@ -117,7 +117,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                 }
                 long endTime = System.nanoTime();
                 long elapsedTimeNs = endTime - startTime;
-                wSample.elapsedTimeMs = (elapsedTimeNs / 1000000f) / numOfBlocks;
+                wSample.accessTimeMs = (elapsedTimeNs / 1000000f) / numOfBlocks;
                 double sec = (double)elapsedTimeNs / (double)1000000000;
                 double mbWritten = (double)totalBytesWrittenInSample / (double)MEGABYTE;
                 wSample.bwMbSec = mbWritten / sec;
@@ -162,10 +162,10 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
             run.txSize = App.targetTxSizeKb();
             run.setDriveInfo(Util.getDriveInfo(dataDir));
               
-            msg("disk info: (" + run.getDiskInfo() + ")");
+            msg("drive info: (" + run.getDriveInfo() + ")");
             
             Gui.chartPanel.getChart().getTitle().setVisible(true);
-            Gui.chartPanel.getChart().getTitle().setText(run.getDiskInfo());
+            Gui.chartPanel.getChart().getTitle().setText(run.getDriveInfo());
             
             for (int m = startFileNum; m < startFileNum + App.numOfSamples && !isCancelled(); m++) {
                 
@@ -200,7 +200,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                 }
                 long endTime = System.nanoTime();
                 long elapsedTimeNs = endTime - startTime;
-                rSample.elapsedTimeMs = (elapsedTimeNs / 1_000_000f) / (float)numOfBlocks;
+                rSample.accessTimeMs = (elapsedTimeNs / 1_000_000f) / (float)numOfBlocks;
                 double sec = (double)elapsedTimeNs / (double)1_000_000_000;
                 double mbRead = (double) totalBytesReadInMark / (double) MEGABYTE;
                 rSample.bwMbSec = mbRead / sec;
@@ -229,10 +229,10 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
     @Override
     protected void process(List<Sample> sampleList) {
         sampleList.stream().forEach((Sample m) -> {
-            if (m.type == Sample.SampleType.WRITE) {
-                Gui.addWriteMark(m);
+            if (m.type == Sample.Type.WRITE) {
+                Gui.addWriteSample(m);
             } else {
-                Gui.addReadMark(m);
+                Gui.addReadSample(m);
             }
         });
     }

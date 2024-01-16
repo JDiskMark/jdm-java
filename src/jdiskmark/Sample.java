@@ -10,23 +10,25 @@ public class Sample {
     
     static DecimalFormat df = new DecimalFormat("###.###");
     
-    public enum SampleType { READ, WRITE; }
+    public enum Type { READ, WRITE; }
     
-    Sample(SampleType type) {
+    Sample(Type type) {
         this.type=type;
     }
     
-    SampleType type;
-    int sampleNum = 0;       // x-axis
+    Type type;
+    int sampleNum = 0;     // x-axis
+    
     double bwMbSec = 0;    // y-axis
     double cumMin = 0;
     double cumMax = 0;
     double cumAvg = 0;
-    double elapsedTimeMs;
+    double accessTimeMs;
+    double cumAccTimeMs;
     
     @Override
     public String toString() {
-        return "Sample(" + type + "): " + sampleNum + " bwMbSec: " + getBwMbSec() 
+        return "Sample(" + type + "): " + sampleNum + " bwMBs: " + getBwMbSec() 
                 + " avg: " + getAvg();
     }
     

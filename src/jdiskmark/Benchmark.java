@@ -132,7 +132,7 @@ public class Benchmark implements Serializable {
     public void setId(Long id) {
         this.id = id;
     }
-    public String getDiskInfo() {
+    public String getDriveInfo() {
         return diskInfo;
     }
     public void setDriveInfo(String info) {

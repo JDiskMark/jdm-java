@@ -48,7 +48,7 @@
                 <Column editable="false" title="Drive Information" type="java.lang.Object"/>
                 <Column editable="false" title="IO Mode" type="java.lang.Object"/>
                 <Column editable="false" title="Block Order" type="java.lang.Object"/>
-                <Column editable="false" title="Marks" type="java.lang.Object"/>
+                <Column editable="false" title="Samples" type="java.lang.Object"/>
                 <Column editable="false" title="Blocks" type="java.lang.Object"/>
                 <Column editable="false" title="B. Size" type="java.lang.Object"/>
                 <Column editable="false" title="Tx Size" type="java.lang.Object"/>
