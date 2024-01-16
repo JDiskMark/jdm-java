@@ -155,7 +155,7 @@ public final class MainFrame extends javax.swing.JFrame {
         setTitle("jDiskMark");
 
         mountPanel.setBackground(new java.awt.Color(0, 51, 153));
-        mountPanel.setBorder(javax.swing.BorderFactory.createLineBorder(null));
+        mountPanel.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
         mountPanel.setMaximumSize(new java.awt.Dimension(503, 200));
 
         javax.swing.GroupLayout mountPanelLayout = new javax.swing.GroupLayout(mountPanel);
@@ -284,7 +284,7 @@ public final class MainFrame extends javax.swing.JFrame {
                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(controlsPanelLayout.createSequentialGroup()
                         .addComponent(jLabel13, javax.swing.GroupLayout.PREFERRED_SIZE, 223, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
+                        .addGap(0, 15, Short.MAX_VALUE))
                     .addGroup(controlsPanelLayout.createSequentialGroup()
                         .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, controlsPanelLayout.createSequentialGroup()

@@ -99,7 +99,7 @@ public final class Gui {
         bwAxis.setAutoRangeIncludesZero(false);
         
         // y axis on the right
-        NumberAxis msAxis = new NumberAxis("Drive Access (ms)");
+        NumberAxis msAxis = new NumberAxis("Average Access Time (ms)");
         msAxis.setAutoRange(true);
         msAxis.setAutoRangeIncludesZero(false);
         
