@@ -16,7 +16,15 @@ Cross platform disk benchmark utility written in java.
 - Benchmarks saved to embedded DB
 - Java cross platform solution
 
-## Builds
+## Development Environment
+
+The java client is developed with NetBeans 20
+
+## Source Repository
+
+https://github.com/jDiskMark/jdm-java/
+
+## Releases
 
 https://sourceforge.net/projects/jdiskmark/
 
