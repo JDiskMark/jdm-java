@@ -6,9 +6,9 @@ Cross platform disk benchmark utility written in java.
 
 - Benchmark IO read/write performance
 - Intuitive graph(s) to track:
-  - sample bw
-  - max, min, cumulative average
-  - drive access time (plot initially disabled)
+   - sample bw
+   - max, min, cumulative average
+   - drive access time (plot initially disabled)
 - Adjustable block size, block qty and sample qty
 - Single or multi file option
 - Sequential or random option
@@ -35,7 +35,7 @@ https://sourceforge.net/projects/jdiskmark/
 
 ### v0.5 beta 1
  - update for java 21 LTS w NetBeans 20 environment
-   - eclipselink 4.0, jpa 3.1, modelgen 5.6, annotations 3.1, xml.bind 4.0
+    - eclipselink 4.0, jpa 3.1, modelgen 5.6, annotations 3.1, xml.bind 4.0
  - increased drive information default col width to 170
  - time format updated to "yyyy-MM-dd HH:mm:ss"
  - default to 200 marks
@@ -47,9 +47,9 @@ https://sourceforge.net/projects/jdiskmark/
  - updated eclipselink to 2.6 allows auto schema update
  - improved gui initialization
  - platform disk model info:
-   - windows: via powershell query
-   - linux:   via "df /data/path" & "lsblk /dev/path --output MODEL"
-   - osx:     via "df /data/path" & "diskutil info /dev/disk1"
+    - windows: via powershell query
+    - linux:   via "df /data/path" & "lsblk /dev/path --output MODEL"
+    - osx:     via "df /data/path" & "diskutil info /dev/disk1"
 
 ### v0.3
  - persist recent run with embedded derby db
@@ -74,16 +74,16 @@ https://sourceforge.net/projects/jdiskmark/
  - update windows drive model parsing script to adapt to differing script output
  - disk capacity and drive letter (available on windows)
  - auto clear disk cache windows, linux, osx
-   - linux: 
-      - option a: sync && echo 1 > /proc/sys/vm/drop_caches
-      - option b: 0_DIRECT flag
-        - open the file with the 0_DIRECT flag
-      - option c: use "hdparm -W 0 /dev/sdX" to disable catch for entire drive
-      - option d: review tools like nocatch and fio
-   - windows: powershell w admin
-      - get friendly name or id with: Get-PhysicalDisk
-      - disable: Set-PhysicalDisk -FriendlyName "DriveName" -WriteCacheEnabled:$false
-      - verify: Get-PhysicalDisk | Select FriendlyName, WriteCacheEnabled
-      - restore: Set-PhysicalDisk -FriendlyName "DriveName" -WriteCacheEnabled:$true
-   - osx: unknown
+    - linux: 
+       - option a: sync && echo 1 > /proc/sys/vm/drop_caches
+       - option b: 0_DIRECT flag
+          - open the file with the 0_DIRECT flag
+       - option c: use "hdparm -W 0 /dev/sdX" to disable catch for entire drive
+       - option d: review tools like nocatch and fio
+    - windows: powershell w admin
+       - get friendly name or id with: Get-PhysicalDisk
+       - disable: Set-PhysicalDisk -FriendlyName "DriveName" -WriteCacheEnabled:$false
+       - verify: Get-PhysicalDisk | Select FriendlyName, WriteCacheEnabled
+       - restore: Set-PhysicalDisk -FriendlyName "DriveName" -WriteCacheEnabled:$true
+    - osx: unknown
  - include system processor information as part of benchmark
