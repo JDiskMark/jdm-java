@@ -71,7 +71,7 @@ public class Util {
         byte[] content = new byte[1024];
         diskAccess.readFully (content);
         System.out.println("done reading fully");
-        System.out.println("content "+Arrays.toString(content));
+        System.out.println("content " + Arrays.toString(content));
     }
     
     /*
@@ -80,32 +80,33 @@ public class Util {
     public static void sysStats() {
         /* Total number of processors or cores available to the JVM */
         System.out.println("Available processors (cores): " + 
-            Runtime.getRuntime().availableProcessors());
+                Runtime.getRuntime().availableProcessors());
 
         /* Total amount of free memory available to the JVM */
         System.out.println("Free memory (bytes): " + 
-            Runtime.getRuntime().freeMemory());
+                Runtime.getRuntime().freeMemory());
 
         /* This will return Long.MAX_VALUE if there is no preset limit */
         long maxMemory = Runtime.getRuntime().maxMemory();
+        
         /* Maximum amount of memory the JVM will attempt to use */
         System.out.println("Maximum memory (bytes): " + 
-            (maxMemory == Long.MAX_VALUE ? "no limit" : maxMemory));
+                (maxMemory == Long.MAX_VALUE ? "no limit" : maxMemory));
 
         /* Total memory currently available to the JVM */
         System.out.println("Total memory available to JVM (bytes): " + 
-            Runtime.getRuntime().totalMemory());
+                Runtime.getRuntime().totalMemory());
 
         /* Get a list of all filesystem roots on this system */
         File[] roots = File.listRoots();
 
         /* For each filesystem root, print some info */
         for (File root : roots) {
-          System.out.println("File system root: " + root.getAbsolutePath());
-          System.out.println("Total space (bytes): " + root.getTotalSpace());
-          System.out.println("Free space (bytes): " + root.getFreeSpace());
-          System.out.println("Usable space (bytes): " + root.getUsableSpace());
-          System.out.println("Drive Type: "+getDriveType(root));
+            System.out.println("File system root: " + root.getAbsolutePath());
+            System.out.println("Total space (bytes): " + root.getTotalSpace());
+            System.out.println("Free space (bytes): " + root.getFreeSpace());
+            System.out.println("Usable space (bytes): " + root.getUsableSpace());
+            System.out.println("Drive Type: " + getDriveType(root));
         }
     }
     
@@ -131,7 +132,7 @@ public class Util {
      * @return Disk info if available.
      */
     public static String getDriveInfo(File dataDir) {
-        System.out.println("os: "+System.getProperty("os.name"));
+        System.out.println("os: " + System.getProperty("os.name"));
         Path dataDirPath = Paths.get(dataDir.getAbsolutePath());
         String osName = System.getProperty("os.name");
         if (osName.contains("Linux")) {
@@ -271,13 +272,13 @@ public class Util {
      */
     static public String getDeviceFromPath(Path path) {
         try {
-            Process p = Runtime.getRuntime().exec("df "+path.toString());
+            Process p = Runtime.getRuntime().exec("df " + path.toString());
             p.waitFor();
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line = reader.readLine();
             String curDevice;
             while (line != null) {
-                //System.out.println(line);
+                // System.out.println(line);
                 if (line.contains("/dev/")) {
                     curDevice = line.split(" ")[0];
                     // strip the partition digit if it is numeric
@@ -302,7 +303,7 @@ public class Util {
      */
     static public String getDeviceModel(String devicePath) {
         try {
-            Process p = Runtime.getRuntime().exec("lsblk "+devicePath+" --output MODEL");
+            Process p = Runtime.getRuntime().exec("lsblk " + devicePath + " --output MODEL");
             p.waitFor();
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line = reader.readLine();
@@ -331,7 +332,7 @@ public class Util {
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line = reader.readLine();
             while (line != null) {
-                //System.out.println(line);
+                // System.out.println(line);
                 if (!line.contains("SIZE") && !line.trim().isEmpty()) {
                     return line;
                 }
@@ -343,13 +344,13 @@ public class Util {
     
     static public String getDeviceFromPathOSX(Path path) {
         try {
-            Process p = Runtime.getRuntime().exec("df "+path.toString());
+            Process p = Runtime.getRuntime().exec("df " + path.toString());
             p.waitFor();
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line = reader.readLine();
             String curDevice;
             while (line != null) {
-                //System.out.println(line);
+                // System.out.println(line);
                 if (line.contains("/dev/")) {
                     curDevice = line.split(" ")[0];
                     return curDevice;
@@ -362,7 +363,7 @@ public class Util {
     
     static public String getDeviceModelOSX(String devicePath) {
         try {
-            String command = "diskutil info "+devicePath;
+            String command = "diskutil info " + devicePath;
             Process p = Runtime.getRuntime().exec(command);
             p.waitFor();
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
