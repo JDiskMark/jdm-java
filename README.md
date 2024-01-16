@@ -16,28 +16,40 @@ Cross platform disk benchmark utility written in java.
 - Benchmarks saved to embedded DB
 - Java cross platform solution
 
-## Development Environment
-
-The java client is developed with NetBeans 20
-
-## Source Repository
-
-https://github.com/jDiskMark/jdm-java/
-
 ## Releases
 
 https://sourceforge.net/projects/jdiskmark/
 
-## Usage
+## Installation
 
 1. Requires java 21.
    https://www.oracle.com/java/technologies/downloads/
 
-2. to run:
+2. Extract release zip archive into desired location. 
+   Examples:
+   /Users/username/jdiskmark-v0.5
+   /opt/jdiskmark-v0.5
+
+## Launching
+
+1. Open a terminal or shell in the extracted directory
+
+2. run command:
    ```
    $ java -jar jDiskMark.jar
    ```
    In windows double click executable jar file.
+
+## Development Environment
+
+jdiskmark client is developed with NetBeans 20 and Java 21
+https://netbeans.apache.org/front/main/download/
+https://www.oracle.com/java/technologies/downloads/
+
+## Source
+
+Source code is available on github
+https://github.com/jDiskMark/jdm-java/
 
 ## Release Notes
 
