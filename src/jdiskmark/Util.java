@@ -12,6 +12,8 @@ import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.filechooser.FileSystemView;
 
 /**
@@ -220,7 +222,9 @@ public class Util {
                 line = reader.readLine();
             }
         }
-        catch(IOException | InterruptedException e) {}
+        catch(IOException | InterruptedException e) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+        }
         return null;
     }
     
@@ -237,8 +241,8 @@ public class Util {
      * 
      * Tested on Windows 10 on 3/6/2017
      * 
-     * @param driveLetter
-     * @return 
+     * @param driveLetter as a string
+     * @return the model as a string
      */
     public static String getModelFromLetter2(String driveLetter) {
         try {
@@ -246,18 +250,19 @@ public class Util {
             p.waitFor();
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line = reader.readLine();
-
+            
             while (line != null) {
-                System.out.println(line);                    
+                System.out.println(line);
                 if (line.trim().endsWith(driveLetter + ":")) {
                     String model = line.split(driveLetter + ":")[0];
-                    System.out.println("model is: "+model);
+                    System.out.println("model is: " + model);
                     return model;
                 }
                 line = reader.readLine();
             }
         } catch(IOException | InterruptedException e) {
-            System.err.println("IO exception retrieveing disk info");
+            System.err.println("IO exception retrieveing disk info: " + e.getLocalizedMessage());
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
     }
@@ -289,7 +294,9 @@ public class Util {
                 }
                 line = reader.readLine();
             }
-        } catch(IOException | InterruptedException e) {}
+        } catch(IOException | InterruptedException e) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+        }
         return null;
     }
     
@@ -314,7 +321,9 @@ public class Util {
                 }
                 line = reader.readLine();
             }
-        } catch(IOException | InterruptedException e) {}
+        } catch(IOException | InterruptedException e) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+        }
         return null;
     }
     
@@ -338,7 +347,9 @@ public class Util {
                 }
                 line = reader.readLine();
             }
-        } catch(IOException | InterruptedException e) {}
+        } catch(IOException | InterruptedException e) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+        }
         return null;
     }
     
@@ -357,7 +368,9 @@ public class Util {
                 }
                 line = reader.readLine();
             }
-        } catch(IOException | InterruptedException e) {}
+        } catch(IOException | InterruptedException e) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+        }
         return null;
     }
     
@@ -374,7 +387,9 @@ public class Util {
                 }
                 line = reader.readLine();
             }
-        } catch(IOException | InterruptedException e) {}
+        } catch(IOException | InterruptedException e) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+        }
         return null;
     }
 }
