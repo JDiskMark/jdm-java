@@ -5,10 +5,7 @@ Cross platform disk benchmark utility written in java.
 ## Features
 
 - Benchmark IO read/write performance
-- Intuitive graph(s) to track:
-   - sample bw
-   - max, min, cumulative average
-   - drive access time (plot initially disabled)
+- Intuitive graphs for: sample bw, max, min, cum avg, access time
 - Adjustable block size, block qty and sample qty
 - Single or multi file option
 - Sequential or random option
@@ -22,13 +19,14 @@ https://sourceforge.net/projects/jdiskmark/
 
 ## Installation
 
-1. Requires java 21.
-   https://www.oracle.com/java/technologies/downloads/
+1. Requires [java 21](https://www.oracle.com/java/technologies/downloads/)
 
-2. Extract release zip archive into desired location. 
-   Examples:
-   /Users/username/jdiskmark-v0.5
+2. Extract release zip archive into desired location.
+   ```
+   Examples:  
+   /Users/username/jdiskmark-v0.5  
    /opt/jdiskmark-v0.5
+   ```
 
 ## Launching
 
@@ -42,14 +40,11 @@ https://sourceforge.net/projects/jdiskmark/
 
 ## Development Environment
 
-jdiskmark client is developed with NetBeans 20 and Java 21
-https://netbeans.apache.org/front/main/download/
-https://www.oracle.com/java/technologies/downloads/
+jdiskmark client is developed with [NetBeans 20](https://netbeans.apache.org/front/main/download/) and [Java 21](https://www.oracle.com/java/technologies/downloads/)
 
 ## Source
 
-Source code is available on github
-https://github.com/jDiskMark/jdm-java/
+Source code is available on our [github repo](https://github.com/jDiskMark/jdm-java/)
 
 ## Release Notes
 
