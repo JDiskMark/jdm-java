@@ -98,6 +98,8 @@ public class App {
             bp.load(new FileInputStream("build.properties"));
             version = bp.getProperty("version");
         } catch (IOException ex) {
+            System.err.println("If in NetBeans please do a "
+                    + "Clean and Build Project from the Run Menu or press F11");
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         }
         return version;
