@@ -48,13 +48,13 @@ public class App {
     // run configuration
     public static boolean readTest = false;
     public static boolean writeTest = true;
-    public static DiskRun.BlockSequence blockSequence = DiskRun.BlockSequence.SEQUENTIAL;
+    public static Benchmark.BlockSequence blockSequence = Benchmark.BlockSequence.SEQUENTIAL;
     public static int numOfSamples = 200;     // desired number of marks
     public static int numOfBlocks = 32;     // desired number of blocks
     public static int blockSizeKb = 512;    // size of a block in KBs
     
-    public static DiskWorker worker = null;
-    public static int nextMarkNumber = 1;   // number of the next mark
+    public static BenchmarkWorker worker = null;
+    public static int nextSampleNumber = 1;   // number of the next mark
     public static double wMax = -1, wMin = -1, wAvg = -1;
     public static double rMax = -1, rMin = -1, rAvg = -1;
     
@@ -108,7 +108,7 @@ public class App {
      */
     public static void init() {
         Gui.mainFrame = new MainFrame();
-        Gui.selFrame = new SelectFrame();
+        Gui.selFrame = new SelectDriveFrame();
         p = new Properties();
         loadConfig();
         System.out.println(App.getConfigString());
@@ -148,7 +148,7 @@ public class App {
         value = p.getProperty("autoReset", String.valueOf(autoReset));
         autoReset = Boolean.parseBoolean(value);
         value = p.getProperty("blockSequence", String.valueOf(blockSequence));
-        blockSequence = DiskRun.BlockSequence.valueOf(value);
+        blockSequence = Benchmark.BlockSequence.valueOf(value);
         value = p.getProperty("showMaxMin", String.valueOf(showMaxMin));
         showMaxMin = Boolean.parseBoolean(value);
         value = p.getProperty("showDriveAccess", String.valueOf(showDriveAccess));
@@ -186,7 +186,7 @@ public class App {
             OutputStream out = new FileOutputStream(new File(PROPERTIESFILE));
             p.store(out, "jDiskMark Properties File");
         } catch (IOException ex) {
-            Logger.getLogger(SelectFrame.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(SelectDriveFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
@@ -212,13 +212,13 @@ public class App {
         
         // populate run table with saved runs from db
         System.out.println("loading stored run data");
-        DiskRun.findAll().stream().forEach((DiskRun run) -> {
+        Benchmark.findAll().stream().forEach((Benchmark run) -> {
             Gui.runPanel.addRun(run);
         });
     }
     
     public static void clearSavedRuns() {
-        DiskRun.deleteAll();
+        Benchmark.deleteAll();
         
         loadSavedRuns();
     }
@@ -271,7 +271,7 @@ public class App {
         if (dataDir.exists() == false) { dataDir.mkdirs(); }
         
         // 7. start disk worker thread
-        worker = new DiskWorker();
+        worker = new BenchmarkWorker();
         worker.addPropertyChangeListener((final var event) -> {
             switch (event.getPropertyName()) {
                 case "progress" -> {
@@ -299,8 +299,8 @@ public class App {
         return blockSizeKb * numOfBlocks * numOfSamples;
     }
     
-    public static void updateMetrics(DiskMark mark) {
-        if (mark.type == DiskMark.MarkType.WRITE) {
+    public static void updateMetrics(Sample mark) {
+        if (mark.type == Sample.SampleType.WRITE) {
             if (wMax == -1 || wMax < mark.bwMbSec) {
                 wMax = mark.bwMbSec;
             }
@@ -310,7 +310,7 @@ public class App {
             if (wAvg == -1) {
                 wAvg = mark.bwMbSec;
             } else {
-                int n = mark.markNum;
+                int n = mark.sampleNum;
                 wAvg = (((double)(n - 1) * wAvg) + mark.bwMbSec) / (double)n;
             }
             mark.cumAvg = wAvg;
@@ -326,7 +326,7 @@ public class App {
             if (rAvg == -1) {
                 rAvg = mark.bwMbSec;
             } else {
-                int n = mark.markNum;
+                int n = mark.sampleNum;
                 rAvg = (((double)(n-1) * rAvg) + mark.bwMbSec) / (double)n;
             }
             mark.cumAvg = rAvg;
@@ -336,11 +336,11 @@ public class App {
     }
     
     static public void resetSequence() {
-        nextMarkNumber = 1;
+        nextSampleNumber = 1;
     }
     
     static public void resetTestData() {
-        nextMarkNumber = 1;
+        nextSampleNumber = 1;
         wAvg = -1;
         wMax = -1;
         wMin = -1;

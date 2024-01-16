@@ -8,14 +8,14 @@ import javax.swing.table.DefaultTableModel;
 /**
  * @author James
  */
-public class RunPanel extends javax.swing.JPanel {
+public class BenchmarkPanel extends javax.swing.JPanel {
 
     /**
      * Creates new form TestPanel
      */
-    public RunPanel() {
+    public BenchmarkPanel() {
         initComponents();
-        Gui.runPanel = RunPanel.this;
+        Gui.runPanel = BenchmarkPanel.this;
         
         // auto scroll to bottom when a new record is added
         runTable.addComponentListener(new ComponentAdapter() {
@@ -94,14 +94,14 @@ public class RunPanel extends javax.swing.JPanel {
     private javax.swing.JTable runTable;
     // End of variables declaration//GEN-END:variables
 
-    public void addRun(DiskRun run) {
+    public void addRun(Benchmark run) {
         DefaultTableModel model = (DefaultTableModel) this.runTable.getModel();
         model.addRow(
                 new Object[] {
                     run.diskInfo,
                     run.ioMode,
                     run.blockOrder,
-                    run.numMarks,
+                    run.numSamples,
                     run.numBlocks,
                     run.blockSize,
                     run.txSize,

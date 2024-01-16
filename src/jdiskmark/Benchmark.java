@@ -22,12 +22,12 @@ import java.util.List;
  * This is also referred to as a Benchmark
  */
 @Entity
-@Table(name="DiskRun")
+@Table(name="Benchmark")
 @NamedQueries({
-@NamedQuery(name="DiskRun.findAll",
-    query="SELECT d FROM DiskRun d")
+@NamedQuery(name="Benchmark.findAll",
+    query="SELECT d FROM Benchmark d")
 })
-public class DiskRun implements Serializable {
+public class Benchmark implements Serializable {
     
     static final DecimalFormat DF = new DecimalFormat("###.##");
     //previous date format "EEE, MMM d HH:mm:ss" >>>  Thu, Jan 20 21:45:01
@@ -49,7 +49,7 @@ public class DiskRun implements Serializable {
     @Column
     BlockSequence blockOrder;
     @Column
-    int numMarks = 0;
+    int numSamples = 0;
     @Column
     int numBlocks = 0;
     @Column
@@ -76,11 +76,11 @@ public class DiskRun implements Serializable {
         return "Run(" + ioMode + "," + blockOrder + "): " + totalMarks + " run avg: " + runAvg;
     }
     
-    public DiskRun() {
+    public Benchmark() {
         startTime = LocalDateTime.now();
     }
     
-    DiskRun(IOMode type, BlockSequence order) {
+    Benchmark(IOMode type, BlockSequence order) {
         startTime = LocalDateTime.now();
         ioMode = type;
         blockOrder = order;
@@ -135,21 +135,21 @@ public class DiskRun implements Serializable {
     public String getDiskInfo() {
         return diskInfo;
     }
-    public void setDiskInfo(String info) {
+    public void setDriveInfo(String info) {
         diskInfo = info;
     }
     
     // utility methods for collection
     
-    static List<DiskRun> findAll() {
+    static List<Benchmark> findAll() {
         EntityManager em = EM.getEntityManager();
-        return em.createNamedQuery("DiskRun.findAll", DiskRun.class).getResultList();
+        return em.createNamedQuery("Benchmark.findAll", Benchmark.class).getResultList();
     }
     
     static int deleteAll() {
         EntityManager em = EM.getEntityManager();
         em.getTransaction().begin();
-        int deletedCount = em.createQuery("DELETE FROM DiskRun").executeUpdate();
+        int deletedCount = em.createQuery("DELETE FROM Benchmark").executeUpdate();
         em.getTransaction().commit();
         return deletedCount;
     }

@@ -502,7 +502,7 @@
             </Component>
             <Component class="javax.swing.JLabel" name="jLabel9">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Sample Size (KB)"/>
+                <Property name="text" type="java.lang.String" value="Sample (KB)"/>
               </Properties>
             </Component>
             <Component class="javax.swing.JLabel" name="fileSizeLabel">
@@ -595,7 +595,7 @@
 
       <Layout class="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout"/>
       <SubComponents>
-        <Component class="jdiskmark.RunPanel" name="runPanel">
+        <Component class="jdiskmark.BenchmarkPanel" name="runPanel">
           <Constraints>
             <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout$JTabbedPaneConstraintsDescription">
               <JTabbedPaneConstraints tabName="Benchmarks">

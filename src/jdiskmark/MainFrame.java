@@ -39,8 +39,8 @@ public final class MainFrame extends javax.swing.JFrame {
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         
         // init order combo box
-        orderComboBox.addItem(DiskRun.BlockSequence.SEQUENTIAL);
-        orderComboBox.addItem(DiskRun.BlockSequence.RANDOM);
+        orderComboBox.addItem(Benchmark.BlockSequence.SEQUENTIAL);
+        orderComboBox.addItem(Benchmark.BlockSequence.RANDOM);
     }
 
     public JPanel getMountPanel() {
@@ -118,7 +118,7 @@ public final class MainFrame extends javax.swing.JFrame {
         rMaxLabel = new javax.swing.JLabel();
         rAvgLabel = new javax.swing.JLabel();
         tabbedPane = new javax.swing.JTabbedPane();
-        runPanel = new jdiskmark.RunPanel();
+        runPanel = new jdiskmark.BenchmarkPanel();
         locationPanel = new javax.swing.JPanel();
         chooseButton = new javax.swing.JButton();
         locationText = new javax.swing.JTextField();
@@ -221,7 +221,7 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
 
-        jLabel9.setText("Sample Size (KB)");
+        jLabel9.setText("Sample (KB)");
 
         fileSizeLabel.setText("- -");
 
@@ -701,7 +701,7 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_showMaxMinCheckBoxMenuItemActionPerformed
 
     private void orderComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_orderComboBoxActionPerformed
-        App.blockSequence = (DiskRun.BlockSequence) orderComboBox.getSelectedItem();
+        App.blockSequence = (Benchmark.BlockSequence) orderComboBox.getSelectedItem();
     }//GEN-LAST:event_orderComboBoxActionPerformed
 
     private void writeSyncCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_writeSyncCheckBoxMenuItemActionPerformed
@@ -770,7 +770,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JLabel rMinLabel;
     private javax.swing.JButton resetButton;
     private javax.swing.JMenuItem resetSequenceMenuItem;
-    private jdiskmark.RunPanel runPanel;
+    private jdiskmark.BenchmarkPanel runPanel;
     private javax.swing.JCheckBoxMenuItem showAccessCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem showMaxMinCheckBoxMenuItem;
     private javax.swing.JButton startButton;
@@ -794,7 +794,7 @@ public final class MainFrame extends javax.swing.JFrame {
         String modeStr = (String) modeCombo.getSelectedItem();
         App.readTest = modeStr.contains("read");
         App.writeTest = modeStr.contains("write");
-        App.blockSequence = (DiskRun.BlockSequence)orderComboBox.getSelectedItem();
+        App.blockSequence = (Benchmark.BlockSequence)orderComboBox.getSelectedItem();
         App.numOfSamples = Integer.parseInt((String) numFilesCombo.getSelectedItem());
         App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
         App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());

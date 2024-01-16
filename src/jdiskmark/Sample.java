@@ -4,20 +4,20 @@ package jdiskmark;
 import java.text.DecimalFormat;
 
 /**
- *
+ * A unit of IO measurement
  */
-public class DiskMark {
+public class Sample {
     
     static DecimalFormat df = new DecimalFormat("###.###");
     
-    public enum MarkType { READ, WRITE; }
+    public enum SampleType { READ, WRITE; }
     
-    DiskMark(MarkType type) {
+    Sample(SampleType type) {
         this.type=type;
     }
     
-    MarkType type;
-    int markNum = 0;       // x-axis
+    SampleType type;
+    int sampleNum = 0;       // x-axis
     double bwMbSec = 0;    // y-axis
     double cumMin = 0;
     double cumMax = 0;
@@ -26,7 +26,7 @@ public class DiskMark {
     
     @Override
     public String toString() {
-        return "Mark(" + type + "): " + markNum + " bwMbSec: " + getBwMbSec() 
+        return "Sample(" + type + "): " + sampleNum + " bwMbSec: " + getBwMbSec() 
                 + " avg: " + getAvg();
     }
     

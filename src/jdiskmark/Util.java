@@ -130,7 +130,7 @@ public class Util {
      * @param dataDir the data directory being used in the run.
      * @return Disk info if available.
      */
-    public static String getDiskInfo(File dataDir) {
+    public static String getDriveInfo(File dataDir) {
         System.out.println("os: "+System.getProperty("os.name"));
         Path dataDirPath = Paths.get(dataDir.getAbsolutePath());
         String osName = System.getProperty("os.name");

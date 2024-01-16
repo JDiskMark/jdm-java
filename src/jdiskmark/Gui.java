@@ -23,12 +23,12 @@ public final class Gui {
     
     public static ChartPanel chartPanel = null;
     public static MainFrame mainFrame = null;
-    public static SelectFrame selFrame = null;
+    public static SelectDriveFrame selFrame = null;
     public static XYSeries wSeries, wAvgSeries, wMaxSeries, wMinSeries, wDrvAccess;
     public static XYSeries rSeries, rAvgSeries, rMaxSeries, rMinSeries, rDrvAccess;
     public static JFreeChart chart;
     public static JProgressBar progressBar = null;
-    public static RunPanel runPanel = null;
+    public static BenchmarkPanel runPanel = null;
     
     public static XYLineAndShapeRenderer bwRenderer;
     public static XYLineAndShapeRenderer msRenderer;
@@ -138,28 +138,28 @@ public final class Gui {
         return chartPanel;
     }
     
-    public static void addWriteMark(DiskMark mark) {
-        wSeries.add(mark.markNum, mark.bwMbSec);
-        wAvgSeries.add(mark.markNum, mark.cumAvg);
+    public static void addWriteMark(Sample mark) {
+        wSeries.add(mark.sampleNum, mark.bwMbSec);
+        wAvgSeries.add(mark.sampleNum, mark.cumAvg);
         if (App.showMaxMin) {
-            wMaxSeries.add(mark.markNum, mark.cumMax);
-            wMinSeries.add(mark.markNum, mark.cumMin);
+            wMaxSeries.add(mark.sampleNum, mark.cumMax);
+            wMinSeries.add(mark.sampleNum, mark.cumMin);
         }
         if (App.showDriveAccess) {
-            wDrvAccess.add(mark.markNum, mark.elapsedTimeMs);
+            wDrvAccess.add(mark.sampleNum, mark.elapsedTimeMs);
         }
         Gui.mainFrame.refreshWriteMetrics();
         System.out.println(mark.toString());
     }
-    public static void addReadMark(DiskMark mark) {
-        rSeries.add(mark.markNum, mark.bwMbSec);
-        rAvgSeries.add(mark.markNum, mark.cumAvg);
+    public static void addReadMark(Sample mark) {
+        rSeries.add(mark.sampleNum, mark.bwMbSec);
+        rAvgSeries.add(mark.sampleNum, mark.cumAvg);
         if (App.showMaxMin) {
-            rMaxSeries.add(mark.markNum, mark.cumMax);
-            rMinSeries.add(mark.markNum, mark.cumMin);
+            rMaxSeries.add(mark.sampleNum, mark.cumMax);
+            rMinSeries.add(mark.sampleNum, mark.cumMin);
         }
         if (App.showDriveAccess) {
-            rDrvAccess.add(mark.markNum, mark.elapsedTimeMs);
+            rDrvAccess.add(mark.sampleNum, mark.elapsedTimeMs);
         }
         Gui.mainFrame.refreshReadMetrics();
         System.out.println(mark.toString());

@@ -6,12 +6,12 @@ import java.io.File;
 /**
  *
  */
-public class SelectFrame extends javax.swing.JFrame {
+public class SelectDriveFrame extends javax.swing.JFrame {
 
     /**
      * Creates new form SelectFrame
      */
-    public SelectFrame() {
+    public SelectDriveFrame() {
         initComponents();
         setLocationRelativeTo(Gui.mainFrame);
         if (App.locationDir == null) {
