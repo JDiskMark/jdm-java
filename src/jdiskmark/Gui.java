@@ -35,13 +35,13 @@ public final class Gui {
     
     public static ChartPanel createChartPanel() {
         
-        wSeries = new XYSeries("Writes");
+        wSeries = new XYSeries("Write");
         wAvgSeries = new XYSeries("Write Avg");
         wMaxSeries = new XYSeries("Write Max");
         wMinSeries = new XYSeries("Write Min");
         wDrvAccess = new XYSeries("Write Access");
         
-        rSeries = new XYSeries("Reads");
+        rSeries = new XYSeries("Read");
         rAvgSeries = new XYSeries("Read Avg");
         rMaxSeries = new XYSeries("Read Max");
         rMinSeries = new XYSeries("Read Min");
