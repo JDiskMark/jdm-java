@@ -55,9 +55,8 @@ public class App {
     
     public static BenchmarkWorker worker = null;
     public static int nextSampleNumber = 1;   // number of the next sample
-    public static double wMax = -1, wMin = -1, wAvg = -1;
-    public static double rMax = -1, rMin = -1, rAvg = -1;
-    public static double accAvg = -1;
+    public static double wMax = -1, wMin = -1, wAvg = -1, wAcc = -1;
+    public static double rMax = -1, rMin = -1, rAvg = -1, rAcc = -1;
     
     /**
      * @param args the command line arguments
@@ -318,17 +317,17 @@ public class App {
             }
             
             // cumulative access time
-            if (accAvg == -1) {
-                accAvg = s.accessTimeMs;
+            if (wAcc == -1) {
+                wAcc = s.accessTimeMs;
             } else {
                 int n = s.sampleNum;
-                accAvg = (((double)(n - 1) * accAvg) + s.accessTimeMs) / (double)n;
+                wAcc = (((double)(n - 1) * wAcc) + s.accessTimeMs) / (double)n;
             }
             
             s.cumAvg = wAvg;
             s.cumMax = wMax;
             s.cumMin = wMin;
-            s.cumAccTimeMs = accAvg;
+            s.cumAccTimeMs = wAcc;
         } else {
             if (rMax == -1 || rMax < s.bwMbSec) {
                 rMax = s.bwMbSec;
@@ -336,15 +335,27 @@ public class App {
             if (rMin == -1 || rMin > s.bwMbSec) {
                 rMin = s.bwMbSec;
             }
+            
+            // cumulative bw
             if (rAvg == -1) {
                 rAvg = s.bwMbSec;
             } else {
                 int n = s.sampleNum;
                 rAvg = (((double)(n-1) * rAvg) + s.bwMbSec) / (double)n;
             }
+            
+            // cumulative access time
+            if (rAcc == -1) {
+                rAcc = s.accessTimeMs;
+            } else {
+                int n = s.sampleNum;
+                rAcc = (((double)(n - 1) * rAcc) + s.accessTimeMs) / (double)n;
+            }
+            
             s.cumAvg = rAvg;
             s.cumMax = rMax;
             s.cumMin = rMin;
+            s.cumAccTimeMs = rAcc;
         }
     }
     
@@ -357,8 +368,10 @@ public class App {
         wAvg = -1;
         wMax = -1;
         wMin = -1;
+        wAcc = -1;
         rAvg = -1;
         rMax = -1;
         rMin = -1;
+        rAcc = -1;
     }
 }

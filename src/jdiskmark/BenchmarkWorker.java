@@ -81,14 +81,14 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
             if (App.multiFile == false) {
                 testFile = new File(dataDir.getAbsolutePath() + File.separator + "testdata.jdm");
             }            
-            for (int m = startFileNum; m < startFileNum+App.numOfSamples && !isCancelled(); m++) {
+            for (int s = startFileNum; s < startFileNum+App.numOfSamples && !isCancelled(); s++) {
                 
                 if (App.multiFile == true) {
                     testFile = new File(dataDir.getAbsolutePath()
-                            + File.separator + "testdata" + m + ".jdm");
+                            + File.separator + "testdata" + s + ".jdm");
                 }   
                 wSample = new Sample(WRITE);
-                wSample.sampleNum = m;
+                wSample.sampleNum = s;
                 long startTime = System.nanoTime();
                 long totalBytesWrittenInSample = 0;
 
@@ -121,7 +121,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                 double sec = (double)elapsedTimeNs / (double)1000000000;
                 double mbWritten = (double)totalBytesWrittenInSample / (double)MEGABYTE;
                 wSample.bwMbSec = mbWritten / sec;
-                msg("s:" + m + " write IO is " + wSample.getBwMbSec() + " MB/s   "
+                msg("s:" + s + " write IO is " + wSample.getBwMbSec() + " MB/s   "
                         + "(" + Util.displayString(mbWritten) + "MB written in "
                         + Util.displayString(sec) + " sec)");
                 App.updateMetrics(wSample);
@@ -167,14 +167,14 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
             Gui.chartPanel.getChart().getTitle().setVisible(true);
             Gui.chartPanel.getChart().getTitle().setText(run.getDriveInfo());
             
-            for (int m = startFileNum; m < startFileNum + App.numOfSamples && !isCancelled(); m++) {
+            for (int s = startFileNum; s < startFileNum + App.numOfSamples && !isCancelled(); s++) {
                 
                 if (App.multiFile == true) {
                     testFile = new File(dataDir.getAbsolutePath()
-                            + File.separator + "testdata" + m + ".jdm");
+                            + File.separator + "testdata" + s + ".jdm");
                 }
                 rSample = new Sample(READ);
-                rSample.sampleNum = m;
+                rSample.sampleNum = s;
                 long startTime = System.nanoTime();
                 long totalBytesReadInMark = 0;
 
@@ -204,7 +204,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                 double sec = (double)elapsedTimeNs / (double)1_000_000_000;
                 double mbRead = (double) totalBytesReadInMark / (double) MEGABYTE;
                 rSample.bwMbSec = mbRead / sec;
-                msg("s:" + m + " READ IO is " + rSample.bwMbSec + " MB/s    "
+                msg("s:" + s + " READ IO is " + rSample.bwMbSec + " MB/s    "
                         + "(MBread " + mbRead + " in " + sec + " sec)");
                 App.updateMetrics(rSample);
                 publish(rSample);
@@ -228,11 +228,11 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
     
     @Override
     protected void process(List<Sample> sampleList) {
-        sampleList.stream().forEach((Sample m) -> {
-            if (m.type == Sample.Type.WRITE) {
-                Gui.addWriteSample(m);
+        sampleList.stream().forEach((Sample s) -> {
+            if (s.type == Sample.Type.WRITE) {
+                Gui.addWriteSample(s);
             } else {
-                Gui.addReadSample(m);
+                Gui.addReadSample(s);
             }
         });
     }
