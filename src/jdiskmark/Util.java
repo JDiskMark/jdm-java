@@ -139,9 +139,9 @@ public class Util {
         String osName = System.getProperty("os.name");
         if (osName.contains("Linux")) {
             // get disk info for linux
-            String devicePath = Util.getDeviceFromPath(dataDirPath);
-            String deviceModel = Util.getDeviceModel(devicePath);
-            String deviceSize = Util.getDeviceSize(devicePath);
+            String devicePath = Util.getDeviceFromPathLinux(dataDirPath);
+            String deviceModel = Util.getDeviceModelLinux(devicePath);
+            String deviceSize = Util.getDeviceSizeLinux(devicePath);
             return deviceModel + " (" + deviceSize +")";
         } else if (osName.contains("Mac OS X")) {
             // get disk info for max os x
@@ -151,7 +151,11 @@ public class Util {
         } else if (osName.contains("Windows")) {
             // get disk info for windows
             String driveLetter = dataDirPath.getRoot().toFile().toString().split(":")[0];
-            return Util.getModelFromLetter2(driveLetter);
+            if (driveLetter.length() == 1 && Character.isLetter(driveLetter.charAt(0))) {
+                // Only proceed if the driveLetter is a single character and a letter
+                return Util.getModelFromLetterWindows(driveLetter);
+            }
+            return "unable to detect drive info";
         }
         return "OS not supported";
     }
@@ -194,7 +198,7 @@ public class Util {
      * @return Disk Drive Model description or empty string if not found.
      */
     @Deprecated
-    public static String getModelFromLetter(String driveLetter) {
+    public static String getModelFromLetterWindowsDeprecated(String driveLetter) {
         try {
             Process p = Runtime.getRuntime().exec("powershell -ExecutionPolicy ByPass -File disk-model.ps1");
             p.waitFor();
@@ -244,7 +248,7 @@ public class Util {
      * @param driveLetter as a string
      * @return the model as a string
      */
-    public static String getModelFromLetter2(String driveLetter) {
+    public static String getModelFromLetterWindows(String driveLetter) {
         try {
             Process p = Runtime.getRuntime().exec("powershell -ExecutionPolicy ByPass -File disk-model.ps1");
             p.waitFor();
@@ -275,7 +279,7 @@ public class Util {
      * @param path the file path
      * @return the device path
      */
-    static public String getDeviceFromPath(Path path) {
+    static public String getDeviceFromPathLinux(Path path) {
         try {
             Process p = Runtime.getRuntime().exec("df " + path.toString());
             p.waitFor();
@@ -308,7 +312,7 @@ public class Util {
      * @param devicePath path of the device
      * @return the disk model number
      */
-    static public String getDeviceModel(String devicePath) {
+    static public String getDeviceModelLinux(String devicePath) {
         try {
             Process p = Runtime.getRuntime().exec("lsblk " + devicePath + " --output MODEL");
             p.waitFor();
@@ -334,7 +338,7 @@ public class Util {
      * @param devicePath path of the device
      * @return the size of the device
      */
-    static public String getDeviceSize(String devicePath) {
+    static public String getDeviceSizeLinux(String devicePath) {
         try {
             Process p = Runtime.getRuntime().exec("lsblk "+devicePath+" --output SIZE");
             p.waitFor();
