@@ -85,6 +85,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 ### Proposed Features
  - store benchmark data for each run and load when selected
  - upload benchmarks to jdiskmark.net portal (anonymous/w login)
+ - local app log for remote diagnostics
  - selecting a drive location displays detected drive information below
  - update windows drive model parsing script to adapt to differing script output
  - disk capacity and drive letter (available on windows)
