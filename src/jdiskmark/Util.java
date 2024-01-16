@@ -198,12 +198,12 @@ public class Util {
      * @return Disk Drive Model description or empty string if not found.
      */
     @Deprecated
-    public static String getModelFromLetterWindowsDeprecated(String driveLetter) {
+    public static String getModelFromLetterLegacyWindows(String driveLetter) {
         try {
             Process p = Runtime.getRuntime().exec("powershell -ExecutionPolicy ByPass -File disk-model.ps1");
             p.waitFor();
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line=reader.readLine();
+            String line = reader.readLine();
 
             String curDriveLetter = null;
             String curDiskModel = null;
