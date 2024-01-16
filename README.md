@@ -69,6 +69,15 @@ https://sourceforge.net/projects/jdiskmark/
  - update windows drive model parsing script to adapt to differing script output
  - disk capacity and drive letter (available on windows)
  - auto clear disk cache windows, linux, osx
-   - linux: sync && echo 1 > /proc/sys/vm/drop_caches
-   - windows: unknown
+   - linux: 
+      - option a: sync && echo 1 > /proc/sys/vm/drop_caches
+      - option b: 0_DIRECT flag
+        - open the file with the 0_DIRECT flag
+      - option c: use "hdparm -W 0 /dev/sdX" to disable catch for entire drive
+      - option d: review tools like nocatch and fio
+   - windows: powershell w admin
+      - get friendly name or id with: Get-PhysicalDisk
+      - disable: Set-PhysicalDisk -FriendlyName "DriveName" -WriteCacheEnabled:$false
+      - verify: Get-PhysicalDisk | Select FriendlyName, WriteCacheEnabled
+      - restore: Set-PhysicalDisk -FriendlyName "DriveName" -WriteCacheEnabled:$true
    - osx: unknown
