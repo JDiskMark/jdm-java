@@ -91,6 +91,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
  - disk capacity and drive letter (available on windows)
 
 ### Issues
+ - hide access time axis when show accesstime is not selected
  - auto clear disk cache windows, linux, osx before read benchmarks
     - linux: 
        - option a: sync && echo 1 > /proc/sys/vm/drop_caches
