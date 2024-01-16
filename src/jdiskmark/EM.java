@@ -6,6 +6,7 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
 /**
+ * Access class for the entity manager static reference
  * @author James
  */
 public class EM {

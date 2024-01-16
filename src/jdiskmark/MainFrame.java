@@ -333,7 +333,7 @@ public final class MainFrame extends javax.swing.JFrame {
                                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(wAccessLabel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addComponent(rAccessLabel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGap(12, 12, 12)))
+                                .addGap(31, 31, 31)))
                         .addContainerGap())))
         );
         controlsPanelLayout.setVerticalGroup(
@@ -396,13 +396,15 @@ public final class MainFrame extends javax.swing.JFrame {
                             .addComponent(jLabel12)
                             .addComponent(rAvgLabel))))
                 .addGap(18, 18, 18)
-                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel16)
-                    .addComponent(wAccessLabel))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel17)
-                    .addComponent(rAccessLabel))
+                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(controlsPanelLayout.createSequentialGroup()
+                        .addComponent(jLabel16)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel17))
+                    .addGroup(controlsPanelLayout.createSequentialGroup()
+                        .addComponent(wAccessLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(rAccessLabel)))
                 .addGap(68, 68, 68))
         );
 
@@ -521,7 +523,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
         optionMenu.setText("Options");
 
-        clearRunsItem.setText("Clear Previous Runs");
+        clearRunsItem.setText("Clear Benchmarks");
         clearRunsItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 clearRunsItemActionPerformed(evt);

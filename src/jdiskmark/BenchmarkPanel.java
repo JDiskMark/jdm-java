@@ -43,7 +43,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
 
             },
             new String [] {
-                "Drive Information", "IO Mode", "Block Order", "Samples", "Blocks", "B. Size", "Tx Size", "Start Time", "Duration", "Max (MB/s)", "Min (MB/s)", "Avg (MB/s)"
+                "Drive Information", "IO Mode", "Block Order", "Samples", "Blocks", "B. Size", "Start Time", "Duration", "Access (ms)", "Max (MB/s)", "Min (MB/s)", "Avg (MB/s)"
             }
         ) {
             boolean[] canEdit = new boolean [] {
@@ -60,11 +60,11 @@ public class BenchmarkPanel extends javax.swing.JPanel {
             runTable.getColumnModel().getColumn(1).setPreferredWidth(20);
             runTable.getColumnModel().getColumn(2).setPreferredWidth(40);
             runTable.getColumnModel().getColumn(3).setPreferredWidth(6);
-            runTable.getColumnModel().getColumn(4).setPreferredWidth(6);
+            runTable.getColumnModel().getColumn(4).setPreferredWidth(5);
             runTable.getColumnModel().getColumn(5).setPreferredWidth(6);
-            runTable.getColumnModel().getColumn(6).setPreferredWidth(10);
-            runTable.getColumnModel().getColumn(7).setPreferredWidth(90);
-            runTable.getColumnModel().getColumn(8).setPreferredWidth(6);
+            runTable.getColumnModel().getColumn(6).setPreferredWidth(90);
+            runTable.getColumnModel().getColumn(7).setPreferredWidth(6);
+            runTable.getColumnModel().getColumn(8).setPreferredWidth(10);
             runTable.getColumnModel().getColumn(9).setPreferredWidth(32);
             runTable.getColumnModel().getColumn(10).setPreferredWidth(32);
             runTable.getColumnModel().getColumn(11).setPreferredWidth(32);
@@ -104,9 +104,9 @@ public class BenchmarkPanel extends javax.swing.JPanel {
                     run.numSamples,
                     run.numBlocks,
                     run.blockSize,
-                    run.txSize,
                     run.getStartTimeString(),
                     run.getDuration(),
+                    run.getAccTime(),
                     run.getMax(),
                     run.getMin(),
                     run.getAvg(),

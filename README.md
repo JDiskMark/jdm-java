@@ -81,3 +81,4 @@ https://sourceforge.net/projects/jdiskmark/
       - verify: Get-PhysicalDisk | Select FriendlyName, WriteCacheEnabled
       - restore: Set-PhysicalDisk -FriendlyName "DriveName" -WriteCacheEnabled:$true
    - osx: unknown
+ - include system processor information as part of benchmark

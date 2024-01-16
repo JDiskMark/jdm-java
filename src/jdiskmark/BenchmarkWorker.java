@@ -130,6 +130,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                 run.runMax = wSample.cumMax;
                 run.runMin = wSample.cumMin;
                 run.runAvg = wSample.cumAvg;
+                run.accAvg = wSample.cumAccTimeMs;
                 run.endTime = LocalDateTime.now();
             }
             
@@ -212,6 +213,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                 run.runMax = rSample.cumMax;
                 run.runMin = rSample.cumMin;
                 run.runAvg = rSample.cumAvg;
+                run.accAvg = rSample.cumAccTimeMs;
                 run.endTime = LocalDateTime.now();
             }
             

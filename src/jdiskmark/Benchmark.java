@@ -65,6 +65,8 @@ public class Benchmark implements Serializable {
     @Column
     int totalMarks = 0;
     @Column
+    double accAvg = 0;
+    @Column
     double runMin = 0;
     @Column
     double runMax = 0;
@@ -90,6 +92,10 @@ public class Benchmark implements Serializable {
     
     public String getStartTimeString() {
         return startTime.format(DATE_FORMAT);
+    }
+    
+    public String getAccTime() {
+        return accAvg == -1? "- -" : DF.format(accAvg);
     }
     
     public String getMin() {
