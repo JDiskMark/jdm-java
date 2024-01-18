@@ -86,10 +86,13 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
  - store benchmark data for each run and load when selected
  - upload benchmarks to jdiskmark.net portal (anonymous/w login)
  - local app log for remote diagnostics
+ - detect and display os processor info
  - selecting a drive location displays detected drive information below
- - update windows drive model parsing script to adapt to differing script output
  - disk capacity and drive letter (available on windows)
- - auto clear disk cache windows, linux, osx
+
+### Issues
+ - hide access time axis when show accesstime is not selected
+ - auto clear disk cache windows, linux, osx before read benchmarks
     - linux: 
        - option a: sync && echo 1 > /proc/sys/vm/drop_caches
        - option b: 0_DIRECT flag
@@ -102,4 +105,3 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
        - verify: Get-PhysicalDisk | Select FriendlyName, WriteCacheEnabled
        - restore: Set-PhysicalDisk -FriendlyName "DriveName" -WriteCacheEnabled:$true
     - osx: unknown
- - include system processor information as part of benchmark
