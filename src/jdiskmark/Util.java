@@ -139,9 +139,14 @@ public class Util {
         String osName = System.getProperty("os.name");
         if (osName.contains("Linux")) {
             // get disk info for linux
-            String devicePath = Util.getDeviceFromPathLinux(dataDirPath);
+            String partition = Util.getPartitionFromPathLinux(dataDirPath);
+            String deviceName = Util.getDeviceNameFromPartition(partition);
+            //System.err.println("deviceName: " + deviceName);
+            String devicePath = "/dev/" + deviceName;
             String deviceModel = Util.getDeviceModelLinux(devicePath);
+            //System.err.println("deviceModel: " + deviceModel);
             String deviceSize = Util.getDeviceSizeLinux(devicePath);
+            //System.err.println("deviceSize: " + deviceSize);
             return deviceModel + " (" + deviceSize +")";
         } else if (osName.contains("Mac OS X")) {
             // get disk info for max os x
@@ -279,31 +284,39 @@ public class Util {
      * @param path the file path
      * @return the device path
      */
-    static public String getDeviceFromPathLinux(Path path) {
+    static public String getPartitionFromPathLinux(Path path) {
         try {
             Process p = Runtime.getRuntime().exec("df " + path.toString());
             p.waitFor();
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line = reader.readLine();
-            String curDevice;
+            String curPartition;
             while (line != null) {
                 // System.out.println(line);
+                System.err.println("curLine=" + line);
                 if (line.contains("/dev/")) {
-                    curDevice = line.split(" ")[0];
-                    // strip the partition digit if it is numeric
-                    if (curDevice.substring(curDevice.length()-1).matches("[0-9]{1}")) {
-                        curDevice = curDevice.substring(0,curDevice.length()-1);
-                    }
-                    return curDevice;
+                    curPartition = line.split(" ")[0];
+                    return curPartition;
                 }
                 line = reader.readLine();
             }
-        } catch(IOException | InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
     }
     
+    static public String getDeviceNameFromPartition(String partition) {
+        try {
+            Process p = Runtime.getRuntime().exec("lsblk -no pkname " + partition);
+            p.waitFor();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            return reader.readLine();
+        } catch (IOException | InterruptedException e) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+        }
+        return null;
+    }
     
     /**
      * On Linux OS use the lsblk command to get the disk model number for a 
