@@ -2,13 +2,9 @@
 package jdiskmark;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import javax.swing.filechooser.FileSystemView;
