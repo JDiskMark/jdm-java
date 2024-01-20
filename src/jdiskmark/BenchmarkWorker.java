@@ -18,7 +18,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.JOptionPane;
 import javax.swing.SwingWorker;
 import static jdiskmark.App.numOfSamples;
 
@@ -81,7 +80,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
             if (App.multiFile == false) {
                 testFile = new File(dataDir.getAbsolutePath() + File.separator + "testdata.jdm");
             }            
-            for (int s = startFileNum; s < startFileNum+App.numOfSamples && !isCancelled(); s++) {
+            for (int s = startFileNum; s < startFileNum + App.numOfSamples && !isCancelled(); s++) {
                 
                 if (App.multiFile == true) {
                     testFile = new File(dataDir.getAbsolutePath()
@@ -144,15 +143,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         
         // try renaming all files to clear catch
         if (App.readTest && App.writeTest && !isCancelled()) {
-            JOptionPane.showMessageDialog(Gui.mainFrame, 
-                    """
-                    For valid READ measurements please clear the disk cache by
-                    using the included RAMMap.exe or flushmem.exe utilities.
-                    Removable drives can be disconnected and reconnected.
-                    For system drives use the WRITE and READ operations 
-                    independantly by doing a cold reboot after the WRITE""",
-                    "Clear Disk Cache Now",
-                    JOptionPane.PLAIN_MESSAGE);
+            Gui.processDropCaching();
         }
         
         if (App.readTest) {

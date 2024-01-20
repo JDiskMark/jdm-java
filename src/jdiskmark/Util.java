@@ -446,4 +446,24 @@ public class Util {
         }
         return null;
     }
+    
+    /**
+     * GH-2 Drop catch is a work in progress.
+     */
+    static public void dropWriteCachingLinux() {
+        try {
+            String command = "sudo sh -c 'sync; echo 1 > /proc/sys/vm/drop_caches'";
+            Process p = Runtime.getRuntime().exec(command);
+            p.waitFor();
+            System.err.println("ran " + command);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String line = reader.readLine();
+            while (line != null) {               
+                System.err.println(line);
+                line = reader.readLine();
+            }
+        } catch(IOException | InterruptedException e) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+        }
+    }
 }

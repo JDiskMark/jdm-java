@@ -4,6 +4,7 @@ package jdiskmark;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.text.NumberFormat;
+import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -198,5 +199,49 @@ public final class Gui {
         msRenderer.setSeriesVisibleInLegend(1, App.readTest && App.showDriveAccess);
         
         msAxis.setVisible(App.showDriveAccess);
+    }
+    
+    /**
+     * GH-2 need solution for dropping catch
+     */
+    static public void processDropCaching() {
+        String osName = System.getProperty("os.name");
+        switch (osName) {
+            case "Linux" -> {
+                //Util.dropWriteCachingLinux();
+                JOptionPane.showMessageDialog(Gui.mainFrame, 
+                    """
+                    For valid READ measurements please clear the disk cache by
+                    using \"sudo sh -c 'sync; echo 1 > /proc/sys/vm/drop_caches'\".
+                    For system drives use the WRITE and READ operations 
+                    independantly by doing a cold reboot after the WRITE.
+                    Press OK to continue when disk cache has been dropped.""",
+                    "Clear Disk Cache Now",
+                    JOptionPane.PLAIN_MESSAGE);
+            }
+            case "Mac OS X" -> {
+                JOptionPane.showMessageDialog(Gui.mainFrame, 
+                    """
+                    For valid READ measurements please clear the disk cache.
+                    Removable drives can be disconnected and reconnected.
+                    For system drives use the WRITE and READ operations 
+                    independantly by doing a cold reboot after the WRITE
+                    Press OK to continue when disk cache has been cleared.""",
+                    "Clear Disk Cache Now",
+                    JOptionPane.PLAIN_MESSAGE);
+            }
+            case "Windows" -> {
+                JOptionPane.showMessageDialog(Gui.mainFrame, 
+                    """
+                    For valid READ measurements please clear the disk cache by
+                    using the included RAMMap.exe or flushmem.exe utilities.
+                    Removable drives can be disconnected and reconnected.
+                    For system drives use the WRITE and READ operations 
+                    independantly by doing a cold reboot after the WRITE
+                    Press OK to continue when disk cache has been cleared.""",
+                    "Clear Disk Cache Now",
+                    JOptionPane.PLAIN_MESSAGE);
+            }
+        }
     }
 }
