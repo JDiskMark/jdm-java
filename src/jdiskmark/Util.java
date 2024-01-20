@@ -347,6 +347,7 @@ public class Util {
             while (line != null) {
                 System.err.println("devName=" + line);
                 deviceNames.add(line);
+                line = reader.readLine();
             }
         } catch (IOException | InterruptedException e) {
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
