@@ -66,18 +66,6 @@ public class Util {
     /*
      * Not used kept here for reference.
      */
-    static public void readPhysicalDrive() throws FileNotFoundException, IOException {
-        File diskRoot = new File ("\\\\.\\PhysicalDrive0");
-        RandomAccessFile diskAccess = new RandomAccessFile (diskRoot, "r");
-        byte[] content = new byte[1024];
-        diskAccess.readFully (content);
-        System.out.println("done reading fully");
-        System.out.println("content " + Arrays.toString(content));
-    }
-    
-    /*
-     * Not used kept here for reference.
-     */
     public static void sysStats() {
         /* Total number of processors or cores available to the JVM */
         System.out.println("Available processors (cores): " + 
