@@ -166,7 +166,7 @@ public class Util {
                     if (sb.length() > 0) {
                         sb.append(":");
                     }
-                    sb.append(deviceModel).append("(").append(deviceSize).append(")");
+                    sb.append(deviceModel).append(" (").append(deviceSize).append(")");
                 }
                 return "Multiple drives: " + sb.toString();
             }
