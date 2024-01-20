@@ -10,7 +10,9 @@ import java.io.RandomAccessFile;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -22,6 +24,8 @@ import javax.swing.filechooser.FileSystemView;
 public class Util {
     
     static final DecimalFormat DF = new DecimalFormat("###.##");
+    
+    static final String ERROR_DRIVE_INFO = "unable to detect drive info";
     
     /**
      * Deletes the Directory and all files within
@@ -140,16 +144,36 @@ public class Util {
         if (osName.contains("Linux")) {
             // get disk info for linux
             String partition = Util.getPartitionFromPathLinux(dataDirPath);
-            String deviceName = Util.getDeviceNameFromPartition(partition);
-            //System.err.println("deviceName: " + deviceName);
-            String devicePath = "/dev/" + deviceName;
-            String deviceModel = Util.getDeviceModelLinux(devicePath);
-            //System.err.println("deviceModel: " + deviceModel);
-            String deviceSize = Util.getDeviceSizeLinux(devicePath);
-            //System.err.println("deviceSize: " + deviceSize);
-            return deviceModel + " (" + deviceSize +")";
+            List<String> deviceNames = Util.getDeviceNamesFromPartitionLinux(partition);
+            String deviceModel;
+            String deviceSize;
+            
+            // handle single physical drive
+            if (deviceNames.size() == 1) {
+                String devicePath = "/dev/" + deviceNames.getFirst();
+                deviceModel = Util.getDeviceModelLinux(devicePath);
+                deviceSize = Util.getDeviceSizeLinux(devicePath);
+                return deviceModel + " (" + deviceSize + ")";
+            }
+            
+            // GH-3 handle multiple drives (LVM or RAID partitions)
+            if (deviceNames.size() > 1) {
+                StringBuilder sb = new StringBuilder();
+                for (String dName : deviceNames) {
+                    String devicePath = "/dev/" + dName;
+                    deviceModel = Util.getDeviceModelLinux(devicePath);
+                    deviceSize = Util.getDeviceSizeLinux(devicePath);
+                    if (sb.length() > 0) {
+                        sb.append(":");
+                    }
+                    sb.append(deviceModel).append("(").append(deviceSize).append(")");
+                }
+                return "Multiple drives: " + sb.toString();
+            }
+            
+            return ERROR_DRIVE_INFO;
         } else if (osName.contains("Mac OS X")) {
-            // get disk info for max os x
+            // get disk info for os x
             String devicePath = Util.getDeviceFromPathOSX(dataDirPath);
             String deviceModel = Util.getDeviceModelOSX(devicePath);
             return deviceModel;
@@ -160,7 +184,7 @@ public class Util {
                 // Only proceed if the driveLetter is a single character and a letter
                 return Util.getModelFromLetterWindows(driveLetter);
             }
-            return "unable to detect drive info";
+            return ERROR_DRIVE_INFO;
         }
         return "OS not supported";
     }
@@ -226,7 +250,7 @@ public class Util {
                 }
                 if (line.contains("DiskModel   : ")) {
                     curDiskModel = line.split(" : ")[1];
-                    System.out.println("current model="+curDiskModel);
+                    System.out.println("current model=" + curDiskModel);
                 }
                 line = reader.readLine();
             }
@@ -306,16 +330,28 @@ public class Util {
         return null;
     }
     
-    static public String getDeviceNameFromPartition(String partition) {
+    /**
+     * This method returns a list to handle multiple physical drives
+     * in case the partition is part of an LVM or RAID in Linux
+     * @param partition the partition to look up
+     * @return list of physical drives
+     */
+    static public List<String> getDeviceNamesFromPartitionLinux(String partition) {
+        List<String> deviceNames = new ArrayList();
         try {
             Process p = Runtime.getRuntime().exec("lsblk -no pkname " + partition);
             p.waitFor();
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            return reader.readLine();
+            // detect multiple lines and if so indicate it is an LVM
+            String line = reader.readLine();
+            while (line != null) {
+                System.err.println("devName=" + line);
+                deviceNames.add(line);
+            }
         } catch (IOException | InterruptedException e) {
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
         }
-        return null;
+        return deviceNames;
     }
     
     /**
