@@ -56,7 +56,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         Sample wSample;
         Sample rSample;
         
-        Gui.updateLegend();
+        Gui.updateLegendAndAxis();
         
         if (App.autoReset == true) {
             App.resetTestData();

@@ -26,6 +26,7 @@ public final class Gui {
     public static SelectDriveFrame selFrame = null;
     public static XYSeries wSeries, wAvgSeries, wMaxSeries, wMinSeries, wDrvAccess;
     public static XYSeries rSeries, rAvgSeries, rMaxSeries, rMinSeries, rDrvAccess;
+    public static NumberAxis msAxis;
     public static JFreeChart chart;
     public static JProgressBar progressBar = null;
     public static BenchmarkPanel runPanel = null;
@@ -99,7 +100,7 @@ public final class Gui {
         bwAxis.setAutoRangeIncludesZero(false);
         
         // y axis on the right
-        NumberAxis msAxis = new NumberAxis("Average Access Time (ms)");
+        msAxis = new NumberAxis("Average Access Time (ms)");
         msAxis.setAutoRange(true);
         msAxis.setAutoRangeIncludesZero(false);
         
@@ -136,7 +137,7 @@ public final class Gui {
             }
         };
         
-        updateLegend();
+        updateLegendAndAxis();
         return chartPanel;
     }
     
@@ -183,7 +184,7 @@ public final class Gui {
         Gui.mainFrame.refreshWriteMetrics();
     }
     
-    public static void updateLegend() {
+    public static void updateLegendAndAxis() {
         bwRenderer.setSeriesVisibleInLegend(0, App.writeTest);
         bwRenderer.setSeriesVisibleInLegend(1, App.writeTest);
         bwRenderer.setSeriesVisibleInLegend(2, App.writeTest && App.showMaxMin);
@@ -195,5 +196,7 @@ public final class Gui {
         
         msRenderer.setSeriesVisibleInLegend(0, App.writeTest && App.showDriveAccess);
         msRenderer.setSeriesVisibleInLegend(1, App.readTest && App.showDriveAccess);
+        
+        msAxis.setVisible(App.showDriveAccess);
     }
 }
