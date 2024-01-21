@@ -371,4 +371,16 @@ public class OsUtil {
         }
         return false;
     }
+    
+    public static boolean isRunningAsAdminWindows() {
+        try {
+            Process process = Runtime.getRuntime().exec("cmd /c whoami");
+            process.waitFor();
+            String output = new String(process.getInputStream().readAllBytes());
+            return output.trim().equalsIgnoreCase("nt authority\\system");
+        } catch (IOException | InterruptedException e) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, "Error executing command", e);
+            return false;
+        }
+    }
 }

@@ -1,4 +1,4 @@
-
+   
 package jdiskmark;
 
 import java.awt.Color;
@@ -209,20 +209,19 @@ public final class Gui {
      */
     static public void processDropCaching() {
         String osName = System.getProperty("os.name");
-        switch (osName) {
-            case "Linux" -> {
-                boolean isRoot = false;
-                try {
-                    isRoot = OsUtil.isRunningAsRootLinux();
-                } catch (IOException | InterruptedException ex) {
-                    Logger.getLogger(Gui.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                if (isRoot) {
-                    // GH-2 automate catch dropping
-                    OsUtil.flushDataToDriveLinux();
-                    OsUtil.dropWriteCacheLinux();
-                } else {
-                    JOptionPane.showMessageDialog(Gui.mainFrame, 
+        if (osName.contains("Linux")) {
+            boolean isRoot = false;
+            try {
+                isRoot = OsUtil.isRunningAsRootLinux();
+            } catch (IOException | InterruptedException ex) {
+                Logger.getLogger(Gui.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            if (isRoot) {
+                // GH-2 automate catch dropping
+                OsUtil.flushDataToDriveLinux();
+                OsUtil.dropWriteCacheLinux();
+            } else {
+                JOptionPane.showMessageDialog(Gui.mainFrame, 
                         """
                         jDiskMark needs to be run as root to clear the disk cache
                         For valid READ measurements please clear the disk cache by
@@ -230,23 +229,21 @@ public final class Gui {
                         Press OK to continue when disk cache has been dropped.""",
                         "Clear Disk Cache Now",
                         JOptionPane.PLAIN_MESSAGE);
-                }
             }
-            case "Mac OS X" -> {
-                JOptionPane.showMessageDialog(Gui.mainFrame, 
+        } else if (osName.contains("Mac OS")) {
+            JOptionPane.showMessageDialog(Gui.mainFrame, 
                     """
-                    For valid READ measurements please clear the disk cache.
+                    For valid READ benchmarks please clear the disk cache.
                     Removable drives can be disconnected and reconnected.
                     For system drives use the WRITE and READ operations 
                     independantly by doing a cold reboot after the WRITE
                     Press OK to continue when disk cache has been cleared.""",
                     "Clear Disk Cache Now",
                     JOptionPane.PLAIN_MESSAGE);
-            }
-            case "Windows" -> {
-                JOptionPane.showMessageDialog(Gui.mainFrame, 
+        } else if (osName.contains("Windows")) {
+            JOptionPane.showMessageDialog(Gui.mainFrame, 
                     """
-                    For valid READ measurements please clear the disk cache by
+                    For valid READ benchmarks please clear the disk cache by
                     using the included RAMMap.exe or flushmem.exe utilities.
                     Removable drives can be disconnected and reconnected.
                     For system drives use the WRITE and READ operations 
@@ -254,10 +251,18 @@ public final class Gui {
                     Press OK to continue when disk cache has been cleared.""",
                     "Clear Disk Cache Now",
                     JOptionPane.PLAIN_MESSAGE);
-            }
-            default -> {
-                System.err.println("unsupported OS");
-            }
+        } else {
+            String messagePrompt = "Unrecognized OS: " + osName + "\n" +
+                    """
+                    For valid READ benchmarks please clear the disk cache now.
+                    Removable drives can be disconnected and reconnected.
+                    For system drives use the WRITE and READ operations 
+                    independantly by doing a cold reboot after the WRITE
+                    Press OK to continue when disk cache has been cleared.""";
+            JOptionPane.showMessageDialog(Gui.mainFrame, 
+                    messagePrompt,
+                    "Clear Disk Cache Now",
+                    JOptionPane.PLAIN_MESSAGE);
         }
     }
 }
