@@ -290,30 +290,85 @@ public class OsUtil {
     }
     
     /**
-     * GH-2 Drop catch is a work in progress.
+     * GH-2 flush data to disk
      */
-    static public void dropWriteCachingLinux() {
-        System.out.println("===== DROP WRITE ========= ");
+    static public void flushDataToDriveLinux() {
+        String[] command = {"sync"};
+        System.out.println("running: " + Arrays.toString(command));
+
         try {
-            String command = "sudo sh -c 'sync; echo 1 > /proc/sys/vm/drop_caches'";
-            Process p = Runtime.getRuntime().exec(command);
-            p.waitFor();
-            System.out.println("EXIT VALUE: " + p.exitValue());
-            //System.out.println("ran " + command);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line = reader.readLine();
-            while (line != null) {               
-                System.out.println(line);
-                line = reader.readLine();
+            ProcessBuilder builder = new ProcessBuilder(command);
+            Process process = builder.start();
+            int exitValue = process.waitFor();
+
+            try (BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                System.out.println("Standard Output:");
+                while ((line = outputReader.readLine()) != null) {
+                    System.out.println(line);
+                }
             }
-            BufferedReader eReader = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-            line = eReader.readLine();
-            while (line != null) {
-                System.err.println(line);
-                line = reader.readLine();
+            try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                String line;
+                System.err.println("Standard Error:");
+                while ((line = errorReader.readLine()) != null) {
+                    System.err.println(line);
+                }
             }
-        } catch(IOException | InterruptedException e) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+
+            System.out.println("EXIT VALUE: " + exitValue);
+
+        } catch (IOException | InterruptedException e) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, "Error executing command", e);
         }
+    }
+    
+    /**
+     * GH-2 Drop the write catch, used to prevent invlaid read measurement
+     */
+    static public void dropWriteCacheLinux() {
+
+        String[] command = {"/bin/sh", "-c", "echo 1 > /proc/sys/vm/drop_caches"};
+        System.out.println("running: " + Arrays.toString(command));
+
+        try {
+            ProcessBuilder builder = new ProcessBuilder(command);
+            Process process = builder.start();
+            int exitValue = process.waitFor();
+
+            try (BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                System.out.println("Standard Output:");
+                while ((line = outputReader.readLine()) != null) {
+                    System.out.println(line);
+                }
+            }
+
+            try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                String line;
+                System.err.println("Standard Error:");
+                while ((line = errorReader.readLine()) != null) {
+                    System.err.println(line);
+                }
+            }
+
+            System.out.println("EXIT VALUE: " + exitValue);
+
+        } catch (IOException | InterruptedException e) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, "Error executing command", e);
+        }
+    }
+    
+    public static boolean isRunningAsRootLinux() throws IOException, InterruptedException {
+        ProcessBuilder processBuilder = new ProcessBuilder("id", "-u");
+        Process process = processBuilder.start();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String line = reader.readLine();
+            if (line != null) {
+                int uid = Integer.parseInt(line);
+                return uid == 0;
+            }
+        }
+        return false;
     }
 }

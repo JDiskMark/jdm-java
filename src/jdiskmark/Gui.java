@@ -3,7 +3,10 @@ package jdiskmark;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.io.IOException;
 import java.text.NumberFormat;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import org.jfree.chart.ChartPanel;
@@ -208,17 +211,26 @@ public final class Gui {
         String osName = System.getProperty("os.name");
         switch (osName) {
             case "Linux" -> {
-                JOptionPane.showMessageDialog(Gui.mainFrame, 
-                    """
-                    For valid READ measurements please clear the disk cache by
-                    using \"sudo sh -c 'sync; echo 1 > /proc/sys/vm/drop_caches'\".
-                    For system drives use the WRITE and READ operations 
-                    independantly by doing a cold reboot after the WRITE.
-                    Press OK to continue when disk cache has been dropped.""",
-                    "Clear Disk Cache Now",
-                    JOptionPane.PLAIN_MESSAGE);
-                // GH-2 automate catch dropping
-                //OsUtil.dropWriteCachingLinux();
+                boolean isRoot = false;
+                try {
+                    isRoot = OsUtil.isRunningAsRootLinux();
+                } catch (IOException | InterruptedException ex) {
+                    Logger.getLogger(Gui.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                if (isRoot) {
+                    // GH-2 automate catch dropping
+                    OsUtil.flushDataToDriveLinux();
+                    OsUtil.dropWriteCacheLinux();
+                } else {
+                    JOptionPane.showMessageDialog(Gui.mainFrame, 
+                        """
+                        jDiskMark needs to be run as root to clear the disk cache
+                        For valid READ measurements please clear the disk cache by
+                        using \"sudo sync; echo 1 > /proc/sys/vm/drop_caches\".
+                        Press OK to continue when disk cache has been dropped.""",
+                        "Clear Disk Cache Now",
+                        JOptionPane.PLAIN_MESSAGE);
+                }
             }
             case "Mac OS X" -> {
                 JOptionPane.showMessageDialog(Gui.mainFrame, 

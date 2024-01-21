@@ -225,7 +225,7 @@ public class App {
         Gui.runPanel.clearTable();
         
         // populate run table with saved runs from db
-        System.out.println("loading stored run data");
+        System.out.println("loading benchmarks");
         Benchmark.findAll().stream().forEach((Benchmark run) -> {
             Gui.runPanel.addRun(run);
         });
