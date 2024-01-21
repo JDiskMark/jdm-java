@@ -293,14 +293,22 @@ public class OsUtil {
      * GH-2 Drop catch is a work in progress.
      */
     static public void dropWriteCachingLinux() {
+        System.out.println("===== DROP WRITE ========= ");
         try {
             String command = "sudo sh -c 'sync; echo 1 > /proc/sys/vm/drop_caches'";
             Process p = Runtime.getRuntime().exec(command);
             p.waitFor();
-            System.err.println("ran " + command);
+            System.out.println("EXIT VALUE: " + p.exitValue());
+            //System.out.println("ran " + command);
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String line = reader.readLine();
             while (line != null) {               
+                System.out.println(line);
+                line = reader.readLine();
+            }
+            BufferedReader eReader = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+            line = eReader.readLine();
+            while (line != null) {
                 System.err.println(line);
                 line = reader.readLine();
             }

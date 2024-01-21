@@ -660,26 +660,36 @@ public final class MainFrame extends javax.swing.JFrame {
             App.cancelBenchmark();
         } else if (App.state == App.State.IDLE_STATE) {
             applyTestParams();
+            App.saveConfig();
             App.startBenchmark();
         }
     }//GEN-LAST:event_startButtonActionPerformed
 
     private void blockSizeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_blockSizeComboActionPerformed
-        App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
-        sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-        totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
+        if (blockSizeCombo.hasFocus()) {
+            App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
+            sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
+            totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
+            App.saveConfig();
+        }
     }//GEN-LAST:event_blockSizeComboActionPerformed
 
     private void numBlocksComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_numBlocksComboActionPerformed
-        App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
-        sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-        totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
+        if (numBlocksCombo.hasFocus()) {
+            App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
+            sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
+            totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
+            App.saveConfig();
+        }
     }//GEN-LAST:event_numBlocksComboActionPerformed
 
     private void numFilesComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_numFilesComboActionPerformed
-        App.numOfSamples = Integer.parseInt((String) numFilesCombo.getSelectedItem());
-        sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-        totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
+        if (numFilesCombo.hasFocus()) {
+            App.numOfSamples = Integer.parseInt((String) numFilesCombo.getSelectedItem());
+            sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
+            totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
+            App.saveConfig();
+        }
     }//GEN-LAST:event_numFilesComboActionPerformed
 
     private void resetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetButtonActionPerformed
@@ -691,6 +701,7 @@ public final class MainFrame extends javax.swing.JFrame {
         String modeStr = (String) modeCombo.getSelectedItem();
         App.readTest = modeStr.contains("read");
         App.writeTest = modeStr.contains("write");
+        App.saveConfig();
     }//GEN-LAST:event_modeComboActionPerformed
 
     private void exitMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exitMenuItemActionPerformed
@@ -739,10 +750,12 @@ public final class MainFrame extends javax.swing.JFrame {
 
     private void showMaxMinCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showMaxMinCheckBoxMenuItemActionPerformed
         App.showMaxMin = showMaxMinCheckBoxMenuItem.getState();
+        App.saveConfig();
     }//GEN-LAST:event_showMaxMinCheckBoxMenuItemActionPerformed
 
     private void orderComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_orderComboBoxActionPerformed
         App.blockSequence = (Benchmark.BlockSequence) orderComboBox.getSelectedItem();
+        App.saveConfig();
     }//GEN-LAST:event_orderComboBoxActionPerformed
 
     private void writeSyncCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_writeSyncCheckBoxMenuItemActionPerformed

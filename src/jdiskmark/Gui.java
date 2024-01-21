@@ -208,7 +208,6 @@ public final class Gui {
         String osName = System.getProperty("os.name");
         switch (osName) {
             case "Linux" -> {
-                //Util.dropWriteCachingLinux();
                 JOptionPane.showMessageDialog(Gui.mainFrame, 
                     """
                     For valid READ measurements please clear the disk cache by
@@ -218,6 +217,8 @@ public final class Gui {
                     Press OK to continue when disk cache has been dropped.""",
                     "Clear Disk Cache Now",
                     JOptionPane.PLAIN_MESSAGE);
+                // GH-2 automate catch dropping
+                //OsUtil.dropWriteCachingLinux();
             }
             case "Mac OS X" -> {
                 JOptionPane.showMessageDialog(Gui.mainFrame, 
@@ -241,6 +242,9 @@ public final class Gui {
                     Press OK to continue when disk cache has been cleared.""",
                     "Clear Disk Cache Now",
                     JOptionPane.PLAIN_MESSAGE);
+            }
+            default -> {
+                System.err.println("unsupported OS");
             }
         }
     }

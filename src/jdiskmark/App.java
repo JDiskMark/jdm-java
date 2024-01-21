@@ -22,14 +22,15 @@ import javax.swing.UnsupportedLookAndFeelException;
 public class App {
     
     public static final String APP_CACHE_DIR = System.getProperty("user.home") + File.separator + ".jDiskMark";
-    public static final String PROPERTIESFILE = "jdm.properties";
+    public static final String PROPERTIES_FILENAME = "jdm.properties";
+    public static final File PROPERTIES_FILE = new File(APP_CACHE_DIR + File.separator + PROPERTIES_FILENAME);
     public static final String DATADIRNAME = "jDiskMarkData";
     public static final int MEGABYTE = 1024 * 1024;
     public static final int KILOBYTE = 1024;
     public static final int IDLE_STATE = 0;
     public static final int DISK_TEST_STATE = 1;
 
-    public static enum State {IDLE_STATE, DISK_TEST_STATE};
+    public static enum State { IDLE_STATE, DISK_TEST_STATE };
     public static State state = State.IDLE_STATE;
     
     public static Properties p;
@@ -109,10 +110,9 @@ public class App {
      * Initialize the GUI Application.
      */
     public static void init() {
+        loadConfig();
         Gui.mainFrame = new MainFrame();
         Gui.selFrame = new SelectDriveFrame();
-        p = new Properties();
-        loadConfig();
         System.out.println(App.getConfigString());
         Gui.mainFrame.refreshConfig();
         Gui.mainFrame.setLocationRelativeTo(null);
@@ -132,17 +132,26 @@ public class App {
     }
     
     public static void loadConfig() {
-        File pFile = new File(PROPERTIESFILE);
-        if (!pFile.exists()) { return; }
+        
+        System.out.println(PROPERTIES_FILE.getAbsolutePath() + " exist=" + PROPERTIES_FILE.exists());
+
+        // generate default properties file if it does not exist
+        if (!PROPERTIES_FILE.exists()) {
+            System.out.println(PROPERTIES_FILE + " does not exist generating...");
+            saveConfig(); 
+        }
+
+        // read properties file
+        if (p == null) { p = new Properties(); }
         try {
-            InputStream is = new FileInputStream(pFile);
-            p.load(is);
+            InputStream in = new FileInputStream(PROPERTIES_FILE);
+            p.load(in);
         } catch (IOException ex) {
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         }
+        
+        // configure settings from properties
         String value;
-        value = p.getProperty("locationDir", System.getProperty("user.home"));
-        locationDir = new File(value);        
         value = p.getProperty("multiFile", String.valueOf(multiFile));
         multiFile = Boolean.parseBoolean(value);
         value = p.getProperty("autoRemoveData", String.valueOf(autoRemoveData));
@@ -170,7 +179,9 @@ public class App {
     }
     
     public static void saveConfig() {
-        p.setProperty("locationDir", App.locationDir.getAbsolutePath());
+        if (p == null) { p = new Properties(); }
+        
+        // configure properties
         p.setProperty("multiFile", String.valueOf(multiFile));
         p.setProperty("autoRemoveData", String.valueOf(autoRemoveData));
         p.setProperty("autoReset", String.valueOf(autoReset));
@@ -184,8 +195,9 @@ public class App {
         p.setProperty("readTest", String.valueOf(readTest));
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         
+        // write properties file
         try {
-            OutputStream out = new FileOutputStream(new File(PROPERTIESFILE));
+            OutputStream out = new FileOutputStream(PROPERTIES_FILE);
             p.store(out, "jDiskMark Properties File");
         } catch (IOException ex) {
             Logger.getLogger(SelectDriveFrame.class.getName()).log(Level.SEVERE, null, ex);
