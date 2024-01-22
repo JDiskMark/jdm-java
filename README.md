@@ -91,10 +91,9 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
  - disk capacity and drive letter (available on windows)
 
 ### Issues
- - hide access time axis when show accesstime is not selected
  - auto clear disk cache windows, linux, osx before read benchmarks
-    - linux: 
-       - option a: sync && echo 1 > /proc/sys/vm/drop_caches
+    - linux: command line w root (resolved w option a)
+       - option a: sync; echo 1 > /proc/sys/vm/drop_caches
        - option b: 0_DIRECT flag
           - open the file with the 0_DIRECT flag
        - option c: use "hdparm -W 0 /dev/sdX" to disable catch for entire drive
@@ -104,4 +103,5 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
        - disable: Set-PhysicalDisk -FriendlyName "DriveName" -WriteCacheEnabled:$false
        - verify: Get-PhysicalDisk | Select FriendlyName, WriteCacheEnabled
        - restore: Set-PhysicalDisk -FriendlyName "DriveName" -WriteCacheEnabled:$true
-    - osx: unknown
+    - mac os:
+       - option a: sudo purge
