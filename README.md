@@ -28,7 +28,7 @@ https://sourceforge.net/projects/jdiskmark/
    /opt/jdiskmark-v0.5
    ```
 
-## Launching
+## Launching (manual write cache invalidation)
 
 1. Open a terminal or shell in the extracted directory
 
@@ -37,6 +37,18 @@ https://sourceforge.net/projects/jdiskmark/
    $ java -jar jDiskMark.jar
    ```
    In windows double click executable jar file.
+
+3. Drop cache manually:
+ - Linux: "sudo sync; 1 > /proc/sys/vm/drop_caches"
+ - Mac OS: sudo sync; purge
+ - Windows: Run included EmptyStandbyList.exe or RAMMap64.exe
+
+## Launching (auto drop write cache)
+
+To take advantage of automatic clearing of the disk cache for read benchmarks start with root or admin priviledges.
+ - Linux: sudo java -jar jDiskMark.jar
+ - Mac OS: sudo java -jar jDiskMark.jar
+ - Windows: start powershell as administrator then "java -jar jDiskMark"
 
 ## Development Environment
 
