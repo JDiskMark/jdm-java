@@ -3,6 +3,8 @@ package jdiskmark;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Shape;
+import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -72,7 +74,7 @@ public final class Gui {
         
         // setup plot
         XYPlot plot = new XYPlot();
-        plot.setBackgroundPaint(Color.DARK_GRAY);
+        plot.setBackgroundPaint(Color.DARK_GRAY.darker());
         plot.setOutlinePaint(Color.WHITE);
         plot.setDataset(0, bwDataset);
         plot.setDataset(1, msDataset);
@@ -89,13 +91,23 @@ public final class Gui {
         bwRenderer.setSeriesPaint(3, Color.RED);        // w min
         bwRenderer.setSeriesPaint(4, Color.LIGHT_GRAY); // read
         bwRenderer.setSeriesPaint(5, Color.ORANGE);     // r avg
-        bwRenderer.setSeriesPaint(6, Color.GREEN);      // r max
-        bwRenderer.setSeriesPaint(7, Color.RED);        // r min
+        bwRenderer.setSeriesPaint(6, Color.GREEN.darker()); // r max
+        bwRenderer.setSeriesPaint(7, Color.RED.darker());   // r min
         
         // configure the access time ms colors
         msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
         msRenderer.setSeriesPaint(0, Color.CYAN);       // w acc
         msRenderer.setSeriesPaint(1, Color.MAGENTA);    // r acc
+        
+        // disable lines and enable shapes
+        msRenderer.setSeriesLinesVisible(0, false);
+        msRenderer.setSeriesLinesVisible(1, false);
+        Shape s0 = new Rectangle2D.Double(-2.0, -2.0, 4.0, 4.0);
+        Shape s1 = new Rectangle2D.Double(-2.0, -2.0, 4.0, 4.0);
+        msRenderer.setSeriesShape(0, s0);
+        msRenderer.setSeriesShape(1, s1);
+        msRenderer.setSeriesShapesVisible(0, true);
+        msRenderer.setSeriesShapesVisible(1, true);
         
         // link renderers to the plot
         plot.setRenderer(0, bwRenderer);
@@ -123,7 +135,7 @@ public final class Gui {
         // configure the locations
         plot.setDomainAxisLocation(AxisLocation.BOTTOM_OR_RIGHT);
         plot.setRangeAxisLocation(0, AxisLocation.TOP_OR_LEFT);
-        plot.setDomainAxisLocation(1, AxisLocation.BOTTOM_OR_RIGHT);
+        plot.setRangeAxisLocation(1, AxisLocation.BOTTOM_OR_RIGHT);
         
         // add gap between the plot area and axis so they are detached
         plot.setAxisOffset(new RectangleInsets(3, 3, 3, 3));
@@ -174,7 +186,7 @@ public final class Gui {
         System.out.println(s.toString());
     }
     
-    public static void resetTestData() {
+    public static void resetBenchmarkData() {
         wSeries.clear();
         rSeries.clear();
         wAvgSeries.clear();
@@ -261,8 +273,7 @@ public final class Gui {
             System.out.println("== emptyStandbyListExist=" + emptyStandbyListExist);
             if (isAdmin && emptyStandbyListExist) {
                 // GH-2 automate catch dropping
-                // there is not a sync flush call so we add delays to allow
-                // time to sleep
+                // delays in place of flush calls
                 try {
                     Thread.sleep(1300);
                 } catch (InterruptedException ex) {

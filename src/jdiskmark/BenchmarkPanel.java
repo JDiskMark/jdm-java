@@ -43,7 +43,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
 
             },
             new String [] {
-                "Drive Information", "IO Mode", "Block Order", "Samples", "Blocks", "B. Size", "Start Time", "Duration", "Access (ms)", "Max (MB/s)", "Min (MB/s)", "Avg (MB/s)"
+                "Drive Information", "IO Mode", "Block Order", "Samples", "Blocks", "B. Size", "Start Time", "Duration (ms)", "Access (ms)", "Max (MB/s)", "Min (MB/s)", "Avg (MB/s)"
             }
         ) {
             boolean[] canEdit = new boolean [] {

@@ -13,10 +13,12 @@ import jakarta.persistence.NamedQuery;
 import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.text.DecimalFormat;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import java.util.List;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * This is also referred to as a Benchmark
@@ -126,8 +128,8 @@ public class Benchmark implements Serializable {
         if (endTime == null) {
             return "unknown";
         }
-        long diffSeconds = startTime.until(endTime, SECONDS);
-        return String.valueOf(diffSeconds) + "s";
+        long diffMs = Duration.between(startTime, endTime).toMillis();
+        return String.valueOf(diffMs);
     }
     
     // basic getters and setters

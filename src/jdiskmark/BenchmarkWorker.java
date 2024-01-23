@@ -59,7 +59,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         
         if (App.autoReset == true) {
             App.resetTestData();
-            Gui.resetTestData();
+            Gui.resetBenchmarkData();
         }
         
         int startFileNum = App.nextSampleNumber;
