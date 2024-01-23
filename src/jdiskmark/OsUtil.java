@@ -289,6 +289,10 @@ public class OsUtil {
         return null;
     }
     
+    static public void flushDataToDriveMacOs() {
+        flushDataToDriveLinux();
+    }
+    
     /**
      * GH-2 flush data to disk
      */
@@ -308,6 +312,39 @@ public class OsUtil {
                     System.out.println(line);
                 }
             }
+            try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                String line;
+                System.err.println("Standard Error:");
+                while ((line = errorReader.readLine()) != null) {
+                    System.err.println(line);
+                }
+            }
+
+            System.out.println("EXIT VALUE: " + exitValue);
+
+        } catch (IOException | InterruptedException e) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, "Error executing command", e);
+        }
+    }
+    
+    static public void dropWriteCacheMacOs() {
+
+        String[] command = {"purge"};
+        System.out.println("running: " + Arrays.toString(command));
+
+        try {
+            ProcessBuilder builder = new ProcessBuilder(command);
+            Process process = builder.start();
+            int exitValue = process.waitFor();
+
+            try (BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                System.out.println("Standard Output:");
+                while ((line = outputReader.readLine()) != null) {
+                    System.out.println(line);
+                }
+            }
+
             try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
                 String line;
                 System.err.println("Standard Error:");
@@ -357,6 +394,10 @@ public class OsUtil {
         } catch (IOException | InterruptedException e) {
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, "Error executing command", e);
         }
+    }
+    
+    public static boolean isRunningAsRootMacOs() throws IOException, InterruptedException {
+        return isRunningAsRootLinux();
     }
     
     public static boolean isRunningAsRootLinux() throws IOException, InterruptedException {

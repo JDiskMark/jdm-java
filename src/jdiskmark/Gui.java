@@ -233,15 +233,27 @@ public final class Gui {
                         JOptionPane.PLAIN_MESSAGE);
             }
         } else if (osName.contains("Mac OS")) {
-            JOptionPane.showMessageDialog(Gui.mainFrame, 
-                    """
-                    For valid READ benchmarks please clear the disk cache.
-                    Removable drives can be disconnected and reconnected.
-                    For system drives use the WRITE and READ operations 
-                    independantly by doing a cold reboot after the WRITE
-                    Press OK to continue when disk cache has been cleared.""",
-                    "Clear Disk Cache Now",
-                    JOptionPane.PLAIN_MESSAGE);
+            boolean isRoot = false;
+            try {
+                isRoot = OsUtil.isRunningAsRootMacOs();
+            } catch (IOException | InterruptedException ex) {
+                Logger.getLogger(Gui.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            if (isRoot) {
+                // GH-2 automate catch dropping
+                OsUtil.flushDataToDriveMacOs();
+                OsUtil.dropWriteCacheMacOs();
+            } else {
+                JOptionPane.showMessageDialog(Gui.mainFrame, 
+                        """
+                        For valid READ benchmarks please clear the disk cache.
+                        Removable drives can be disconnected and reconnected.
+                        For system drives use the WRITE and READ operations 
+                        independantly by doing a cold reboot after the WRITE
+                        Press OK to continue when disk cache has been cleared.""",
+                        "Clear Disk Cache Now",
+                        JOptionPane.PLAIN_MESSAGE);
+            }
         } else if (osName.contains("Windows")) {
             boolean isAdmin = OsUtil.isRunningAsAdminWindows();
             boolean emptyStandbyListExist = Files.exists(Paths.get(".\\EmptyStandbyList.exe"));
