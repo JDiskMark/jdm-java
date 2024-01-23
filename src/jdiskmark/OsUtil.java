@@ -158,8 +158,7 @@ public class OsUtil {
             String line = reader.readLine();
             String curPartition;
             while (line != null) {
-                // System.out.println(line);
-                System.err.println("curLine=" + line);
+                System.out.println("curLine=" + line);
                 if (line.contains("/dev/")) {
                     curPartition = line.split(" ")[0];
                     return curPartition;
