@@ -4,6 +4,8 @@ package jdiskmark;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -223,7 +225,7 @@ public final class Gui {
             } else {
                 JOptionPane.showMessageDialog(Gui.mainFrame, 
                         """
-                        jDiskMark needs to be run as root to clear the disk cache
+                        Run jDiskMark as root to automatically clear the disk cache.\n
                         For valid READ measurements please clear the disk cache by
                         using \"sudo sync; echo 1 > /proc/sys/vm/drop_caches\".
                         Press OK to continue when disk cache has been dropped.""",
@@ -241,16 +243,26 @@ public final class Gui {
                     "Clear Disk Cache Now",
                     JOptionPane.PLAIN_MESSAGE);
         } else if (osName.contains("Windows")) {
-            JOptionPane.showMessageDialog(Gui.mainFrame, 
-                    """
-                    For valid READ benchmarks please clear the disk cache by
-                    using the included RAMMap.exe or flushmem.exe utilities.
-                    Removable drives can be disconnected and reconnected.
-                    For system drives use the WRITE and READ operations 
-                    independantly by doing a cold reboot after the WRITE
-                    Press OK to continue when disk cache has been cleared.""",
-                    "Clear Disk Cache Now",
-                    JOptionPane.PLAIN_MESSAGE);
+            boolean isAdmin = OsUtil.isRunningAsAdminWindows();
+            boolean emptyStandbyListExist = Files.exists(Paths.get(".\\EmptyStandbyList.exe"));
+            System.out.println("== admin=" + isAdmin);
+            System.out.println("== emptyStandbyListExist=" + emptyStandbyListExist);
+            if (isAdmin && emptyStandbyListExist) {
+                // GH-2 automate catch dropping
+                OsUtil.emptyStandbyListWindows();
+            } else {
+                JOptionPane.showMessageDialog(Gui.mainFrame, 
+                        """
+                        Run jDiskMark as admin to automatically clear the disk cache.\n
+                        For valid READ benchmarks please clear the disk cache by
+                        using EmptyStandbyList.exe or RAMMap.exe utilities.
+                        Removable drives can be disconnected and reconnected.
+                        For system drives use the WRITE and READ operations 
+                        independantly by doing a cold reboot after the WRITE
+                        Press OK to continue when disk cache has been cleared.""",
+                        "Clear Disk Cache Now",
+                        JOptionPane.PLAIN_MESSAGE);
+            }
         } else {
             String messagePrompt = "Unrecognized OS: " + osName + "\n" +
                     """

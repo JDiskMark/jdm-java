@@ -374,13 +374,49 @@ public class OsUtil {
     
     public static boolean isRunningAsAdminWindows() {
         try {
-            Process process = Runtime.getRuntime().exec("cmd /c whoami");
+            // The 'net session' command requires administrator privileges to execute successfully
+            Process process = Runtime.getRuntime().exec("cmd /c net session");
             process.waitFor();
-            String output = new String(process.getInputStream().readAllBytes());
-            return output.trim().equalsIgnoreCase("nt authority\\system");
+            int exitCode = process.exitValue();
+
+            // If the exit code is 0, the command ran successfully, indicating admin privileges
+            return exitCode == 0;
         } catch (IOException | InterruptedException e) {
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, "Error executing command", e);
             return false;
+        }
+    }
+    
+    static public void emptyStandbyListWindows() {
+
+        String[] command = { ".\\EmptyStandbyList.exe", "standbylist" };
+        System.out.println("running: " + Arrays.toString(command));
+
+        try {
+            ProcessBuilder builder = new ProcessBuilder(command);
+            Process process = builder.start();
+            int exitValue = process.waitFor();
+
+            try (BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                System.out.println("Standard Output:");
+                while ((line = outputReader.readLine()) != null) {
+                    System.out.println(line);
+                }
+            }
+
+            try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                String line;
+                System.err.println("Standard Error:");
+                while ((line = errorReader.readLine()) != null) {
+                    System.err.println(line);
+                }
+            }
+
+            System.out.println("EXIT VALUE: " + exitValue);
+
+        } catch (IOException | InterruptedException e) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, "Error executing command", e);
         }
     }
 }

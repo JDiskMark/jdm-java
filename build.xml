@@ -78,6 +78,7 @@
     
     <target name="-post-jar">
         <copy file="flushmem.exe" todir="dist"/>
+        <copy file="EmptyStandbyList.exe" todir="dist"/>
         <copy file="disk-model.ps1" todir="dist"/>
         <antcall target="buildinfo"/>
         <copy file="build.properties" todir="dist"/>
