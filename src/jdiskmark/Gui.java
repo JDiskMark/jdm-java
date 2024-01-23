@@ -249,7 +249,19 @@ public final class Gui {
             System.out.println("== emptyStandbyListExist=" + emptyStandbyListExist);
             if (isAdmin && emptyStandbyListExist) {
                 // GH-2 automate catch dropping
+                // there is not a sync flush call so we add delays to allow
+                // time to sleep
+                try {
+                    Thread.sleep(1300);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Gui.class.getName()).log(Level.SEVERE, null, ex);
+                }
                 OsUtil.emptyStandbyListWindows();
+                try {
+                    Thread.sleep(700);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Gui.class.getName()).log(Level.SEVERE, null, ex);
+                }
             } else {
                 JOptionPane.showMessageDialog(Gui.mainFrame, 
                         """

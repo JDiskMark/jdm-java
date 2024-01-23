@@ -389,7 +389,8 @@ public class OsUtil {
     
     static public void emptyStandbyListWindows() {
 
-        String[] command = { ".\\EmptyStandbyList.exe", "standbylist" };
+        //String[] command = { ".\\EmptyStandbyList.exe", "standbylist" };
+        String[] command = { ".\\EmptyStandbyList.exe"};
         System.out.println("running: " + Arrays.toString(command));
 
         try {
