@@ -39,8 +39,14 @@ https://sourceforge.net/projects/jdiskmark/
    In windows double click executable jar file.
 
 3. Drop cache manually:
- - Linux: "sudo sync; 1 > /proc/sys/vm/drop_caches"
- - Mac OS: sudo sync; purge
+ - Linux:
+   ```
+   sudo sh -c "sync; 1 > /proc/sys/vm/drop_caches"
+   ```
+ - Mac OS:
+   ```
+   sudo sh -c "sync; purge"
+   ```
  - Windows: Run included EmptyStandbyList.exe or RAMMap64.exe
 
 ## Launching (auto drop write cache)
