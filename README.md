@@ -12,6 +12,7 @@ Cross platform disk benchmark utility written in java.
 - Detects drive model info
 - Benchmarks saved to embedded DB
 - Java cross platform solution
+- Auto clear disk cache (when sudo or admin)
 
 ## Releases
 
@@ -66,7 +67,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 
 ## Release Notes
 
-### v0.5 beta 1
+### v0.5 beta 2
  - update for java 21 LTS w NetBeans 20 environment
     - eclipselink 4.0, jpa 3.1, modelgen 5.6, annotations 3.1, xml.bind 4.0
  - increased drive information default col width to 170
@@ -75,6 +76,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
  - replace Date w LocalDateTime to avoid deprecated @Temporal
  - disk access time (ms) - plotting disabled by default
  - replace display of transfer size with access time in run panel
+ - auto clearing of disk cache for read benchmarks
 
 ### v0.4
  - updated eclipselink to 2.6 allows auto schema update
@@ -107,19 +109,3 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
  - detect and display os processor info
  - selecting a drive location displays detected drive information below
  - disk capacity and drive letter (available on windows)
-
-### Issues
- - auto clear disk cache windows, linux, osx before read benchmarks
-    - linux: command line w root (resolved w option a)
-       - option a: sync; echo 1 > /proc/sys/vm/drop_caches
-       - option b: 0_DIRECT flag
-          - open the file with the 0_DIRECT flag
-       - option c: use "hdparm -W 0 /dev/sdX" to disable catch for entire drive
-       - option d: review tools like nocatch and fio
-    - windows: powershell w admin
-       - get friendly name or id with: Get-PhysicalDisk
-       - disable: Set-PhysicalDisk -FriendlyName "DriveName" -WriteCacheEnabled:$false
-       - verify: Get-PhysicalDisk | Select FriendlyName, WriteCacheEnabled
-       - restore: Set-PhysicalDisk -FriendlyName "DriveName" -WriteCacheEnabled:$true
-    - mac os:
-       - option a: sudo purge
