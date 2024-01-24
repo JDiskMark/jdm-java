@@ -20,18 +20,29 @@ https://sourceforge.net/projects/jdiskmark/
 
 ## Installation
 
-1. Requires [java 21](https://www.oracle.com/java/technologies/downloads/)
+1. Install [java 21](https://www.oracle.com/java/technologies/downloads/)
 
-2. Extract release zip archive into desired location.
+2. Verify java 21 is installed:
+   ```
+   C:\Users\username>java --version
+   java 21.0.1 2023-10-17 LTS
+   Java(TM) SE Runtime Environment (build 21.0.1+12-LTS-29)
+   Java HotSpot(TM) 64-Bit Server VM (build 21.0.1+12-LTS-29, mixed mode, sharing)
+   ```
+
+3. Extract release zip archive into desired location.
    ```
    Examples:  
    /Users/username/jdiskmark-v0.5  
    /opt/jdiskmark-v0.5
    ```
 
-## Launching (manual write cache invalidation)
+## Launching as normal process
 
-1. Open a terminal or shell in the extracted directory
+Note: Running without sudo or a windows administrator will require manually 
+clearing the disk write cache before performing read benchmarks.
+
+1. Open a terminal or shell in the extracted directory.
 
 2. run command:
    ```
@@ -50,9 +61,11 @@ https://sourceforge.net/projects/jdiskmark/
    ```
  - Windows: Run included EmptyStandbyList.exe or [RAMMap64.exe](https://learn.microsoft.com/en-us/sysinternals/downloads/rammap)
 
-## Launching (auto drop write cache)
+## Launching with elevated privileges
 
-To take advantage of automatic clearing of the disk cache for read benchmarks start with root or admin priviledges.
+Note: Take advantage of automatic clearing of the disk cache for write read 
+benchmarks start with sudo or an administrator windows shell.
+
  - Linux: sudo java -jar jDiskMark.jar
  - Mac OS: sudo java -jar jDiskMark.jar
  - Windows: start powershell as administrator then "java -jar jDiskMark"
@@ -68,15 +81,15 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 ## Release Notes
 
 ### v0.5 beta 2
- - update for java 21 LTS w NetBeans 20 environment
-    - eclipselink 4.0, jpa 3.1, modelgen 5.6, annotations 3.1, xml.bind 4.0
+ - update for java 21 LTS w NetBeans 20 environment: eclipselink 4.0, jpa 3.1, 
+   modelgen 5.6, annotations 3.1, xml.bind 4.0
  - increased drive information default col width to 170
  - time format updated to "yyyy-MM-dd HH:mm:ss"
  - default to 200 marks
  - replace Date w LocalDateTime to avoid deprecated @Temporal
  - disk access time (ms) - plotting disabled by default
  - replace display of transfer size with access time in run panel
- - auto clearing of disk cache for read benchmarks
+ - auto clear disk cache for combined write read benchmarks
 
 ### v0.4
  - updated eclipselink to 2.6 allows auto schema update
