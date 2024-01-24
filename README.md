@@ -51,14 +51,8 @@ clearing the disk write cache before performing read benchmarks.
    In windows double click executable jar file.
 
 3. Drop cache manually:
- - Linux:
-   ```
-   sudo sh -c "sync; 1 > /proc/sys/vm/drop_caches"
-   ```
- - Mac OS:
-   ```
-   sudo sh -c "sync; purge"
-   ```
+ - Linux: `sudo sh -c "sync; 1 > /proc/sys/vm/drop_caches"`
+ - Mac OS: `sudo sh -c "sync; purge"`
  - Windows: Run included EmptyStandbyList.exe or [RAMMap64.exe](https://learn.microsoft.com/en-us/sysinternals/downloads/rammap)
    With RAMMap64 invalidate disk cache with Empty > Empty Standby List
 
@@ -67,9 +61,9 @@ clearing the disk write cache before performing read benchmarks.
 Note: Take advantage of automatic clearing of the disk cache for write read 
 benchmarks start with sudo or an administrator windows shell.
 
- - Linux: sudo java -jar jDiskMark.jar
- - Mac OS: sudo java -jar jDiskMark.jar
- - Windows: start powershell as administrator then "java -jar jDiskMark"
+ - Linux: `sudo java -jar jDiskMark.jar`
+ - Mac OS: `sudo java -jar jDiskMark.jar`
+ - Windows: start powershell as administrator then `java -jar jDiskMark`
 
 ## Development Environment
 
