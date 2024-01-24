@@ -60,6 +60,7 @@ clearing the disk write cache before performing read benchmarks.
    sudo sh -c "sync; purge"
    ```
  - Windows: Run included EmptyStandbyList.exe or [RAMMap64.exe](https://learn.microsoft.com/en-us/sysinternals/downloads/rammap)
+   With RAMMap64 invalidate disk cache with Empty > Empty Standby List
 
 ## Launching with elevated privileges
 
