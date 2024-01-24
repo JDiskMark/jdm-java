@@ -48,7 +48,7 @@ https://sourceforge.net/projects/jdiskmark/
    ```
    sudo sh -c "sync; purge"
    ```
- - Windows: Run included EmptyStandbyList.exe or RAMMap64.exe
+ - Windows: Run included EmptyStandbyList.exe or [RAMMap64.exe](https://learn.microsoft.com/en-us/sysinternals/downloads/rammap)
 
 ## Launching (auto drop write cache)
 
