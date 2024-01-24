@@ -21,9 +21,10 @@ import javax.swing.UnsupportedLookAndFeelException;
  */
 public class App {
     
-    public static final String APP_CACHE_DIR = System.getProperty("user.home") + File.separator + ".jDiskMark";
+    public static final String APP_CACHE_DIR_NAME = System.getProperty("user.home") + File.separator + ".jDiskMark";
+    public static final File APP_CACHE_DIR = new File(APP_CACHE_DIR_NAME);
     public static final String PROPERTIES_FILENAME = "jdm.properties";
-    public static final File PROPERTIES_FILE = new File(APP_CACHE_DIR + File.separator + PROPERTIES_FILENAME);
+    public static final File PROPERTIES_FILE = new File(APP_CACHE_DIR_NAME + File.separator + PROPERTIES_FILENAME);
     public static final String DATADIRNAME = "jDiskMarkData";
     public static final int MEGABYTE = 1024 * 1024;
     public static final int KILOBYTE = 1024;
@@ -110,6 +111,9 @@ public class App {
      * Initialize the GUI Application.
      */
     public static void init() {
+        if (!APP_CACHE_DIR.exists()) {
+            APP_CACHE_DIR.mkdirs();
+        }
         loadConfig();
         Gui.mainFrame = new MainFrame();
         Gui.selFrame = new SelectDriveFrame();
@@ -119,7 +123,7 @@ public class App {
         Gui.progressBar = Gui.mainFrame.getProgressBar();
         
         // configure the embedded DB in .jDiskMark
-        System.setProperty("derby.system.home", APP_CACHE_DIR);
+        System.setProperty("derby.system.home", APP_CACHE_DIR_NAME);
         loadSavedRuns();
         
         Gui.mainFrame.setVisible(true);
