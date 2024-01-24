@@ -8,12 +8,13 @@ import java.text.DecimalFormat;
  */
 public class Sample {
     
-    static DecimalFormat df = new DecimalFormat("###.###");
+    static final DecimalFormat DF = new DecimalFormat("###.###");
     
     public enum Type { READ, WRITE; }
     
-    Sample(Type type) {
-        this.type=type;
+    Sample(Type type, int sampleNumber) {
+        this.type = type;
+        this.sampleNum = sampleNumber;
     }
     
     Type type;
@@ -33,18 +34,18 @@ public class Sample {
     }
     
     public String getBwMbSec() {
-        return df.format(bwMbSec);
+        return DF.format(bwMbSec);
     }
     
     public String getMin() {
-        return df.format(cumMin);
+        return DF.format(cumMin);
     }
     
     public String getMax() {
-        return df.format(cumMax);
+        return DF.format(cumMax);
     }
     
     public String getAvg() {
-        return df.format(cumAvg);
+        return DF.format(cumAvg);
     }
 }

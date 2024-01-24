@@ -248,7 +248,7 @@ public class OsUtil {
         return null;
     }
     
-    static public String getDeviceFromPathOSX(Path path) {
+    static public String getDeviceFromPathMacOs(Path path) {
         try {
             Process p = Runtime.getRuntime().exec("df " + path.toString());
             p.waitFor();
@@ -256,7 +256,7 @@ public class OsUtil {
             String line = reader.readLine();
             String curDevice;
             while (line != null) {
-                // System.out.println(line);
+                System.out.println(line);
                 if (line.contains("/dev/")) {
                     curDevice = line.split(" ")[0];
                     return curDevice;
@@ -269,7 +269,12 @@ public class OsUtil {
         return null;
     }
     
-    static public String getDeviceModelOSX(String devicePath) {
+    static public String getDeviceModelMacOs(String devicePath) {
+        
+        if (devicePath == null || devicePath.isEmpty()) {
+            throw new IllegalArgumentException("Invalid device path");
+        }
+        
         try {
             String command = "diskutil info " + devicePath;
             Process p = Runtime.getRuntime().exec(command);
@@ -285,7 +290,33 @@ public class OsUtil {
         } catch(IOException | InterruptedException e) {
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
         }
-        return null;
+        String deviceId = devicePath;
+        if (deviceId.contains("/dev/")) {
+            deviceId = deviceId.split("/dev/")[1];
+        }
+        try {
+            String command = "system_profiler SPStorageDataType";
+            Process p = Runtime.getRuntime().exec(command);
+            p.waitFor();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String line = reader.readLine();
+            while (line != null) {               
+                if (line.contains(deviceId)) {
+                    // lines after deviceId
+                    String lineAfterId = reader.readLine();
+                    while (lineAfterId != null) {
+                        if (lineAfterId.contains("Device Name: ")) {
+                            return lineAfterId.split("Device Name: ")[1];
+                        }
+                        lineAfterId = reader.readLine();
+                    }
+                }
+                line = reader.readLine();
+            }
+        } catch(IOException | InterruptedException e) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+        }
+        return "Model unavailable for " + deviceId;
     }
     
     static public void flushDataToDriveMacOs() {

@@ -153,8 +153,10 @@ public class Util {
             return ERROR_DRIVE_INFO;
         } else if (osName.contains("Mac OS X")) {
             // get disk info for os x
-            String devicePath = OsUtil.getDeviceFromPathOSX(dataDirPath);
-            String deviceModel = OsUtil.getDeviceModelOSX(devicePath);
+            String devicePath = OsUtil.getDeviceFromPathMacOs(dataDirPath);
+            System.out.println("devicePath=" + devicePath);
+            String deviceModel = OsUtil.getDeviceModelMacOs(devicePath);
+            System.out.println("deviceModel=" + deviceModel);
             return deviceModel;
         } else if (osName.contains("Windows")) {
             // get disk info for windows

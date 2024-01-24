@@ -64,35 +64,34 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         
         int startFileNum = App.nextSampleNumber;
         
+        String driveInformation = Util.getDriveInfo(dataDir);
+        msg("drive info: (" + driveInformation + ")");
+        
         if (App.writeTest) {
             Benchmark run = new Benchmark(Benchmark.IOMode.WRITE, App.blockSequence);
             run.numSamples = App.numOfSamples;
             run.numBlocks = App.numOfBlocks;
             run.blockSize = App.blockSizeKb;
             run.txSize = App.targetTxSizeKb();
-            run.setDriveInfo(Util.getDriveInfo(dataDir));
-            
-            msg("drive info: (" + run.getDriveInfo() + ")");
+            run.setDriveInfo(driveInformation);
             
             Gui.chartPanel.getChart().getTitle().setVisible(true);
             Gui.chartPanel.getChart().getTitle().setText(run.getDriveInfo());
             
             if (App.multiFile == false) {
                 testFile = new File(dataDir.getAbsolutePath() + File.separator + "testdata.jdm");
-            }            
+            }
             for (int s = startFileNum; s < startFileNum + App.numOfSamples && !isCancelled(); s++) {
                 
                 if (App.multiFile == true) {
                     testFile = new File(dataDir.getAbsolutePath()
                             + File.separator + "testdata" + s + ".jdm");
-                }   
-                wSample = new Sample(WRITE);
-                wSample.sampleNum = s;
+                }
+                wSample = new Sample(WRITE, s);
                 long startTime = System.nanoTime();
                 long totalBytesWrittenInSample = 0;
 
-                String mode = "rw";
-                if (App.writeSyncEnable) { mode = "rwd"; }
+                String mode = (App.writeSyncEnable) ? "rwd" : "rw";
                 
                 try {
                     try (RandomAccessFile rAccFile = new RandomAccessFile(testFile, mode)) {
@@ -152,9 +151,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
             run.numBlocks = App.numOfBlocks;
             run.blockSize = App.blockSizeKb;
             run.txSize = App.targetTxSizeKb();
-            run.setDriveInfo(Util.getDriveInfo(dataDir));
-              
-            msg("drive info: (" + run.getDriveInfo() + ")");
+            run.setDriveInfo(driveInformation);
             
             Gui.chartPanel.getChart().getTitle().setVisible(true);
             Gui.chartPanel.getChart().getTitle().setText(run.getDriveInfo());
@@ -165,8 +162,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                     testFile = new File(dataDir.getAbsolutePath()
                             + File.separator + "testdata" + s + ".jdm");
                 }
-                rSample = new Sample(READ);
-                rSample.sampleNum = s;
+                rSample = new Sample(READ, s);
                 long startTime = System.nanoTime();
                 long totalBytesReadInMark = 0;
 
