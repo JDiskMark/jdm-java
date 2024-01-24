@@ -79,7 +79,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
  - update for java 21 LTS w NetBeans 20 environment: eclipselink 4.0, jpa 3.1, 
    modelgen 5.6, annotations 3.1, xml.bind 4.0
  - increased drive information default col width to 170
- - time format updated to "yyyy-MM-dd HH:mm:ss"
+ - time format updated to `yyyy-MM-dd HH:mm:ss`
  - default to 200 marks
  - replace Date w LocalDateTime to avoid deprecated @Temporal
  - disk access time (ms) - plotting disabled by default
@@ -101,7 +101,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
  - resizing main frame stretches tabbed pane instead of empty panel
 
 ### v0.2
- - auto generate zip release ie. jdiskmark-v0.2.zip
+ - auto generate zip release ie. `jdiskmark-v0.2.zip`
  - added tabbed pane near bottom to organize new controls
  - format excessive decimal places
  - show recent runs (not persisted)
