@@ -91,8 +91,8 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
  - improved gui initialization
  - platform disk model info:
     - windows: via powershell query
-    - linux:   via "df /data/path" & "lsblk /dev/path --output MODEL"
-    - osx:     via "df /data/path" & "diskutil info /dev/disk1"
+    - linux:   via `df /data/path" & "lsblk /dev/path --output MODEL`
+    - osx:     via `df /data/path" & "diskutil info /dev/disk1`
 
 ### v0.3
  - persist recent run with embedded derby db
