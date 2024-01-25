@@ -117,3 +117,6 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
  - detect and display os processor info
  - selecting a drive location displays detected drive information below
  - disk capacity and drive letter (available on windows)
+ - speed curves w rw at different tx sizes
+ - response time histogram > distribution of IO
+ - IOPS charts, review potential charts
