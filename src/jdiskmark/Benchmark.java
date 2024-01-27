@@ -75,7 +75,7 @@ public class Benchmark implements Serializable {
 
     @Column
     @Convert(converter = SampleAttributeConverter.class)
-    ArrayList<Sample> samples = new ArrayList();
+    ArrayList<Sample> samples = new ArrayList<>();
     
     @Override
     public String toString() {

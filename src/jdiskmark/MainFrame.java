@@ -119,7 +119,7 @@ public final class MainFrame extends javax.swing.JFrame {
         jLabel12 = new javax.swing.JLabel();
         resetButton = new javax.swing.JButton();
         jLabel13 = new javax.swing.JLabel();
-        orderComboBox = new javax.swing.JComboBox();
+        orderComboBox = new javax.swing.JComboBox<>();
         jLabel14 = new javax.swing.JLabel();
         wMinLabel = new javax.swing.JLabel();
         wMaxLabel = new javax.swing.JLabel();
@@ -829,7 +829,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JComboBox numFilesCombo;
     private javax.swing.JButton openLocButton;
     private javax.swing.JMenu optionMenu;
-    private javax.swing.JComboBox orderComboBox;
+    private javax.swing.JComboBox<Benchmark.BlockSequence> orderComboBox;
     private javax.swing.JPanel progressPanel;
     private javax.swing.JLabel rAccessLabel;
     private javax.swing.JLabel rAvgLabel;

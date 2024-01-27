@@ -178,7 +178,7 @@ public class UtilOs {
      * @return list of physical drives
      */
     static public List<String> getDeviceNamesFromPartitionLinux(String partition) {
-        List<String> deviceNames = new ArrayList();
+        List<String> deviceNames = new ArrayList<>();
         try {
             Process p = Runtime.getRuntime().exec("lsblk -no pkname " + partition);
             p.waitFor();
@@ -448,14 +448,14 @@ public class UtilOs {
         return false;
     }
     
-    public static boolean isRunningAsAdminWindows() {
+    static boolean isRunningAsAdminWindows() {
         try {
-            // The 'net session' command requires administrator privileges to execute successfully
-            Process process = Runtime.getRuntime().exec("cmd /c net session");
-            process.waitFor();
-            int exitCode = process.exitValue();
-
-            // If the exit code is 0, the command ran successfully, indicating admin privileges
+            ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "net session");
+            // Redirect output and error streams to avoid hanging if admin privileges are missing
+            pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+            pb.redirectError(ProcessBuilder.Redirect.DISCARD);
+            Process process = pb.start();
+            int exitCode = process.waitFor();
             return exitCode == 0;
         } catch (IOException | InterruptedException e) {
             Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, "Error executing command", e);
