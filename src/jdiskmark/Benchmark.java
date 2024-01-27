@@ -16,12 +16,11 @@ import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import static java.time.temporal.ChronoUnit.SECONDS;
+import java.util.ArrayList;
 import java.util.List;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
- * This is also referred to as a Benchmark
+ * A read or write benchmark
  */
 @Entity
 @Table(name="Benchmark")
@@ -32,7 +31,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class Benchmark implements Serializable {
     
     static final DecimalFormat DF = new DecimalFormat("###.##");
-    //previous date format "EEE, MMM d HH:mm:ss" >>>  Thu, Jan 20 21:45:01
     static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
     static public enum IOMode { READ, WRITE, READ_WRITE; }
@@ -74,10 +72,14 @@ public class Benchmark implements Serializable {
     double runMax = 0;
     @Column
     double runAvg = 0;
+
+    @Column
+    @Convert(converter = SampleAttributeConverter.class)
+    ArrayList<Sample> samples = new ArrayList();
     
     @Override
     public String toString() {
-        return "Run(" + ioMode + "," + blockOrder + "): " + totalMarks + " run avg: " + runAvg;
+        return "Benchmark(" + ioMode + "," + blockOrder + "): " + totalMarks + " bw avg: " + runAvg;
     }
     
     public Benchmark() {
@@ -145,6 +147,10 @@ public class Benchmark implements Serializable {
     }
     public void setDriveInfo(String info) {
         diskInfo = info;
+    }
+    
+    public void add(Sample s) {
+        samples.add(s);
     }
     
     // utility methods for collection

@@ -51,7 +51,7 @@ public final class MainFrame extends javax.swing.JFrame {
      * This method is called when the gui needs to be updated after a new config
      * has been loaded.
      */
-    public void refreshConfig() {
+    public void loadConfig() {
         if (App.locationDir != null) { // set the location dir if not null
             setLocation(App.locationDir.getAbsolutePath());
         }
@@ -69,6 +69,10 @@ public final class MainFrame extends javax.swing.JFrame {
         else { msg("WARNING: invalid mode detected"); }
         modeCombo.setSelectedItem(modeStr);
         
+        loadSettings();
+    }
+    
+    public void loadSettings() {
         //String blockOrderStr = App.randomEnable ? "random":"sequential";
         orderComboBox.setSelectedItem(App.blockSequence);
         
@@ -765,7 +769,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
     private void clearRunsItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearRunsItemActionPerformed
         App.msg("Clearing previous runs.");
-        App.clearSavedRuns();
+        App.clearSavedBenchmarks();
     }//GEN-LAST:event_clearRunsItemActionPerformed
 
     private void showAccessCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showAccessCheckBoxMenuItemActionPerformed

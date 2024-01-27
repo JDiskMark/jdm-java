@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -59,6 +60,8 @@ public class App {
     public static int nextSampleNumber = 1;   // number of the next sample
     public static double wMax = -1, wMin = -1, wAvg = -1, wAcc = -1;
     public static double rMax = -1, rMin = -1, rAvg = -1, rAcc = -1;
+    
+    public static HashMap<String, Benchmark> benchmarks = new HashMap<>();
     
     /**
      * @param args the command line arguments
@@ -118,7 +121,7 @@ public class App {
         Gui.mainFrame = new MainFrame();
         Gui.selFrame = new SelectDriveFrame();
         System.out.println(App.getConfigString());
-        Gui.mainFrame.refreshConfig();
+        Gui.mainFrame.loadConfig();
         Gui.mainFrame.setLocationRelativeTo(null);
         Gui.progressBar = Gui.mainFrame.getProgressBar();
         
@@ -231,13 +234,14 @@ public class App {
         // populate run table with saved runs from db
         System.out.println("loading benchmarks");
         Benchmark.findAll().stream().forEach((Benchmark run) -> {
+            benchmarks.put(run.getStartTimeString(), run);
             Gui.runPanel.addRun(run);
         });
     }
     
-    public static void clearSavedRuns() {
+    public static void clearSavedBenchmarks() {
         Benchmark.deleteAll();
-        
+        App.benchmarks.clear();
         loadSavedRuns();
     }
     

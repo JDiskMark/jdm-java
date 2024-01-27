@@ -75,8 +75,8 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
             run.txSize = App.targetTxSizeKb();
             run.setDriveInfo(driveInformation);
             
-            Gui.chartPanel.getChart().getTitle().setVisible(true);
-            Gui.chartPanel.getChart().getTitle().setText(run.getDriveInfo());
+            Gui.chart.getTitle().setVisible(true);
+            Gui.chart.getTitle().setText(run.getDriveInfo());
             
             if (App.multiFile == false) {
                 testFile = new File(dataDir.getAbsolutePath() + File.separator + "testdata.jdm");
@@ -119,7 +119,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                 double sec = (double)elapsedTimeNs / (double)1000000000;
                 double mbWritten = (double)totalBytesWrittenInSample / (double)MEGABYTE;
                 wSample.bwMbSec = mbWritten / sec;
-                msg("s:" + s + " write IO is " + wSample.getBwMbSec() + " MB/s   "
+                msg("s:" + s + " write IO is " + wSample.getBwMbSecDisplay() + " MB/s   "
                         + "(" + Util.displayString(mbWritten) + "MB written in "
                         + Util.displayString(sec) + " sec)");
                 App.updateMetrics(wSample);
@@ -130,13 +130,14 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                 run.runAvg = wSample.cumAvg;
                 run.accAvg = wSample.cumAccTimeMs;
                 run.endTime = LocalDateTime.now();
+                run.add(wSample);
             }
             
             EntityManager em = EM.getEntityManager();
             em.getTransaction().begin();
             em.persist(run);
             em.getTransaction().commit();
-            
+            App.benchmarks.put(run.getStartTimeString(), run);
             Gui.runPanel.addRun(run);
         }
         
@@ -153,8 +154,8 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
             run.txSize = App.targetTxSizeKb();
             run.setDriveInfo(driveInformation);
             
-            Gui.chartPanel.getChart().getTitle().setVisible(true);
-            Gui.chartPanel.getChart().getTitle().setText(run.getDriveInfo());
+            Gui.chart.getTitle().setVisible(true);
+            Gui.chart.getTitle().setText(run.getDriveInfo());
             
             for (int s = startFileNum; s < startFileNum + App.numOfSamples && !isCancelled(); s++) {
                 
@@ -202,16 +203,17 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                 run.runAvg = rSample.cumAvg;
                 run.accAvg = rSample.cumAccTimeMs;
                 run.endTime = LocalDateTime.now();
+                run.add(rSample);
             }
             
             EntityManager em = EM.getEntityManager();
             em.getTransaction().begin();
             em.persist(run);
             em.getTransaction().commit();
-            
+            App.benchmarks.put(run.getStartTimeString(), run);
             Gui.runPanel.addRun(run);
         }
-        App.nextSampleNumber += App.numOfSamples;      
+        App.nextSampleNumber += App.numOfSamples;
         return true;
     }
     

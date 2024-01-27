@@ -54,6 +54,11 @@ public class BenchmarkPanel extends javax.swing.JPanel {
                 return canEdit [columnIndex];
             }
         });
+        runTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                runTableMouseClicked(evt);
+            }
+        });
         jScrollPane1.setViewportView(runTable);
         if (runTable.getColumnModel().getColumnCount() > 0) {
             runTable.getColumnModel().getColumn(0).setPreferredWidth(170);
@@ -87,6 +92,19 @@ public class BenchmarkPanel extends javax.swing.JPanel {
                 .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
+
+    static final int START_TIME_COLUMN = 6;
+    
+    private void runTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_runTableMouseClicked
+        int sRow = runTable.getSelectedRow();
+        String timeString = (String) runTable.getValueAt(sRow, START_TIME_COLUMN);
+        System.out.println("timeString=" + timeString);
+
+        Benchmark benchmark = App.benchmarks.get(timeString);
+        if (benchmark != null) {
+            Gui.loadBenchmark(benchmark);
+        }
+    }//GEN-LAST:event_runTableMouseClicked
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

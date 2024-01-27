@@ -4,14 +4,14 @@ Cross platform disk benchmark utility written in java.
 
 ## Features
 
+- Java cross platform solution
 - Benchmark IO read/write performance
 - Intuitive graphs for: sample bw, max, min, cum avg, access time
 - Adjustable block size, block qty and sample qty
 - Single or multi file option
 - Sequential or random option
 - Detects drive model info
-- Benchmarks saved to embedded DB
-- Java cross platform solution
+- Save and load benchmarks for review
 - Auto clear disk cache (when sudo or admin)
 
 ## Releases
@@ -75,7 +75,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 
 ## Release Notes
 
-### v0.5 beta 2
+### v0.5 beta 3
  - update for java 21 LTS w NetBeans 20 environment: eclipselink 4.0, jpa 3.1, 
    modelgen 5.6, annotations 3.1, xml.bind 4.0
  - increased drive information default col width to 170
@@ -85,6 +85,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
  - disk access time (ms) - plotting disabled by default
  - replace display of transfer size with access time in run panel
  - auto clear disk cache for combined write read benchmarks
+ - save and load benchmarks and graph series
 
 ### v0.4
  - updated eclipselink to 2.6 allows auto schema update

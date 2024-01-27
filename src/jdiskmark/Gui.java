@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
@@ -311,5 +312,52 @@ public final class Gui {
                     "Clear Disk Cache Now",
                     JOptionPane.PLAIN_MESSAGE);
         }
+    }
+    
+    static public void loadBenchmark(Benchmark benchmark) {
+        resetBenchmarkData();
+        chart.getTitle().setText(benchmark.getDriveInfo());
+        List<Sample> samples = benchmark.samples;
+        System.out.println("samples=" + samples.size());
+        for (Sample s : samples) {
+            System.out.println(s);
+            if (benchmark.ioMode == Benchmark.IOMode.READ) {
+                addReadSample(s);
+            } else {
+                addWriteSample(s);
+            }
+        }
+        
+        App.numOfBlocks = benchmark.numBlocks;
+        App.numOfSamples = benchmark.numSamples;
+        App.blockSizeKb = benchmark.blockSize;
+        App.blockSequence = benchmark.blockOrder;
+        Gui.mainFrame.loadSettings();
+        
+        if (benchmark.ioMode ==  Benchmark.IOMode.READ) {
+            App.readTest = true;
+            App.rAvg = benchmark.runAvg;
+            App.rMax = benchmark.runMax;
+            App.rMin = benchmark.runMin;
+            App.rAcc = benchmark.accAvg;
+            Gui.mainFrame.refreshReadMetrics();
+        } else {
+            App.writeTest = true;
+            App.wAvg = benchmark.runAvg;
+            App.wMax = benchmark.runMax;
+            App.wMin = benchmark.runMin;
+            App.wAcc = benchmark.accAvg;
+            Gui.mainFrame.refreshWriteMetrics();
+        }
+    }
+    
+    static public void loadParameters(Benchmark benchmark) {
+        mainFrame.loadConfig();
+    }
+    static public void loadStatsWrite(Benchmark benchmark) {
+        mainFrame.refreshWriteMetrics();
+    }
+    static public void loadStatsRead(Benchmark benchmark) {
+        mainFrame.refreshReadMetrics();
     }
 }
