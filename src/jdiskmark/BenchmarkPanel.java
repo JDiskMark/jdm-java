@@ -54,6 +54,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
                 return canEdit [columnIndex];
             }
         });
+        runTable.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         runTable.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 runTableMouseClicked(evt);
