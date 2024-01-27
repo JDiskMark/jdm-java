@@ -45,7 +45,7 @@ public class App {
     public static boolean autoRemoveData = false;
     public static boolean autoReset = true;
     public static boolean showMaxMin = true;
-    public static boolean showDriveAccess = false;
+    public static boolean showDriveAccess = true;
     public static boolean writeSyncEnable = true;
     
     // run configuration
