@@ -112,7 +112,6 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
  - initial release
 
 ### Proposed Features
- - store benchmark data for each run and load when selected
  - upload benchmarks to jdiskmark.net portal (anonymous/w login)
  - local app log for remote diagnostics
  - detect and display os processor info
