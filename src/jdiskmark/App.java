@@ -132,7 +132,7 @@ public class App {
         
         // configure the embedded DB in .jDiskMark
         System.setProperty("derby.system.home", APP_CACHE_DIR_NAME);
-        loadSavedRuns();
+        loadBenchmarks();
         
         Gui.mainFrame.setVisible(true);
         
@@ -151,6 +151,9 @@ public class App {
             isRoot = UtilOs.isRunningAsRootMacOs();
         } else if (osName.contains("Windows")) {
             isAdmin = UtilOs.isRunningAsAdminWindows();
+        }
+        if (isRoot || isAdmin) {
+            System.out.println("Running w elevated priviledges");
         }
     }
     
@@ -244,7 +247,7 @@ public class App {
         return sb.toString();
     }
     
-    public static void loadSavedRuns() {
+    public static void loadBenchmarks() {
         Gui.runPanel.clearTable();
         
         // populate run table with saved runs from db
@@ -258,7 +261,7 @@ public class App {
     public static void clearSavedBenchmarks() {
         Benchmark.deleteAll();
         App.benchmarks.clear();
-        loadSavedRuns();
+        loadBenchmarks();
     }
     
     public static void msg(String message) {

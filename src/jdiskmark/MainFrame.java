@@ -147,9 +147,9 @@ public final class MainFrame extends javax.swing.JFrame {
         fileMenu = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
         optionMenu = new javax.swing.JMenu();
-        clearRunsItem = new javax.swing.JMenuItem();
         clearLogsItem = new javax.swing.JMenuItem();
         deleteDataMenuItem = new javax.swing.JMenuItem();
+        deleteBenchmarksItem = new javax.swing.JMenuItem();
         resetSequenceMenuItem = new javax.swing.JMenuItem();
         jSeparator1 = new javax.swing.JPopupMenu.Separator();
         multiFileCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -294,7 +294,7 @@ public final class MainFrame extends javax.swing.JFrame {
                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(controlsPanelLayout.createSequentialGroup()
                         .addComponent(jLabel13, javax.swing.GroupLayout.PREFERRED_SIZE, 223, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
+                        .addGap(0, 15, Short.MAX_VALUE))
                     .addGroup(controlsPanelLayout.createSequentialGroup()
                         .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, controlsPanelLayout.createSequentialGroup()
@@ -534,14 +534,6 @@ public final class MainFrame extends javax.swing.JFrame {
 
         optionMenu.setText("Options");
 
-        clearRunsItem.setText("Clear Benchmarks");
-        clearRunsItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                clearRunsItemActionPerformed(evt);
-            }
-        });
-        optionMenu.add(clearRunsItem);
-
         clearLogsItem.setText("Clear Event Logs");
         clearLogsItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -550,13 +542,21 @@ public final class MainFrame extends javax.swing.JFrame {
         });
         optionMenu.add(clearLogsItem);
 
-        deleteDataMenuItem.setText("Delete Data Dir");
+        deleteDataMenuItem.setText("Delete Data Directory");
         deleteDataMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 deleteDataMenuItemActionPerformed(evt);
             }
         });
         optionMenu.add(deleteDataMenuItem);
+
+        deleteBenchmarksItem.setText("Delete Benchmarks");
+        deleteBenchmarksItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                deleteBenchmarksItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(deleteBenchmarksItem);
 
         resetSequenceMenuItem.setText("Reset Sequence");
         resetSequenceMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -705,6 +705,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private void resetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetButtonActionPerformed
         App.resetTestData();
         Gui.resetBenchmarkData();
+        Gui.updateLegendAndAxis();
     }//GEN-LAST:event_resetButtonActionPerformed
 
     private void modeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_modeComboActionPerformed
@@ -773,10 +774,10 @@ public final class MainFrame extends javax.swing.JFrame {
         App.saveConfig();
     }//GEN-LAST:event_writeSyncCheckBoxMenuItemActionPerformed
 
-    private void clearRunsItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearRunsItemActionPerformed
+    private void deleteBenchmarksItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteBenchmarksItemActionPerformed
         App.msg("Clearing previous runs.");
         App.clearSavedBenchmarks();
-    }//GEN-LAST:event_clearRunsItemActionPerformed
+    }//GEN-LAST:event_deleteBenchmarksItemActionPerformed
 
     private void showAccessCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showAccessCheckBoxMenuItemActionPerformed
         App.showDriveAccess = showAccessCheckBoxMenuItem.getState();
@@ -790,8 +791,8 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JComboBox blockSizeCombo;
     private javax.swing.JButton chooseButton;
     private javax.swing.JMenuItem clearLogsItem;
-    private javax.swing.JMenuItem clearRunsItem;
     private javax.swing.JPanel controlsPanel;
+    private javax.swing.JMenuItem deleteBenchmarksItem;
     private javax.swing.JMenuItem deleteDataMenuItem;
     private javax.swing.JScrollPane eventScrollPane;
     private javax.swing.JMenu fileMenu;

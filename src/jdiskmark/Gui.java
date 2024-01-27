@@ -9,8 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import org.jfree.chart.ChartPanel;
@@ -221,7 +219,7 @@ public final class Gui {
     /**
      * GH-2 need solution for dropping catch
      */
-    static public void processDropCaching() {
+    static public void dropCache() {
         String osName = System.getProperty("os.name");
         if (osName.contains("Linux")) {
             if (App.isRoot) {
@@ -231,9 +229,11 @@ public final class Gui {
             } else {
                 JOptionPane.showMessageDialog(Gui.mainFrame, 
                         """
-                        Run jDiskMark as root to automatically clear the disk cache.\n
-                        For valid READ measurements please clear the disk cache by
-                        using \"sudo sync; echo 1 > /proc/sys/vm/drop_caches\".
+                        Run jDiskMark with sudo to automatically clear the disk cache.
+                        
+                        For a valid READ benchmark please clear the disk cache now 
+                        by using \"sudo sync; echo 1 > /proc/sys/vm/drop_caches\".
+                        
                         Press OK to continue when disk cache has been dropped.""",
                         "Clear Disk Cache Now",
                         JOptionPane.PLAIN_MESSAGE);
@@ -247,39 +247,52 @@ public final class Gui {
                 JOptionPane.showMessageDialog(Gui.mainFrame, 
                         """
                         For valid READ benchmarks please clear the disk cache.
+                        
                         Removable drives can be disconnected and reconnected.
-                        For system drives use the WRITE and READ operations 
-                        independantly by doing a cold reboot after the WRITE
+                        
+                        For system drives perform a WRITE benchmark, restart 
+                        the OS and then perform a READ benchmark.
+                        
                         Press OK to continue when disk cache has been cleared.""",
                         "Clear Disk Cache Now",
                         JOptionPane.PLAIN_MESSAGE);
             }
         } else if (osName.contains("Windows")) {
             boolean emptyStandbyListExist = Files.exists(Paths.get(".\\EmptyStandbyList.exe"));
-            System.out.println("== emptyStandbyListExist=" + emptyStandbyListExist);
+            System.out.println("emptyStandbyListExist=" + emptyStandbyListExist);
             if (App.isAdmin && emptyStandbyListExist) {
-                // GH-2 automate catch dropping
-                // delays in place of flush calls
-                try {
-                    Thread.sleep(1300);
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(Gui.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                // GH-2 drop cahe, delays in place of flushing cache
+                try { Thread.sleep(1300); } catch (InterruptedException ex) {}
                 UtilOs.emptyStandbyListWindows();
-                try {
-                    Thread.sleep(700);
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(Gui.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            } else {
+                try { Thread.sleep(700); } catch (InterruptedException ex) {}
+            } else  if (App.isAdmin && !emptyStandbyListExist) {
                 JOptionPane.showMessageDialog(Gui.mainFrame, 
                         """
-                        Run jDiskMark as admin to automatically clear the disk cache.\n
+                        Unable to find EmptyStandbyList.exe. This must be
+                        present in the install directory for the disk cache
+                        to be automatically cleared.
+                        
                         For valid READ benchmarks please clear the disk cache by
                         using EmptyStandbyList.exe or RAMMap.exe utilities.
-                        Removable drives can be disconnected and reconnected.
-                        For system drives use the WRITE and READ operations 
-                        independantly by doing a cold reboot after the WRITE
+
+                        For system drives perform a WRITE benchmark, restart 
+                        the OS and then perform a READ benchmark.
+
+                        Press OK to continue when disk cache has been cleared.
+                        """,
+                        "Missing Disk Cache Utility",
+                        JOptionPane.WARNING_MESSAGE);
+            } else if (!App.isAdmin) {
+                JOptionPane.showMessageDialog(Gui.mainFrame, 
+                        """
+                        Run jDiskMark as admin to automatically clear the disk cache.
+
+                        For valid READ benchmarks please clear the disk cache by
+                        using EmptyStandbyList.exe or RAMMap.exe utilities.
+
+                        For system drives perform a WRITE benchmark, restart 
+                        the OS and then perform a READ benchmark.
+
                         Press OK to continue when disk cache has been cleared.""",
                         "Clear Disk Cache Now",
                         JOptionPane.PLAIN_MESSAGE);
@@ -288,9 +301,12 @@ public final class Gui {
             String messagePrompt = "Unrecognized OS: " + osName + "\n" +
                     """
                     For valid READ benchmarks please clear the disk cache now.
+                    
                     Removable drives can be disconnected and reconnected.
-                    For system drives use the WRITE and READ operations 
-                    independantly by doing a cold reboot after the WRITE
+                    
+                    For system drives perform a WRITE benchmark, restart 
+                    the OS and then perform a READ benchmarks benchmark.
+                    
                     Press OK to continue when disk cache has been cleared.""";
             JOptionPane.showMessageDialog(Gui.mainFrame, 
                     messagePrompt,
@@ -301,6 +317,7 @@ public final class Gui {
     
     static public void loadBenchmark(Benchmark benchmark) {
         resetBenchmarkData();
+        updateLegendAndAxis();
         chart.getTitle().setText(benchmark.getDriveInfo());
         ArrayList<Sample> samples = benchmark.samples;
         System.out.println("samples=" + samples.size());

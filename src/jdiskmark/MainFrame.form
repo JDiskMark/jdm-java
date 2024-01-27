@@ -27,14 +27,6 @@
             <Property name="text" type="java.lang.String" value="Options"/>
           </Properties>
           <SubComponents>
-            <MenuItem class="javax.swing.JMenuItem" name="clearRunsItem">
-              <Properties>
-                <Property name="text" type="java.lang.String" value="Clear Benchmarks"/>
-              </Properties>
-              <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="clearRunsItemActionPerformed"/>
-              </Events>
-            </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="clearLogsItem">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Clear Event Logs"/>
@@ -45,10 +37,18 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="deleteDataMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Delete Data Dir"/>
+                <Property name="text" type="java.lang.String" value="Delete Data Directory"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="deleteDataMenuItemActionPerformed"/>
+              </Events>
+            </MenuItem>
+            <MenuItem class="javax.swing.JMenuItem" name="deleteBenchmarksItem">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Delete Benchmarks"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="deleteBenchmarksItemActionPerformed"/>
               </Events>
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="resetSequenceMenuItem">

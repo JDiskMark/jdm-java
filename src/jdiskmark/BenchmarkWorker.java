@@ -60,6 +60,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         if (App.autoReset == true) {
             App.resetTestData();
             Gui.resetBenchmarkData();
+            Gui.updateLegendAndAxis();
         }
         
         int startFileNum = App.nextSampleNumber;
@@ -143,7 +144,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         
         // try renaming all files to clear catch
         if (App.readTest && App.writeTest && !isCancelled()) {
-            Gui.processDropCaching();
+            Gui.dropCache();
         }
         
         if (App.readTest) {
