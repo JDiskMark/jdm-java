@@ -111,7 +111,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                         }
                     }
                 } catch (IOException ex) {
-                    Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 long endTime = System.nanoTime();
                 long elapsedTimeNs = endTime - startTime;
@@ -185,7 +185,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                         }
                     }
                 } catch (IOException ex) {
-                    Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 long endTime = System.nanoTime();
                 long elapsedTimeNs = endTime - startTime;

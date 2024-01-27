@@ -98,7 +98,7 @@ public class UtilOs {
             }
         }
         catch(IOException | InterruptedException e) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
     }
@@ -137,7 +137,7 @@ public class UtilOs {
             }
         } catch(IOException | InterruptedException e) {
             System.err.println("IO exception retrieveing disk info: " + e.getLocalizedMessage());
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
     }
@@ -166,7 +166,7 @@ public class UtilOs {
                 line = reader.readLine();
             }
         } catch (IOException | InterruptedException e) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
     }
@@ -191,7 +191,7 @@ public class UtilOs {
                 line = reader.readLine();
             }
         } catch (IOException | InterruptedException e) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
         return deviceNames;
     }
@@ -216,8 +216,8 @@ public class UtilOs {
                 }
                 line = reader.readLine();
             }
-        } catch(IOException | InterruptedException e) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+        } catch (IOException | InterruptedException e) {
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
     }
@@ -242,8 +242,8 @@ public class UtilOs {
                 }
                 line = reader.readLine();
             }
-        } catch(IOException | InterruptedException e) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+        } catch (IOException | InterruptedException e) {
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
     }
@@ -264,7 +264,7 @@ public class UtilOs {
                 line = reader.readLine();
             }
         } catch(IOException | InterruptedException e) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
     }
@@ -288,7 +288,7 @@ public class UtilOs {
                 line = reader.readLine();
             }
         } catch(IOException | InterruptedException e) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
         String deviceId = devicePath;
         if (deviceId.contains("/dev/")) {
@@ -313,8 +313,8 @@ public class UtilOs {
                 }
                 line = reader.readLine();
             }
-        } catch(IOException | InterruptedException e) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+        } catch (IOException | InterruptedException e) {
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
         return "Model unavailable for " + deviceId;
     }
@@ -353,7 +353,7 @@ public class UtilOs {
             System.out.println("EXIT VALUE: " + exitValue);
 
         } catch (IOException | InterruptedException e) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, "Error executing command", e);
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
     }
     
@@ -386,7 +386,7 @@ public class UtilOs {
             System.out.println("EXIT VALUE: " + exitValue);
 
         } catch (IOException | InterruptedException e) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, "Error executing command", e);
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, "Error executing command", e);
         }
     }
     
@@ -422,23 +422,28 @@ public class UtilOs {
             System.out.println("EXIT VALUE: " + exitValue);
 
         } catch (IOException | InterruptedException e) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, "Error executing command", e);
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, "Error executing command", e);
         }
     }
     
-    public static boolean isRunningAsRootMacOs() throws IOException, InterruptedException {
+    public static boolean isRunningAsRootMacOs() {
         return isRunningAsRootLinux();
     }
     
-    public static boolean isRunningAsRootLinux() throws IOException, InterruptedException {
-        ProcessBuilder processBuilder = new ProcessBuilder("id", "-u");
-        Process process = processBuilder.start();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            String line = reader.readLine();
-            if (line != null) {
-                int uid = Integer.parseInt(line);
-                return uid == 0;
+    public static boolean isRunningAsRootLinux() {
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder("id", "-u");
+            Process process = processBuilder.start();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line = reader.readLine();
+                if (line != null) {
+                    int uid = Integer.parseInt(line);
+                    return uid == 0;
+                }
             }
+        } catch (IOException e) {
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, "Error executing command", e);
+            return false;
         }
         return false;
     }
@@ -453,7 +458,7 @@ public class UtilOs {
             // If the exit code is 0, the command ran successfully, indicating admin privileges
             return exitCode == 0;
         } catch (IOException | InterruptedException e) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, "Error executing command", e);
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, "Error executing command", e);
             return false;
         }
     }
@@ -488,7 +493,7 @@ public class UtilOs {
             System.out.println("EXIT VALUE: " + exitValue);
 
         } catch (IOException | InterruptedException e) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, "Error executing command", e);
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, "Error executing command", e);
         }
     }
 }

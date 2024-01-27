@@ -32,7 +32,13 @@ public final class MainFrame extends javax.swing.JFrame {
         totalTxProgBar.setStringPainted(true);
         totalTxProgBar.setValue(0);
         totalTxProgBar.setString("");
-        setTitle(getTitle()+" "+App.getVersion());
+        
+        // permission string
+        StringBuilder permission = new StringBuilder();
+        if (App.isAdmin) permission.append(" [Admin]");
+        if (App.isRoot) permission.append(" [root]");
+        
+        setTitle(getTitle() + " " + App.getVersion() + permission.toString());
         
         // auto scroll the text area.
         DefaultCaret caret = (DefaultCaret) msgTextArea.getCaret();

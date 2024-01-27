@@ -40,6 +40,10 @@ public class App {
     public static File dataDir = null;
     public static File testFile = null;
     
+    // elevated priviledges
+    public static boolean isRoot = false;
+    public static boolean isAdmin = false;
+    
     // options
     public static boolean multiFile = true;
     public static boolean autoRemoveData = false;
@@ -114,6 +118,7 @@ public class App {
      * Initialize the GUI Application.
      */
     public static void init() {
+        checkPermission();
         if (!APP_CACHE_DIR.exists()) {
             APP_CACHE_DIR.mkdirs();
         }
@@ -136,6 +141,17 @@ public class App {
             @Override
             public void run() { App.saveConfig(); }
         });
+    }
+    
+    public static void checkPermission() {
+        String osName = System.getProperty("os.name");
+        if (osName.contains("Linux")) {
+            isRoot = UtilOs.isRunningAsRootLinux();
+        } else if (osName.contains("Mac OS")) {
+            isRoot = UtilOs.isRunningAsRootMacOs();
+        } else if (osName.contains("Windows")) {
+            isAdmin = UtilOs.isRunningAsAdminWindows();
+        }
     }
     
     public static void loadConfig() {

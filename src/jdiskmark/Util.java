@@ -151,7 +151,7 @@ public class Util {
             }
             
             return ERROR_DRIVE_INFO;
-        } else if (osName.contains("Mac OS X")) {
+        } else if (osName.contains("Mac OS")) {
             // get disk info for os x
             String devicePath = UtilOs.getDeviceFromPathMacOs(dataDirPath);
             System.out.println("devicePath=" + devicePath);

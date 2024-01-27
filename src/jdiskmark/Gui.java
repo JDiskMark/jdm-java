@@ -5,7 +5,6 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Shape;
 import java.awt.geom.Rectangle2D;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
@@ -225,13 +224,7 @@ public final class Gui {
     static public void processDropCaching() {
         String osName = System.getProperty("os.name");
         if (osName.contains("Linux")) {
-            boolean isRoot = false;
-            try {
-                isRoot = UtilOs.isRunningAsRootLinux();
-            } catch (IOException | InterruptedException ex) {
-                Logger.getLogger(Gui.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            if (isRoot) {
+            if (App.isRoot) {
                 // GH-2 automate catch dropping
                 UtilOs.flushDataToDriveLinux();
                 UtilOs.dropWriteCacheLinux();
@@ -246,13 +239,7 @@ public final class Gui {
                         JOptionPane.PLAIN_MESSAGE);
             }
         } else if (osName.contains("Mac OS")) {
-            boolean isRoot = false;
-            try {
-                isRoot = UtilOs.isRunningAsRootMacOs();
-            } catch (IOException | InterruptedException ex) {
-                Logger.getLogger(Gui.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            if (isRoot) {
+            if (App.isRoot) {
                 // GH-2 automate catch dropping
                 UtilOs.flushDataToDriveMacOs();
                 UtilOs.dropWriteCacheMacOs();
@@ -268,11 +255,9 @@ public final class Gui {
                         JOptionPane.PLAIN_MESSAGE);
             }
         } else if (osName.contains("Windows")) {
-            boolean isAdmin = UtilOs.isRunningAsAdminWindows();
             boolean emptyStandbyListExist = Files.exists(Paths.get(".\\EmptyStandbyList.exe"));
-            System.out.println("== admin=" + isAdmin);
             System.out.println("== emptyStandbyListExist=" + emptyStandbyListExist);
-            if (isAdmin && emptyStandbyListExist) {
+            if (App.isAdmin && emptyStandbyListExist) {
                 // GH-2 automate catch dropping
                 // delays in place of flush calls
                 try {
