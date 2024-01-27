@@ -119,28 +119,28 @@ public class UtilOs {
      * @param driveLetter as a string
      * @return the model as a string
      */
-    public static String getModelFromLetterWindows(String driveLetter) {
-        try {
-            Process p = Runtime.getRuntime().exec("powershell -ExecutionPolicy ByPass -File disk-model.ps1");
-            p.waitFor();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line = reader.readLine();
-            
-            while (line != null) {
-                System.out.println(line);
-                if (line.trim().endsWith(driveLetter + ":")) {
-                    String model = line.split(driveLetter + ":")[0];
-                    System.out.println("model is: " + model);
-                    return model;
-                }
-                line = reader.readLine();
+public static String getModelFromLetterWindows(String driveLetter) {
+    try {
+        ProcessBuilder pb = new ProcessBuilder("powershell", "-ExecutionPolicy", 
+                "ByPass", "-File", "disk-model.ps1");
+        pb.redirectErrorStream(true);
+        Process process = pb.start();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            System.out.println(line);
+            if (line.trim().endsWith(driveLetter + ":")) {
+                String model = line.split(driveLetter + ":")[0];
+                System.out.println("model is: " + model);
+                return model;
             }
-        } catch(IOException | InterruptedException e) {
-            System.err.println("IO exception retrieveing disk info: " + e.getLocalizedMessage());
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
-        return null;
+    } catch (IOException e) {
+        System.err.println("IO exception retrieving disk info: " + e.getLocalizedMessage());
+        Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
     }
+    return null;
+}
     
     /**
      * On Linux OS get the device path when given a file path.
@@ -152,20 +152,20 @@ public class UtilOs {
      */
     static public String getPartitionFromPathLinux(Path path) {
         try {
-            Process p = Runtime.getRuntime().exec("df " + path.toString());
-            p.waitFor();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line = reader.readLine();
+            ProcessBuilder pb = new ProcessBuilder("df", path.toString());
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
             String curPartition;
-            while (line != null) {
+            while ((line = reader.readLine()) != null) {
                 System.out.println("curLine=" + line);
                 if (line.contains("/dev/")) {
                     curPartition = line.split(" ")[0];
                     return curPartition;
                 }
-                line = reader.readLine();
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
@@ -180,17 +180,17 @@ public class UtilOs {
     static public List<String> getDeviceNamesFromPartitionLinux(String partition) {
         List<String> deviceNames = new ArrayList<>();
         try {
-            Process p = Runtime.getRuntime().exec("lsblk -no pkname " + partition);
-            p.waitFor();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "pkname", partition);
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             // detect multiple lines and if so indicate it is an LVM
-            String line = reader.readLine();
-            while (line != null) {
+            String line;
+            while ((line = reader.readLine()) != null) {
                 System.err.println("devName=" + line);
                 deviceNames.add(line);
-                line = reader.readLine();
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
         return deviceNames;
@@ -205,18 +205,18 @@ public class UtilOs {
      */
     static public String getDeviceModelLinux(String devicePath) {
         try {
-            Process p = Runtime.getRuntime().exec("lsblk " + devicePath + " --output MODEL");
-            p.waitFor();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line = reader.readLine();
-            while (line != null) {
+            ProcessBuilder pb = new ProcessBuilder("lsblk", devicePath, "--output", "MODEL");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line  = reader.readLine()) != null) {
                 //System.out.println(line);
                 if (!line.equals("MODEL") && !line.trim().isEmpty()) {
                     return line;
                 }
-                line = reader.readLine();
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
@@ -231,18 +231,18 @@ public class UtilOs {
      */
     static public String getDeviceSizeLinux(String devicePath) {
         try {
-            Process p = Runtime.getRuntime().exec("lsblk "+devicePath+" --output SIZE");
-            p.waitFor();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line = reader.readLine();
-            while (line != null) {
-                // System.out.println(line);
+            ProcessBuilder pb = new ProcessBuilder("lsblk", devicePath, "--output", "SIZE");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
                 if (!line.contains("SIZE") && !line.trim().isEmpty()) {
                     return line;
                 }
-                line = reader.readLine();
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
@@ -250,74 +250,74 @@ public class UtilOs {
     
     static public String getDeviceFromPathMacOs(Path path) {
         try {
-            Process p = Runtime.getRuntime().exec("df " + path.toString());
-            p.waitFor();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line = reader.readLine();
-            String curDevice;
-            while (line != null) {
+            ProcessBuilder pb = new ProcessBuilder("df", path.toString());
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
                 System.out.println(line);
                 if (line.contains("/dev/")) {
-                    curDevice = line.split(" ")[0];
-                    return curDevice;
+                    return line.split(" ")[0];
                 }
-                line = reader.readLine();
             }
-        } catch(IOException | InterruptedException e) {
+        } catch(IOException e) {
             Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
     }
     
-    static public String getDeviceModelMacOs(String devicePath) {
-        
-        if (devicePath == null || devicePath.isEmpty()) {
-            throw new IllegalArgumentException("Invalid device path");
-        }
-        
-        try {
-            String command = "diskutil info " + devicePath;
-            Process p = Runtime.getRuntime().exec(command);
-            p.waitFor();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line = reader.readLine();
-            while (line != null) {               
-                if (line.contains("Device / Media Name:")) {
-                    return line.split("Device / Media Name:")[1].trim();
-                }
-                line = reader.readLine();
+static public String getDeviceModelMacOs(String devicePath) {
+
+    if (devicePath == null || devicePath.isEmpty()) {
+        throw new IllegalArgumentException("Invalid device path");
+    }
+
+    try {
+        ProcessBuilder pb = new ProcessBuilder("diskutil", "info", devicePath);
+        pb.redirectErrorStream(true);
+        Process process = pb.start();
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (line.contains("Device / Media Name:")) {
+                return line.split("Device / Media Name:")[1].trim();
             }
-        } catch(IOException | InterruptedException e) {
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
-        String deviceId = devicePath;
-        if (deviceId.contains("/dev/")) {
-            deviceId = deviceId.split("/dev/")[1];
-        }
-        try {
-            String command = "system_profiler SPStorageDataType";
-            Process p = Runtime.getRuntime().exec(command);
-            p.waitFor();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            String line = reader.readLine();
-            while (line != null) {               
-                if (line.contains(deviceId)) {
-                    // lines after deviceId
-                    String lineAfterId = reader.readLine();
-                    while (lineAfterId != null) {
-                        if (lineAfterId.contains("Device Name: ")) {
-                            return lineAfterId.split("Device Name: ")[1];
-                        }
-                        lineAfterId = reader.readLine();
+    } catch (IOException e) {
+        Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
+    }
+
+    String deviceId = devicePath;
+    if (deviceId.contains("/dev/")) {
+        deviceId = deviceId.split("/dev/")[1];
+    }
+
+    try {
+        ProcessBuilder pb = new ProcessBuilder("system_profiler", "SPStorageDataType");
+        pb.redirectErrorStream(true);
+        Process process = pb.start();
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (line.contains(deviceId)) {
+                // Lines after deviceId
+                String lineAfterId;
+                while ((lineAfterId = reader.readLine()) != null) {
+                    if (lineAfterId.contains("Device Name: ")) {
+                        return lineAfterId.split("Device Name: ")[1];
                     }
                 }
-                line = reader.readLine();
             }
-        } catch (IOException | InterruptedException e) {
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
-        return "Model unavailable for " + deviceId;
+    } catch (IOException e) {
+        Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
     }
+
+    return "Model unavailable for " + deviceId;
+}
     
     static public void flushDataToDriveMacOs() {
         flushDataToDriveLinux();
