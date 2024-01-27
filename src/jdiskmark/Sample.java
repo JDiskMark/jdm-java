@@ -57,7 +57,7 @@ public class Sample {
     public void setMax(double max) { cumMax = max; }
     
     public double getMin() { return cumMin; }
-    public void setMin(double min) { cumMax = min; }
+    public void setMin(double min) { cumMin = min; }
 
     // access time statistics
     
