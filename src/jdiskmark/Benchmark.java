@@ -35,51 +35,57 @@ public class Benchmark implements Serializable {
     
     static public enum IOMode { READ, WRITE, READ_WRITE; }
     static public enum BlockSequence { SEQUENTIAL, RANDOM; }
-
+    
+    // surrogate key
     @Column
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     long id;
-    
-    // configuration
+
+    // system data
     @Column
     String diskInfo = null;
+    
+    // configuration
     @Column
     IOMode ioMode;
     @Column
     BlockSequence blockOrder;
     @Column
-    int numSamples = 0;
-    @Column
     int numBlocks = 0;
     @Column
     int blockSize = 0;
     @Column
+    int numSamples = 0;
+    @Column
     long txSize = 0;
+    
+    // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column
     LocalDateTime startTime;
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column
-    LocalDateTime  endTime = null;
-    @Column
-    int totalMarks = 0;
-    @Column
-    double accAvg = 0;
-    @Column
-    double runMin = 0;
-    @Column
-    double runMax = 0;
-    @Column
-    double runAvg = 0;
-
+    LocalDateTime endTime = null;
+    
+    // sample data
     @Column
     @Convert(converter = SampleAttributeConverter.class)
     ArrayList<Sample> samples = new ArrayList<>();
     
+    // results
+    @Column
+    double runAvg = 0;
+    @Column
+    double runMax = 0;
+    @Column
+    double runMin = 0;
+    @Column
+    double accAvg = 0;
+    
     @Override
     public String toString() {
-        return "Benchmark(" + ioMode + "," + blockOrder + "): " + totalMarks + " bw avg: " + runAvg;
+        return "Benchmark(" + ioMode + "," + blockOrder + "): " + numSamples + " bw avg: " + runAvg;
     }
     
     public Benchmark() {
@@ -90,6 +96,25 @@ public class Benchmark implements Serializable {
         startTime = LocalDateTime.now();
         ioMode = type;
         blockOrder = order;
+    }
+    
+    // basic getters and setters
+    
+    public Long getId() {
+        return id;
+    }
+    public void setId(Long id) {
+        this.id = id;
+    }
+    public String getDriveInfo() {
+        return diskInfo;
+    }
+    public void setDriveInfo(String info) {
+        diskInfo = info;
+    }
+    
+    public void add(Sample s) {
+        samples.add(s);
     }
     
     // display friendly methods
@@ -132,25 +157,6 @@ public class Benchmark implements Serializable {
         }
         long diffMs = Duration.between(startTime, endTime).toMillis();
         return String.valueOf(diffMs);
-    }
-    
-    // basic getters and setters
-    
-    public Long getId() {
-        return id;
-    }
-    public void setId(Long id) {
-        this.id = id;
-    }
-    public String getDriveInfo() {
-        return diskInfo;
-    }
-    public void setDriveInfo(String info) {
-        diskInfo = info;
-    }
-    
-    public void add(Sample s) {
-        samples.add(s);
     }
     
     // utility methods for collection

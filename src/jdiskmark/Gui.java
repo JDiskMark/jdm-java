@@ -216,6 +216,24 @@ public final class Gui {
         msAxis.setVisible(App.showDriveAccess);
     }
     
+    public static void updateLegendAndAxis(Benchmark b) {
+        boolean isWriteTest = b.ioMode == Benchmark.IOMode.WRITE;
+        boolean isReadTest = b.ioMode == Benchmark.IOMode.READ;
+        bwRenderer.setSeriesVisibleInLegend(0, isWriteTest);
+        bwRenderer.setSeriesVisibleInLegend(1, isWriteTest);
+        bwRenderer.setSeriesVisibleInLegend(2, isWriteTest && App.showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(3, isWriteTest && App.showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(4, isReadTest);
+        bwRenderer.setSeriesVisibleInLegend(5, isReadTest);
+        bwRenderer.setSeriesVisibleInLegend(6, isReadTest && App.showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(7, isReadTest && App.showMaxMin);
+        
+        msRenderer.setSeriesVisibleInLegend(0, isWriteTest && App.showDriveAccess);
+        msRenderer.setSeriesVisibleInLegend(1, isReadTest && App.showDriveAccess);
+        
+        msAxis.setVisible(App.showDriveAccess);
+    }
+    
     /**
      * GH-2 need solution for dropping catch
      */
@@ -317,7 +335,7 @@ public final class Gui {
     
     static public void loadBenchmark(Benchmark benchmark) {
         resetBenchmarkData();
-        updateLegendAndAxis();
+        updateLegendAndAxis(benchmark);
         chart.getTitle().setText(benchmark.getDriveInfo());
         ArrayList<Sample> samples = benchmark.samples;
         System.out.println("samples=" + samples.size());

@@ -152,12 +152,13 @@ public final class MainFrame extends javax.swing.JFrame {
         deleteBenchmarksItem = new javax.swing.JMenuItem();
         resetSequenceMenuItem = new javax.swing.JMenuItem();
         jSeparator1 = new javax.swing.JPopupMenu.Separator();
+        writeSyncCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         multiFileCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         autoRemoveCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         autoResetCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
+        jSeparator2 = new javax.swing.JPopupMenu.Separator();
         showMaxMinCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         showAccessCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
-        writeSyncCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         helpMenu = new javax.swing.JMenu();
         jMenuItem2 = new javax.swing.JMenuItem();
 
@@ -567,6 +568,15 @@ public final class MainFrame extends javax.swing.JFrame {
         optionMenu.add(resetSequenceMenuItem);
         optionMenu.add(jSeparator1);
 
+        writeSyncCheckBoxMenuItem.setSelected(true);
+        writeSyncCheckBoxMenuItem.setText("Write Sync");
+        writeSyncCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                writeSyncCheckBoxMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(writeSyncCheckBoxMenuItem);
+
         multiFileCheckBoxMenuItem.setSelected(true);
         multiFileCheckBoxMenuItem.setText("Multi Data File");
         multiFileCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -593,6 +603,7 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
         optionMenu.add(autoResetCheckBoxMenuItem);
+        optionMenu.add(jSeparator2);
 
         showMaxMinCheckBoxMenuItem.setSelected(true);
         showMaxMinCheckBoxMenuItem.setText("Show Max Min");
@@ -611,15 +622,6 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
         optionMenu.add(showAccessCheckBoxMenuItem);
-
-        writeSyncCheckBoxMenuItem.setSelected(true);
-        writeSyncCheckBoxMenuItem.setText("Write Sync");
-        writeSyncCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                writeSyncCheckBoxMenuItemActionPerformed(evt);
-            }
-        });
-        optionMenu.add(writeSyncCheckBoxMenuItem);
 
         jMenuBar1.add(optionMenu);
 
@@ -819,6 +821,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPopupMenu.Separator jSeparator1;
+    private javax.swing.JPopupMenu.Separator jSeparator2;
     private javax.swing.JPanel locationPanel;
     private javax.swing.JTextField locationText;
     private javax.swing.JComboBox modeCombo;
