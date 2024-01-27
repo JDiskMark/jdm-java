@@ -17,7 +17,7 @@ import java.util.logging.Logger;
 /**
  * OS Specific Utility methods for jDiskMark
  */
-public class OsUtil {
+public class UtilOs {
     
     /*
      * Not used kept here for reference.

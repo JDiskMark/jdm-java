@@ -122,16 +122,16 @@ public class Util {
         String osName = System.getProperty("os.name");
         if (osName.contains("Linux")) {
             // get disk info for linux
-            String partition = OsUtil.getPartitionFromPathLinux(dataDirPath);
-            List<String> deviceNames = OsUtil.getDeviceNamesFromPartitionLinux(partition);
+            String partition = UtilOs.getPartitionFromPathLinux(dataDirPath);
+            List<String> deviceNames = UtilOs.getDeviceNamesFromPartitionLinux(partition);
             String deviceModel;
             String deviceSize;
             
             // handle single physical drive
             if (deviceNames.size() == 1) {
                 String devicePath = "/dev/" + deviceNames.getFirst();
-                deviceModel = OsUtil.getDeviceModelLinux(devicePath);
-                deviceSize = OsUtil.getDeviceSizeLinux(devicePath);
+                deviceModel = UtilOs.getDeviceModelLinux(devicePath);
+                deviceSize = UtilOs.getDeviceSizeLinux(devicePath);
                 return deviceModel + " (" + deviceSize + ")";
             }
             
@@ -140,8 +140,8 @@ public class Util {
                 StringBuilder sb = new StringBuilder();
                 for (String dName : deviceNames) {
                     String devicePath = "/dev/" + dName;
-                    deviceModel = OsUtil.getDeviceModelLinux(devicePath);
-                    deviceSize = OsUtil.getDeviceSizeLinux(devicePath);
+                    deviceModel = UtilOs.getDeviceModelLinux(devicePath);
+                    deviceSize = UtilOs.getDeviceSizeLinux(devicePath);
                     if (sb.length() > 0) {
                         sb.append(":");
                     }
@@ -153,9 +153,9 @@ public class Util {
             return ERROR_DRIVE_INFO;
         } else if (osName.contains("Mac OS X")) {
             // get disk info for os x
-            String devicePath = OsUtil.getDeviceFromPathMacOs(dataDirPath);
+            String devicePath = UtilOs.getDeviceFromPathMacOs(dataDirPath);
             System.out.println("devicePath=" + devicePath);
-            String deviceModel = OsUtil.getDeviceModelMacOs(devicePath);
+            String deviceModel = UtilOs.getDeviceModelMacOs(devicePath);
             System.out.println("deviceModel=" + deviceModel);
             return deviceModel;
         } else if (osName.contains("Windows")) {
@@ -163,7 +163,7 @@ public class Util {
             String driveLetter = dataDirPath.getRoot().toFile().toString().split(":")[0];
             if (driveLetter.length() == 1 && Character.isLetter(driveLetter.charAt(0))) {
                 // Only proceed if the driveLetter is a single character and a letter
-                return OsUtil.getModelFromLetterWindows(driveLetter);
+                return UtilOs.getModelFromLetterWindows(driveLetter);
             }
             return ERROR_DRIVE_INFO;
         }

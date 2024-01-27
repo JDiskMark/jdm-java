@@ -227,14 +227,14 @@ public final class Gui {
         if (osName.contains("Linux")) {
             boolean isRoot = false;
             try {
-                isRoot = OsUtil.isRunningAsRootLinux();
+                isRoot = UtilOs.isRunningAsRootLinux();
             } catch (IOException | InterruptedException ex) {
                 Logger.getLogger(Gui.class.getName()).log(Level.SEVERE, null, ex);
             }
             if (isRoot) {
                 // GH-2 automate catch dropping
-                OsUtil.flushDataToDriveLinux();
-                OsUtil.dropWriteCacheLinux();
+                UtilOs.flushDataToDriveLinux();
+                UtilOs.dropWriteCacheLinux();
             } else {
                 JOptionPane.showMessageDialog(Gui.mainFrame, 
                         """
@@ -248,14 +248,14 @@ public final class Gui {
         } else if (osName.contains("Mac OS")) {
             boolean isRoot = false;
             try {
-                isRoot = OsUtil.isRunningAsRootMacOs();
+                isRoot = UtilOs.isRunningAsRootMacOs();
             } catch (IOException | InterruptedException ex) {
                 Logger.getLogger(Gui.class.getName()).log(Level.SEVERE, null, ex);
             }
             if (isRoot) {
                 // GH-2 automate catch dropping
-                OsUtil.flushDataToDriveMacOs();
-                OsUtil.dropWriteCacheMacOs();
+                UtilOs.flushDataToDriveMacOs();
+                UtilOs.dropWriteCacheMacOs();
             } else {
                 JOptionPane.showMessageDialog(Gui.mainFrame, 
                         """
@@ -268,7 +268,7 @@ public final class Gui {
                         JOptionPane.PLAIN_MESSAGE);
             }
         } else if (osName.contains("Windows")) {
-            boolean isAdmin = OsUtil.isRunningAsAdminWindows();
+            boolean isAdmin = UtilOs.isRunningAsAdminWindows();
             boolean emptyStandbyListExist = Files.exists(Paths.get(".\\EmptyStandbyList.exe"));
             System.out.println("== admin=" + isAdmin);
             System.out.println("== emptyStandbyListExist=" + emptyStandbyListExist);
@@ -280,7 +280,7 @@ public final class Gui {
                 } catch (InterruptedException ex) {
                     Logger.getLogger(Gui.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                OsUtil.emptyStandbyListWindows();
+                UtilOs.emptyStandbyListWindows();
                 try {
                     Thread.sleep(700);
                 } catch (InterruptedException ex) {
