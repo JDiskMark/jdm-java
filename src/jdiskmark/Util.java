@@ -1,10 +1,14 @@
 
 package jdiskmark;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import javax.swing.filechooser.FileSystemView;
@@ -111,28 +115,25 @@ public class Util {
     }
     
     /**
-     * Get OS specific disk info based on the drive the path is mapped to.
+     * Get disk model info based on the drive the path is mapped to.
      * 
      * @param dataDir the data directory being used in the run.
      * @return Disk info if available.
      */
-    public static String getDriveInfo(File dataDir) {
+    public static String getDriveModel(File dataDir) {
         System.out.println("os: " + System.getProperty("os.name"));
         Path dataDirPath = Paths.get(dataDir.getAbsolutePath());
         String osName = System.getProperty("os.name");
+        String deviceModel;
         if (osName.contains("Linux")) {
             // get disk info for linux
-            String partition = UtilOs.getPartitionFromPathLinux(dataDirPath);
+            String partition = UtilOs.getPartitionFromFilePathLinux(dataDirPath);
             List<String> deviceNames = UtilOs.getDeviceNamesFromPartitionLinux(partition);
-            String deviceModel;
-            String deviceSize;
             
             // handle single physical drive
             if (deviceNames.size() == 1) {
                 String devicePath = "/dev/" + deviceNames.getFirst();
-                deviceModel = UtilOs.getDeviceModelLinux(devicePath);
-                deviceSize = UtilOs.getDeviceSizeLinux(devicePath);
-                return deviceModel + " (" + deviceSize + ")";
+                return UtilOs.getDeviceModelLinux(devicePath);
             }
             
             // GH-3 handle multiple drives (LVM or RAID partitions)
@@ -141,11 +142,10 @@ public class Util {
                 for (String dName : deviceNames) {
                     String devicePath = "/dev/" + dName;
                     deviceModel = UtilOs.getDeviceModelLinux(devicePath);
-                    deviceSize = UtilOs.getDeviceSizeLinux(devicePath);
                     if (sb.length() > 0) {
                         sb.append(":");
                     }
-                    sb.append(deviceModel).append(" (").append(deviceSize).append(")");
+                    sb.append(deviceModel);
                 }
                 return "Multiple drives: " + sb.toString();
             }
@@ -155,7 +155,7 @@ public class Util {
             // get disk info for os x
             String devicePath = UtilOs.getDeviceFromPathMacOs(dataDirPath);
             System.out.println("devicePath=" + devicePath);
-            String deviceModel = UtilOs.getDeviceModelMacOs(devicePath);
+            deviceModel = UtilOs.getDeviceModelMacOs(devicePath);
             System.out.println("deviceModel=" + deviceModel);
             return deviceModel;
         } else if (osName.contains("Windows")) {
@@ -163,10 +163,87 @@ public class Util {
             String driveLetter = dataDirPath.getRoot().toFile().toString().split(":")[0];
             if (driveLetter.length() == 1 && Character.isLetter(driveLetter.charAt(0))) {
                 // Only proceed if the driveLetter is a single character and a letter
-                return UtilOs.getModelFromLetterWindows(driveLetter);
+                deviceModel = UtilOs.getModelFromLetterWindows(driveLetter);
+                System.out.println("deviceModel=" + deviceModel);
+                return deviceModel;
             }
             return ERROR_DRIVE_INFO;
         }
         return "OS not supported";
+    }
+    
+    public static DiskUsageInfo getDiskUsage(String diskPath) throws IOException, InterruptedException {
+        ProcessBuilder pb = new ProcessBuilder();
+
+        // Choose the appropriate command for the operating system:
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            pb.command("cmd.exe", "/c", "fsutil volume diskfree " + diskPath);
+        } else {
+            pb.command("df", "-h", diskPath);
+        }
+
+        Process process = pb.start();
+
+        // Capture the output from the command:
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        String line;
+        List<String> outputLines = new ArrayList<>();
+        while ((line = reader.readLine()) != null) {
+            outputLines.add(line);
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new IOException("Command execution failed with exit code: " + exitCode);
+        }
+
+        // Parse the output to extract disk usage information:
+        return parseDiskUsageInfo(outputLines);
+    }
+
+    private static DiskUsageInfo parseDiskUsageInfo(List<String> outputLines) {
+        String usageLine = outputLines.get(1); // Assuming the relevant information is on the second line
+        String[] parts = usageLine.trim().split("\\s+");
+
+        double usedGb = Double.parseDouble(parts[2].replace("G", ""));
+        double totalGb = Double.parseDouble(parts[1].replace("G", ""));
+        double percentUsed = usedGb / totalGb * 100;
+
+        return new DiskUsageInfo(percentUsed, usedGb, totalGb);
+    }
+
+    public static class DiskUsageInfo {
+        public int percentUsed;
+        public long usedGb;
+        public long totalGb;
+
+        public DiskUsageInfo(double percentUsed, double usedGB, double totalGB) {
+            this.percentUsed = (int) Math.round(percentUsed);
+            this.usedGb = Math.round(usedGB);
+            this.totalGb = Math.round(totalGB);
+        }
+        
+        /**
+         * Format as:
+         * option a: [23%] (52/228 GB)
+         * option b: 23% 52/228GB
+         * @return 
+         */
+        public String toDisplayString() {
+            return + percentUsed + "% " + usedGb + "/" + totalGb + "GB";
+        }
+    }
+    
+    public static String getPartitionId(Path path) {
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            String driveLetter = UtilOs.getDriveLetterWindows(path);
+            return driveLetter;
+        } else {
+            String partitionPath = UtilOs.getPartitionFromFilePathLinux(path);
+            if (partitionPath.contains("/dev/")) {
+                return partitionPath.split("/dev/")[1];
+            }
+            return partitionPath;
+        }
     }
 }

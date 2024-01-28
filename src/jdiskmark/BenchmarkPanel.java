@@ -43,11 +43,11 @@ public class BenchmarkPanel extends javax.swing.JPanel {
 
             },
             new String [] {
-                "Drive Information", "IO Mode", "Block Order", "Samples", "Blocks", "B. Size", "Start Time", "Duration (ms)", "Access (ms)", "Max (MB/s)", "Min (MB/s)", "Avg (MB/s)"
+                "Drive Model", "Usage (GB)", "Mode", "Order", "Samples", "Blks", "B.Size", "Start Time", "Duration (ms)", "Access (ms)", "Max (MB/s)", "Min (MB/s)", "Avg (MB/s)"
             }
         ) {
             boolean[] canEdit = new boolean [] {
-                false, false, false, false, false, false, false, false, false, false, false, false
+                false, true, false, false, false, false, false, false, false, false, false, false, false
             };
 
             public boolean isCellEditable(int rowIndex, int columnIndex) {
@@ -63,17 +63,18 @@ public class BenchmarkPanel extends javax.swing.JPanel {
         jScrollPane1.setViewportView(runTable);
         if (runTable.getColumnModel().getColumnCount() > 0) {
             runTable.getColumnModel().getColumn(0).setPreferredWidth(170);
-            runTable.getColumnModel().getColumn(1).setPreferredWidth(20);
-            runTable.getColumnModel().getColumn(2).setPreferredWidth(40);
-            runTable.getColumnModel().getColumn(3).setPreferredWidth(6);
-            runTable.getColumnModel().getColumn(4).setPreferredWidth(5);
-            runTable.getColumnModel().getColumn(5).setPreferredWidth(6);
-            runTable.getColumnModel().getColumn(6).setPreferredWidth(90);
-            runTable.getColumnModel().getColumn(7).setPreferredWidth(6);
-            runTable.getColumnModel().getColumn(8).setPreferredWidth(10);
-            runTable.getColumnModel().getColumn(9).setPreferredWidth(32);
+            runTable.getColumnModel().getColumn(1).setPreferredWidth(30);
+            runTable.getColumnModel().getColumn(2).setPreferredWidth(10);
+            runTable.getColumnModel().getColumn(3).setPreferredWidth(40);
+            runTable.getColumnModel().getColumn(4).setPreferredWidth(6);
+            runTable.getColumnModel().getColumn(5).setPreferredWidth(5);
+            runTable.getColumnModel().getColumn(6).setPreferredWidth(6);
+            runTable.getColumnModel().getColumn(7).setPreferredWidth(90);
+            runTable.getColumnModel().getColumn(8).setPreferredWidth(6);
+            runTable.getColumnModel().getColumn(9).setPreferredWidth(10);
             runTable.getColumnModel().getColumn(10).setPreferredWidth(32);
             runTable.getColumnModel().getColumn(11).setPreferredWidth(32);
+            runTable.getColumnModel().getColumn(12).setPreferredWidth(32);
         }
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
@@ -94,7 +95,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
         );
     }// </editor-fold>//GEN-END:initComponents
 
-    static final int START_TIME_COLUMN = 6;
+    static final int START_TIME_COLUMN = 7;
     
     private void runTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_runTableMouseClicked
         int sRow = runTable.getSelectedRow();
@@ -117,7 +118,8 @@ public class BenchmarkPanel extends javax.swing.JPanel {
         DefaultTableModel model = (DefaultTableModel) this.runTable.getModel();
         model.addRow(
                 new Object[] {
-                    run.diskInfo,
+                    run.driveModel,
+                    run.getUsageColumnDisplay(),
                     run.ioMode,
                     run.blockOrder,
                     run.numSamples,

@@ -103,6 +103,16 @@ public class UtilOs {
         return null;
     }
     
+    public static String getDriveLetterWindows(Path dataDirPath) {
+        // get disk info for windows
+        String driveLetter = dataDirPath.getRoot().toFile().toString().split(":")[0];
+        if (driveLetter.length() == 1 && Character.isLetter(driveLetter.charAt(0))) {
+            // Only proceed if the driveLetter is a single character and a letter
+            return driveLetter;
+        }
+        return "unknown";
+    }
+    
     /**
      * Get the drive model description based on the windows drive letter. 
      * Uses the powershell script disk-model.ps1
@@ -119,38 +129,44 @@ public class UtilOs {
      * @param driveLetter as a string
      * @return the model as a string
      */
-public static String getModelFromLetterWindows(String driveLetter) {
-    try {
-        ProcessBuilder pb = new ProcessBuilder("powershell", "-ExecutionPolicy", 
-                "ByPass", "-File", "disk-model.ps1");
-        pb.redirectErrorStream(true);
-        Process process = pb.start();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            System.out.println(line);
-            if (line.trim().endsWith(driveLetter + ":")) {
-                String model = line.split(driveLetter + ":")[0];
-                System.out.println("model is: " + model);
-                return model;
+    public static String getModelFromLetterWindows(String driveLetter) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("powershell", "-ExecutionPolicy", 
+                    "ByPass", "-File", "disk-model.ps1");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println(line);
+                if (line.trim().endsWith(driveLetter + ":")) {
+                    String model = line.split(driveLetter + ":")[0];
+                    System.out.println("model is: " + model);
+                    return model;
+                }
             }
+        } catch (IOException e) {
+            System.err.println("IO exception retrieving disk info: " + e.getLocalizedMessage());
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
-    } catch (IOException e) {
-        System.err.println("IO exception retrieving disk info: " + e.getLocalizedMessage());
-        Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
+        return null;
     }
-    return null;
-}
     
     /**
      * On Linux OS get the device path when given a file path.
      * eg.  filePath = /home/james/Desktop/jDiskMarkData
      *      devicePath = /dev/sda
      *      
+     * Example command and output:
+     * $ df /home/james/jDiskMarkData
+     * Filesystem     1K-blocks     Used Available Use% Mounted on
+     * /dev/sda2      238737052 54179492 172357524  24% /
+     * 
      * @param path the file path
      * @return the device path
      */
-    static public String getPartitionFromPathLinux(Path path) {
+    static public String getPartitionFromFilePathLinux(Path path) {
+        System.out.println("filePath=" + path.toString());
         try {
             ProcessBuilder pb = new ProcessBuilder("df", path.toString());
             pb.redirectErrorStream(true);
@@ -200,6 +216,11 @@ public static String getModelFromLetterWindows(String driveLetter) {
      * On Linux OS use the lsblk command to get the disk model number for a 
      * specific Device ie. /dev/sda
      * 
+     * Example output of command:
+     * ~$ lsblk /dev/sda --output MODEL
+     * MODEL
+     * Samsung SSD 860 EVO M.2 250GB
+     * 
      * @param devicePath path of the device
      * @return the disk model number
      */
@@ -211,7 +232,7 @@ public static String getModelFromLetterWindows(String driveLetter) {
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
             while ((line  = reader.readLine()) != null) {
-                //System.out.println(line);
+                // return the first line that does not contain the header
                 if (!line.equals("MODEL") && !line.trim().isEmpty()) {
                     return line;
                 }
@@ -226,10 +247,27 @@ public static String getModelFromLetterWindows(String driveLetter) {
      * On Linux OS use the lsblk command to get the disk size for a 
      * specific Device ie. /dev/sda
      * 
+     * The full command is:
+     * 
+     * $ lsblk /dev/sda
+     * NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+     * sda      8:0    0 232.9G  0 disk 
+     * ├─sda1   8:1    0   512M  0 part /boot/efi
+     * └─sda2   8:2    0 232.4G  0 part /var/snap/firefox/common/host-hunspell
+     * 
+     * Retrieving just the size column is:
+     * 
+     * $ lsblk /dev/sda --output SIZE
+     *   SIZE
+     * 232.9G
+     *   512M
+     * 232.4G
+     * 
      * @param devicePath path of the device
      * @return the size of the device
      */
     static public String getDeviceSizeLinux(String devicePath) {
+        System.out.println("getting size of " + devicePath);
         try {
             ProcessBuilder pb = new ProcessBuilder("lsblk", devicePath, "--output", "SIZE");
             pb.redirectErrorStream(true);
@@ -237,6 +275,7 @@ public static String getModelFromLetterWindows(String driveLetter) {
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
+            // return the first entry which is not the column header
             while ((line = reader.readLine()) != null) {
                 if (!line.contains("SIZE") && !line.trim().isEmpty()) {
                     return line;

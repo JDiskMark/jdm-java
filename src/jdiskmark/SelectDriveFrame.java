@@ -17,7 +17,7 @@ public class SelectDriveFrame extends javax.swing.JFrame {
         if (App.locationDir == null) {
             App.locationDir = new File(System.getProperty("user.home"));
             App.dataDir = new File(App.locationDir.getAbsolutePath()
-                    +File.separator+App.DATADIRNAME);
+                    + File.separator + App.DATADIRNAME);
         }
     }
 

@@ -44,7 +44,15 @@ public class Benchmark implements Serializable {
 
     // system data
     @Column
-    String diskInfo = null;
+    String driveModel = null;
+    @Column
+    String partitionId;      // on windows the drive letter
+    @Column
+    int percentUsed;
+    @Column
+    long usedGb;
+    @Column
+    long totalGb;
     
     // configuration
     @Column
@@ -107,10 +115,13 @@ public class Benchmark implements Serializable {
         this.id = id;
     }
     public String getDriveInfo() {
-        return diskInfo;
+        return driveModel + " - " + partitionId + " - " + getUsageTitleDisplay();
     }
-    public void setDriveInfo(String info) {
-        diskInfo = info;
+    public String getUsageTitleDisplay() {
+        return percentUsed + "% (" + usedGb + "/" + totalGb + "GB)";
+    }
+    public String getUsageColumnDisplay() {
+        return percentUsed + "% (" + usedGb + "/" + totalGb + ")";
     }
     
     public void add(Sample s) {

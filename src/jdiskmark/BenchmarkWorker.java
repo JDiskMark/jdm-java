@@ -65,17 +65,30 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         
         int startFileNum = App.nextSampleNumber;
         
-        String driveInformation = Util.getDriveInfo(dataDir);
-        msg("drive info: (" + driveInformation + ")");
+        String driveModel = Util.getDriveModel(dataDir);
+        String partitionId = Util.getPartitionId(dataDir.toPath());
+        Util.DiskUsageInfo dInfo = null;
+        try {
+            dInfo = Util.getDiskUsage(dataDir.toString());
+        } catch (IOException | InterruptedException ex) {
+            Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        msg("drive model=" + driveModel + " usage=" + dInfo.toDisplayString());
         
         if (App.writeTest) {
             Benchmark run = new Benchmark(Benchmark.IOMode.WRITE, App.blockSequence);
+            
+            run.driveModel = driveModel;
+            run.partitionId = partitionId;
+            run.percentUsed = dInfo.percentUsed;
+            run.usedGb = dInfo.usedGb;
+            run.totalGb = dInfo.totalGb;
+            
             run.numSamples = App.numOfSamples;
             run.numBlocks = App.numOfBlocks;
             run.blockSize = App.blockSizeKb;
             run.txSize = App.targetTxSizeKb();
-            run.setDriveInfo(driveInformation);
-            
+
             Gui.chart.getTitle().setVisible(true);
             Gui.chart.getTitle().setText(run.getDriveInfo());
             
@@ -149,12 +162,18 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         
         if (App.readTest) {
             Benchmark run = new Benchmark(Benchmark.IOMode.READ, App.blockSequence);
+            
+            run.driveModel = driveModel;
+            run.partitionId = partitionId;
+            run.percentUsed = dInfo.percentUsed;
+            run.usedGb = dInfo.usedGb;
+            run.totalGb = dInfo.totalGb;
+            
             run.numSamples = App.numOfSamples;
             run.numBlocks = App.numOfBlocks;
             run.blockSize = App.blockSizeKb;
             run.txSize = App.targetTxSizeKb();
-            run.setDriveInfo(driveInformation);
-            
+
             Gui.chart.getTitle().setVisible(true);
             Gui.chart.getTitle().setText(run.getDriveInfo());
             
