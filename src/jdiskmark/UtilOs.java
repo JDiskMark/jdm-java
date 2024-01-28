@@ -536,6 +536,9 @@ static public String getDeviceModelMacOs(String devicePath) {
     }
     
     /**
+     * $ df -h /home/james
+     * Filesystem      Size  Used Avail Use% Mounted on
+     * /dev/sda2       228G   52G  165G  24% /
      * 
      * @param outputLines
      * @return usage object
@@ -546,6 +549,25 @@ static public String getDeviceModelMacOs(String devicePath) {
 
         double usedGb = Double.parseDouble(parts[2].replace("G", ""));
         double totalGb = Double.parseDouble(parts[1].replace("G", ""));
+        double percentUsed = usedGb / totalGb * 100;
+
+        return new DiskUsageInfo(percentUsed, usedGb, totalGb);
+    }
+    
+    /**
+     * $ df -h /Users/james
+     * Filesystem     Size   Used  Avail Capacity iused               ifree %iused  Mounted on
+     * /dev/disk1s1  466Gi  191Gi  273Gi    42%  947563 9223372036853828244    0%   /
+     * 
+     * @param outputLines
+     * @return usage object
+     */
+    static DiskUsageInfo parseDiskUsageInfoMacOs(List<String> outputLines) {
+        String usageLine = outputLines.get(1); // Assuming the relevant information is on the second line
+        String[] parts = usageLine.trim().split("\\s+");
+
+        double usedGb = Double.parseDouble(parts[2].replace("Gi", ""));
+        double totalGb = Double.parseDouble(parts[1].replace("Gi", ""));
         double percentUsed = usedGb / totalGb * 100;
 
         return new DiskUsageInfo(percentUsed, usedGb, totalGb);

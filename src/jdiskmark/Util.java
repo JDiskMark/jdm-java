@@ -174,11 +174,13 @@ public class Util {
     
     public static DiskUsageInfo getDiskUsage(String diskPath) throws IOException, InterruptedException {
         ProcessBuilder pb = new ProcessBuilder();
-
+        
+        String os = System.getProperty("os.name");
         // Choose the appropriate command for the operating system:
-        if (System.getProperty("os.name").startsWith("Windows")) {
+        if (os.startsWith("Windows")) {
             pb.command("cmd.exe", "/c", "fsutil volume diskfree " + diskPath);
         } else {
+            // command is same for linux and mac os
             pb.command("df", "-h", diskPath);
         }
 
@@ -197,11 +199,14 @@ public class Util {
             throw new IOException("Command execution failed with exit code: " + exitCode);
         }
 
-        if (System.getProperty("os.name").startsWith("Windows")) {
+        if (os.startsWith("Windows")) {
             return UtilOs.parseDiskUsageInfoWindows(outputLines);
-        } else {
+        } else if (os.contains("Mac OS")) {
+            return UtilOs.parseDiskUsageInfoMacOs(outputLines);
+        } else if (os.contains("Linux")) {
             return UtilOs.parseDiskUsageInfoLinux(outputLines);
         }
+        return new DiskUsageInfo();
     }
 
     public static String getPartitionId(Path path) {
