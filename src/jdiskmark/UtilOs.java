@@ -69,7 +69,7 @@ public class UtilOs {
      * @return Disk Drive Model description or empty string if not found.
      */
     @Deprecated
-    public static String getModelFromLetterLegacyWindows(String driveLetter) {
+    public static String getDriveModelLegacyWindows(String driveLetter) {
         try {
             Process p = Runtime.getRuntime().exec("powershell -ExecutionPolicy ByPass -File disk-model.ps1");
             p.waitFor();
@@ -129,7 +129,7 @@ public class UtilOs {
      * @param driveLetter as a string
      * @return the model as a string
      */
-    public static String getModelFromLetterWindows(String driveLetter) {
+    public static String getDriveModelWindows(String driveLetter) {
         try {
             ProcessBuilder pb = new ProcessBuilder("powershell", "-ExecutionPolicy", 
                     "ByPass", "-File", "disk-model.ps1");
@@ -140,7 +140,7 @@ public class UtilOs {
             while ((line = reader.readLine()) != null) {
                 System.out.println(line);
                 if (line.trim().endsWith(driveLetter + ":")) {
-                    String model = line.split(driveLetter + ":")[0];
+                    String model = line.split(driveLetter + ":")[0].trim();
                     System.out.println("model is: " + model);
                     return model;
                 }
@@ -234,7 +234,7 @@ public class UtilOs {
             while ((line  = reader.readLine()) != null) {
                 // return the first line that does not contain the header
                 if (!line.equals("MODEL") && !line.trim().isEmpty()) {
-                    return line;
+                    return line.trim();
                 }
             }
         } catch (IOException e) {
@@ -528,11 +528,68 @@ static public String getDeviceModelMacOs(String devicePath) {
                     System.err.println(line);
                 }
             }
-
             System.out.println("EXIT VALUE: " + exitValue);
 
         } catch (IOException | InterruptedException e) {
             Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, "Error executing command", e);
         }
+    }
+    
+    /**
+     * 
+     * @param outputLines
+     * @return usage object
+     */
+    static DiskUsageInfo parseDiskUsageInfoLinux(List<String> outputLines) {
+        String usageLine = outputLines.get(1); // Assuming the relevant information is on the second line
+        String[] parts = usageLine.trim().split("\\s+");
+
+        double usedGb = Double.parseDouble(parts[2].replace("G", ""));
+        double totalGb = Double.parseDouble(parts[1].replace("G", ""));
+        double percentUsed = usedGb / totalGb * 100;
+
+        return new DiskUsageInfo(percentUsed, usedGb, totalGb);
+    }
+    
+    /**
+     * This parses disk usage on windows, tested on w11.
+     * 
+     * >cmd.exe /c fsutil volume diskfree c:\Users\james
+     * Total free bytes                :  35,466,014,720 ( 33.0 GB)
+     * Total bytes                     : 511,324,794,880 (476.2 GB)
+     * Total quota free bytes          :  35,466,014,720 ( 33.0 GB)
+     * Unavailable pool bytes          :               0 (  0.0 KB)
+     * Quota unavailable pool bytes    :               0 (  0.0 KB)
+     * Used bytes                      : 475,832,217,600 (443.2 GB)
+     * Total Reserved bytes            :      26,562,560 ( 25.3 MB)
+     * Volume storage reserved bytes   :               0 (  0.0 KB)
+     * Available committed bytes       :               0 (  0.0 KB)
+     * Pool available bytes            :               0 (  0.0 KB)
+     * 
+     * @param outputLines lines to parse
+     * @return A data structure with disk usage
+     */
+    static DiskUsageInfo parseDiskUsageInfoWindows(List<String> outputLines) {
+        double usedGb = 0;
+        double totalGb = 0;
+        for (int i = 0; i < outputLines.size(); i++) {
+            String line = outputLines.get(i);
+            if (line.contains("Total bytes")) {
+                line = line.split(":")[1].trim().split("\\s+")[0];
+                String bytes = line.replace(",", "");
+                long totalBytes = Long.parseLong(bytes);
+                totalGb = (double) totalBytes / (double) (1024.0 * 1024.0 * 1024.0);
+            } else if (line.contains("Used bytes")) {
+                line = line.split(":")[1].trim().split("\\s+")[0];
+                String bytes = line.replace(",", "");
+                long usedBytes = Long.parseLong(bytes);
+                usedGb = (double) usedBytes / (double) (1024.0 * 1024.0 * 1024.0);
+            }
+        }
+        double percentUsed = usedGb / totalGb * 100;
+        System.out.println("usedGb=" + usedGb);
+        System.out.println("totalGb=" + totalGb);
+        System.out.println("percentUsed=" + percentUsed);
+        return new DiskUsageInfo(percentUsed, usedGb, totalGb);
     }
 }

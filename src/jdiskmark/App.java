@@ -118,6 +118,11 @@ public class App {
      * Initialize the GUI Application.
      */
     public static void init() {
+        
+        // for investigating cpu info
+        String cpuInfo = System.getenv("PROCESSOR_IDENTIFIER");
+        System.out.println(cpuInfo);
+        
         checkPermission();
         if (!APP_CACHE_DIR.exists()) {
             APP_CACHE_DIR.mkdirs();

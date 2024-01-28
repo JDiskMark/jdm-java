@@ -163,7 +163,7 @@ public class Util {
             String driveLetter = dataDirPath.getRoot().toFile().toString().split(":")[0];
             if (driveLetter.length() == 1 && Character.isLetter(driveLetter.charAt(0))) {
                 // Only proceed if the driveLetter is a single character and a letter
-                deviceModel = UtilOs.getModelFromLetterWindows(driveLetter);
+                deviceModel = UtilOs.getDriveModelWindows(driveLetter);
                 System.out.println("deviceModel=" + deviceModel);
                 return deviceModel;
             }
@@ -183,7 +183,7 @@ public class Util {
         }
 
         Process process = pb.start();
-
+        
         // Capture the output from the command:
         BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
         String line;
@@ -197,43 +197,13 @@ public class Util {
             throw new IOException("Command execution failed with exit code: " + exitCode);
         }
 
-        // Parse the output to extract disk usage information:
-        return parseDiskUsageInfo(outputLines);
-    }
-
-    private static DiskUsageInfo parseDiskUsageInfo(List<String> outputLines) {
-        String usageLine = outputLines.get(1); // Assuming the relevant information is on the second line
-        String[] parts = usageLine.trim().split("\\s+");
-
-        double usedGb = Double.parseDouble(parts[2].replace("G", ""));
-        double totalGb = Double.parseDouble(parts[1].replace("G", ""));
-        double percentUsed = usedGb / totalGb * 100;
-
-        return new DiskUsageInfo(percentUsed, usedGb, totalGb);
-    }
-
-    public static class DiskUsageInfo {
-        public int percentUsed;
-        public long usedGb;
-        public long totalGb;
-
-        public DiskUsageInfo(double percentUsed, double usedGB, double totalGB) {
-            this.percentUsed = (int) Math.round(percentUsed);
-            this.usedGb = Math.round(usedGB);
-            this.totalGb = Math.round(totalGB);
-        }
-        
-        /**
-         * Format as:
-         * option a: [23%] (52/228 GB)
-         * option b: 23% 52/228GB
-         * @return 
-         */
-        public String toDisplayString() {
-            return + percentUsed + "% " + usedGb + "/" + totalGb + "GB";
+        if (System.getProperty("os.name").startsWith("Windows")) {
+            return UtilOs.parseDiskUsageInfoWindows(outputLines);
+        } else {
+            return UtilOs.parseDiskUsageInfoLinux(outputLines);
         }
     }
-    
+
     public static String getPartitionId(Path path) {
         if (System.getProperty("os.name").startsWith("Windows")) {
             String driveLetter = UtilOs.getDriveLetterWindows(path);

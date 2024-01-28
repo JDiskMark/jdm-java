@@ -33,12 +33,18 @@ public final class MainFrame extends javax.swing.JFrame {
         totalTxProgBar.setValue(0);
         totalTxProgBar.setString("");
         
-        // permission string
-        StringBuilder permission = new StringBuilder();
-        if (App.isAdmin) permission.append(" [Admin]");
-        if (App.isRoot) permission.append(" [root]");
+        StringBuilder titleSb = new StringBuilder();
+        titleSb.append(getTitle()).append(" ").append(App.getVersion());
         
-        setTitle(getTitle() + " " + App.getVersion() + permission.toString());
+        // architecture
+        String arch = System.getProperty("os.arch");
+        titleSb.append(" - ").append(arch);
+
+        // permission string
+        if (App.isAdmin) titleSb.append(" [Admin] ");
+        if (App.isRoot) titleSb.append(" [root] ");
+        
+        setTitle(titleSb.toString());
         
         // auto scroll the text area.
         DefaultCaret caret = (DefaultCaret) msgTextArea.getCaret();

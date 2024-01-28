@@ -67,13 +67,14 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         
         String driveModel = Util.getDriveModel(dataDir);
         String partitionId = Util.getPartitionId(dataDir.toPath());
-        Util.DiskUsageInfo dInfo = null;
+        DiskUsageInfo dInfo = new DiskUsageInfo(); // init to prevent null ref
         try {
             dInfo = Util.getDiskUsage(dataDir.toString());
         } catch (IOException | InterruptedException ex) {
             Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, null, ex);
         }
-        msg("drive model=" + driveModel + " usage=" + dInfo.toDisplayString());
+        msg("drive model=" + driveModel + " partitionId=" + partitionId 
+                + " usage=" + dInfo.toDisplayString());
         
         if (App.writeTest) {
             Benchmark run = new Benchmark(Benchmark.IOMode.WRITE, App.blockSequence);
