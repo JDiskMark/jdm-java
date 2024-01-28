@@ -1,4 +1,4 @@
-# jDiskMark v0.5 (Windows/Mac/Linux)
+# jDiskMark v0.5 beta 4 (Windows/Mac/Linux)
 
 Cross platform disk benchmark utility written in java.
 
@@ -10,7 +10,7 @@ Cross platform disk benchmark utility written in java.
 - Adjustable block size, block qty and sample qty
 - Single or multi file option
 - Sequential or random option
-- Detects drive model info
+- Detects drive model and capacity
 - Save and load benchmarks for review
 - Auto clear disk cache (when sudo or admin)
 
@@ -75,7 +75,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 
 ## Release Notes
 
-### v0.5 beta 3
+### v0.5
  - update for java 21 LTS w NetBeans 20 environment: eclipselink 4.0, jpa 3.1, 
    modelgen 5.6, annotations 3.1, xml.bind 4.0
  - increased drive information default col width to 170
@@ -84,8 +84,11 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
  - replace Date w LocalDateTime to avoid deprecated @Temporal
  - disk access time (ms) - plotting disabled by default
  - replace display of transfer size with access time in run panel
- - auto clear disk cache for combined write read benchmarks
- - save and load benchmarks and graph series
+ - #2 auto clear disk cache for combined write read benchmarks
+ - #6 save and load benchmarks and graph series
+ - break out actions into seperate menu
+ - admin or root indicator, architecture indicator
+ - #8 used capacity and total capacity
 
 ### v0.4
  - updated eclipselink to 2.6 allows auto schema update
