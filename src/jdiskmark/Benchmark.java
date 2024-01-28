@@ -115,7 +115,7 @@ public class Benchmark implements Serializable {
         this.id = id;
     }
     public String getDriveInfo() {
-        return driveModel + " - " + partitionId + " - " + getUsageTitleDisplay();
+        return driveModel + " - " + partitionId + ": " + getUsageTitleDisplay();
     }
     public String getUsageTitleDisplay() {
         return percentUsed + "% (" + usedGb + "/" + totalGb + "GB)";
