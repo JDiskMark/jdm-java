@@ -140,9 +140,9 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                 App.updateMetrics(wSample);
                 publish(wSample);
                 
-                run.runMax = wSample.cumMax;
-                run.runMin = wSample.cumMin;
-                run.runAvg = wSample.cumAvg;
+                run.bwMax = wSample.cumMax;
+                run.bwMin = wSample.cumMin;
+                run.bwAvg = wSample.cumAvg;
                 run.accAvg = wSample.cumAccTimeMs;
                 run.endTime = LocalDateTime.now();
                 run.add(wSample);
@@ -219,9 +219,9 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                 App.updateMetrics(rSample);
                 publish(rSample);
                 
-                run.runMax = rSample.cumMax;
-                run.runMin = rSample.cumMin;
-                run.runAvg = rSample.cumAvg;
+                run.bwMax = rSample.cumMax;
+                run.bwMin = rSample.cumMin;
+                run.bwAvg = rSample.cumAvg;
                 run.accAvg = rSample.cumAccTimeMs;
                 run.endTime = LocalDateTime.now();
                 run.add(rSample);

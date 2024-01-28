@@ -83,17 +83,17 @@ public class Benchmark implements Serializable {
     
     // results
     @Column
-    double runAvg = 0;
+    double bwAvg = 0;
     @Column
-    double runMax = 0;
+    double bwMax = 0;
     @Column
-    double runMin = 0;
+    double bwMin = 0;
     @Column
     double accAvg = 0;
     
     @Override
     public String toString() {
-        return "Benchmark(" + ioMode + "," + blockOrder + "): " + numSamples + " bw avg: " + runAvg;
+        return "Benchmark(" + ioMode + "," + blockOrder + "): " + numSamples + " bw avg: " + bwAvg;
     }
     
     public Benchmark() {
@@ -134,32 +134,20 @@ public class Benchmark implements Serializable {
         return startTime.format(DATE_FORMAT);
     }
     
-    public String getAccTime() {
+    public String getAccTimeDisplay() {
         return accAvg == -1? "- -" : DF.format(accAvg);
     }
     
-    public String getMin() {
-        return runMin == -1 ? "- -" : DF.format(runMin);
+    public String getBwMinDisplay() {
+        return bwMin == -1 ? "- -" : DF.format(bwMin);
     }
     
-    public void setMin(double min) {
-        runMin = min;
+    public String getBwMaxDisplay() {
+        return bwMax == -1 ? "- -" : DF.format(bwMax);
     }
     
-    public String getMax() {
-        return runMax == -1 ? "- -" : DF.format(runMax);
-    }
-    
-    public void setMax(double max) {
-        runMax = max;
-    }
-    
-    public String getAvg() {
-        return runAvg == -1 ? "- -" : DF.format(runAvg);
-    }
-    
-    public void setAvg(double avg) {
-        runAvg = avg;
+    public String getBwAvgDisplay() {
+        return bwAvg == -1 ? "- -" : DF.format(bwAvg);
     }
     
     public String getDuration() {

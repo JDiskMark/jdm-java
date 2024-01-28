@@ -127,10 +127,10 @@ public class BenchmarkPanel extends javax.swing.JPanel {
                     run.blockSize,
                     run.getStartTimeString(),
                     run.getDuration(),
-                    run.getAccTime(),
-                    run.getMax(),
-                    run.getMin(),
-                    run.getAvg(),
+                    run.getAccTimeDisplay(),
+                    run.getBwMaxDisplay(),
+                    run.getBwMinDisplay(),
+                    run.getBwAvgDisplay(),
                 });
     }
     

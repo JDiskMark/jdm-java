@@ -356,16 +356,16 @@ public final class Gui {
         
         if (benchmark.ioMode ==  Benchmark.IOMode.READ) {
             App.readTest = true;
-            App.rAvg = benchmark.runAvg;
-            App.rMax = benchmark.runMax;
-            App.rMin = benchmark.runMin;
+            App.rAvg = benchmark.bwAvg;
+            App.rMax = benchmark.bwMax;
+            App.rMin = benchmark.bwMin;
             App.rAcc = benchmark.accAvg;
             Gui.mainFrame.refreshReadMetrics();
         } else {
             App.writeTest = true;
-            App.wAvg = benchmark.runAvg;
-            App.wMax = benchmark.runMax;
-            App.wMin = benchmark.runMin;
+            App.wAvg = benchmark.bwAvg;
+            App.wMax = benchmark.bwMax;
+            App.wMin = benchmark.bwMin;
             App.wAcc = benchmark.accAvg;
             Gui.mainFrame.refreshWriteMetrics();
         }
