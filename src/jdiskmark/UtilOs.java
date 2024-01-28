@@ -504,6 +504,7 @@ static public String getDeviceModelMacOs(String devicePath) {
     
     static public void emptyStandbyListWindows() {
 
+        // there seem to be some testing issues with only doing the standbylist
         //String[] command = { ".\\EmptyStandbyList.exe", "standbylist" };
         String[] command = { ".\\EmptyStandbyList.exe"};
         System.out.println("running: " + Arrays.toString(command));
