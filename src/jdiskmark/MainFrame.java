@@ -146,12 +146,12 @@ public final class MainFrame extends javax.swing.JFrame {
         jMenuBar1 = new javax.swing.JMenuBar();
         fileMenu = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
-        optionMenu = new javax.swing.JMenu();
+        actionMenu = new javax.swing.JMenu();
         clearLogsItem = new javax.swing.JMenuItem();
         deleteDataMenuItem = new javax.swing.JMenuItem();
         deleteBenchmarksItem = new javax.swing.JMenuItem();
         resetSequenceMenuItem = new javax.swing.JMenuItem();
-        jSeparator1 = new javax.swing.JPopupMenu.Separator();
+        optionMenu = new javax.swing.JMenu();
         writeSyncCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         multiFileCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         autoRemoveCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -295,7 +295,7 @@ public final class MainFrame extends javax.swing.JFrame {
                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(controlsPanelLayout.createSequentialGroup()
                         .addComponent(jLabel13, javax.swing.GroupLayout.PREFERRED_SIZE, 223, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 15, Short.MAX_VALUE))
+                        .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(controlsPanelLayout.createSequentialGroup()
                         .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, controlsPanelLayout.createSequentialGroup()
@@ -533,7 +533,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
         jMenuBar1.add(fileMenu);
 
-        optionMenu.setText("Options");
+        actionMenu.setText("Action");
 
         clearLogsItem.setText("Clear Event Logs");
         clearLogsItem.addActionListener(new java.awt.event.ActionListener() {
@@ -541,7 +541,7 @@ public final class MainFrame extends javax.swing.JFrame {
                 clearLogsItemActionPerformed(evt);
             }
         });
-        optionMenu.add(clearLogsItem);
+        actionMenu.add(clearLogsItem);
 
         deleteDataMenuItem.setText("Delete Data Directory");
         deleteDataMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -549,7 +549,7 @@ public final class MainFrame extends javax.swing.JFrame {
                 deleteDataMenuItemActionPerformed(evt);
             }
         });
-        optionMenu.add(deleteDataMenuItem);
+        actionMenu.add(deleteDataMenuItem);
 
         deleteBenchmarksItem.setText("Delete Benchmarks");
         deleteBenchmarksItem.addActionListener(new java.awt.event.ActionListener() {
@@ -557,7 +557,7 @@ public final class MainFrame extends javax.swing.JFrame {
                 deleteBenchmarksItemActionPerformed(evt);
             }
         });
-        optionMenu.add(deleteBenchmarksItem);
+        actionMenu.add(deleteBenchmarksItem);
 
         resetSequenceMenuItem.setText("Reset Sequence");
         resetSequenceMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -565,8 +565,11 @@ public final class MainFrame extends javax.swing.JFrame {
                 resetSequenceMenuItemActionPerformed(evt);
             }
         });
-        optionMenu.add(resetSequenceMenuItem);
-        optionMenu.add(jSeparator1);
+        actionMenu.add(resetSequenceMenuItem);
+
+        jMenuBar1.add(actionMenu);
+
+        optionMenu.setText("Options");
 
         writeSyncCheckBoxMenuItem.setSelected(true);
         writeSyncCheckBoxMenuItem.setText("Write Sync");
@@ -788,6 +791,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JMenu actionMenu;
     private javax.swing.JCheckBoxMenuItem autoRemoveCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem autoResetCheckBoxMenuItem;
     private javax.swing.JComboBox blockSizeCombo;
@@ -820,7 +824,6 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JPanel jPanel2;
-    private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JPopupMenu.Separator jSeparator2;
     private javax.swing.JPanel locationPanel;
     private javax.swing.JTextField locationText;
