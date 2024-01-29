@@ -43,7 +43,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
 
             },
             new String [] {
-                "Drive Model", "Usage (GB)", "Mode", "Order", "Samples", "Blks", "B.Size", "Start Time", "Duration (ms)", "Access (ms)", "Max (MB/s)", "Min (MB/s)", "Avg (MB/s)"
+                "Drive Model", "Usage", "Mode", "Order", "Samples", "Blks", "B.Size", "Start Time", "Duration (ms)", "Access (ms)", "Max (MB/s)", "Min (MB/s)", "Avg (MB/s)"
             }
         ) {
             boolean[] canEdit = new boolean [] {
@@ -63,7 +63,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
         jScrollPane1.setViewportView(runTable);
         if (runTable.getColumnModel().getColumnCount() > 0) {
             runTable.getColumnModel().getColumn(0).setPreferredWidth(170);
-            runTable.getColumnModel().getColumn(1).setPreferredWidth(30);
+            runTable.getColumnModel().getColumn(1).setPreferredWidth(10);
             runTable.getColumnModel().getColumn(2).setPreferredWidth(10);
             runTable.getColumnModel().getColumn(3).setPreferredWidth(40);
             runTable.getColumnModel().getColumn(4).setPreferredWidth(6);

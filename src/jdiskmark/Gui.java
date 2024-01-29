@@ -3,6 +3,7 @@ package jdiskmark;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Shape;
 import java.awt.geom.Rectangle2D;
 import java.nio.file.Files;
@@ -143,6 +144,9 @@ public final class Gui {
         plot.mapDatasetToRangeAxis(1, 1);
         
         chart = new JFreeChart("", null , plot, true);
+        
+        // correct the parenthesis from being below vertical centering
+        chart.getTitle().setFont(new Font("Verdana", Font.BOLD, 17));
         
         chartPanel = new ChartPanel(chart) {
             // Only way to set the size of chart panel

@@ -118,10 +118,10 @@ public class Benchmark implements Serializable {
         return driveModel + " - " + partitionId + ": " + getUsageTitleDisplay();
     }
     public String getUsageTitleDisplay() {
-        return percentUsed + "% (" + usedGb + "/" + totalGb + "GB)";
+        return  percentUsed + "% (" + usedGb + "/" + totalGb + " GB)";
     }
     public String getUsageColumnDisplay() {
-        return percentUsed + "% (" + usedGb + "/" + totalGb + ")";
+        return percentUsed + "%";
     }
     
     public void add(Sample s) {
