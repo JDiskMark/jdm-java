@@ -103,6 +103,7 @@ public final class MainFrame extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        palettebuttonGroup = new javax.swing.ButtonGroup();
         jPanel2 = new javax.swing.JPanel();
         mountPanel = new javax.swing.JPanel();
         controlsPanel = new javax.swing.JPanel();
@@ -165,6 +166,12 @@ public final class MainFrame extends javax.swing.JFrame {
         jSeparator2 = new javax.swing.JPopupMenu.Separator();
         showMaxMinCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         showAccessCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
+        jSeparator1 = new javax.swing.JPopupMenu.Separator();
+        jMenu1 = new javax.swing.JMenu();
+        classicRadioButtonMenuItem = new javax.swing.JRadioButtonMenuItem();
+        blueGreenRadioButtonMenuItem = new javax.swing.JRadioButtonMenuItem();
+        coolPaletteMenuItem = new javax.swing.JMenuItem();
+        warmPaletteMenuItem = new javax.swing.JMenuItem();
         helpMenu = new javax.swing.JMenu();
         jMenuItem2 = new javax.swing.JMenuItem();
 
@@ -301,7 +308,7 @@ public final class MainFrame extends javax.swing.JFrame {
                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(controlsPanelLayout.createSequentialGroup()
                         .addComponent(jLabel13, javax.swing.GroupLayout.PREFERRED_SIZE, 223, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
+                        .addGap(0, 15, Short.MAX_VALUE))
                     .addGroup(controlsPanelLayout.createSequentialGroup()
                         .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, controlsPanelLayout.createSequentialGroup()
@@ -631,6 +638,49 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
         optionMenu.add(showAccessCheckBoxMenuItem);
+        optionMenu.add(jSeparator1);
+
+        jMenu1.setText("Color Palette");
+        palettebuttonGroup.add(jMenu1);
+
+        palettebuttonGroup.add(classicRadioButtonMenuItem);
+        classicRadioButtonMenuItem.setSelected(true);
+        classicRadioButtonMenuItem.setText("Classic");
+        classicRadioButtonMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                classicRadioButtonMenuItemActionPerformed(evt);
+            }
+        });
+        jMenu1.add(classicRadioButtonMenuItem);
+
+        palettebuttonGroup.add(blueGreenRadioButtonMenuItem);
+        blueGreenRadioButtonMenuItem.setText("Blue Green");
+        blueGreenRadioButtonMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                blueGreenRadioButtonMenuItemActionPerformed(evt);
+            }
+        });
+        jMenu1.add(blueGreenRadioButtonMenuItem);
+
+        coolPaletteMenuItem.setText("Bard Cool");
+        palettebuttonGroup.add(coolPaletteMenuItem);
+        coolPaletteMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                coolPaletteMenuItemActionPerformed(evt);
+            }
+        });
+        jMenu1.add(coolPaletteMenuItem);
+
+        warmPaletteMenuItem.setText("Bard Warm");
+        palettebuttonGroup.add(warmPaletteMenuItem);
+        warmPaletteMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                warmPaletteMenuItemActionPerformed(evt);
+            }
+        });
+        jMenu1.add(warmPaletteMenuItem);
+
+        optionMenu.add(jMenu1);
 
         jMenuBar1.add(optionMenu);
 
@@ -795,15 +845,34 @@ public final class MainFrame extends javax.swing.JFrame {
         App.saveConfig();
     }//GEN-LAST:event_showAccessCheckBoxMenuItemActionPerformed
 
+    private void blueGreenRadioButtonMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_blueGreenRadioButtonMenuItemActionPerformed
+        Gui.setBlueGreenScheme();
+    }//GEN-LAST:event_blueGreenRadioButtonMenuItemActionPerformed
+
+    private void classicRadioButtonMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_classicRadioButtonMenuItemActionPerformed
+        Gui.setClassicColorScheme();
+    }//GEN-LAST:event_classicRadioButtonMenuItemActionPerformed
+
+    private void coolPaletteMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_coolPaletteMenuItemActionPerformed
+        Gui.setCoolColorScheme();
+    }//GEN-LAST:event_coolPaletteMenuItemActionPerformed
+
+    private void warmPaletteMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_warmPaletteMenuItemActionPerformed
+        Gui.setWarmColorScheme();
+    }//GEN-LAST:event_warmPaletteMenuItemActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
     private javax.swing.JCheckBoxMenuItem autoRemoveCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem autoResetCheckBoxMenuItem;
     private javax.swing.JComboBox blockSizeCombo;
+    private javax.swing.JRadioButtonMenuItem blueGreenRadioButtonMenuItem;
     private javax.swing.JButton chooseButton;
+    private javax.swing.JRadioButtonMenuItem classicRadioButtonMenuItem;
     private javax.swing.JMenuItem clearLogsItem;
     private javax.swing.JPanel controlsPanel;
+    private javax.swing.JMenuItem coolPaletteMenuItem;
     private javax.swing.JMenuItem deleteBenchmarksItem;
     private javax.swing.JMenuItem deleteDataMenuItem;
     private javax.swing.JScrollPane eventScrollPane;
@@ -826,10 +895,12 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
     private javax.swing.JLabel jLabel9;
+    private javax.swing.JMenu jMenu1;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JPanel jPanel2;
+    private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JPopupMenu.Separator jSeparator2;
     private javax.swing.JPanel locationPanel;
     private javax.swing.JTextField locationText;
@@ -842,6 +913,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JButton openLocButton;
     private javax.swing.JMenu optionMenu;
     private javax.swing.JComboBox<Benchmark.BlockSequence> orderComboBox;
+    private javax.swing.ButtonGroup palettebuttonGroup;
     private javax.swing.JPanel progressPanel;
     private javax.swing.JLabel rAccessLabel;
     private javax.swing.JLabel rAvgLabel;
@@ -860,6 +932,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JLabel wAvgLabel;
     private javax.swing.JLabel wMaxLabel;
     private javax.swing.JLabel wMinLabel;
+    private javax.swing.JMenuItem warmPaletteMenuItem;
     private javax.swing.JCheckBoxMenuItem writeSyncCheckBoxMenuItem;
     // End of variables declaration//GEN-END:variables
 
