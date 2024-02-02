@@ -11,6 +11,8 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.filechooser.FileSystemView;
 
 /**
@@ -220,5 +222,50 @@ public class Util {
             }
             return partitionPath;
         }
+    }
+    
+    /**
+     * GH-9 processor reporting - work in progress
+     */
+    private static String executeCommand(String command) {
+        StringBuilder output = new StringBuilder();
+        Process process;
+        try {
+            process = Runtime.getRuntime().exec(command);
+            process.waitFor();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    output.append(line).append("\n");
+                }
+            }
+        } catch (IOException | InterruptedException e) {
+            Logger.getLogger(Util.class.getName()).log(Level.SEVERE, null, e);
+        }
+        return output.toString();
+    }
+
+    /**
+     * GH-9 processor reporting - work in progress
+     */
+    public static void collectProcessorInfo() {
+        // Processor name
+        String processorName = executeCommand("wmic cpu get Name");
+        System.out.println("Processor Name: " + processorName);
+
+        // Number of Cores
+        String numberOfCores = executeCommand("wmic cpu get NumberOfCores");
+        System.out.println("Number of Cores: " + numberOfCores);
+
+        // Number of Logical Processors
+        String numberOfLogicalProcessors = executeCommand("wmic cpu get NumberOfLogicalProcessors");
+        System.out.println("Number of Logical Processors: " + numberOfLogicalProcessors);
+
+        // Max Clock Speed
+        String maxClockSpeed = executeCommand("wmic cpu get MaxClockSpeed");
+        System.out.println("Max Clock Speed: " + maxClockSpeed);
+
+        // Additional details can be added as needed
     }
 }

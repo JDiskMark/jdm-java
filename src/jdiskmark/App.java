@@ -119,9 +119,10 @@ public class App {
      */
     public static void init() {
         
-        // for investigating cpu info
-        String cpuInfo = System.getenv("PROCESSOR_IDENTIFIER");
-        System.out.println(cpuInfo);
+        // GH-9 for investigating cpu info
+//        String cpuInfo = System.getenv("PROCESSOR_IDENTIFIER");
+//        System.out.println(cpuInfo);
+//        Util.collectProcessorInfo();
         
         checkPermission();
         if (!APP_CACHE_DIR.exists()) {
