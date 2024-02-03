@@ -208,6 +208,9 @@ public class App {
         readTest = Boolean.parseBoolean(value);
         value = p.getProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         writeSyncEnable = Boolean.parseBoolean(value);
+        value = p.getProperty("palette", String.valueOf(Gui.palette));
+        Gui.palette = Gui.Palette.valueOf(value);
+        
     }
     
     public static void saveConfig() {
@@ -226,6 +229,7 @@ public class App {
         p.setProperty("writeTest", String.valueOf(writeTest));
         p.setProperty("readTest", String.valueOf(readTest));
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
+        p.setProperty("palette", String.valueOf(Gui.palette));
         
         // write properties file
         try {
@@ -250,6 +254,7 @@ public class App {
         sb.append("numOfFiles: ").append(numOfSamples).append('\n');
         sb.append("numOfBlocks: ").append(numOfBlocks).append('\n');
         sb.append("blockSizeKb: ").append(blockSizeKb).append('\n');
+        sb.append("palette: ").append(Gui.palette).append('\n');
         return sb.toString();
     }
     

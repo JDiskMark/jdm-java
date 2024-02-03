@@ -28,6 +28,9 @@ import org.jfree.ui.RectangleInsets;
  */
 public final class Gui {
     
+    public static enum Palette { CLASSIC, BLUE_GREEN, BARD_COOL, BARD_WARM };
+    public static Palette palette = Palette.CLASSIC;
+    
     public static ChartPanel chartPanel = null;
     public static MainFrame mainFrame = null;
     public static SelectDriveFrame selFrame = null;
@@ -383,46 +386,6 @@ public final class Gui {
     }
 
     /**
-     * Cool color scheme proposed by Bard
-     */    
-    static void setCoolColorScheme() {
-        // configure the bw series colors
-        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
-        bwRenderer.setSeriesPaint(0, new Color(0x54a0ff)); // write
-        bwRenderer.setSeriesPaint(1, new Color(0x808080)); // w avg
-        bwRenderer.setSeriesPaint(2, new Color(0x4CAF50)); // w max
-        bwRenderer.setSeriesPaint(3, new Color(0xFF5722)); // w min
-        bwRenderer.setSeriesPaint(4, new Color(0x00BCD4)); // read
-        bwRenderer.setSeriesPaint(5, new Color(0x9E9E9E)); // r avg
-        bwRenderer.setSeriesPaint(6, new Color(0x66BB6A)); // r max
-        bwRenderer.setSeriesPaint(7, new Color(0xF44336)); // r min
-        
-        // configure the access time ms colors
-        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
-        msRenderer.setSeriesPaint(0, new Color(0x2196F3)); // w acc
-        msRenderer.setSeriesPaint(1, new Color(0x9C27B0)); // r acc
-    }
-    
-
-    static void setWarmColorScheme() {
-        // configure the bw series colors
-        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
-        bwRenderer.setSeriesPaint(0, new Color(0xFFC107)); // write
-        bwRenderer.setSeriesPaint(1, new Color(0xEBEBEB)); // w avg
-        bwRenderer.setSeriesPaint(2, new Color(0x4CAF50)); // w max
-        bwRenderer.setSeriesPaint(3, new Color(0xFF5722)); // w min
-        bwRenderer.setSeriesPaint(4, new Color(0xE91E63)); // read
-        bwRenderer.setSeriesPaint(5, new Color(0xD3D3D3)); // r avg
-        bwRenderer.setSeriesPaint(6, new Color(0x66BB6A)); // r max
-        bwRenderer.setSeriesPaint(7, new Color(0xF44336)); // r min
-        
-        // configure the access time ms colors
-        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
-        msRenderer.setSeriesPaint(0, new Color(0xFF9800)); // w acc
-        msRenderer.setSeriesPaint(1, new Color(0x673AB7)); // r acc
-    }
-    
-    /**
      * Here is my blue green scheme. can be improved.
      */
     static void setBlueGreenScheme() {
@@ -446,4 +409,46 @@ public final class Gui {
         msRenderer.setSeriesPaint(0, new Color(0x7C9CDC)); // w acc
         msRenderer.setSeriesPaint(1, new Color(0xAACC00)); // r acc
     }
+    
+    /**
+     * Cool color scheme proposed by Bard
+     */    
+    static void setCoolColorScheme() {
+        // configure the bw series colors
+        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        bwRenderer.setSeriesPaint(0, new Color(0x54a0ff)); // write
+        bwRenderer.setSeriesPaint(1, new Color(0x808080)); // w avg
+        bwRenderer.setSeriesPaint(2, new Color(0x4CAF50)); // w max
+        bwRenderer.setSeriesPaint(3, new Color(0xFF5722)); // w min
+        bwRenderer.setSeriesPaint(4, new Color(0x00BCD4)); // read
+        bwRenderer.setSeriesPaint(5, new Color(0x9E9E9E)); // r avg
+        bwRenderer.setSeriesPaint(6, new Color(0x66BB6A)); // r max
+        bwRenderer.setSeriesPaint(7, new Color(0xF44336)); // r min
+        
+        // configure the access time ms colors
+        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        msRenderer.setSeriesPaint(0, new Color(0x54a0ff)); // w acc
+        msRenderer.setSeriesPaint(1, new Color(0x00BCD4)); // r acc
+    }
+    
+
+    static void setWarmColorScheme() {
+        // configure the bw series colors
+        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        bwRenderer.setSeriesPaint(0, new Color(0xFFC107)); // write
+        bwRenderer.setSeriesPaint(1, new Color(0xEBEBEB)); // w avg
+        bwRenderer.setSeriesPaint(2, new Color(0x4CAF50)); // w max
+        bwRenderer.setSeriesPaint(3, new Color(0xFF5722)); // w min
+        bwRenderer.setSeriesPaint(4, new Color(0xE91E63)); // read
+        bwRenderer.setSeriesPaint(5, new Color(0xD3D3D3)); // r avg
+        bwRenderer.setSeriesPaint(6, new Color(0x66BB6A)); // r max
+        bwRenderer.setSeriesPaint(7, new Color(0xF44336)); // r min
+        
+        // configure the access time ms colors
+        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        msRenderer.setSeriesPaint(0, new Color(0xFFC107)); // w acc
+        msRenderer.setSeriesPaint(1, new Color(0xE91E63)); // r acc
+    }
+    
+
 }
