@@ -11,8 +11,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.filechooser.FileSystemView;
 
 /**
@@ -176,10 +174,9 @@ public class Util {
     
     public static DiskUsageInfo getDiskUsage(String diskPath) throws IOException, InterruptedException {
         ProcessBuilder pb = new ProcessBuilder();
-        
-        String os = System.getProperty("os.name");
+
         // Choose the appropriate command for the operating system:
-        if (os.startsWith("Windows")) {
+        if (App.os.startsWith("Windows")) {
             pb.command("cmd.exe", "/c", "fsutil volume diskfree " + diskPath);
         } else {
             // command is same for linux and mac os
@@ -201,11 +198,11 @@ public class Util {
             throw new IOException("Command execution failed with exit code: " + exitCode);
         }
 
-        if (os.startsWith("Windows")) {
+        if (App.os.startsWith("Windows")) {
             return UtilOs.parseDiskUsageInfoWindows(outputLines);
-        } else if (os.contains("Mac OS")) {
+        } else if (App.os.contains("Mac OS")) {
             return UtilOs.parseDiskUsageInfoMacOs(outputLines);
-        } else if (os.contains("Linux")) {
+        } else if (App.os.contains("Linux")) {
             return UtilOs.parseDiskUsageInfoLinux(outputLines);
         }
         return new DiskUsageInfo();
@@ -222,50 +219,5 @@ public class Util {
             }
             return partitionPath;
         }
-    }
-    
-    /**
-     * GH-9 processor reporting - work in progress
-     */
-    private static String executeCommand(String command) {
-        StringBuilder output = new StringBuilder();
-        Process process;
-        try {
-            process = Runtime.getRuntime().exec(command);
-            process.waitFor();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    output.append(line).append("\n");
-                }
-            }
-        } catch (IOException | InterruptedException e) {
-            Logger.getLogger(Util.class.getName()).log(Level.SEVERE, null, e);
-        }
-        return output.toString();
-    }
-
-    /**
-     * GH-9 processor reporting - work in progress
-     */
-    public static void collectProcessorInfo() {
-        // Processor name
-        String processorName = executeCommand("wmic cpu get Name");
-        System.out.println("Processor Name: " + processorName);
-
-        // Number of Cores
-        String numberOfCores = executeCommand("wmic cpu get NumberOfCores");
-        System.out.println("Number of Cores: " + numberOfCores);
-
-        // Number of Logical Processors
-        String numberOfLogicalProcessors = executeCommand("wmic cpu get NumberOfLogicalProcessors");
-        System.out.println("Number of Logical Processors: " + numberOfLogicalProcessors);
-
-        // Max Clock Speed
-        String maxClockSpeed = executeCommand("wmic cpu get MaxClockSpeed");
-        System.out.println("Max Clock Speed: " + maxClockSpeed);
-
-        // Additional details can be added as needed
     }
 }

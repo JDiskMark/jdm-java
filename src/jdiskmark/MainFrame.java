@@ -13,11 +13,11 @@ import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
 
 /**
- *
+ * The parent frame of the app
  */
 public final class MainFrame extends javax.swing.JFrame {
 
-    DecimalFormat df = new DecimalFormat("###.##");
+    public static final DecimalFormat DF = new DecimalFormat("###.##");
     
     /**
      * Creates new form MainFrame
@@ -37,12 +37,18 @@ public final class MainFrame extends javax.swing.JFrame {
         titleSb.append(getTitle()).append(" ").append(App.getVersion());
         
         // architecture
-        String arch = System.getProperty("os.arch");
-        titleSb.append(" - ").append(arch);
-
-        // permission string
-        if (App.isAdmin) titleSb.append(" [Admin] ");
-        if (App.isRoot) titleSb.append(" [root] ");
+        if (App.arch != null && !App.arch.isEmpty()) {
+            titleSb.append(" - ").append(App.arch);
+        }
+        
+        // processor name
+        if (App.processorName != null && !App.processorName.isEmpty()) {
+            titleSb.append(" - ").append(App.processorName);
+        }
+        
+        // permission indicator
+        if (App.isAdmin) titleSb.append(" [Admin]");
+        if (App.isRoot) titleSb.append(" [root]");
         
         setTitle(titleSb.toString());
         
@@ -983,25 +989,25 @@ public final class MainFrame extends javax.swing.JFrame {
     
     public void refreshWriteMetrics() {
         String value;
-        value = App.wMin == -1 ? "- -" : df.format(App.wMin);
+        value = App.wMin == -1 ? "- -" : DF.format(App.wMin);
         wMinLabel.setText(value);
-        value = App.wMax == -1 ? "- -" : df.format(App.wMax);
+        value = App.wMax == -1 ? "- -" : DF.format(App.wMax);
         wMaxLabel.setText(value);
-        value = App.wAvg == -1 ? "- -" : df.format(App.wAvg);
+        value = App.wAvg == -1 ? "- -" : DF.format(App.wAvg);
         wAvgLabel.setText(value);
-        value = App.wAcc == -1 ? "- -" : df.format(App.wAcc);
+        value = App.wAcc == -1 ? "- -" : DF.format(App.wAcc);
         wAccessLabel.setText(value);
     }
     
     public void refreshReadMetrics() {
         String value;
-        value = App.rMin == -1 ? "- -" : df.format(App.rMin);
+        value = App.rMin == -1 ? "- -" : DF.format(App.rMin);
         rMinLabel.setText(value);
-        value = App.rMax == -1 ? "- -" : df.format(App.rMax);
+        value = App.rMax == -1 ? "- -" : DF.format(App.rMax);
         rMaxLabel.setText(value);
-        value = App.rAvg == -1 ? "- -" : df.format(App.rAvg);
+        value = App.rAvg == -1 ? "- -" : DF.format(App.rAvg);
         rAvgLabel.setText(value);
-        value = App.rAcc == -1 ? "- -" : df.format(App.rAcc);
+        value = App.rAcc == -1 ? "- -" : DF.format(App.rAcc);
         rAccessLabel.setText(value);
     }
     

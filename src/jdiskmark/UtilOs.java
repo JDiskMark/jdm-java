@@ -615,4 +615,75 @@ static public String getDeviceModelMacOs(String devicePath) {
         System.out.println("percentUsed=" + percentUsed);
         return new DiskUsageInfo(percentUsed, usedGb, totalGb);
     }
+    
+    public static String getProcessorNameWindows() {
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder("wmic", "cpu", "get", "Name");
+            Process process = processBuilder.start();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (!line.startsWith("Name") && !line.trim().isEmpty()) {
+                        return line.trim();
+                    }
+                }
+            }
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                // Handle error if the process didn't exit successfully
+                Logger.getLogger(Util.class.getName()).log(Level.SEVERE, 
+                        "Failed to get processor name. Exit code: " + exitCode);
+            }
+        } catch (IOException | InterruptedException e) {
+            Logger.getLogger(Util.class.getName()).log(Level.SEVERE, null, e);
+        }
+
+        return ""; // Return an empty string if no processor name was found
+    }
+    
+    public static String getProcessorNameMacOS() {
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder("sysctl", "-n", "machdep.cpu.brand_string");
+            Process process = processBuilder.start();
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line = reader.readLine();
+                return line.trim(); // The first line contains the processor name
+            }
+        } catch (IOException e) {
+            Logger.getLogger(Util.class.getName()).log(Level.SEVERE, null, e);
+        }
+
+        return "";
+    }
+    
+    public static String getProcessorNameLinux() {
+        try {
+            // Use lscpu command to get details about the CPU
+            ProcessBuilder processBuilder = new ProcessBuilder("lscpu");
+            Process process = processBuilder.start();
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    // Search for the line starting with "Model name:"
+                    if (line.startsWith("Model name:")) {
+                        // Extract the processor name after the colon
+                        return line.substring(line.indexOf(":") + 2).trim();
+                    }
+                }
+            }
+
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                // Handle error if the process didn't exit successfully
+                Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, 
+                        "Failed to get processor name. Exit code: " + exitCode);
+            }
+        } catch (IOException | InterruptedException e) {
+            Logger.getLogger(Util.class.getName()).log(Level.SEVERE, null, e);
+        }
+
+        return ""; // Return an empty string if no processor name was found
+    }
 }

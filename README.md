@@ -1,4 +1,4 @@
-# jDiskMark v0.5 beta 4 (Windows/Mac/Linux)
+# jDiskMark v0.5 beta 5 (Windows/Mac/Linux)
 
 Cross platform disk benchmark utility written in java.
 
@@ -89,6 +89,8 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
  - break out actions into seperate menu
  - admin or root indicator, architecture indicator
  - #8 used capacity and total capacity
+ - initial color palette options
+ - display processor information
 
 ### v0.4
  - updated eclipselink to 2.6 allows auto schema update

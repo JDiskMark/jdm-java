@@ -41,8 +41,16 @@ public class Benchmark implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     long id;
-
+    
     // system data
+    @Column
+    String os;
+    @Column
+    String arch;
+    @Column
+    String processorName;
+    
+    // drive info
     @Column
     String driveModel = null;
     @Column

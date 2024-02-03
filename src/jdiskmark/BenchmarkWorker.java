@@ -79,6 +79,10 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         if (App.writeTest) {
             Benchmark run = new Benchmark(Benchmark.IOMode.WRITE, App.blockSequence);
             
+            // system info
+            run.processorName = App.processorName;
+            
+            // drive information
             run.driveModel = driveModel;
             run.partitionId = partitionId;
             run.percentUsed = dInfo.percentUsed;
@@ -164,6 +168,10 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         if (App.readTest) {
             Benchmark run = new Benchmark(Benchmark.IOMode.READ, App.blockSequence);
             
+            // system info
+            run.processorName = App.processorName;
+            
+            // drive information
             run.driveModel = driveModel;
             run.partitionId = partitionId;
             run.percentUsed = dInfo.percentUsed;

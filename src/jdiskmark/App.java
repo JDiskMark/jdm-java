@@ -40,6 +40,11 @@ public class App {
     public static File dataDir = null;
     public static File testFile = null;
     
+    // system info
+    public static String os;
+    public static String arch;
+    public static String processorName;
+    
     // elevated priviledges
     public static boolean isRoot = false;
     public static boolean isAdmin = false;
@@ -119,10 +124,16 @@ public class App {
      */
     public static void init() {
         
-        // GH-9 for investigating cpu info
-//        String cpuInfo = System.getenv("PROCESSOR_IDENTIFIER");
-//        System.out.println(cpuInfo);
-//        Util.collectProcessorInfo();
+        App.os = System.getProperty("os.name");
+        App.arch = System.getProperty("os.arch");
+        if (App.os.startsWith("Windows")) {
+            App.processorName = UtilOs.getProcessorNameWindows();
+        } else if (App.os.startsWith("Mac OS")) {
+            App.processorName = UtilOs.getProcessorNameMacOS();
+        } else if (App.os.contains("Linux")) {
+            App.processorName = UtilOs.getProcessorNameLinux();
+        }
+        System.out.println(App.processorName);
         
         checkPermission();
         if (!APP_CACHE_DIR.exists()) {
