@@ -10,8 +10,8 @@ Cross platform disk benchmark utility written in java.
 - Adjustable block size, block qty and sample qty
 - Single or multi file option
 - Sequential or random option
-- Detects drive model, capacity and processor
-- Save and load benchmarks for review
+- Detect drive model, capacity and processor
+- Save and load benchmark
 - Auto clear disk cache (when sudo or admin)
 
 ## Releases
@@ -119,9 +119,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 ### Proposed Features
  - upload benchmarks to jdiskmark.net portal (anonymous/w login)
  - local app log for remote diagnostics
- - detect and display os processor info
  - selecting a drive location displays detected drive information below
- - disk capacity and drive letter (available on windows)
  - speed curves w rw at different tx sizes
  - response time histogram > distribution of IO
  - IOPS charts, review potential charts
