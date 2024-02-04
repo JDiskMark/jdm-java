@@ -85,8 +85,6 @@ public final class Gui {
         bwRenderer = new XYLineAndShapeRenderer(true, false);
         msRenderer = new XYLineAndShapeRenderer(true, false);
         
-        setClassicColorScheme();
-        
         // disable lines and enable shapes
         msRenderer.setSeriesLinesVisible(0, false);
         msRenderer.setSeriesLinesVisible(1, false);
@@ -368,6 +366,9 @@ public final class Gui {
      * The original color scheme.
      */
     static void setClassicColorScheme() {
+        System.out.println("setting classic palette");
+        palette = Palette.CLASSIC;
+        
         // configure the bw series colors
         bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
         bwRenderer.setSeriesPaint(0, Color.YELLOW);     // write
@@ -389,6 +390,9 @@ public final class Gui {
      * Here is my blue green scheme. can be improved.
      */
     static void setBlueGreenScheme() {
+        System.out.println("setting blue green palette");
+        palette = Palette.BLUE_GREEN;
+        
         // configure the bw series colors
         
         // these are bluish
@@ -414,6 +418,9 @@ public final class Gui {
      * Cool color scheme proposed by Bard
      */    
     static void setCoolColorScheme() {
+        System.out.println("setting cool palette");
+        palette = Palette.BARD_COOL;
+        
         // configure the bw series colors
         bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
         bwRenderer.setSeriesPaint(0, new Color(0x54a0ff)); // write
@@ -433,6 +440,9 @@ public final class Gui {
     
 
     static void setWarmColorScheme() {
+        System.out.println("setting warm palette");
+        palette = Palette.BARD_WARM;
+        
         // configure the bw series colors
         bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
         bwRenderer.setSeriesPaint(0, new Color(0xFFC107)); // write
@@ -449,6 +459,4 @@ public final class Gui {
         msRenderer.setSeriesPaint(0, new Color(0xFFC107)); // w acc
         msRenderer.setSeriesPaint(1, new Color(0xE91E63)); // r acc
     }
-    
-
 }

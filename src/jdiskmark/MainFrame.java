@@ -794,10 +794,12 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_resetButtonActionPerformed
 
     private void modeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_modeComboActionPerformed
-        String modeStr = (String) modeCombo.getSelectedItem();
-        App.readTest = modeStr.contains("read");
-        App.writeTest = modeStr.contains("write");
-        App.saveConfig();
+        if (modeCombo.hasFocus()) {
+            String modeStr = (String) modeCombo.getSelectedItem();
+            App.readTest = modeStr.contains("read");
+            App.writeTest = modeStr.contains("write");
+            App.saveConfig();
+        }
     }//GEN-LAST:event_modeComboActionPerformed
 
     private void exitMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exitMenuItemActionPerformed
@@ -850,8 +852,10 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_showMaxMinCheckBoxMenuItemActionPerformed
 
     private void orderComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_orderComboBoxActionPerformed
-        App.blockSequence = (Benchmark.BlockSequence) orderComboBox.getSelectedItem();
-        App.saveConfig();
+        if (orderComboBox.hasFocus()) {
+            App.blockSequence = (Benchmark.BlockSequence) orderComboBox.getSelectedItem();
+            App.saveConfig();
+        }
     }//GEN-LAST:event_orderComboBoxActionPerformed
 
     private void writeSyncCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_writeSyncCheckBoxMenuItemActionPerformed
@@ -876,19 +880,16 @@ public final class MainFrame extends javax.swing.JFrame {
 
     private void classicPaletteMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_classicPaletteMenuItemActionPerformed
         Gui.setClassicColorScheme();
-        Gui.palette = Gui.Palette.CLASSIC;
         App.saveConfig();
     }//GEN-LAST:event_classicPaletteMenuItemActionPerformed
 
     private void bardCoolPaletteMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bardCoolPaletteMenuItemActionPerformed
         Gui.setCoolColorScheme();
-        Gui.palette = Gui.Palette.BARD_COOL;
         App.saveConfig();
     }//GEN-LAST:event_bardCoolPaletteMenuItemActionPerformed
 
     private void bardWarmPaletteMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bardWarmPaletteMenuItemActionPerformed
         Gui.setWarmColorScheme();
-        Gui.palette = Gui.Palette.BARD_WARM;
         App.saveConfig();
     }//GEN-LAST:event_bardWarmPaletteMenuItemActionPerformed
 
