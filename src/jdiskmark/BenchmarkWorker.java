@@ -81,6 +81,8 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
             
             // system info
             run.processorName = App.processorName;
+            run.os = App.os;
+            run.arch = App.arch;
             
             // drive information
             run.driveModel = driveModel;
@@ -170,6 +172,8 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
             
             // system info
             run.processorName = App.processorName;
+            run.os = App.os;
+            run.arch = App.arch;
             
             // drive information
             run.driveModel = driveModel;
