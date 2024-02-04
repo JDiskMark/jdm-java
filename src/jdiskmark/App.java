@@ -176,10 +176,10 @@ public class App {
     
     public static void loadConfig() {
         
-        System.out.println(PROPERTIES_FILE.getAbsolutePath() + " exist=" + PROPERTIES_FILE.exists());
-
-        // generate default properties file if it does not exist
-        if (!PROPERTIES_FILE.exists()) {
+        if (PROPERTIES_FILE.exists()) {
+            System.out.println("loading: " + PROPERTIES_FILE.getAbsolutePath());
+        } else {
+            // generate default properties file if it does not exist
             System.out.println(PROPERTIES_FILE + " does not exist generating...");
             saveConfig(); 
         }
@@ -221,7 +221,6 @@ public class App {
         writeSyncEnable = Boolean.parseBoolean(value);
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
-        
     }
     
     public static void saveConfig() {
