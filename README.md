@@ -51,19 +51,19 @@ clearing the disk write cache before performing read benchmarks.
    In windows double click executable jar file.
 
 3. Drop cache manually:
- - Linux: `sudo sh -c "sync; 1 > /proc/sys/vm/drop_caches"`
- - Mac OS: `sudo sh -c "sync; purge"`
- - Windows: Run included EmptyStandbyList.exe or [RAMMap64.exe](https://learn.microsoft.com/en-us/sysinternals/downloads/rammap)
-   With RAMMap64 invalidate disk cache with Empty > Empty Standby List
+- Linux: `sudo sh -c "sync; 1 > /proc/sys/vm/drop_caches"`
+- Mac OS: `sudo sh -c "sync; purge"`
+- Windows: Run included EmptyStandbyList.exe or [RAMMap64.exe](https://learn.microsoft.com/en-us/sysinternals/downloads/rammap)
+  With RAMMap64 invalidate disk cache with Empty > Empty Standby List
 
 ## Launching with elevated privileges
 
 Note: Take advantage of automatic clearing of the disk cache for write read 
 benchmarks start with sudo or an administrator windows shell.
 
- - Linux: `sudo java -jar jDiskMark.jar`
- - Mac OS: `sudo java -jar jDiskMark.jar`
- - Windows: start powershell as administrator then `java -jar jDiskMark`
+- Linux: `sudo java -jar jDiskMark.jar`
+- Mac OS: `sudo java -jar jDiskMark.jar`
+- Windows: start powershell as administrator then `java -jar jDiskMark`
 
 ## Development Environment
 
@@ -76,60 +76,60 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 ## Release Notes
 
 ### v0.6
- - TODO: #12 update look and feel
- - TODO: #13 Detect drive info on startup
- - TODO: #10 IOPS reporting
+- TODO: #12 update look and feel
+- TODO: #13 Detect drive info on startup
+- TODO: #10 IOPS reporting
 
 ### v0.5
- - update for java 21 LTS w NetBeans 20 environment: eclipselink 4.0, jpa 3.1, 
-   modelgen 5.6, annotations 3.1, xml.bind 4.0
- - increased drive information default col width to 170
- - time format updated to `yyyy-MM-dd HH:mm:ss`
- - default to 200 marks
- - replace Date w LocalDateTime to avoid deprecated @Temporal
- - disk access time (ms) - plotting disabled by default
- - replace display of transfer size with access time in run panel
- - #2 auto clear disk cache for combined write read benchmarks
- - #6 save and load benchmarks and graph series
- - break out actions into seperate menu
- - admin or root indicator, architecture indicator
- - #8 used capacity and total capacity
- - initial color palette options
- - report processor name
+- update for java 21 LTS w NetBeans 20 environment: eclipselink 4.0, jpa 3.1, 
+  modelgen 5.6, annotations 3.1, xml.bind 4.0
+- increased drive information default col width to 170
+- time format updated to `yyyy-MM-dd HH:mm:ss`
+- default to 200 marks
+- replace Date w LocalDateTime to avoid deprecated @Temporal
+- disk access time (ms) - plotting disabled by default
+- replace display of transfer size with access time in run panel
+- #2 auto clear disk cache for combined write read benchmarks
+- #6 save and load benchmarks and graph series
+- break out actions into seperate menu
+- admin or root indicator, architecture indicator
+- #8 used capacity and total capacity
+- initial color palette options
+- report processor name
 
 ### v0.4
- - updated eclipselink to 2.6 allows auto schema update
- - improved gui initialization
- - platform disk model info:
-    - windows: via powershell query
-    - linux:   via `df /data/path` & `lsblk /dev/path --output MODEL`
-    - osx:     via `df /data/path` & `diskutil info /dev/disk1`
+- updated eclipselink to 2.6 allows auto schema update
+- improved gui initialization
+- platform disk model info:
+  - windows: via powershell query
+  - linux:   via `df /data/path` & `lsblk /dev/path --output MODEL`
+  - osx:     via `df /data/path` & `diskutil info /dev/disk1`
 
 ### v0.3
- - persist recent run with embedded derby db
- - remove "transfer mark number" from graph
- - changed graph background to dark gray
- - resizing main frame stretches tabbed pane instead of empty panel
+- persist recent run with embedded derby db
+- remove "transfer mark number" from graph
+- changed graph background to dark gray
+- resizing main frame stretches tabbed pane instead of empty panel
 
 ### v0.2
- - auto generate zip release ie. `jdiskmark-v0.2.zip`
- - added tabbed pane near bottom to organize new controls
- - format excessive decimal places
- - show recent runs (not persisted)
- - default to nimbus look and feel
+- auto generate zip release ie. `jdiskmark-v0.2.zip`
+- added tabbed pane near bottom to organize new controls
+- format excessive decimal places
+- show recent runs (not persisted)
+- default to nimbus look and feel
 
 ### v0.1
- - initial release
+- initial release
 
 ### Proposed Features
- - upload benchmarks to jdiskmark.net portal (anonymous/w login)
- - local app log for remote diagnostics
- - selecting a drive location displays detected drive information below
- - speed curves w rw at different tx sizes
- - response time histogram > distribution of IO
- - IOPS charts, review potential charts
- - help that describes features and controls
+- upload benchmarks to jdiskmark.net portal (anonymous/w login)
+- local app log for remote diagnostics
+- selecting a drive location displays detected drive information below
+- speed curves w rw at different tx sizes
+- response time histogram > distribution of IO
+- IOPS charts, review potential charts
+- help that describes features and controls
 
 ## issues
- - read&write not consistant with order caps
- - bottom margins between table to bar to window edge should be the same
+- read&write not consistant with order caps
+- bottom margins between table to bar to window edge should be the same
