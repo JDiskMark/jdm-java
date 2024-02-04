@@ -77,8 +77,8 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 
 ### v0.6
  - TODO: GH-12 update look and feel
- - TODO: Detect drive info on startup
- - TODO: IOPS reporting
+ - TODO: GH-13 Detect drive info on startup
+ - TODO: GH-10 IOPS reporting
 
 ### v0.5
  - update for java 21 LTS w NetBeans 20 environment: eclipselink 4.0, jpa 3.1, 
