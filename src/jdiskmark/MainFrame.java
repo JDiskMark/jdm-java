@@ -24,6 +24,7 @@ public final class MainFrame extends javax.swing.JFrame {
      */
     public MainFrame() {
         initComponents();
+        startButton.requestFocus();
         Gui.createChartPanel();
         mountPanel.setLayout(new BorderLayout());
         Gui.chartPanel.setSize(mountPanel.getSize());
