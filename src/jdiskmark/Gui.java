@@ -56,7 +56,12 @@ public final class Gui {
                 UIManager.setLookAndFeel(new FlatLightLaf()); // Light theme
                 // Or: UIManager.setLookAndFeel(new FlatDarkLaf()); // Dark theme
             } else if (App.os.contains("Mac OS")) {
-                
+                for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+                    if ("Nimbus".equals(info.getName())) {
+                        UIManager.setLookAndFeel(info.getClassName());
+                        break;
+                    }
+                }
             } else if (App.os.contains("Linux")) {
                 //UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
                 UIManager.setLookAndFeel(new FlatLightLaf()); // Light theme
