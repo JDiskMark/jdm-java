@@ -1,4 +1,4 @@
-# jDiskMark v0.5 (Windows/Mac/Linux)
+# jDiskMark v0.6 beta (Windows/Mac/Linux)
 
 Cross platform disk benchmark utility written in java.
 
@@ -6,7 +6,7 @@ Cross platform disk benchmark utility written in java.
 
 - Java cross platform solution
 - Benchmark IO read/write performance
-- Intuitive graphs for: sample bw, max, min, cum avg, access time
+- Graphs: sample bw, max, min, cum bw, disk acc time
 - Adjustable block size, block qty and sample qty
 - Single or multi file option
 - Sequential or random option
@@ -75,6 +75,11 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 
 ## Release Notes
 
+### v0.6
+ - TODO: GH-12 update look and feel
+ - TODO: Detect drive info on startup
+ - TODO: IOPS reporting
+
 ### v0.5
  - update for java 21 LTS w NetBeans 20 environment: eclipselink 4.0, jpa 3.1, 
    modelgen 5.6, annotations 3.1, xml.bind 4.0
@@ -123,3 +128,8 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
  - speed curves w rw at different tx sizes
  - response time histogram > distribution of IO
  - IOPS charts, review potential charts
+ - help that describes features and controls
+
+## issues
+ - read&write not consistant with order caps
+ - bottom margins between table to bar to window edge should be the same
