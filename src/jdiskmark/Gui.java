@@ -64,8 +64,7 @@ public final class Gui {
 //                    }
 //                }
             } else if (App.os.contains("Linux")) {
-                //UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
-                UIManager.setLookAndFeel(new FlatLightLaf()); // Light theme
+                
             } else {
                 for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
                     if ("Nimbus".equals(info.getName())) {
