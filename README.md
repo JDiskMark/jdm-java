@@ -20,7 +20,9 @@ https://sourceforge.net/projects/jdiskmark/
 
 ## Installation
 
-1. Install [java 21](https://www.oracle.com/java/technologies/downloads/)
+Java 21 needs to be installed to run jdiskmark.
+
+1. Download and install [java 21](https://www.oracle.com/java/technologies/downloads/) from Oracle.
 
 2. Verify java 21 is installed:
    ```
