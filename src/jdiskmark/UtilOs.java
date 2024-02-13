@@ -593,8 +593,10 @@ static public String getDeviceModelMacOs(String devicePath) {
      * @return A data structure with disk usage
      */
     static DiskUsageInfo parseDiskUsageInfoWindows(List<String> outputLines) {
+        double freeGb = 0;
         double usedGb = 0;
         double totalGb = 0;
+        boolean usedBytesDetected = false;
         for (int i = 0; i < outputLines.size(); i++) {
             String line = outputLines.get(i);
             if (line.contains("Total bytes")) {
@@ -607,13 +609,23 @@ static public String getDeviceModelMacOs(String devicePath) {
                 String bytes = line.replace(",", "");
                 long usedBytes = Long.parseLong(bytes);
                 usedGb = (double) usedBytes / (double) (1024.0 * 1024.0 * 1024.0);
+                usedBytesDetected = true;
+            } else if (line.contains("Total free bytes")) {
+                line = line.split(":")[1].trim().split("\\s+")[0];
+                String bytes = line.replace(",", "");
+                long freeBytes = Long.parseLong(bytes);
+                freeGb = (double) freeBytes / (double) (1024.0 * 1024.0 * 1024.0);
             }
         }
+        if (!usedBytesDetected) {
+            usedGb = totalGb - freeGb;
+        }
         double percentUsed = usedGb / totalGb * 100;
+        System.out.println("freeGb=" + freeGb);
         System.out.println("usedGb=" + usedGb);
         System.out.println("totalGb=" + totalGb);
         System.out.println("percentUsed=" + percentUsed);
-        return new DiskUsageInfo(percentUsed, usedGb, totalGb);
+        return new DiskUsageInfo(percentUsed, freeGb, usedGb, totalGb);
     }
     
     public static String getProcessorNameWindows() {
