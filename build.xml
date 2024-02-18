@@ -94,7 +94,7 @@
             <fileset dir="tmp/${releaseDir}"/>
         </move>
         <delete dir="tmp"/>
-        <copy file="package.bat" todir="dist"/>
+        <copy file="package-msi.bat" todir="dist"/>
     </target>
     
     <target name="buildinfo">
