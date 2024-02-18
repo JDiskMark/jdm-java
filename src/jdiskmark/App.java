@@ -7,6 +7,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -26,7 +28,10 @@ public class App {
     public static final File APP_CACHE_DIR = new File(APP_CACHE_DIR_NAME);
     public static final String PROPERTIES_FILENAME = "jdm.properties";
     public static final File PROPERTIES_FILE = new File(APP_CACHE_DIR_NAME + File.separator + PROPERTIES_FILENAME);
+    public static final String BUILD_TOKEN_FILENAME = "build.properties";
     public static final String DATADIRNAME = "jDiskMarkData";
+    public static final String ESBL_EXE = "EmptyStandbyList.exe";
+    
     public static final int MEGABYTE = 1024 * 1024;
     public static final int KILOBYTE = 1024;
     public static final int IDLE_STATE = 0;
@@ -108,14 +113,24 @@ public class App {
     public static String getVersion() {
         Properties bp = new Properties();
         String version = "0.0";
-        try {
-            bp.load(new FileInputStream("build.properties"));
-            version = bp.getProperty("version");
-        } catch (IOException ex) {
-            System.err.println("If in NetBeans please do a "
-                    + "Clean and Build Project from the Run Menu or press F11");
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
+        if (Files.exists(Paths.get(BUILD_TOKEN_FILENAME))) {
+            // ide and zip release
+            try {
+                bp.load(new FileInputStream(BUILD_TOKEN_FILENAME));
+            } catch (IOException ex) {
+                System.err.println("If in NetBeans please do a "
+                        + "Clean and Build Project from the Run Menu or press F11");
+                Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
+            }            
+        } else {
+            // GH-14 jpackage windows environment
+            try {
+                bp.load(new FileInputStream("app/" + BUILD_TOKEN_FILENAME));
+            } catch (IOException ex) {
+                Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
+        version = bp.getProperty("version", version);        
         return version;
     }
     
