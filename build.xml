@@ -95,6 +95,7 @@
         </move>
         <delete dir="tmp"/>
         <copy file="package-msi.bat" todir="dist"/>
+        <copy file="sign-msi.bat" todir="dist"/>
     </target>
     
     <target name="buildinfo">
