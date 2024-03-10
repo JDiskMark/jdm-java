@@ -195,7 +195,16 @@ public class Util {
 
         int exitCode = process.waitFor();
         if (exitCode != 0) {
-            throw new IOException("Command execution failed with exit code: " + exitCode);
+            if (App.os.startsWith("Windows")) {
+                /* GH-21 windows parsing handles non NTFS partitions like
+                 * FAT32 used for USB sticks
+                 */
+                System.out.println("exit code: " + exitCode);
+            } else if (App.os.contains("Mac OS")) {
+                throw new IOException("Command execution failed with exit code: " + exitCode);
+            } else if (App.os.contains("Linux")) {
+                throw new IOException("Command execution failed with exit code: " + exitCode);
+            }
         }
 
         if (App.os.startsWith("Windows")) {
