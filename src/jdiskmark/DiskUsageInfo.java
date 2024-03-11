@@ -6,6 +6,7 @@ package jdiskmark;
 
 public class DiskUsageInfo {
     public int percentUsed;
+    public long freeGb;
     public long usedGb;
     public long totalGb;
 
@@ -13,6 +14,13 @@ public class DiskUsageInfo {
     
     public DiskUsageInfo(double percentUsed, double usedGB, double totalGB) {
         this.percentUsed = (int) Math.round(percentUsed);
+        this.usedGb = Math.round(usedGB);
+        this.totalGb = Math.round(totalGB);
+    }
+    
+    public DiskUsageInfo(double percentUsed, double freeGB, double usedGB, double totalGB) {
+        this.percentUsed = (int) Math.round(percentUsed);
+        this.freeGb = Math.round(freeGB);
         this.usedGb = Math.round(usedGB);
         this.totalGb = Math.round(totalGB);
     }

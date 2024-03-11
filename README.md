@@ -82,6 +82,9 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 - TODO: #13 Detect drive info on startup
 - TODO: #10 IOPS reporting
 
+### v0.5.1
+- resolve GH-17
+
 ### v0.5
 - update for java 21 LTS w NetBeans 20 environment: eclipselink 4.0, jpa 3.1, 
   modelgen 5.6, annotations 3.1, xml.bind 4.0
