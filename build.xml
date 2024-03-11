@@ -83,6 +83,7 @@
         <copy file="build.properties" todir="dist"/>
         <mkdir dir="tmp"/>
         <mkdir dir="tmp/${releaseDir}"/>
+        <delete file="dist/README.TXT"/>
         <move todir="tmp/${releaseDir}">
             <fileset dir="dist">
                 <include name="**/*"/>
@@ -93,6 +94,8 @@
             <fileset dir="tmp/${releaseDir}"/>
         </move>
         <delete dir="tmp"/>
+        <copy file="package-msi.bat" todir="dist"/>
+        <copy file="sign-msi.bat" todir="dist"/>
     </target>
     
     <target name="buildinfo">

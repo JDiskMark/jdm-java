@@ -19,9 +19,10 @@ import java.util.logging.Logger;
  */
 public class UtilOs {
     
-    /*
-     * Not used kept here for reference.
-     */
+    /** The disk model power shell utility. */
+    public static final String DISK_MODEL_PS_FILENAME = "disk-model.ps1";
+    
+    /* Not used kept here for reference. */
     static public void readPhysicalDriveWindows() throws FileNotFoundException, IOException {
         File diskRoot = new File ("\\\\.\\PhysicalDrive0");
         RandomAccessFile diskAccess = new RandomAccessFile (diskRoot, "r");
@@ -130,9 +131,14 @@ public class UtilOs {
      * @return the model as a string
      */
     public static String getDriveModelWindows(String driveLetter) {
+        File diskModelPsFile = new File(DISK_MODEL_PS_FILENAME);
+        if (!diskModelPsFile.exists()) {
+            diskModelPsFile = new File(".//app//" + DISK_MODEL_PS_FILENAME);
+        }
+        
         try {
             ProcessBuilder pb = new ProcessBuilder("powershell", "-ExecutionPolicy", 
-                    "ByPass", "-File", "disk-model.ps1");
+                    "ByPass", "-File", diskModelPsFile.getAbsolutePath());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -430,7 +436,7 @@ static public String getDeviceModelMacOs(String devicePath) {
     }
     
     /**
-     * GH-2 Drop the write catch, used to prevent invlaid read measurement
+     * GH-2 Drop the write catch, used to prevent invalid read measurement
      */
     static public void dropWriteCacheLinux() {
 
@@ -502,11 +508,13 @@ static public String getDeviceModelMacOs(String devicePath) {
         }
     }
     
-    static public void emptyStandbyListWindows() {
+    static public void emptyStandbyListWindows(File esblExe) {
 
         // there seem to be some testing issues with only doing the standbylist
         //String[] command = { ".\\EmptyStandbyList.exe", "standbylist" };
-        String[] command = { ".\\EmptyStandbyList.exe"};
+        
+        //String[] command = {".\\EmptyStandbyList.exe"};
+        String[] command = { esblExe.getAbsolutePath() };
         System.out.println("running: " + Arrays.toString(command));
 
         try {
@@ -643,8 +651,8 @@ static public String getDeviceModelMacOs(String devicePath) {
             int exitCode = process.waitFor();
             if (exitCode != 0) {
                 // Handle error if the process didn't exit successfully
-                Logger.getLogger(Util.class.getName()).log(Level.SEVERE, 
-                        "Failed to get processor name. Exit code: " + exitCode);
+                Logger.getLogger(Util.class.getName()).log(Level.SEVERE,
+                        "Failed to get processor name. Exit code: {0}", exitCode);
             }
         } catch (IOException | InterruptedException e) {
             Logger.getLogger(Util.class.getName()).log(Level.SEVERE, null, e);
@@ -689,8 +697,8 @@ static public String getDeviceModelMacOs(String devicePath) {
             int exitCode = process.waitFor();
             if (exitCode != 0) {
                 // Handle error if the process didn't exit successfully
-                Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, 
-                        "Failed to get processor name. Exit code: " + exitCode);
+                Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE,
+                       "Failed to get processor name. Exit code: {0}", exitCode);
             }
         } catch (IOException | InterruptedException e) {
             Logger.getLogger(Util.class.getName()).log(Level.SEVERE, null, e);

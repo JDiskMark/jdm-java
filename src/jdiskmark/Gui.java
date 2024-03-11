@@ -6,8 +6,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Shape;
 import java.awt.geom.Rectangle2D;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.File;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import javax.swing.JOptionPane;
@@ -267,14 +266,18 @@ public final class Gui {
                         JOptionPane.PLAIN_MESSAGE);
             }
         } else if (osName.contains("Windows")) {
-            boolean emptyStandbyListExist = Files.exists(Paths.get(".\\EmptyStandbyList.exe"));
-            System.out.println("emptyStandbyListExist=" + emptyStandbyListExist);
-            if (App.isAdmin && emptyStandbyListExist) {
+            File emptyStandbyListExe = new File(".\\" + App.ESBL_EXE);
+            if (!emptyStandbyListExe.exists()) {
+                // jpackage windows relative environment
+                emptyStandbyListExe = new File(".\\app\\" + App.ESBL_EXE);
+            }
+            System.out.println("emptyStandbyListExe.exist=" + emptyStandbyListExe.exists());
+            if (App.isAdmin && emptyStandbyListExe.exists()) {
                 // GH-2 drop cahe, delays in place of flushing cache
                 try { Thread.sleep(1300); } catch (InterruptedException ex) {}
-                UtilOs.emptyStandbyListWindows();
+                UtilOs.emptyStandbyListWindows(emptyStandbyListExe);
                 try { Thread.sleep(700); } catch (InterruptedException ex) {}
-            } else  if (App.isAdmin && !emptyStandbyListExist) {
+            } else  if (App.isAdmin && !emptyStandbyListExe.exists()) {
                 JOptionPane.showMessageDialog(Gui.mainFrame, 
                         """
                         Unable to find EmptyStandbyList.exe. This must be
