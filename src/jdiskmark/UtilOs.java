@@ -607,7 +607,9 @@ static public String getDeviceModelMacOs(String devicePath) {
         boolean usedBytesDetected = false;
         for (int i = 0; i < outputLines.size(); i++) {
             String line = outputLines.get(i);
-            if (line.contains("Total bytes")) {
+            if (line.contains("Total bytes")
+                    || line.contains("Total de bytes:") // spanish
+                    ) {
                 line = line.split(":")[1].trim().split("\\s+")[0];
                 String bytes = line.replace(",", "");
                 long totalBytes = Long.parseLong(bytes);
@@ -618,7 +620,9 @@ static public String getDeviceModelMacOs(String devicePath) {
                 long usedBytes = Long.parseLong(bytes);
                 usedGb = (double) usedBytes / (double) (1024.0 * 1024.0 * 1024.0);
                 usedBytesDetected = true;
-            } else if (line.contains("Total free bytes")) {
+            } else if (line.contains("Total free bytes")
+                    || line.contains("Total de bytes:") // spanish
+                    ) {
                 line = line.split(":")[1].trim().split("\\s+")[0];
                 String bytes = line.replace(",", "");
                 long freeBytes = Long.parseLong(bytes);
@@ -629,6 +633,7 @@ static public String getDeviceModelMacOs(String devicePath) {
             usedGb = totalGb - freeGb;
         }
         double percentUsed = usedGb / totalGb * 100;
+        System.out.println("-------------------------------------");
         System.out.println("freeGb=" + freeGb);
         System.out.println("usedGb=" + usedGb);
         System.out.println("totalGb=" + totalGb);
