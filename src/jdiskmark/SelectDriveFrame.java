@@ -14,11 +14,6 @@ public class SelectDriveFrame extends javax.swing.JFrame {
     public SelectDriveFrame() {
         initComponents();
         setLocationRelativeTo(Gui.mainFrame);
-        if (App.locationDir == null) {
-            App.locationDir = new File(System.getProperty("user.home"));
-            App.dataDir = new File(App.locationDir.getAbsolutePath()
-                    + File.separator + App.DATADIRNAME);
-        }
     }
 
     /**
@@ -60,9 +55,11 @@ public class SelectDriveFrame extends javax.swing.JFrame {
         System.out.println(evt);
         switch (evt.getActionCommand()) {
             case "ApproveSelection" -> {
-                App.locationDir = jFileChooser1.getSelectedFile();
+                App.setLocationDir(jFileChooser1.getSelectedFile());
                 App.saveConfig();
-                Gui.mainFrame.setLocation(App.locationDir.getAbsolutePath());
+                Gui.updateDiskInfo();
+                Gui.resetBenchmarkData();
+                Gui.runPanel.deselect();
             }
             case "CancelSelection" -> {
             }

@@ -745,10 +745,7 @@ public final class MainFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void chooseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chooseButtonActionPerformed
-        if (App.locationDir != null && App.locationDir.exists()) {
-            Gui.selFrame.setInitDir(App.locationDir);
-        }
-        Gui.selFrame.setVisible(true);
+        Gui.browseLocation();
     }//GEN-LAST:event_chooseButtonActionPerformed
 
     private void startButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startButtonActionPerformed

@@ -155,6 +155,14 @@ public class App {
             APP_CACHE_DIR.mkdirs();
         }
         loadConfig();
+        
+        // initialize data dir if necessary
+        if (App.locationDir == null) {
+            App.locationDir = new File(System.getProperty("user.home"));
+            App.dataDir = new File(App.locationDir.getAbsolutePath()
+                    + File.separator + App.DATADIRNAME);
+        }
+        
         Gui.mainFrame = new MainFrame();
         Gui.selFrame = new SelectDriveFrame();
         System.out.println(App.getConfigString());
@@ -165,6 +173,9 @@ public class App {
         // configure the embedded DB in .jDiskMark
         System.setProperty("derby.system.home", APP_CACHE_DIR_NAME);
         loadBenchmarks();
+        
+        // load current drive
+        Gui.updateDiskInfo();
         
         Gui.mainFrame.setVisible(true);
         
@@ -450,5 +461,34 @@ public class App {
         rMax = -1;
         rMin = -1;
         rAcc = -1;
+    }
+    
+    /**
+     * Get a string summary of current drive capacity info
+     * @return String summarizing the drive information.
+     */
+    static public String getDriveInfo() {
+        if (locationDir == null) {
+            return "Location has not been selected";
+        }
+        
+        String driveModel = Util.getDriveModel(locationDir);
+        String partitionId = Util.getPartitionId(locationDir.toPath());
+        DiskUsageInfo usageInfo = new DiskUsageInfo(); // init to prevent null ref
+        try {
+            usageInfo = Util.getDiskUsage(locationDir.toString());
+        } catch (IOException | InterruptedException ex) {
+            Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return driveModel + " - " + partitionId + ": " + usageInfo.getUsageTitleDisplay();
+    }
+    
+    /**
+     * This sets the location directory and configures the data directory within it.
+     * @param directory the dir to store 
+     */
+    static public void setLocationDir(File directory) {
+        locationDir = directory;
+        dataDir = new File (locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
     }
 }

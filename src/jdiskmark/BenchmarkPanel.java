@@ -140,4 +140,8 @@ public class BenchmarkPanel extends javax.swing.JPanel {
             model.removeRow(0);
         }
     }
+    
+    public void deselect() {
+        runTable.getSelectionModel().clearSelection();
+    }
 }

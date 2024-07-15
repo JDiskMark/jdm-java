@@ -11,6 +11,8 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
+import org.jfree.chart.ChartMouseEvent;
+import org.jfree.chart.ChartMouseListener;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.AxisLocation;
@@ -143,6 +145,28 @@ public final class Gui {
             }
         };
         
+        chartPanel.addChartMouseListener(new ChartMouseListener() {
+            private long lastClickTime = 0;
+            @Override
+            public void chartMouseClicked(ChartMouseEvent event) {
+                long currentTime = System.currentTimeMillis();
+                if (currentTime - lastClickTime < 500) { // Check for double click
+                    /* TODO: implement Detect click on chart title area */
+                    //Rectangle2D titleArea = chart.getTitle().getBounds();
+                    //boolean isInTitleArea = titleArea.contains(event.getTrigger().getX(), event.getTrigger().getY());
+                    //if (isInTitleArea) {
+                    // open selection dialog
+                        Gui.browseLocation();
+                    //}
+                }
+                lastClickTime = currentTime;
+            }
+
+            @Override
+            public void chartMouseMoved(ChartMouseEvent cme) {
+                // no action
+            }
+        });
         updateLegendAndAxis();
         return chartPanel;
     }
@@ -222,6 +246,11 @@ public final class Gui {
         msRenderer.setSeriesVisibleInLegend(1, isReadTest && App.showDriveAccess);
         
         msAxis.setVisible(App.showDriveAccess);
+    }
+    
+    static public void updateDiskInfo() {
+        Gui.mainFrame.setLocation(App.locationDir.getAbsolutePath());
+        Gui.chart.getTitle().setText(App.getDriveInfo());
     }
     
     /**
@@ -461,5 +490,13 @@ public final class Gui {
         msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
         msRenderer.setSeriesPaint(0, new Color(0xFFC107)); // w acc
         msRenderer.setSeriesPaint(1, new Color(0xE91E63)); // r acc
+    }
+    
+    public static void browseLocation() {
+        if (App.locationDir != null && App.locationDir.exists()) {
+            Gui.selFrame.setInitDir(App.locationDir);
+        }
+        Gui.selFrame.setLocationRelativeTo(Gui.mainFrame);
+        Gui.selFrame.setVisible(true);
     }
 }

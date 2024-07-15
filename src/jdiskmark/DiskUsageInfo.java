@@ -34,4 +34,8 @@ public class DiskUsageInfo {
     public String toDisplayString() {
         return + percentUsed + "% " + usedGb + "/" + totalGb + " GB";
     }
+    
+    public String getUsageTitleDisplay() {
+        return  percentUsed + "% (" + usedGb + "/" + totalGb + " GB)";
+    }
 }

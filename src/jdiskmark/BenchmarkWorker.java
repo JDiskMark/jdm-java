@@ -67,14 +67,14 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         
         String driveModel = Util.getDriveModel(dataDir);
         String partitionId = Util.getPartitionId(dataDir.toPath());
-        DiskUsageInfo dInfo = new DiskUsageInfo(); // init to prevent null ref
+        DiskUsageInfo usageInfo = new DiskUsageInfo(); // init to prevent null ref
         try {
-            dInfo = Util.getDiskUsage(dataDir.toString());
+            usageInfo = Util.getDiskUsage(dataDir.toString());
         } catch (IOException | InterruptedException ex) {
             Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, null, ex);
         }
         msg("drive model=" + driveModel + " partitionId=" + partitionId 
-                + " usage=" + dInfo.toDisplayString());
+                + " usage=" + usageInfo.toDisplayString());
         
         if (App.writeTest) {
             Benchmark run = new Benchmark(Benchmark.IOMode.WRITE, App.blockSequence);
@@ -87,9 +87,9 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
             // drive information
             run.driveModel = driveModel;
             run.partitionId = partitionId;
-            run.percentUsed = dInfo.percentUsed;
-            run.usedGb = dInfo.usedGb;
-            run.totalGb = dInfo.totalGb;
+            run.percentUsed = usageInfo.percentUsed;
+            run.usedGb = usageInfo.usedGb;
+            run.totalGb = usageInfo.totalGb;
             
             run.numSamples = App.numOfSamples;
             run.numBlocks = App.numOfBlocks;
@@ -178,9 +178,9 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
             // drive information
             run.driveModel = driveModel;
             run.partitionId = partitionId;
-            run.percentUsed = dInfo.percentUsed;
-            run.usedGb = dInfo.usedGb;
-            run.totalGb = dInfo.totalGb;
+            run.percentUsed = usageInfo.percentUsed;
+            run.usedGb = usageInfo.usedGb;
+            run.totalGb = usageInfo.totalGb;
             
             run.numSamples = App.numOfSamples;
             run.numBlocks = App.numOfBlocks;
