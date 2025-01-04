@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingWorker;
+import static jdiskmark.App.locationDir;
 import static jdiskmark.App.numOfSamples;
 
 /**
@@ -65,11 +66,11 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         
         int startFileNum = App.nextSampleNumber;
         
-        String driveModel = Util.getDriveModel(dataDir);
-        String partitionId = Util.getPartitionId(dataDir.toPath());
+        String driveModel = Util.getDriveModel(locationDir);
+        String partitionId = Util.getPartitionId(locationDir.toPath());
         DiskUsageInfo usageInfo = new DiskUsageInfo(); // init to prevent null ref
         try {
-            usageInfo = Util.getDiskUsage(dataDir.toString());
+            usageInfo = Util.getDiskUsage(locationDir.toString());
         } catch (IOException | InterruptedException ex) {
             Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, null, ex);
         }
