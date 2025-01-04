@@ -172,6 +172,28 @@ public class Util {
         return "OS not supported";
     }
     
+    /*
+     * Example input win11 (english):
+     *
+     * C:\Users\james>cmd.exe /c fsutil volume diskfree c:\\users\james
+     * Total free bytes                : 3,421,135,929,344 (  3.1 TB)
+     * Total bytes                     : 3,999,857,111,040 (  3.6 TB)
+     * Total quota free bytes          : 3,421,135,929,344 (  3.1 TB)
+     * Unavailable pool bytes          :                 0 (  0.0 KB)
+     * Quota unavailable pool bytes    :                 0 (  0.0 KB)
+     * Used bytes                      :   575,413,735,424 (535.9 GB)
+     * Total Reserved bytes            :     3,307,446,272 (  3.1 GB)
+     * Volume storage reserved bytes   :     2,739,572,736 (  2.6 GB)
+     * Available committed bytes       :                 0 (  0.0 KB)
+     * Pool available bytes            :                 0 (  0.0 KB)
+     * 
+     * Example input (spanish):
+     *
+     * fsutil volume diskfree e:\
+     * Total de bytes libres:  26,021,392,384 ( 24.2 GB)
+     * Total de bytes: 512,108,785,664 (476.9 GB)
+     * Cuota total de bytes libres:  26,021,392,384 ( 24.2 GB)
+     */
     public static DiskUsageInfo getDiskUsage(String diskPath) throws IOException, InterruptedException {
         ProcessBuilder pb = new ProcessBuilder();
 
@@ -208,7 +230,10 @@ public class Util {
         }
 
         if (App.os.startsWith("Windows")) {
-            return UtilOs.parseDiskUsageInfoWindows(outputLines);
+            // GH-22 non local support for capacity reporting
+            return UtilOs.getCapacityWindows(UtilOs.getDriveLetterWindows(Paths.get(diskPath)));
+            // Original capicity implementation w english and spanish support
+            //return UtilOs.parseDiskUsageInfoWindows(outputLines);
         } else if (App.os.contains("Mac OS")) {
             return UtilOs.parseDiskUsageInfoMacOs(outputLines);
         } else if (App.os.contains("Linux")) {

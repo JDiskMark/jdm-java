@@ -24,6 +24,13 @@ public class DiskUsageInfo {
         this.usedGb = Math.round(usedGB);
         this.totalGb = Math.round(totalGB);
     }
+    
+    public int calcPercentageUsed() {
+        if (totalGb != 0) {
+            percentUsed = Math.round(100f * (float) usedGb / (float) totalGb);
+        }
+        return percentUsed;
+    }
 
     /**
      * Format as:

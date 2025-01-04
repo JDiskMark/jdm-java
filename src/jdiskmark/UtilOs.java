@@ -22,6 +22,9 @@ public class UtilOs {
     /** The disk model power shell utility. */
     public static final String DISK_MODEL_PS_FILENAME = "disk-model.ps1";
     
+    /** The capacity power shell utility. */
+    public static final String CAPACITY_PS_FILENAME = "capacity.ps1";
+    
     /* Not used kept here for reference. */
     static public void readPhysicalDriveWindows() throws FileNotFoundException, IOException {
         File diskRoot = new File ("\\\\.\\PhysicalDrive0");
@@ -156,6 +159,41 @@ public class UtilOs {
             Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
         }
         return null;
+    }
+    
+    public static DiskUsageInfo getCapacityWindows(String driveLetter) {
+        File capacityPsFile = new File(CAPACITY_PS_FILENAME);
+        if (!capacityPsFile.exists()) {
+            capacityPsFile = new File(".//app//" + CAPACITY_PS_FILENAME);
+        }
+        
+        DiskUsageInfo usageInfo = new DiskUsageInfo();
+        
+        try {
+            ProcessBuilder pb = new ProcessBuilder("powershell", "-ExecutionPolicy", 
+                    "ByPass", "-File", capacityPsFile.getAbsolutePath(), driveLetter);
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println(line);
+                if (line.contains("TotalSpaceGb=")) {
+                    usageInfo.totalGb = Math.round(Float.parseFloat(line.split("=")[1]));
+                }
+                if (line.contains("FreeSpaceGb=")) {
+                    usageInfo.freeGb = Math.round(Float.parseFloat(line.split("=")[1]));
+                }
+                if (line.contains("UsedSpaceGb=")) {
+                    usageInfo.usedGb = Math.round(Float.parseFloat(line.split("=")[1]));
+                }
+            }
+            usageInfo.calcPercentageUsed();
+        } catch (IOException e) {
+            System.err.println("IO exception retrieving disk capacity: " + e.getLocalizedMessage());
+            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
+        }
+        return usageInfo;
     }
     
     /**
@@ -600,7 +638,8 @@ static public String getDeviceModelMacOs(String devicePath) {
      * @param outputLines lines to parse
      * @return A data structure with disk usage
      */
-    static DiskUsageInfo parseDiskUsageInfoWindows(List<String> outputLines) {
+    @Deprecated
+    public static DiskUsageInfo parseDiskUsageInfoWindows(List<String> outputLines) {
         double freeGb = 0;
         double usedGb = 0;
         double totalGb = 0;
