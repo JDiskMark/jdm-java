@@ -78,12 +78,14 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 ## Release Notes
 
 ### v0.6
-- #13 Detect drive info on startup
-- TODO: #12 update look and feel
-- TODO: #10 IOPS reporting
+- GH-13 Detect drive info on startup
+- GH-12 update look and feel (windows)
+- GH-22 foreign capacity reporting
+- TODO: GH-10 IOPS reporting
+- TODO: GH-23 delete selected benchmarks
 
 ### v0.5.1
-- resolve GH-17
+- resolve GH-17 invalid disk usage reported win 10
 
 ### v0.5
 - update for java 21 LTS w NetBeans 20 environment: eclipselink 4.0, jpa 3.1, 
@@ -94,11 +96,11 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 - replace Date w LocalDateTime to avoid deprecated @Temporal
 - disk access time (ms) - plotting disabled by default
 - replace display of transfer size with access time in run panel
-- #2 auto clear disk cache for combined write read benchmarks
-- #6 save and load benchmarks and graph series
+- GH-2 auto clear disk cache for combined write read benchmarks
+- GH-6 save and load benchmarks and graph series
 - break out actions into seperate menu
 - admin or root indicator, architecture indicator
-- #8 used capacity and total capacity
+- GH-8 used capacity and total capacity
 - initial color palette options
 - report processor name
 
