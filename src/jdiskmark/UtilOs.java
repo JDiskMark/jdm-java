@@ -1,6 +1,8 @@
 
 package jdiskmark;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -191,20 +193,17 @@ public class UtilOs {
             errorThread.start();
             
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                StringBuilder jsonBuilder = new StringBuilder();
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    System.out.println(line);
-                    if (line.contains("TotalSpaceGb=")) {
-                        usageInfo.totalGb = Double.parseDouble(line.split("=")[1]);
-                    }
-                    if (line.contains("FreeSpaceGb=")) {
-                        usageInfo.freeGb = Double.parseDouble(line.split("=")[1]);
-                    }
-                    if (line.contains("UsedSpaceGb=")) {
-                        usageInfo.usedGb = Double.parseDouble(line.split("=")[1]);
-                    }
+                    jsonBuilder.append(line);
                 }
-                usageInfo.calcPercentageUsed();
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode rootNode = objectMapper.readTree(jsonBuilder.toString());
+                usageInfo.totalGb = rootNode.get("TotalSpaceGb").asDouble(); 
+                usageInfo.freeGb = rootNode.get("FreeSpaceGb").asDouble();
+                usageInfo.usedGb = rootNode.get("UsedSpaceGb").asDouble();
+                usageInfo.calcPercentageUsed(); 
             }
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "IO exception retrieving disk capacity: " + e.getLocalizedMessage(), e);
