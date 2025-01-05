@@ -340,7 +340,7 @@ public class App {
         worker.addPropertyChangeListener((final var event) -> {
             switch (event.getPropertyName()) {
                 case "progress" -> {
-                    int value = (Integer)event.getNewValue();
+                    int value = (Integer) event.getNewValue();
                     Gui.progressBar.setValue(value);
                     long kbProcessed = (value) * App.targetTxSizeKb() / 100;
                     Gui.progressBar.setString(String.valueOf(kbProcessed) + " / " + String.valueOf(App.targetTxSizeKb()));

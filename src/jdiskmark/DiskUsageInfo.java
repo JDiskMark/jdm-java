@@ -4,30 +4,34 @@
  */
 package jdiskmark;
 
+import java.text.DecimalFormat;
+
 public class DiskUsageInfo {
-    public int percentUsed;
-    public long freeGb;
-    public long usedGb;
-    public long totalGb;
+    static final DecimalFormat DFT = new DecimalFormat("#");
+    
+    public long percentUsed;
+    public double freeGb;
+    public double usedGb;
+    public double totalGb;
 
     public DiskUsageInfo() {}
     
     public DiskUsageInfo(double percentUsed, double usedGB, double totalGB) {
-        this.percentUsed = (int) Math.round(percentUsed);
-        this.usedGb = Math.round(usedGB);
-        this.totalGb = Math.round(totalGB);
+        this.percentUsed = Math.round(percentUsed);
+        this.usedGb = usedGB;
+        this.totalGb = totalGB;
     }
     
     public DiskUsageInfo(double percentUsed, double freeGB, double usedGB, double totalGB) {
-        this.percentUsed = (int) Math.round(percentUsed);
-        this.freeGb = Math.round(freeGB);
-        this.usedGb = Math.round(usedGB);
-        this.totalGb = Math.round(totalGB);
+        this.percentUsed = Math.round(percentUsed);
+        this.freeGb = freeGB;
+        this.usedGb = usedGB;
+        this.totalGb = totalGB;
     }
     
-    public int calcPercentageUsed() {
+    public long calcPercentageUsed() {
         if (totalGb != 0) {
-            percentUsed = Math.round(100f * (float) usedGb / (float) totalGb);
+            percentUsed = Math.round(100 * usedGb / totalGb);
         }
         return percentUsed;
     }
@@ -39,10 +43,10 @@ public class DiskUsageInfo {
      * @return 
      */
     public String toDisplayString() {
-        return + percentUsed + "% " + usedGb + "/" + totalGb + " GB";
+        return percentUsed + "% " + DFT.format(usedGb) + "/" + DFT.format(totalGb) + " GB";
     }
     
     public String getUsageTitleDisplay() {
-        return  percentUsed + "% (" + usedGb + "/" + totalGb + " GB)";
+        return percentUsed + "% (" + DFT.format(usedGb) + "/" + DFT.format(totalGb) + " GB)";
     }
 }

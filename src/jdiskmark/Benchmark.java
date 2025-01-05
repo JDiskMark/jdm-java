@@ -31,6 +31,7 @@ import java.util.List;
 public class Benchmark implements Serializable {
     
     static final DecimalFormat DF = new DecimalFormat("###.##");
+    static final DecimalFormat DFT = new DecimalFormat("###");
     static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
     static public enum IOMode { READ, WRITE, READ_WRITE; }
@@ -56,11 +57,11 @@ public class Benchmark implements Serializable {
     @Column
     String partitionId;      // on windows the drive letter
     @Column
-    int percentUsed;
+    long percentUsed;
     @Column
-    long usedGb;
+    double usedGb;
     @Column
-    long totalGb;
+    double totalGb;
     
     // configuration
     @Column
@@ -126,7 +127,7 @@ public class Benchmark implements Serializable {
         return driveModel + " - " + partitionId + ": " + getUsageTitleDisplay();
     }
     public String getUsageTitleDisplay() {
-        return  percentUsed + "% (" + usedGb + "/" + totalGb + " GB)";
+        return  percentUsed + "% (" + DFT.format(usedGb) + "/" + DFT.format(totalGb) + " GB)";
     }
     public String getUsageColumnDisplay() {
         return percentUsed + "%";

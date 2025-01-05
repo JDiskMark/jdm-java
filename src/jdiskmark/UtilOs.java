@@ -19,6 +19,8 @@ import java.util.logging.Logger;
  */
 public class UtilOs {
     
+    public static final Logger LOGGER = Logger.getLogger(UtilOs.class.getName());
+    
     /** The disk model power shell utility. */
     public static final String DISK_MODEL_PS_FILENAME = "disk-model.ps1";
     
@@ -155,8 +157,7 @@ public class UtilOs {
                 }
             }
         } catch (IOException e) {
-            System.err.println("IO exception retrieving disk info: " + e.getLocalizedMessage());
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
+            LOGGER.log(Level.SEVERE, "IO exception getting model", e);
         }
         return null;
     }
@@ -173,25 +174,40 @@ public class UtilOs {
             ProcessBuilder pb = new ProcessBuilder("powershell", "-ExecutionPolicy", 
                     "ByPass", "-File", capacityPsFile.getAbsolutePath(), driveLetter);
             pb.redirectErrorStream(true);
-            Process process = pb.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                System.out.println(line);
-                if (line.contains("TotalSpaceGb=")) {
-                    usageInfo.totalGb = Math.round(Float.parseFloat(line.split("=")[1]));
+            
+            final Process process = pb.start();
+            
+            // Create a thread to handle the error stream
+            Thread errorThread = new Thread(() -> {
+                try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                    String errorLine;
+                    while ((errorLine = errorReader.readLine()) != null) {
+                        LOGGER.log(Level.SEVERE, "PowerShell script error: {0}", errorLine);
+                    }
+                } catch (IOException e) {
+                    LOGGER.log(Level.SEVERE, "Error reading from error stream", e);
                 }
-                if (line.contains("FreeSpaceGb=")) {
-                    usageInfo.freeGb = Math.round(Float.parseFloat(line.split("=")[1]));
+            });
+            errorThread.start();
+            
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.out.println(line);
+                    if (line.contains("TotalSpaceGb=")) {
+                        usageInfo.totalGb = Double.parseDouble(line.split("=")[1]);
+                    }
+                    if (line.contains("FreeSpaceGb=")) {
+                        usageInfo.freeGb = Double.parseDouble(line.split("=")[1]);
+                    }
+                    if (line.contains("UsedSpaceGb=")) {
+                        usageInfo.usedGb = Double.parseDouble(line.split("=")[1]);
+                    }
                 }
-                if (line.contains("UsedSpaceGb=")) {
-                    usageInfo.usedGb = Math.round(Float.parseFloat(line.split("=")[1]));
-                }
+                usageInfo.calcPercentageUsed();
             }
-            usageInfo.calcPercentageUsed();
         } catch (IOException e) {
-            System.err.println("IO exception retrieving disk capacity: " + e.getLocalizedMessage());
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
+            LOGGER.log(Level.SEVERE, "IO exception retrieving disk capacity: " + e.getLocalizedMessage(), e);
         }
         return usageInfo;
     }
@@ -226,7 +242,7 @@ public class UtilOs {
                 }
             }
         } catch (IOException e) {
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
+            LOGGER.log(Level.SEVERE, null, e);
         }
         return null;
     }
@@ -251,7 +267,7 @@ public class UtilOs {
                 deviceNames.add(line);
             }
         } catch (IOException e) {
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
+            LOGGER.log(Level.SEVERE, null, e);
         }
         return deviceNames;
     }
@@ -282,7 +298,7 @@ public class UtilOs {
                 }
             }
         } catch (IOException e) {
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
+            LOGGER.log(Level.SEVERE, null, e);
         }
         return null;
     }
@@ -326,7 +342,7 @@ public class UtilOs {
                 }
             }
         } catch (IOException e) {
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
+            LOGGER.log(Level.SEVERE, null, e);
         }
         return null;
     }
@@ -345,7 +361,7 @@ public class UtilOs {
                 }
             }
         } catch(IOException e) {
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
+            LOGGER.log(Level.SEVERE, null, e);
         }
         return null;
     }
@@ -369,7 +385,7 @@ static public String getDeviceModelMacOs(String devicePath) {
             }
         }
     } catch (IOException e) {
-        Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
+        LOGGER.log(Level.SEVERE, null, e);
     }
 
     String deviceId = devicePath;
@@ -396,7 +412,7 @@ static public String getDeviceModelMacOs(String devicePath) {
             }
         }
     } catch (IOException e) {
-        Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
+        LOGGER.log(Level.SEVERE, null, e);
     }
 
     return "Model unavailable for " + deviceId;
@@ -436,7 +452,7 @@ static public String getDeviceModelMacOs(String devicePath) {
             System.out.println("EXIT VALUE: " + exitValue);
 
         } catch (IOException | InterruptedException e) {
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, null, e);
+            LOGGER.log(Level.SEVERE, null, e);
         }
     }
     
@@ -469,7 +485,7 @@ static public String getDeviceModelMacOs(String devicePath) {
             System.out.println("EXIT VALUE: " + exitValue);
 
         } catch (IOException | InterruptedException e) {
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, "Error executing command", e);
+            LOGGER.log(Level.SEVERE, "Error executing command", e);
         }
     }
     
@@ -505,7 +521,7 @@ static public String getDeviceModelMacOs(String devicePath) {
             System.out.println("EXIT VALUE: " + exitValue);
 
         } catch (IOException | InterruptedException e) {
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, "Error executing command", e);
+            LOGGER.log(Level.SEVERE, "Error executing command", e);
         }
     }
     
@@ -525,7 +541,7 @@ static public String getDeviceModelMacOs(String devicePath) {
                 }
             }
         } catch (IOException e) {
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, "Error executing command", e);
+            LOGGER.log(Level.SEVERE, "Error executing command", e);
             return false;
         }
         return false;
@@ -541,7 +557,7 @@ static public String getDeviceModelMacOs(String devicePath) {
             int exitCode = process.waitFor();
             return exitCode == 0;
         } catch (IOException | InterruptedException e) {
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, "Error executing command", e);
+            LOGGER.log(Level.SEVERE, "Error executing command", e);
             return false;
         }
     }
@@ -578,7 +594,7 @@ static public String getDeviceModelMacOs(String devicePath) {
             System.out.println("EXIT VALUE: " + exitValue);
 
         } catch (IOException | InterruptedException e) {
-            Logger.getLogger(UtilOs.class.getName()).log(Level.SEVERE, "Error executing command", e);
+            LOGGER.log(Level.SEVERE, "Error executing command", e);
         }
     }
     
@@ -695,11 +711,11 @@ static public String getDeviceModelMacOs(String devicePath) {
             int exitCode = process.waitFor();
             if (exitCode != 0) {
                 // Handle error if the process didn't exit successfully
-                Logger.getLogger(Util.class.getName()).log(Level.SEVERE,
+                LOGGER.log(Level.SEVERE,
                         "Failed to get processor name. Exit code: {0}", exitCode);
             }
         } catch (IOException | InterruptedException e) {
-            Logger.getLogger(Util.class.getName()).log(Level.SEVERE, null, e);
+            LOGGER.log(Level.SEVERE, null, e);
         }
 
         return ""; // Return an empty string if no processor name was found
@@ -715,7 +731,7 @@ static public String getDeviceModelMacOs(String devicePath) {
                 return line.trim(); // The first line contains the processor name
             }
         } catch (IOException e) {
-            Logger.getLogger(Util.class.getName()).log(Level.SEVERE, null, e);
+            LOGGER.log(Level.SEVERE, null, e);
         }
 
         return "";
@@ -745,7 +761,7 @@ static public String getDeviceModelMacOs(String devicePath) {
                        "Failed to get processor name. Exit code: {0}", exitCode);
             }
         } catch (IOException | InterruptedException e) {
-            Logger.getLogger(Util.class.getName()).log(Level.SEVERE, null, e);
+            LOGGER.log(Level.SEVERE, null, e);
         }
 
         return ""; // Return an empty string if no processor name was found
