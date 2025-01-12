@@ -45,12 +45,20 @@
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="deleteDataMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
-            <MenuItem class="javax.swing.JMenuItem" name="deleteBenchmarksItem">
+            <MenuItem class="javax.swing.JMenuItem" name="deleteSelBenchmarksItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Delete Benchmarks"/>
+                <Property name="text" type="java.lang.String" value="Delete Selected Benchmark"/>
               </Properties>
               <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="deleteBenchmarksItemActionPerformed"/>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="deleteSelBenchmarksItemActionPerformed"/>
+              </Events>
+            </MenuItem>
+            <MenuItem class="javax.swing.JMenuItem" name="deleteAllBenchmarksItem">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Delete All Benchmarks"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="deleteAllBenchmarksItemActionPerformed"/>
               </Events>
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="resetSequenceMenuItem">
@@ -327,7 +335,7 @@
                                   <Component id="numBlocksCombo" alignment="0" min="-2" pref="110" max="-2" attributes="0"/>
                                   <Component id="numFilesCombo" min="-2" pref="110" max="-2" attributes="0"/>
                                   <Component id="blockSizeCombo" alignment="0" min="-2" pref="110" max="-2" attributes="0"/>
-                                  <Component id="sampleSizeLabel" alignment="0" max="32767" attributes="0"/>
+                                  <Component id="sampleSizeLabel" alignment="0" pref="117" max="32767" attributes="0"/>
                                   <Component id="startButton" alignment="0" min="-2" pref="110" max="-2" attributes="0"/>
                               </Group>
                           </Group>
@@ -373,7 +381,7 @@
                           <Component id="resetButton" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="startButton" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace max="32767" attributes="0"/>
+                      <EmptySpace pref="25" max="32767" attributes="0"/>
                       <Component id="jPanel1" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>

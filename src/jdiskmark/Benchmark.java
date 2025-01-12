@@ -79,7 +79,7 @@ public class Benchmark implements Serializable {
     
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
-    @Column
+    @Column(name = "startTime", columnDefinition = "TIMESTAMP")
     LocalDateTime startTime;
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column
@@ -178,6 +178,17 @@ public class Benchmark implements Serializable {
         EntityManager em = EM.getEntityManager();
         em.getTransaction().begin();
         int deletedCount = em.createQuery("DELETE FROM Benchmark").executeUpdate();
+        em.getTransaction().commit();
+        return deletedCount;
+    }
+    
+    static int delete(List<Long> benchmarkIds) {
+        EntityManager em = EM.getEntityManager();
+        em.getTransaction().begin();
+        String jpql = "DELETE FROM Benchmark b WHERE b.id IN :benchmarkIds";
+        int deletedCount = em.createQuery(jpql)
+                .setParameter("benchmarkIds", benchmarkIds)
+                .executeUpdate();
         em.getTransaction().commit();
         return deletedCount;
     }

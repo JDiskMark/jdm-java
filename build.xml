@@ -73,8 +73,8 @@
     -->
     
     <!-- software revision number -->
-    <property name="version" value="0.6-dev"/>
-    <property name="releaseDir" value="jdiskmark-v${version}"/>
+    <property name="version" value="0.6-dev.a"/>
+    <property name="releaseDir" value="jdiskmark-${version}"/>
     
     <target name="-post-jar">
         <copy file="EmptyStandbyList.exe" todir="dist"/>

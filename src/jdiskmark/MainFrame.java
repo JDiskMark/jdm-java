@@ -6,6 +6,7 @@ import java.awt.BorderLayout;
 import java.awt.Desktop;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
@@ -183,7 +184,8 @@ public final class MainFrame extends javax.swing.JFrame {
         actionMenu = new javax.swing.JMenu();
         clearLogsItem = new javax.swing.JMenuItem();
         deleteDataMenuItem = new javax.swing.JMenuItem();
-        deleteBenchmarksItem = new javax.swing.JMenuItem();
+        deleteSelBenchmarksItem = new javax.swing.JMenuItem();
+        deleteAllBenchmarksItem = new javax.swing.JMenuItem();
         resetSequenceMenuItem = new javax.swing.JMenuItem();
         optionMenu = new javax.swing.JMenu();
         writeSyncCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -439,7 +441,7 @@ public final class MainFrame extends javax.swing.JFrame {
                             .addComponent(numBlocksCombo, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(numFilesCombo, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(blockSizeCombo, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(sampleSizeLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(sampleSizeLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 117, Short.MAX_VALUE)
                             .addComponent(startButton, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap())
         );
@@ -473,7 +475,7 @@ public final class MainFrame extends javax.swing.JFrame {
                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(resetButton)
                     .addComponent(startButton))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 25, Short.MAX_VALUE)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
@@ -495,7 +497,7 @@ public final class MainFrame extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(mountPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 382, Short.MAX_VALUE))
+                    .addComponent(controlsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 382, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -611,13 +613,21 @@ public final class MainFrame extends javax.swing.JFrame {
         });
         actionMenu.add(deleteDataMenuItem);
 
-        deleteBenchmarksItem.setText("Delete Benchmarks");
-        deleteBenchmarksItem.addActionListener(new java.awt.event.ActionListener() {
+        deleteSelBenchmarksItem.setText("Delete Selected Benchmark");
+        deleteSelBenchmarksItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                deleteBenchmarksItemActionPerformed(evt);
+                deleteSelBenchmarksItemActionPerformed(evt);
             }
         });
-        actionMenu.add(deleteBenchmarksItem);
+        actionMenu.add(deleteSelBenchmarksItem);
+
+        deleteAllBenchmarksItem.setText("Delete All Benchmarks");
+        deleteAllBenchmarksItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                deleteAllBenchmarksItemActionPerformed(evt);
+            }
+        });
+        actionMenu.add(deleteAllBenchmarksItem);
 
         resetSequenceMenuItem.setText("Reset Sequence");
         resetSequenceMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -882,10 +892,17 @@ public final class MainFrame extends javax.swing.JFrame {
         App.saveConfig();
     }//GEN-LAST:event_writeSyncCheckBoxMenuItemActionPerformed
 
-    private void deleteBenchmarksItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteBenchmarksItemActionPerformed
-        App.msg("Clearing previous runs.");
-        App.clearSavedBenchmarks();
-    }//GEN-LAST:event_deleteBenchmarksItemActionPerformed
+    private void deleteAllBenchmarksItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteAllBenchmarksItemActionPerformed
+        int result = JOptionPane.showConfirmDialog(this, 
+            "Delete all benchmarks?", 
+            "Confirm Delete", 
+            JOptionPane.YES_NO_OPTION);
+
+        if (result == JOptionPane.YES_OPTION) {
+            App.msg("Deleting all benchmarks.");
+            App.deleteAllBenchmarks();
+        }
+    }//GEN-LAST:event_deleteAllBenchmarksItemActionPerformed
 
     private void showAccessCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showAccessCheckBoxMenuItemActionPerformed
         App.showDriveAccess = showAccessCheckBoxMenuItem.getState();
@@ -912,6 +929,19 @@ public final class MainFrame extends javax.swing.JFrame {
         App.saveConfig();
     }//GEN-LAST:event_bardWarmPaletteMenuItemActionPerformed
 
+    private void deleteSelBenchmarksItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteSelBenchmarksItemActionPerformed
+        int result = JOptionPane.showConfirmDialog(this, 
+            "Delete selected benchmarks?", 
+            "Confirm Delete", 
+            JOptionPane.YES_NO_OPTION);
+
+        if (result == JOptionPane.YES_OPTION) {
+            App.msg("Deleting selected benchmarks.");
+            List<Long> benchmarkIds = Gui.runPanel.getSelectedIds();
+            App.deleteBenchmarks(benchmarkIds);
+        }
+    }//GEN-LAST:event_deleteSelBenchmarksItemActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
@@ -926,8 +956,9 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem clearLogsItem;
     private javax.swing.JMenu colorPaletteMenu;
     private javax.swing.JPanel controlsPanel;
-    private javax.swing.JMenuItem deleteBenchmarksItem;
+    private javax.swing.JMenuItem deleteAllBenchmarksItem;
     private javax.swing.JMenuItem deleteDataMenuItem;
+    private javax.swing.JMenuItem deleteSelBenchmarksItem;
     private javax.swing.JScrollPane eventScrollPane;
     private javax.swing.JMenu fileMenu;
     private javax.swing.JMenu helpMenu;

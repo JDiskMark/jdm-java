@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -141,6 +142,7 @@ public class App {
         Gui.configureLaf();
         
         Gui.mainFrame = new MainFrame();
+        Gui.runPanel.hideFirstColumn();
         Gui.selFrame = new SelectDriveFrame();
         System.out.println(App.getConfigString());
         Gui.mainFrame.loadConfig();
@@ -150,7 +152,7 @@ public class App {
         // configure the embedded DB in .jDiskMark
         System.setProperty("derby.system.home", APP_CACHE_DIR_NAME);
         loadBenchmarks();
-        
+
         // load current drive
         Gui.updateDiskInfo();
         
@@ -282,9 +284,16 @@ public class App {
         });
     }
     
-    public static void clearSavedBenchmarks() {
+    public static void deleteAllBenchmarks() {
         Benchmark.deleteAll();
         App.benchmarks.clear();
+        loadBenchmarks();
+    }
+    
+    // only tested for single delete but should work
+    public static void deleteBenchmarks(List<Long> benchmarkIds) {
+        Benchmark.delete(benchmarkIds);
+        App.benchmarks.clear();  // clear the cache
         loadBenchmarks();
     }
     
