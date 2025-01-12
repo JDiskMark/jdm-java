@@ -99,6 +99,8 @@ public class Benchmark implements Serializable {
     double bwMin = 0;
     @Column
     double accAvg = 0;
+    @Column
+    long iops = 0;
     
     @Override
     public String toString() {
@@ -165,6 +167,18 @@ public class Benchmark implements Serializable {
         }
         long diffMs = Duration.between(startTime, endTime).toMillis();
         return String.valueOf(diffMs);
+    }
+    
+    public void setTotalOps(long totalOps) {
+        // iops = operations / sec = ops / (elapsed ms / 1,000ms)
+        // Multiply by 1_000_000 to convert milliseconds to seconds
+        System.err.println("startTime=" + startTime);
+        System.err.println("endTime=" + endTime);
+        long diffMs = Duration.between(startTime, endTime).toMillis();
+        if (diffMs != 0) {
+            double iopsDouble = (double) (totalOps * 1_000_000) / (double) diffMs;
+            iops = Math.round(iopsDouble);
+        }
     }
     
     // utility methods for collection

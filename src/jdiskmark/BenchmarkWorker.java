@@ -151,9 +151,14 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                 run.bwMin = wSample.cumMin;
                 run.bwAvg = wSample.cumAvg;
                 run.accAvg = wSample.cumAccTimeMs;
-                run.endTime = LocalDateTime.now();
                 run.add(wSample);
             }
+            
+            // GH-10 file IOPS processing
+            run.endTime = LocalDateTime.now();
+            run.setTotalOps(wUnitsComplete);
+            App.wIops = run.iops;
+            Gui.mainFrame.refreshWriteMetrics();
             
             EntityManager em = EM.getEntityManager();
             em.getTransaction().begin();
@@ -236,9 +241,15 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                 run.bwMin = rSample.cumMin;
                 run.bwAvg = rSample.cumAvg;
                 run.accAvg = rSample.cumAccTimeMs;
-                run.endTime = LocalDateTime.now();
+
                 run.add(rSample);
             }
+            
+            // GH-10 file IOPS processing
+            run.endTime = LocalDateTime.now();
+            run.setTotalOps(rUnitsComplete);
+            App.rIops = run.iops;
+            Gui.mainFrame.refreshReadMetrics();
             
             EntityManager em = EM.getEntityManager();
             em.getTransaction().begin();

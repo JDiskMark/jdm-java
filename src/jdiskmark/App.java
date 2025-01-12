@@ -72,6 +72,8 @@ public class App {
     public static int nextSampleNumber = 1;   // number of the next sample
     public static double wMax = -1, wMin = -1, wAvg = -1, wAcc = -1;
     public static double rMax = -1, rMin = -1, rAvg = -1, rAcc = -1;
+    public static long wIops = -1;
+    public static long rIops = -1;
     
     public static HashMap<String, Benchmark> benchmarks = new HashMap<>();
     
@@ -443,10 +445,12 @@ public class App {
         wMax = -1;
         wMin = -1;
         wAcc = -1;
+        wIops = -1;
         rAvg = -1;
         rMax = -1;
         rMin = -1;
         rAcc = -1;
+        rIops = -1;
     }
     
     /**

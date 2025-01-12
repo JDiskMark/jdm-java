@@ -77,12 +77,12 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 
 ## Release Notes
 
-### v0.6
+### v0.6.0 dev b
 - GH-13 Detect drive info on startup
 - GH-12 update look and feel (windows)
 - GH-22 foreign capacity reporting
 - GH-23 delete selected benchmarks
-- TODO: GH-10 IOPS reporting
+- GH-10 IOPS reporting
 
 ### v0.5.1
 - resolve GH-17 invalid disk usage reported win 10
