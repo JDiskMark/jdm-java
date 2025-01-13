@@ -83,6 +83,9 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 - GH-22 foreign capacity reporting
 - GH-23 delete selected benchmarks
 - GH-10 IOPS reporting
+- TODO: GH-20 threading and queue depth
+- TODO: GH-16 MacOS installer
+- TODO: GH-25 linux crash capacity w terabytes and exabytes
 
 ### v0.5.1
 - resolve GH-17 invalid disk usage reported win 10
