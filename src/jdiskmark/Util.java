@@ -202,7 +202,7 @@ public class Util {
             pb.command("cmd.exe", "/c", "fsutil volume diskfree " + diskPath);
         } else {
             // command is same for linux and mac os
-            pb.command("df", "-h", diskPath);
+            pb.command("df", "-k", diskPath);
         }
 
         Process process = pb.start();

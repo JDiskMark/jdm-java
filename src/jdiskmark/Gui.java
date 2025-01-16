@@ -305,12 +305,13 @@ public final class Gui {
                 UtilOs.flushDataToDriveLinux();
                 UtilOs.dropWriteCacheLinux();
             } else {
+                /* Revised the drop_caches command so it works. - JSL 2024-01-16 */
                 JOptionPane.showMessageDialog(Gui.mainFrame, 
                         """
                         Run jDiskMark with sudo to automatically clear the disk cache.
                         
                         For a valid READ benchmark please clear the disk cache now 
-                        by using \"sudo sync; echo 1 > /proc/sys/vm/drop_caches\".
+                        by using: \"sudo sh -c \'sync; echo 1 > /proc/sys/vm/drop_caches\'\".
                         
                         Press OK to continue when disk cache has been dropped.""",
                         "Clear Disk Cache Now",

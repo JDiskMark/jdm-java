@@ -227,7 +227,7 @@ public class UtilOs {
     static public String getPartitionFromFilePathLinux(Path path) {
         System.out.println("filePath=" + path.toString());
         try {
-            ProcessBuilder pb = new ProcessBuilder("df", path.toString());
+            ProcessBuilder pb = new ProcessBuilder("df", "-k", path.toString());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -348,7 +348,7 @@ public class UtilOs {
     
     static public String getDeviceFromPathMacOs(Path path) {
         try {
-            ProcessBuilder pb = new ProcessBuilder("df", path.toString());
+            ProcessBuilder pb = new ProcessBuilder("df", "-k", path.toString());
             pb.redirectErrorStream(true);
             Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -609,8 +609,9 @@ static public String getDeviceModelMacOs(String devicePath) {
         String usageLine = outputLines.get(1); // Assuming the relevant information is on the second line
         String[] parts = usageLine.trim().split("\\s+");
 
-        double usedGb = Double.parseDouble(parts[2].replace("G", ""));
-        double totalGb = Double.parseDouble(parts[1].replace("G", ""));
+        /* Grab relevant bits from df output and convert from kilobytes to gigabytes. - JSL 2024-01-06 */
+        double usedGb = Double.parseDouble(parts[2])/Math.pow(2,20);
+        double totalGb = Double.parseDouble(parts[1])/Math.pow(2,20);
         double percentUsed = usedGb / totalGb * 100;
 
         return new DiskUsageInfo(percentUsed, usedGb, totalGb);
@@ -628,8 +629,9 @@ static public String getDeviceModelMacOs(String devicePath) {
         String usageLine = outputLines.get(1); // Assuming the relevant information is on the second line
         String[] parts = usageLine.trim().split("\\s+");
 
-        double usedGb = Double.parseDouble(parts[2].replace("Gi", ""));
-        double totalGb = Double.parseDouble(parts[1].replace("Gi", ""));
+        /* Grab relevant bits from df output and convert from kilobytes to gigabytes. - JSL 2024-01-06 */
+        double usedGb = Double.parseDouble(parts[2])/Math.pow(2,20);
+        double totalGb = Double.parseDouble(parts[1])/Math.pow(2,20);
         double percentUsed = usedGb / totalGb * 100;
 
         return new DiskUsageInfo(percentUsed, usedGb, totalGb);
