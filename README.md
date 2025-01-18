@@ -84,6 +84,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 - GH-23 delete selected benchmarks
 - GH-10 IOPS reporting
 - GH-25 linux crash, capacity w terabytes and exabytes
+- write sync default off
 - TODO: GH-20 threading and queue depth
 - TODO: GH-16 MacOS installer
 
