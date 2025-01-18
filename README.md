@@ -77,7 +77,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 
 ## Release Notes
 
-### v0.6.0 dev c
+### v0.6.0 dev d
 - GH-13 Detect drive info on startup
 - GH-12 update look and feel (windows)
 - GH-22 foreign capacity reporting

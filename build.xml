@@ -73,7 +73,7 @@
     -->
     
     <!-- software revision number -->
-    <property name="version" value="0.6.0-dev.c"/>
+    <property name="version" value="0.6.0-dev.d"/>
     <property name="releaseDir" value="jdiskmark-${version}"/>
     
     <target name="-post-jar">
