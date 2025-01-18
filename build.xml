@@ -82,6 +82,7 @@
         <copy file="disk-model.ps1" todir="dist"/>
         <antcall target="buildinfo"/>
         <copy file="build.properties" todir="dist"/>
+        <copy file="README.md" todir="dist"/>
         <mkdir dir="tmp"/>
         <mkdir dir="tmp/${releaseDir}"/>
         <delete file="dist/README.TXT"/>
