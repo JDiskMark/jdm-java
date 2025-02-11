@@ -267,8 +267,8 @@
                   <EmptySpace max="-2" attributes="0"/>
                   <Component id="mountPanel" min="-2" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
-                  <Component id="controlsPanel" pref="251" max="32767" attributes="0"/>
-                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="controlsPanel" min="-2" pref="249" max="-2" attributes="0"/>
+                  <EmptySpace max="32767" attributes="0"/>
               </Group>
           </Group>
         </DimensionLayout>
@@ -301,7 +301,7 @@
           <Layout>
             <DimensionLayout dim="0">
               <Group type="103" groupAlignment="0" attributes="0">
-                  <EmptySpace min="0" pref="737" max="32767" attributes="0"/>
+                  <EmptySpace min="0" pref="743" max="32767" attributes="0"/>
               </Group>
             </DimensionLayout>
             <DimensionLayout dim="1">
@@ -867,7 +867,7 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="locationText" min="-2" pref="480" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jLabel15" pref="314" max="32767" attributes="0"/>
+                      <Component id="jLabel15" pref="318" max="32767" attributes="0"/>
                       <EmptySpace type="separate" max="-2" attributes="0"/>
                       <Component id="chooseButton" min="-2" pref="100" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>

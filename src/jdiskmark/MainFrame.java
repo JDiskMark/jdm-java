@@ -221,7 +221,7 @@ public final class MainFrame extends javax.swing.JFrame {
         mountPanel.setLayout(mountPanelLayout);
         mountPanelLayout.setHorizontalGroup(
             mountPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 737, Short.MAX_VALUE)
+            .addGap(0, 743, Short.MAX_VALUE)
         );
         mountPanelLayout.setVerticalGroup(
             mountPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -529,8 +529,8 @@ public final class MainFrame extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(mountPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(controlsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 251, Short.MAX_VALUE)
-                .addContainerGap())
+                .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 249, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -570,7 +570,7 @@ public final class MainFrame extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(locationText, javax.swing.GroupLayout.PREFERRED_SIZE, 480, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel15, javax.swing.GroupLayout.DEFAULT_SIZE, 314, Short.MAX_VALUE)
+                .addComponent(jLabel15, javax.swing.GroupLayout.DEFAULT_SIZE, 318, Short.MAX_VALUE)
                 .addGap(18, 18, 18)
                 .addComponent(chooseButton, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
