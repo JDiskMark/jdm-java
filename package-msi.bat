@@ -8,9 +8,9 @@ set MSI_VER=0.6.0
 
 set JPKG_EXE="C:\Program Files\java\jdk-21\bin\jpackage"
 
-del jDiskMark-*.msi
-%JPKG_EXE% --type msi --input jdiskmark-%VERSION% --main-jar jDiskMark.jar ^
-    --name jDiskMark-%VERSION% --app-version %MSI_VER% ^
+del jdiskmark-*.msi
+%JPKG_EXE% --type msi --input jdiskmark-%VERSION% --main-jar jdiskmark.jar ^
+    --name jdiskmark-%VERSION% --app-version %MSI_VER% ^
     --vendor "jdiskmark.net" --win-console --win-menu
 
-ren jDiskMark-%VERSION%-%MSI_VER%.msi jDiskMark-%VERSION%.msi
+ren jdiskmark-%VERSION%-%MSI_VER%.msi jdiskmark-%VERSION%.msi

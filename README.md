@@ -48,7 +48,7 @@ clearing the disk write cache before performing read benchmarks.
 
 2. run command:
    ```
-   $ java -jar jDiskMark.jar
+   $ java -jar jdiskmark.jar
    ```
    In windows double click executable jar file.
 
@@ -63,8 +63,8 @@ clearing the disk write cache before performing read benchmarks.
 Note: Take advantage of automatic clearing of the disk cache for write read 
 benchmarks start with sudo or an administrator windows shell.
 
-- Linux: `sudo java -jar jDiskMark.jar`
-- Mac OS: `sudo java -jar jDiskMark.jar`
+- Linux: `sudo java -jar jdiskmark.jar`
+- Mac OS: `sudo java -jar jdiskmark.jar`
 - Windows: start powershell as administrator then `java -jar jDiskMark`
 
 ## Development Environment
@@ -85,6 +85,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 - GH-10 IOPS reporting
 - GH-25 linux crash, capacity w terabytes and exabytes
 - write sync default off
+- GH-26 lowercase project and jar
 - TODO: GH-20 threading and queue depth
 - TODO: GH-16 MacOS installer
 
