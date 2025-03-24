@@ -131,7 +131,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private void initComponents() {
 
         palettebuttonGroup = new javax.swing.ButtonGroup();
-        jPanel2 = new javax.swing.JPanel();
+        centerPanel = new javax.swing.JPanel();
         mountPanel = new javax.swing.JPanel();
         controlsPanel = new javax.swing.JPanel();
         numBlocksCombo = new javax.swing.JComboBox();
@@ -447,8 +447,9 @@ public final class MainFrame extends javax.swing.JFrame {
 
         jLabel21.setText("Number Threads");
 
+        numThreadsCombo.setEditable(true);
         numThreadsCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "1", "2", "4", "8", "16" }));
-        numThreadsCombo.setEnabled(false);
+        numThreadsCombo.setSelectedIndex(2);
         numThreadsCombo.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 numThreadsComboActionPerformed(evt);
@@ -482,7 +483,7 @@ public final class MainFrame extends javax.swing.JFrame {
                             .addComponent(modeCombo, javax.swing.GroupLayout.Alignment.TRAILING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(numThreadsCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                     .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(20, Short.MAX_VALUE))
+                .addContainerGap(35, Short.MAX_VALUE))
         );
         controlsPanelLayout.setVerticalGroup(
             controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -518,27 +519,6 @@ public final class MainFrame extends javax.swing.JFrame {
                 .addComponent(startButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
-        );
-
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(mountPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 261, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 409, Short.MAX_VALUE)
-                    .addComponent(mountPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -586,7 +566,7 @@ public final class MainFrame extends javax.swing.JFrame {
                     .addComponent(chooseButton)
                     .addComponent(openLocButton)
                     .addComponent(jLabel15))
-                .addContainerGap(94, Short.MAX_VALUE))
+                .addContainerGap(123, Short.MAX_VALUE))
         );
 
         tabbedPane.addTab("Drive Location", locationPanel);
@@ -600,6 +580,29 @@ public final class MainFrame extends javax.swing.JFrame {
 
         tabbedPane.addTab("Event Log", eventScrollPane);
 
+        javax.swing.GroupLayout centerPanelLayout = new javax.swing.GroupLayout(centerPanel);
+        centerPanel.setLayout(centerPanelLayout);
+        centerPanelLayout.setHorizontalGroup(
+            centerPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(tabbedPane, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, centerPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(mountPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 261, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
+        );
+        centerPanelLayout.setVerticalGroup(
+            centerPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(centerPanelLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(centerPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(controlsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 393, Short.MAX_VALUE)
+                    .addComponent(mountPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(tabbedPane))
+        );
+
         jLabel7.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jLabel7.setText("Total Tx (KB)");
 
@@ -607,20 +610,16 @@ public final class MainFrame extends javax.swing.JFrame {
         progressPanel.setLayout(progressPanelLayout);
         progressPanelLayout.setHorizontalGroup(
             progressPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, progressPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 89, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+            .addGroup(progressPanelLayout.createSequentialGroup()
+                .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 83, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(totalTxProgBar, javax.swing.GroupLayout.PREFERRED_SIZE, 903, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         progressPanelLayout.setVerticalGroup(
             progressPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jLabel7, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, progressPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(totalTxProgBar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addContainerGap())
+            .addComponent(totalTxProgBar, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
 
         fileMenu.setText("File");
@@ -807,18 +806,19 @@ public final class MainFrame extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(progressPanel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-            .addComponent(tabbedPane, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-            .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(centerPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(progressPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(centerPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(tabbedPane, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(progressPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(progressPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
 
         pack();
@@ -992,7 +992,10 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_resetBenchmarkItemActionPerformed
 
     private void numThreadsComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_numThreadsComboActionPerformed
-        // TODO add your handling code here:
+        if (numThreadsCombo.hasFocus()) {
+            App.numOfThreads = Integer.parseInt((String) numThreadsCombo.getSelectedItem());
+            App.saveConfig();
+        }
     }//GEN-LAST:event_numThreadsComboActionPerformed
 
 
@@ -1004,6 +1007,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JRadioButtonMenuItem bardWarmPaletteMenuItem;
     private javax.swing.JComboBox blockSizeCombo;
     private javax.swing.JRadioButtonMenuItem blueGreenPaletteMenuItem;
+    private javax.swing.JPanel centerPanel;
     private javax.swing.JButton chooseButton;
     private javax.swing.JRadioButtonMenuItem classicPaletteMenuItem;
     private javax.swing.JMenuItem clearLogsItem;
@@ -1040,7 +1044,6 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel2;
     private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JPopupMenu.Separator jSeparator2;
     private javax.swing.JPanel locationPanel;
@@ -1092,9 +1095,10 @@ public final class MainFrame extends javax.swing.JFrame {
         App.readTest = modeStr.contains("read");
         App.writeTest = modeStr.contains("write");
         App.blockSequence = (Benchmark.BlockSequence)orderComboBox.getSelectedItem();
-        App.numOfSamples = Integer.parseInt((String) numFilesCombo.getSelectedItem());
-        App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
-        App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
+        App.numOfSamples = Integer.parseInt((String)numFilesCombo.getSelectedItem());
+        App.numOfBlocks = Integer.parseInt((String)numBlocksCombo.getSelectedItem());
+        App.blockSizeKb = Integer.parseInt((String)blockSizeCombo.getSelectedItem());
+        App.numOfThreads = Integer.parseInt((String)numThreadsCombo.getSelectedItem());
         sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
         totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
     }
