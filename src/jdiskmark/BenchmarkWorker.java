@@ -126,6 +126,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
             run.numBlocks = App.numOfBlocks;
             run.blockSize = App.blockSizeKb;
             run.txSize = App.targetTxSizeKb();
+            run.numThreads = App.numOfThreads;
 
             Gui.chart.getTitle().setVisible(true);
             Gui.chart.getTitle().setText(run.getDriveInfo());
