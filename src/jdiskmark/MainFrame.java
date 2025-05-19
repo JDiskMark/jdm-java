@@ -36,7 +36,9 @@ public final class MainFrame extends javax.swing.JFrame {
         totalTxProgBar.setString("");
         
         StringBuilder titleSb = new StringBuilder();
-        titleSb.append(getTitle()).append(" ").append(App.getVersion());
+        titleSb.append(getTitle()).append(" ").append(App.getVersion());    
+
+        configureModeCombo();
         
         // architecture
         if (App.arch != null && !App.arch.isEmpty()) {
@@ -102,9 +104,9 @@ public final class MainFrame extends javax.swing.JFrame {
         }
         
         String modeStr = "unset";
-        if      (!App.readTest && App.writeTest) { modeStr = "write"; }
-        else if (App.readTest && !App.writeTest) { modeStr = "read"; }
-        else if (App.readTest && App.writeTest) { modeStr = "write&read"; }
+        if      (!App.readTest && App.writeTest) { modeStr = "Write"; }
+        else if (App.readTest && !App.writeTest) { modeStr = "Read"; }
+        else if (App.readTest && App.writeTest) { modeStr = "Write & Read"; }
         else { msg("WARNING: invalid mode detected"); }
         modeCombo.setSelectedItem(modeStr);
         
@@ -868,9 +870,11 @@ public final class MainFrame extends javax.swing.JFrame {
     private void modeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_modeComboActionPerformed
         if (modeCombo.hasFocus()) {
             String modeStr = (String) modeCombo.getSelectedItem();
-            App.readTest = modeStr.contains("read");
-            App.writeTest = modeStr.contains("write");
+            App.readTest = modeStr.toLowerCase().contains("read");
+            App.writeTest = modeStr.toLowerCase().contains("write");
             App.saveConfig();
+            System.out.println("modeCombo changed to: " +modeCombo.getSelectedItem());
+            
         }
     }//GEN-LAST:event_modeComboActionPerformed
 
@@ -1092,8 +1096,8 @@ public final class MainFrame extends javax.swing.JFrame {
   
     public void applyTestParams() {
         String modeStr = (String) modeCombo.getSelectedItem();
-        App.readTest = modeStr.contains("read");
-        App.writeTest = modeStr.contains("write");
+        App.readTest = modeStr.toLowerCase().contains("read");
+        App.writeTest = modeStr.toLowerCase().contains("write");
         App.blockSequence = (Benchmark.BlockSequence)orderComboBox.getSelectedItem();
         App.numOfSamples = Integer.parseInt((String)numFilesCombo.getSelectedItem());
         App.numOfBlocks = Integer.parseInt((String)numBlocksCombo.getSelectedItem());
@@ -1157,6 +1161,14 @@ public final class MainFrame extends javax.swing.JFrame {
             modeCombo.setEnabled(true);
             resetBenchmarkItem.setEnabled(true);
         }
-    }
-    
+    }   
+    // Replace lowercase mode options with proper casing
+
+@SuppressWarnings("unchecked")
+private void configureModeCombo() {
+    modeCombo.removeAllItems();
+    modeCombo.addItem("Write");
+    modeCombo.addItem("Read");
+    modeCombo.addItem("Read & Write");
+}    
 }

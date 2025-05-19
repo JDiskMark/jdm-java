@@ -77,6 +77,8 @@ public class App {
     public static long rIops = -1;
     
     public static HashMap<String, Benchmark> benchmarks = new HashMap<>();
+    public static Benchmark.IOMode ioMode = Benchmark.IOMode.WRITE;
+
     
     /**
      * @param args the command line arguments
@@ -210,7 +212,9 @@ public class App {
         value = p.getProperty("autoReset", String.valueOf(autoReset));
         autoReset = Boolean.parseBoolean(value);
         value = p.getProperty("blockSequence", String.valueOf(blockSequence));
-        blockSequence = Benchmark.BlockSequence.valueOf(value);
+        blockSequence = Benchmark.BlockSequence.valueOf(value.toUpperCase());
+        value = p.getProperty("ioMode", String.valueOf(ioMode));
+        ioMode = Benchmark.IOMode.valueOf(value.toUpperCase());
         value = p.getProperty("showMaxMin", String.valueOf(showMaxMin));
         showMaxMin = Boolean.parseBoolean(value);
         value = p.getProperty("showDriveAccess", String.valueOf(showDriveAccess));
@@ -251,6 +255,7 @@ public class App {
         p.setProperty("readTest", String.valueOf(readTest));
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         p.setProperty("palette", String.valueOf(Gui.palette));
+        p.setProperty("ioMode", String.valueOf(ioMode));
         
         // write properties file
         try {
@@ -277,6 +282,7 @@ public class App {
         sb.append("blockSizeKb: ").append(blockSizeKb).append('\n');
         sb.append("numOfThreads: ").append(numOfThreads).append('\n');
         sb.append("palette: ").append(Gui.palette).append('\n');
+        sb.append("ioMode: ").append(ioMode).append('\n');
         return sb.toString();
     }
     
