@@ -63,7 +63,7 @@ public class Benchmark implements Serializable {
     @Column
     double totalGb;
     
-    // configuration
+    // benchmark parameters
     @Column
     IOMode ioMode;
     @Column
@@ -76,6 +76,8 @@ public class Benchmark implements Serializable {
     int numSamples = 0;
     @Column
     long txSize = 0;
+    @Column
+    int numThreads = 1;
     
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
@@ -135,11 +137,16 @@ public class Benchmark implements Serializable {
         return percentUsed + "%";
     }
     
-    public void add(Sample s) {
+    // GH-20 TODO: review should this be synchronized or redone to not be blocking?
+    public synchronized void add(Sample s) {
         samples.add(s);
     }
     
     // display friendly methods
+    
+    public String getBlocksDisplay() {
+        return numBlocks + " (" + blockSize + ")";
+    }
     
     public String getStartTimeString() {
         return startTime.format(DATE_FORMAT);
@@ -155,6 +162,10 @@ public class Benchmark implements Serializable {
     
     public String getBwMaxDisplay() {
         return bwMax == -1 ? "- -" : DF.format(bwMax);
+    }
+    
+    public String getBwMinMaxDisplay() {
+        return bwMax == -1 ? "- -" : DFT.format(bwMin) + "/" + DFT.format(bwMax);
     }
     
     public String getBwAvgDisplay() {

@@ -4,5 +4,6 @@
 /jdm.properties
 /tmp
 *.zip
+*.patch
 /build.properties
 /derbyDB/

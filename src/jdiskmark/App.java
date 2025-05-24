@@ -67,6 +67,7 @@ public class App {
     public static int numOfSamples = 200;   // desired number of samples
     public static int numOfBlocks = 32;     // desired number of blocks
     public static int blockSizeKb = 512;    // size of a block in KBs
+    public static int numOfThreads = 1;     // number of threads
     
     public static BenchmarkWorker worker = null;
     public static int nextSampleNumber = 1;   // number of the next sample
@@ -220,6 +221,8 @@ public class App {
         numOfBlocks = Integer.parseInt(value);
         value = p.getProperty("blockSizeKb", String.valueOf(blockSizeKb));
         blockSizeKb = Integer.parseInt(value);
+        value = p.getProperty("numOfThreads", String.valueOf(numOfThreads));
+        numOfThreads = Integer.parseInt(value);
         value = p.getProperty("writeTest", String.valueOf(writeTest));
         writeTest = Boolean.parseBoolean(value);
         value = p.getProperty("readTest", String.valueOf(readTest));
@@ -243,6 +246,7 @@ public class App {
         p.setProperty("numOfSamples", String.valueOf(numOfSamples));
         p.setProperty("numOfBlocks", String.valueOf(numOfBlocks));
         p.setProperty("blockSizeKb", String.valueOf(blockSizeKb));
+        p.setProperty("numOfThreads", String.valueOf(numOfThreads));
         p.setProperty("writeTest", String.valueOf(writeTest));
         p.setProperty("readTest", String.valueOf(readTest));
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
@@ -271,6 +275,7 @@ public class App {
         sb.append("numOfFiles: ").append(numOfSamples).append('\n');
         sb.append("numOfBlocks: ").append(numOfBlocks).append('\n');
         sb.append("blockSizeKb: ").append(blockSizeKb).append('\n');
+        sb.append("numOfThreads: ").append(numOfThreads).append('\n');
         sb.append("palette: ").append(Gui.palette).append('\n');
         return sb.toString();
     }
@@ -351,13 +356,13 @@ public class App {
         worker.addPropertyChangeListener((final var event) -> {
             switch (event.getPropertyName()) {
                 case "progress" -> {
-                    int value = (Integer) event.getNewValue();
+                    int value = (Integer)event.getNewValue();
                     Gui.progressBar.setValue(value);
-                    long kbProcessed = (value) * App.targetTxSizeKb() / 100;
+                    long kbProcessed = value * App.targetTxSizeKb() / 100;
                     Gui.progressBar.setString(String.valueOf(kbProcessed) + " / " + String.valueOf(App.targetTxSizeKb()));
                 }
                 case "state" -> {
-                    switch ((StateValue) event.getNewValue()) {
+                    switch ((StateValue)event.getNewValue()) {
                         case STARTED -> Gui.progressBar.setString("0 / " + String.valueOf(App.targetTxSizeKb()));
                         case DONE -> {}
                     } // end inner switch

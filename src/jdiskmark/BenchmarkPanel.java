@@ -6,6 +6,7 @@ import java.awt.event.ComponentEvent;
 import java.util.LinkedList;
 import java.util.List;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
 /**
@@ -19,6 +20,16 @@ public class BenchmarkPanel extends javax.swing.JPanel {
     public BenchmarkPanel() {
         initComponents();
         Gui.runPanel = BenchmarkPanel.this;
+
+        // center align cells 2 - 11
+        for (int i = 2; i <= 11; i++) {
+            TableColumn c = runTable.getColumnModel().getColumn(i);
+            c.setCellRenderer(new CenterTableCellRenderer());
+        }
+        
+        // right align cell 12 (avg bw)
+        TableColumn c = runTable.getColumnModel().getColumn(12);
+        c.setCellRenderer(new RightTableCellRenderer());
         
         // auto scroll to bottom when a new record is added
         runTable.addComponentListener(new ComponentAdapter() {
@@ -46,11 +57,11 @@ public class BenchmarkPanel extends javax.swing.JPanel {
 
             },
             new String [] {
-                "ID", "Drive Model", "Usage", "Mode", "Order", "Samples", "Blks", "B.Size", "Start Time", "Duration (ms)", "Access (ms)", "Max (MB/s)", "Min (MB/s)", "Avg (MB/s)"
+                "ID", "Drive Model", "Usage", "Mode", "Order", "Samples", "Blocks (Size)", "Thread", "Start Time", "Time (ms)", "Acc (ms)", "Min/Max (MB/s)", "IO (MB/s)"
             }
         ) {
             boolean[] canEdit = new boolean [] {
-                false, false, false, false, false, false, false, false, false, false, false, false, false, false
+                false, false, false, false, false, false, false, false, false, false, false, false, false
             };
 
             public boolean isCellEditable(int rowIndex, int columnIndex) {
@@ -66,22 +77,22 @@ public class BenchmarkPanel extends javax.swing.JPanel {
         jScrollPane1.setViewportView(runTable);
         if (runTable.getColumnModel().getColumnCount() > 0) {
             runTable.getColumnModel().getColumn(0).setPreferredWidth(10);
-            runTable.getColumnModel().getColumn(1).setPreferredWidth(170);
-            runTable.getColumnModel().getColumn(2).setPreferredWidth(10);
-            runTable.getColumnModel().getColumn(3).setPreferredWidth(10);
+            runTable.getColumnModel().getColumn(1).setPreferredWidth(135);
+            runTable.getColumnModel().getColumn(2).setPreferredWidth(46);
+            runTable.getColumnModel().getColumn(2).setMaxWidth(45);
+            runTable.getColumnModel().getColumn(3).setPreferredWidth(6);
             runTable.getColumnModel().getColumn(4).setPreferredWidth(40);
             runTable.getColumnModel().getColumn(5).setPreferredWidth(6);
-            runTable.getColumnModel().getColumn(6).setPreferredWidth(5);
-            runTable.getColumnModel().getColumn(7).setPreferredWidth(6);
-            runTable.getColumnModel().getColumn(8).setPreferredWidth(90);
-            runTable.getColumnModel().getColumn(9).setPreferredWidth(6);
+            runTable.getColumnModel().getColumn(6).setPreferredWidth(35);
+            runTable.getColumnModel().getColumn(7).setPreferredWidth(45);
+            runTable.getColumnModel().getColumn(7).setMaxWidth(45);
+            runTable.getColumnModel().getColumn(8).setPreferredWidth(80);
+            runTable.getColumnModel().getColumn(9).setPreferredWidth(15);
             runTable.getColumnModel().getColumn(10).setPreferredWidth(10);
             runTable.getColumnModel().getColumn(11).setResizable(false);
-            runTable.getColumnModel().getColumn(11).setPreferredWidth(32);
+            runTable.getColumnModel().getColumn(11).setPreferredWidth(50);
             runTable.getColumnModel().getColumn(12).setResizable(false);
             runTable.getColumnModel().getColumn(12).setPreferredWidth(32);
-            runTable.getColumnModel().getColumn(13).setResizable(false);
-            runTable.getColumnModel().getColumn(13).setPreferredWidth(32);
         }
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
@@ -131,13 +142,12 @@ public class BenchmarkPanel extends javax.swing.JPanel {
                     run.ioMode,
                     run.blockOrder,
                     run.numSamples,
-                    run.numBlocks,
-                    run.blockSize,
+                    run.getBlocksDisplay(),
+                    run.numThreads,
                     run.getStartTimeString(),
                     run.getDuration(),
                     run.getAccTimeDisplay(),
-                    run.getBwMaxDisplay(),
-                    run.getBwMinDisplay(),
+                    run.getBwMinMaxDisplay(),
                     run.getBwAvgDisplay(),
                 });
     }
