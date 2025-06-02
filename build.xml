@@ -209,6 +209,6 @@
         <echo message="MSI file successfully signed: ${msi.file.to.sign.path}"/>
     </target>
 
-    <target name="package-all" depends="jar, create-msi" description="Builds JAR and MSI installer"/>
+    <target name="package-all" depends="clean, jar, create-msi" description="Builds JAR and MSI installer"/>
 
 </project>
