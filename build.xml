@@ -74,6 +74,7 @@
     
     <!-- dependencies -->
     <property name="jpackage.executable" value="C:\Program Files\java\jdk-21\bin\jpackage"/>
+    <property name="signtool.executable" value="C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x86\signtool.exe"/>
 
     <!-- version properties -->
     <property name="app.name" value="jdiskmark"/>
@@ -107,7 +108,6 @@
             <fileset dir="tmp/${release.dir}"/>
         </move>
         <delete dir="tmp"/>
-        <copy file="sign-msi.bat" todir="dist"/>
     </target>
     
     <target name="buildinfo">
