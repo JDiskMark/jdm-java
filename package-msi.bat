@@ -3,7 +3,7 @@
 :: https://github.com/wixtoolset/wix3/releases/tag/wix3141rtm
 
 :: make sure to set the version number
-set VERSION=0.6.0-dev.e
+set VERSION=0.6.0-dev.g
 set MSI_VER=0.6.0
 
 set JPKG_EXE="C:\Program Files\java\jdk-21\bin\jpackage"
