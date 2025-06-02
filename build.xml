@@ -72,9 +72,14 @@
 
     -->
     
-    <!-- software revision number -->
-    <property name="version" value="0.6.0-dev.g"/>
-    <property name="releaseDir" value="jdiskmark-${version}"/>
+    <!-- dependencies -->
+    <property name="jpackage.executable" value="C:\Program Files\java\jdk-21\bin\jpackage"/>
+
+    <!-- version properties -->
+    <property name="app.name" value="jdiskmark"/>
+    <property name="version" value="0.6.0-dev.h"/>
+    <property name="msi.version" value="0.6.0"/>
+    <property name="release.dir" value="${app.name}-${version}"/>
     
     <target name="-post-jar">
         <copy file="EmptyStandbyList.exe" todir="dist"/>
@@ -84,19 +89,18 @@
         <copy file="build.properties" todir="dist"/>
         <copy file="README.md" todir="dist"/>
         <mkdir dir="tmp"/>
-        <mkdir dir="tmp/${releaseDir}"/>
+        <mkdir dir="tmp/${release.dir}"/>
         <delete file="dist/README.TXT"/>
-        <move todir="tmp/${releaseDir}">
+        <move todir="tmp/${release.dir}">
             <fileset dir="dist">
                 <include name="**/*"/>
             </fileset>
         </move>
-        <zip destfile="dist/${releaseDir}.zip" basedir="tmp"/>
-        <move todir="dist/${releaseDir}">
-            <fileset dir="tmp/${releaseDir}"/>
+        <zip destfile="dist/${release.dir}.zip" basedir="tmp"/>
+        <move todir="dist/${release.dir}">
+            <fileset dir="tmp/${release.dir}"/>
         </move>
         <delete dir="tmp"/>
-        <copy file="package-msi.bat" todir="dist"/>
         <copy file="sign-msi.bat" todir="dist"/>
     </target>
     
@@ -117,4 +121,64 @@
             <entry key="sun.arch.data.model" value="${sun.arch.data.model}"/>
         </propertyfile>
     </target>
+    
+    <target name="-prepare-jpackage-input-jar" description="Ensures correct main JAR name for jpackage">
+        <property name="jpackage.input.dir.absolute" value="${dist.dir}/${release.dir}"/>
+        <property name="main.jar.original.filename.in.input.dir" value="${ant.project.name}.jar"/>
+        <property name="main.jar.target.filename.in.input.dir" value="${app.name}.jar"/>
+
+        <condition property="jar.rename.is.needed">
+            <and>
+                <available file="${jpackage.input.dir.absolute}/${main.jar.original.filename.in.input.dir}"/>
+                <not>
+                    <equals arg1="${main.jar.original.filename.in.input.dir}" 
+                            arg2="${main.jar.target.filename.in.input.dir}" 
+                            casesensitive="true"/>
+                </not>
+            </and>
+        </condition>
+
+        <antcall target="-do-rename-jar-for-jpackage-if-needed"/>
+    </target>
+
+    <target name="-do-rename-jar-for-jpackage-if-needed" if="jar.rename.is.needed">
+        <echo message="Renaming JAR in jpackage input directory: from '${main.jar.original.filename.in.input.dir}' to '${main.jar.target.filename.in.input.dir}'"/>
+        <move file="${jpackage.input.dir.absolute}/${main.jar.original.filename.in.input.dir}"
+              tofile="${jpackage.input.dir.absolute}/${main.jar.target.filename.in.input.dir}"
+              overwrite="true"/>
+    </target>
+
+    <target name="create-msi" depends="-post-jar, -prepare-jpackage-input-jar" description="Creates the MSI installer using jpackage and WiX">
+        <property name="jpackage.input.dir.relative" value="${release.dir}"/>
+
+        <echo message="Deleting existing MSI files: ${dist.dir}/${app.name}-*.msi"/>
+        <delete failonerror="false">
+            <fileset dir="${dist.dir}" includes="${app.name}-*.msi"/>
+        </delete>
+
+        <echo message="Running jpackage to create MSI installer..."/>
+        <exec executable="${jpackage.executable}" dir="${dist.dir}" failonerror="true">
+            <arg line="--type msi"/>
+            <arg line="--input ${jpackage.input.dir.relative}"/>
+            <arg line="--main-jar ${app.name}.jar"/>
+            <arg line="--name ${app.name}-${version}"/>
+            <arg line="--app-version ${msi.version}"/>
+            <arg line="--vendor 'jdiskmark.net'"/>
+            <arg line="--win-console"/>
+            <arg line="--win-menu"/>
+            </exec>
+
+        <property name="jpackage.output.msi.defaultname" value="${app.name}-${version}-${msi.version}.msi"/>
+        <property name="jpackage.output.msi.targetname" value="${app.name}-${version}.msi"/>
+        
+        <echo message="Renaming MSI from '${jpackage.output.msi.defaultname}' to '${jpackage.output.msi.targetname}' in ${dist.dir}"/>
+        <move file="${dist.dir}/${jpackage.output.msi.defaultname}"
+              tofile="${dist.dir}/${jpackage.output.msi.targetname}"
+              overwrite="true"/>
+
+        <echo message="MSI installer created: ${dist.dir}/${jpackage.output.msi.targetname}"/>
+    </target>
+
+    <target name="package-all" depends="jar, create-msi" description="Builds JAR and MSI installer"/>
+
 </project>
