@@ -75,6 +75,10 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 
 ## Release Notes
 
+### Pre-Release: 0.6.0-dev.dropdown
+
+- Fixed issue #36: I/O Mode dropdown now uses enum values for consistency and type safety.
+
 ### v0.5.1
 
 - resolve GH-17
