@@ -23,8 +23,15 @@ public final class MainFrame extends javax.swing.JFrame {
     /**
      * Creates new form MainFrame
      */
+    
+    @SuppressWarnings("unchecked")
     public MainFrame() {
         initComponents();
+        
+    javax.swing.DefaultComboBoxModel<Benchmark.IOMode> ioModel =
+        new javax.swing.DefaultComboBoxModel<>(Benchmark.IOMode.values());
+    modeCombo.setModel(ioModel);
+
         startButton.requestFocus();
         Gui.createChartPanel();
         mountPanel.setLayout(new BorderLayout());
@@ -38,7 +45,7 @@ public final class MainFrame extends javax.swing.JFrame {
         StringBuilder titleSb = new StringBuilder();
         titleSb.append(getTitle()).append(" ").append(App.getVersion());    
 
-        configureModeCombo();
+        initializeComboSettings();
         
         // architecture
         if (App.arch != null && !App.arch.isEmpty()) {
@@ -83,7 +90,7 @@ public final class MainFrame extends javax.swing.JFrame {
         showMaxMinCheckBoxMenuItem.setSelected(App.showMaxMin);
         showAccessCheckBoxMenuItem.setSelected(App.showDriveAccess);
         writeSyncCheckBoxMenuItem.setSelected(App.writeSyncEnable);
-        
+
         switch (Gui.palette) {
             case Gui.Palette.CLASSIC -> {
                 classicPaletteMenuItem.setSelected(true);
@@ -102,17 +109,30 @@ public final class MainFrame extends javax.swing.JFrame {
                 Gui.setWarmColorScheme();
             }
         }
-        
-        String modeStr = "unset";
-        if      (!App.readTest && App.writeTest) { modeStr = "Write"; }
-        else if (App.readTest && !App.writeTest) { modeStr = "Read"; }
-        else if (App.readTest && App.writeTest) { modeStr = "Write & Read"; }
-        else { msg("WARNING: invalid mode detected"); }
-        modeCombo.setSelectedItem(modeStr);
-        
+    }
+
+    public void initializeComboSettings() {
+        Benchmark.IOMode ioMode = null;
+
+if (!App.readTest && App.writeTest) {
+    ioMode = Benchmark.IOMode.WRITE;
+} else if (App.readTest && !App.writeTest) {
+    ioMode = Benchmark.IOMode.READ;
+} else if (App.readTest && App.writeTest) {
+    ioMode = Benchmark.IOMode.READ_WRITE;
+} else {
+    msg("WARNING: invalid mode detected");
+}
+
+if (ioMode != null) {
+    modeCombo.setSelectedItem(ioMode);
+}
+
+
+        // standalone method call
         loadSettings();
     }
-    
+
     public void loadSettings() {
         //String blockOrderStr = App.randomEnable ? "random":"sequential";
         orderComboBox.setSelectedItem(App.blockSequence);
@@ -869,11 +889,11 @@ public final class MainFrame extends javax.swing.JFrame {
 
     private void modeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_modeComboActionPerformed
         if (modeCombo.hasFocus()) {
-            String modeStr = (String) modeCombo.getSelectedItem();
-            App.readTest = modeStr.toLowerCase().contains("read");
-            App.writeTest = modeStr.toLowerCase().contains("write");
+            Benchmark.IOMode mode = (Benchmark.IOMode) modeCombo.getSelectedItem();
+            App.readTest = mode.name().toLowerCase().contains("read");
+            App.writeTest = mode.name().toLowerCase().contains("write");
             App.saveConfig();
-            System.out.println("modeCombo changed to: " +modeCombo.getSelectedItem());
+            System.out.println("modeCombo changed to: " + mode);
             
         }
     }//GEN-LAST:event_modeComboActionPerformed
@@ -1095,17 +1115,17 @@ public final class MainFrame extends javax.swing.JFrame {
     }
   
     public void applyTestParams() {
-        String modeStr = (String) modeCombo.getSelectedItem();
-        App.readTest = modeStr.toLowerCase().contains("read");
-        App.writeTest = modeStr.toLowerCase().contains("write");
-        App.blockSequence = (Benchmark.BlockSequence)orderComboBox.getSelectedItem();
-        App.numOfSamples = Integer.parseInt((String)numFilesCombo.getSelectedItem());
-        App.numOfBlocks = Integer.parseInt((String)numBlocksCombo.getSelectedItem());
-        App.blockSizeKb = Integer.parseInt((String)blockSizeCombo.getSelectedItem());
-        App.numOfThreads = Integer.parseInt((String)numThreadsCombo.getSelectedItem());
-        sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-        totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
-    }
+    Benchmark.IOMode mode = (Benchmark.IOMode) modeCombo.getSelectedItem();
+    App.readTest = mode.name().toLowerCase().contains("read");
+    App.writeTest = mode.name().toLowerCase().contains("write");
+    App.blockSequence = (Benchmark.BlockSequence) orderComboBox.getSelectedItem();
+    App.numOfSamples = Integer.parseInt((String) numFilesCombo.getSelectedItem());
+    App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
+    App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
+    App.numOfThreads = Integer.parseInt((String) numThreadsCombo.getSelectedItem());
+    sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
+    totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
+}
     
     public void refreshWriteMetrics() {
         String value;

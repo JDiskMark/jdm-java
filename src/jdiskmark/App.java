@@ -215,6 +215,21 @@ public class App {
         blockSequence = Benchmark.BlockSequence.valueOf(value.toUpperCase());
         value = p.getProperty("ioMode", String.valueOf(ioMode));
         ioMode = Benchmark.IOMode.valueOf(value.toUpperCase());
+        switch (ioMode) {
+    case WRITE:
+        App.readTest = false;
+        App.writeTest = true;
+        break;
+    case READ:
+        App.readTest = true;
+        App.writeTest = false;
+        break;
+    case READ_WRITE:
+        App.readTest = true;
+        App.writeTest = true;
+        break;
+}
+
         value = p.getProperty("showMaxMin", String.valueOf(showMaxMin));
         showMaxMin = Boolean.parseBoolean(value);
         value = p.getProperty("showDriveAccess", String.valueOf(showDriveAccess));
@@ -255,7 +270,22 @@ public class App {
         p.setProperty("readTest", String.valueOf(readTest));
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         p.setProperty("palette", String.valueOf(Gui.palette));
-        p.setProperty("ioMode", String.valueOf(ioMode));
+        
+        Benchmark.IOMode modeToSave;
+
+if (!App.readTest && App.writeTest) {
+    modeToSave = Benchmark.IOMode.WRITE;
+} else if (App.readTest && !App.writeTest) {
+    modeToSave = Benchmark.IOMode.READ;
+} else if (App.readTest && App.writeTest) {
+    modeToSave = Benchmark.IOMode.READ_WRITE;
+} else {
+    modeToSave = null;
+}
+
+if (modeToSave != null) {
+    p.setProperty("ioMode", modeToSave.name());
+}
         
         // write properties file
         try {
