@@ -185,72 +185,77 @@ public class App {
     }
     
     public static void loadConfig() {
-        
-        if (PROPERTIES_FILE.exists()) {
-            System.out.println("loading: " + PROPERTIES_FILE.getAbsolutePath());
-        } else {
-            // generate default properties file if it does not exist
-            System.out.println(PROPERTIES_FILE + " does not exist generating...");
-            saveConfig(); 
-        }
-
-        // read properties file
-        if (p == null) { p = new Properties(); }
-        try {
-            InputStream in = new FileInputStream(PROPERTIES_FILE);
-            p.load(in);
-        } catch (IOException ex) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
-        // configure settings from properties
-        String value;
-        value = p.getProperty("multiFile", String.valueOf(multiFile));
-        multiFile = Boolean.parseBoolean(value);
-        value = p.getProperty("autoRemoveData", String.valueOf(autoRemoveData));
-        autoRemoveData = Boolean.parseBoolean(value);
-        value = p.getProperty("autoReset", String.valueOf(autoReset));
-        autoReset = Boolean.parseBoolean(value);
-        value = p.getProperty("blockSequence", String.valueOf(blockSequence));
-        blockSequence = Benchmark.BlockSequence.valueOf(value.toUpperCase());
-        value = p.getProperty("ioMode", String.valueOf(ioMode));
-        ioMode = Benchmark.IOMode.valueOf(value.toUpperCase());
-        switch (ioMode) {
-    case WRITE:
-        App.readTest = false;
-        App.writeTest = true;
-        break;
-    case READ:
-        App.readTest = true;
-        App.writeTest = false;
-        break;
-    case READ_WRITE:
-        App.readTest = true;
-        App.writeTest = true;
-        break;
-}
-
-        value = p.getProperty("showMaxMin", String.valueOf(showMaxMin));
-        showMaxMin = Boolean.parseBoolean(value);
-        value = p.getProperty("showDriveAccess", String.valueOf(showDriveAccess));
-        showDriveAccess = Boolean.parseBoolean(value);
-        value = p.getProperty("numOfSamples", String.valueOf(numOfSamples));
-        numOfSamples = Integer.parseInt(value);
-        value = p.getProperty("numOfBlocks", String.valueOf(numOfBlocks));
-        numOfBlocks = Integer.parseInt(value);
-        value = p.getProperty("blockSizeKb", String.valueOf(blockSizeKb));
-        blockSizeKb = Integer.parseInt(value);
-        value = p.getProperty("numOfThreads", String.valueOf(numOfThreads));
-        numOfThreads = Integer.parseInt(value);
-        value = p.getProperty("writeTest", String.valueOf(writeTest));
-        writeTest = Boolean.parseBoolean(value);
-        value = p.getProperty("readTest", String.valueOf(readTest));
-        readTest = Boolean.parseBoolean(value);
-        value = p.getProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
-        writeSyncEnable = Boolean.parseBoolean(value);
-        value = p.getProperty("palette", String.valueOf(Gui.palette));
-        Gui.palette = Gui.Palette.valueOf(value);
+    if (PROPERTIES_FILE.exists()) {
+        System.out.println("loading: " + PROPERTIES_FILE.getAbsolutePath());
+    } else {
+        // generate default properties file if it does not exist
+        System.out.println(PROPERTIES_FILE + " does not exist generating...");
+        saveConfig();
     }
+
+    // read properties file
+    if (p == null) { p = new Properties(); }
+    try {
+        InputStream in = new FileInputStream(PROPERTIES_FILE);
+        p.load(in);
+    } catch (IOException ex) {
+        Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
+    }
+
+    // configure settings from properties
+    String value;
+
+    value = p.getProperty("multiFile", String.valueOf(multiFile));
+    multiFile = Boolean.parseBoolean(value);
+
+    value = p.getProperty("autoRemoveData", String.valueOf(autoRemoveData));
+    autoRemoveData = Boolean.parseBoolean(value);
+
+    value = p.getProperty("autoReset", String.valueOf(autoReset));
+    autoReset = Boolean.parseBoolean(value);
+
+    value = p.getProperty("blockSequence", String.valueOf(blockSequence));
+    blockSequence = Benchmark.BlockSequence.valueOf(value.toUpperCase());
+
+    value = p.getProperty("ioMode", String.valueOf(ioMode));
+    App.ioMode = Benchmark.IOMode.valueOf(value.toUpperCase());
+
+    switch (App.ioMode) {
+        case WRITE      -> { App.readTest = false; App.writeTest = true;  }
+        case READ       -> { App.readTest = true;  App.writeTest = false; }
+        case READ_WRITE -> { App.readTest = true;  App.writeTest = true;  }
+    }
+
+    value = p.getProperty("showMaxMin", String.valueOf(showMaxMin));
+    showMaxMin = Boolean.parseBoolean(value);
+
+    value = p.getProperty("showDriveAccess", String.valueOf(showDriveAccess));
+    showDriveAccess = Boolean.parseBoolean(value);
+
+    value = p.getProperty("numOfSamples", String.valueOf(numOfSamples));
+    numOfSamples = Integer.parseInt(value);
+
+    value = p.getProperty("numOfBlocks", String.valueOf(numOfBlocks));
+    numOfBlocks = Integer.parseInt(value);
+
+    value = p.getProperty("blockSizeKb", String.valueOf(blockSizeKb));
+    blockSizeKb = Integer.parseInt(value);
+
+    value = p.getProperty("numOfThreads", String.valueOf(numOfThreads));
+    numOfThreads = Integer.parseInt(value);
+
+    value = p.getProperty("writeTest", String.valueOf(writeTest));
+    writeTest = Boolean.parseBoolean(value);
+
+    value = p.getProperty("readTest", String.valueOf(readTest));
+    readTest = Boolean.parseBoolean(value);
+
+    value = p.getProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
+    writeSyncEnable = Boolean.parseBoolean(value);
+
+    value = p.getProperty("palette", String.valueOf(Gui.palette));
+    Gui.palette = Gui.Palette.valueOf(value);
+}
     
     public static void saveConfig() {
         if (p == null) { p = new Properties(); }
@@ -259,7 +264,7 @@ public class App {
         p.setProperty("multiFile", String.valueOf(multiFile));
         p.setProperty("autoRemoveData", String.valueOf(autoRemoveData));
         p.setProperty("autoReset", String.valueOf(autoReset));
-        p.setProperty("blockSequence", String.valueOf(blockSequence));
+        p.setProperty("blockSequence", blockSequence.name());
         p.setProperty("showMaxMin", String.valueOf(showMaxMin));
         p.setProperty("showDriveAccess", String.valueOf(showDriveAccess));
         p.setProperty("numOfSamples", String.valueOf(numOfSamples));
@@ -269,24 +274,9 @@ public class App {
         p.setProperty("writeTest", String.valueOf(writeTest));
         p.setProperty("readTest", String.valueOf(readTest));
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
-        p.setProperty("palette", String.valueOf(Gui.palette));
-        
-        Benchmark.IOMode modeToSave;
+        p.setProperty("palette", Gui.palette.name());
+        p.setProperty("ioMode", ioMode.name());
 
-if (!App.readTest && App.writeTest) {
-    modeToSave = Benchmark.IOMode.WRITE;
-} else if (App.readTest && !App.writeTest) {
-    modeToSave = Benchmark.IOMode.READ;
-} else if (App.readTest && App.writeTest) {
-    modeToSave = Benchmark.IOMode.READ_WRITE;
-} else {
-    modeToSave = null;
-}
-
-if (modeToSave != null) {
-    p.setProperty("ioMode", modeToSave.name());
-}
-        
         // write properties file
         try {
             OutputStream out = new FileOutputStream(PROPERTIES_FILE);

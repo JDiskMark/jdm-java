@@ -112,26 +112,9 @@ public final class MainFrame extends javax.swing.JFrame {
     }
 
     public void initializeComboSettings() {
-        Benchmark.IOMode ioMode = null;
-
-if (!App.readTest && App.writeTest) {
-    ioMode = Benchmark.IOMode.WRITE;
-} else if (App.readTest && !App.writeTest) {
-    ioMode = Benchmark.IOMode.READ;
-} else if (App.readTest && App.writeTest) {
-    ioMode = Benchmark.IOMode.READ_WRITE;
-} else {
-    msg("WARNING: invalid mode detected");
+    modeCombo.setSelectedItem(App.ioMode);
+    loadSettings();
 }
-
-if (ioMode != null) {
-    modeCombo.setSelectedItem(ioMode);
-}
-
-
-        // standalone method call
-        loadSettings();
-    }
 
     public void loadSettings() {
         //String blockOrderStr = App.randomEnable ? "random":"sequential";
@@ -288,7 +271,7 @@ if (ioMode != null) {
 
         jLabel4.setText("IO Mode");
 
-        modeCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "write", "read", "write&read" }));
+        modeCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { " ", " " }));
         modeCombo.setPreferredSize(new java.awt.Dimension(60, 24));
         modeCombo.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -381,7 +364,7 @@ if (ioMode != null) {
                         .addGroup(jPanel1Layout.createSequentialGroup()
                             .addComponent(jLabel16)
                             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(wAccessLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 37, Short.MAX_VALUE))
+                            .addComponent(wAccessLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 38, Short.MAX_VALUE))
                         .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
                             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                 .addComponent(jLabel1)
