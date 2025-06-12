@@ -35,30 +35,30 @@ public class Benchmark implements Serializable {
     static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
     public enum IOMode {
-    READ {
-        @Override
-        public String toString() { return "Read"; }
-    },
-    WRITE {
-        @Override
-        public String toString() { return "Write"; }
-    },
-    READ_WRITE {    
-        @Override
-        public String toString() { return "Read & Write"; }
+        READ {
+            @Override
+            public String toString() { return "Read"; }
+        },
+        WRITE {
+            @Override
+            public String toString() { return "Write"; }
+        },
+        READ_WRITE {    
+            @Override
+            public String toString() { return "Read & Write"; }
+        }
     }
-}
-    
-public enum BlockSequence {
-    SEQUENTIAL {
-        @Override
-        public String toString() { return "Sequential"; }
-    },
-    RANDOM {
-        @Override
-        public String toString() { return "Random"; }
+
+    public enum BlockSequence {
+        SEQUENTIAL {
+            @Override
+            public String toString() { return "Sequential"; }
+        },
+        RANDOM {
+            @Override
+            public String toString() { return "Random"; }
+        }
     }
-}
 
     
     // surrogate key

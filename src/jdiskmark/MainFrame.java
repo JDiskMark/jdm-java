@@ -873,11 +873,9 @@ public final class MainFrame extends javax.swing.JFrame {
     private void modeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_modeComboActionPerformed
         if (modeCombo.hasFocus()) {
             Benchmark.IOMode mode = (Benchmark.IOMode) modeCombo.getSelectedItem();
-            App.readTest = mode.name().toLowerCase().contains("read");
-            App.writeTest = mode.name().toLowerCase().contains("write");
+            App.ioMode = mode;
             App.saveConfig();
             System.out.println("modeCombo changed to: " + mode);
-            
         }
     }//GEN-LAST:event_modeComboActionPerformed
 
@@ -1098,17 +1096,16 @@ public final class MainFrame extends javax.swing.JFrame {
     }
   
     public void applyTestParams() {
-    Benchmark.IOMode mode = (Benchmark.IOMode) modeCombo.getSelectedItem();
-    App.readTest = mode.name().toLowerCase().contains("read");
-    App.writeTest = mode.name().toLowerCase().contains("write");
-    App.blockSequence = (Benchmark.BlockSequence) orderComboBox.getSelectedItem();
-    App.numOfSamples = Integer.parseInt((String) numFilesCombo.getSelectedItem());
-    App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
-    App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
-    App.numOfThreads = Integer.parseInt((String) numThreadsCombo.getSelectedItem());
-    sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-    totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
-}
+        Benchmark.IOMode mode = (Benchmark.IOMode) modeCombo.getSelectedItem();
+        App.ioMode = mode;
+        App.blockSequence = (Benchmark.BlockSequence) orderComboBox.getSelectedItem();
+        App.numOfSamples = Integer.parseInt((String) numFilesCombo.getSelectedItem());
+        App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
+        App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
+        App.numOfThreads = Integer.parseInt((String) numThreadsCombo.getSelectedItem());
+        sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
+        totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
+    }
     
     public void refreshWriteMetrics() {
         String value;

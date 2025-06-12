@@ -256,17 +256,18 @@ public final class Gui {
     }
     
     public static void updateLegendAndAxis() {
-        bwRenderer.setSeriesVisibleInLegend(0, App.writeTest);
-        bwRenderer.setSeriesVisibleInLegend(1, App.writeTest);
-        bwRenderer.setSeriesVisibleInLegend(2, App.writeTest && App.showMaxMin);
-        bwRenderer.setSeriesVisibleInLegend(3, App.writeTest && App.showMaxMin);
-        bwRenderer.setSeriesVisibleInLegend(4, App.readTest);
-        bwRenderer.setSeriesVisibleInLegend(5, App.readTest);
-        bwRenderer.setSeriesVisibleInLegend(6, App.readTest && App.showMaxMin);
-        bwRenderer.setSeriesVisibleInLegend(7, App.readTest && App.showMaxMin);
-        
-        msRenderer.setSeriesVisibleInLegend(0, App.writeTest && App.showDriveAccess);
-        msRenderer.setSeriesVisibleInLegend(1, App.readTest && App.showDriveAccess);
+        bwRenderer.setSeriesVisibleInLegend(0, App.isWriteEnabled());
+        bwRenderer.setSeriesVisibleInLegend(1, App.isWriteEnabled());
+        bwRenderer.setSeriesVisibleInLegend(2, App.isWriteEnabled() && App.showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(3, App.isWriteEnabled() && App.showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(4, App.isReadEnabled());
+        bwRenderer.setSeriesVisibleInLegend(5, App.isReadEnabled());
+        bwRenderer.setSeriesVisibleInLegend(6, App.isReadEnabled() && App.showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(7, App.isReadEnabled() && App.showMaxMin);
+
+        msRenderer.setSeriesVisibleInLegend(0, App.isWriteEnabled() && App.showDriveAccess);
+        msRenderer.setSeriesVisibleInLegend(1, App.isReadEnabled() && App.showDriveAccess);
+
         
         msAxis.setVisible(App.showDriveAccess);
     }
@@ -420,14 +421,12 @@ public final class Gui {
         Gui.mainFrame.loadSettings();
         
         if (benchmark.ioMode ==  Benchmark.IOMode.READ) {
-            App.readTest = true;
             App.rAvg = benchmark.bwAvg;
             App.rMax = benchmark.bwMax;
             App.rMin = benchmark.bwMin;
             App.rAcc = benchmark.accAvg;
             Gui.mainFrame.refreshReadMetrics();
         } else {
-            App.writeTest = true;
             App.wAvg = benchmark.bwAvg;
             App.wMax = benchmark.bwMax;
             App.wMin = benchmark.bwMin;
