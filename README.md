@@ -77,7 +77,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 
 ## Release Notes
 
-### v0.6.0 dev d
+### v0.6.0 dev g
 - GH-13 Detect drive info on startup
 - GH-12 update look and feel (windows)
 - GH-22 foreign capacity reporting
@@ -86,7 +86,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 - GH-25 linux crash, capacity w terabytes and exabytes
 - write sync default off
 - GH-26 lowercase project and jar
-- TODO: GH-20 threading and queue depth
+- GH-20 threading and queue depth
 - TODO: GH-16 MacOS installer
 
 ### v0.5.1
