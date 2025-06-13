@@ -60,7 +60,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
     protected Boolean doInBackground() throws Exception {
         
         System.out.println("*** starting new worker thread");
-        msg("Running readTest " + App.readTest + "   writeTest " + App.writeTest);
+        msg("Running readTest " + App.isReadEnabled() + "   writeTest " + App.isWriteEnabled());
         msg("num samples: " + App.numOfSamples + ", num blks: " + App.numOfBlocks
                 + ", blk size (kb): " + App.blockSizeKb + ", blockSequence: "
                 + App.blockSequence);
@@ -70,8 +70,9 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         final int[] rUnitsComplete = {0};
         final int[] unitsComplete = {0};
         
-        int wUnitsTotal = App.writeTest ? numOfBlocks * numOfSamples : 0;
-        int rUnitsTotal = App.readTest ? numOfBlocks * numOfSamples : 0;
+        int wUnitsTotal = App.isWriteEnabled() ? numOfBlocks * numOfSamples : 0;
+        int rUnitsTotal = App.isReadEnabled() ? numOfBlocks * numOfSamples : 0;
+
         int unitsTotal = wUnitsTotal + rUnitsTotal;
         
         int blockSize = blockSizeKb * KILOBYTE;
@@ -108,7 +109,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         
         List<java.util.concurrent.Future<?>> futures = new ArrayList<>();
         
-        if (App.writeTest) {
+        if (App.isWriteEnabled()) {
             Benchmark run = new Benchmark(Benchmark.IOMode.WRITE, App.blockSequence);
             
             // system info
@@ -216,11 +217,11 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
         }
         
         // try renaming all files to clear catch
-        if (App.readTest && App.writeTest && !isCancelled()) {
+        if (App.isReadEnabled() && App.isWriteEnabled() && !isCancelled()) {
             Gui.dropCache();
         }
         
-        if (App.readTest) {
+        if (App.isReadEnabled()) {
             Benchmark run = new Benchmark(Benchmark.IOMode.READ, App.blockSequence);
             
             // system info

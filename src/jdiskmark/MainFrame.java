@@ -23,8 +23,15 @@ public final class MainFrame extends javax.swing.JFrame {
     /**
      * Creates new form MainFrame
      */
+    
+    @SuppressWarnings("unchecked")
     public MainFrame() {
         initComponents();
+        
+    javax.swing.DefaultComboBoxModel<Benchmark.IOMode> ioModel =
+        new javax.swing.DefaultComboBoxModel<>(Benchmark.IOMode.values());
+    modeCombo.setModel(ioModel);
+
         startButton.requestFocus();
         Gui.createChartPanel();
         mountPanel.setLayout(new BorderLayout());
@@ -36,7 +43,9 @@ public final class MainFrame extends javax.swing.JFrame {
         totalTxProgBar.setString("");
         
         StringBuilder titleSb = new StringBuilder();
-        titleSb.append(getTitle()).append(" ").append(App.getVersion());
+        titleSb.append(getTitle()).append(" ").append(App.getVersion());    
+
+        initializeComboSettings();
         
         // architecture
         if (App.arch != null && !App.arch.isEmpty()) {
@@ -81,7 +90,7 @@ public final class MainFrame extends javax.swing.JFrame {
         showMaxMinCheckBoxMenuItem.setSelected(App.showMaxMin);
         showAccessCheckBoxMenuItem.setSelected(App.showDriveAccess);
         writeSyncCheckBoxMenuItem.setSelected(App.writeSyncEnable);
-        
+
         switch (Gui.palette) {
             case Gui.Palette.CLASSIC -> {
                 classicPaletteMenuItem.setSelected(true);
@@ -100,17 +109,13 @@ public final class MainFrame extends javax.swing.JFrame {
                 Gui.setWarmColorScheme();
             }
         }
-        
-        String modeStr = "unset";
-        if      (!App.readTest && App.writeTest) { modeStr = "write"; }
-        else if (App.readTest && !App.writeTest) { modeStr = "read"; }
-        else if (App.readTest && App.writeTest) { modeStr = "write&read"; }
-        else { msg("WARNING: invalid mode detected"); }
-        modeCombo.setSelectedItem(modeStr);
-        
-        loadSettings();
     }
-    
+
+    public void initializeComboSettings() {
+    modeCombo.setSelectedItem(App.ioMode);
+    loadSettings();
+}
+
     public void loadSettings() {
         //String blockOrderStr = App.randomEnable ? "random":"sequential";
         orderComboBox.setSelectedItem(App.blockSequence);
@@ -266,7 +271,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
         jLabel4.setText("IO Mode");
 
-        modeCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "write", "read", "write&read" }));
+        modeCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { " ", " " }));
         modeCombo.setPreferredSize(new java.awt.Dimension(60, 24));
         modeCombo.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -359,7 +364,7 @@ public final class MainFrame extends javax.swing.JFrame {
                         .addGroup(jPanel1Layout.createSequentialGroup()
                             .addComponent(jLabel16)
                             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(wAccessLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 37, Short.MAX_VALUE))
+                            .addComponent(wAccessLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 38, Short.MAX_VALUE))
                         .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
                             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                 .addComponent(jLabel1)
@@ -867,10 +872,10 @@ public final class MainFrame extends javax.swing.JFrame {
 
     private void modeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_modeComboActionPerformed
         if (modeCombo.hasFocus()) {
-            String modeStr = (String) modeCombo.getSelectedItem();
-            App.readTest = modeStr.contains("read");
-            App.writeTest = modeStr.contains("write");
+            Benchmark.IOMode mode = (Benchmark.IOMode) modeCombo.getSelectedItem();
+            App.ioMode = mode;
             App.saveConfig();
+            System.out.println("modeCombo changed to: " + mode);
         }
     }//GEN-LAST:event_modeComboActionPerformed
 
@@ -1091,14 +1096,13 @@ public final class MainFrame extends javax.swing.JFrame {
     }
   
     public void applyTestParams() {
-        String modeStr = (String) modeCombo.getSelectedItem();
-        App.readTest = modeStr.contains("read");
-        App.writeTest = modeStr.contains("write");
-        App.blockSequence = (Benchmark.BlockSequence)orderComboBox.getSelectedItem();
-        App.numOfSamples = Integer.parseInt((String)numFilesCombo.getSelectedItem());
-        App.numOfBlocks = Integer.parseInt((String)numBlocksCombo.getSelectedItem());
-        App.blockSizeKb = Integer.parseInt((String)blockSizeCombo.getSelectedItem());
-        App.numOfThreads = Integer.parseInt((String)numThreadsCombo.getSelectedItem());
+        Benchmark.IOMode mode = (Benchmark.IOMode) modeCombo.getSelectedItem();
+        App.ioMode = mode;
+        App.blockSequence = (Benchmark.BlockSequence) orderComboBox.getSelectedItem();
+        App.numOfSamples = Integer.parseInt((String) numFilesCombo.getSelectedItem());
+        App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
+        App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
+        App.numOfThreads = Integer.parseInt((String) numThreadsCombo.getSelectedItem());
         sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
         totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
     }
@@ -1157,6 +1161,14 @@ public final class MainFrame extends javax.swing.JFrame {
             modeCombo.setEnabled(true);
             resetBenchmarkItem.setEnabled(true);
         }
-    }
-    
+    }   
+    // Replace lowercase mode options with proper casing
+
+@SuppressWarnings("unchecked")
+private void configureModeCombo() {
+    modeCombo.removeAllItems();
+    modeCombo.addItem("Write");
+    modeCombo.addItem("Read");
+    modeCombo.addItem("Read & Write");
+}    
 }

@@ -34,8 +34,32 @@ public class Benchmark implements Serializable {
     static final DecimalFormat DFT = new DecimalFormat("###");
     static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
-    static public enum IOMode { READ, WRITE, READ_WRITE; }
-    static public enum BlockSequence { SEQUENTIAL, RANDOM; }
+    public enum IOMode {
+        READ {
+            @Override
+            public String toString() { return "Read"; }
+        },
+        WRITE {
+            @Override
+            public String toString() { return "Write"; }
+        },
+        READ_WRITE {    
+            @Override
+            public String toString() { return "Read & Write"; }
+        }
+    }
+
+    public enum BlockSequence {
+        SEQUENTIAL {
+            @Override
+            public String toString() { return "Sequential"; }
+        },
+        RANDOM {
+            @Override
+            public String toString() { return "Random"; }
+        }
+    }
+
     
     // surrogate key
     @Column

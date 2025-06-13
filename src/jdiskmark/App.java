@@ -61,8 +61,6 @@ public class App {
     public static boolean writeSyncEnable = false;
     
     // run configuration
-    public static boolean readTest = false;
-    public static boolean writeTest = true;
     public static Benchmark.BlockSequence blockSequence = Benchmark.BlockSequence.SEQUENTIAL;
     public static int numOfSamples = 200;   // desired number of samples
     public static int numOfBlocks = 32;     // desired number of blocks
@@ -77,6 +75,8 @@ public class App {
     public static long rIops = -1;
     
     public static HashMap<String, Benchmark> benchmarks = new HashMap<>();
+    public static Benchmark.IOMode ioMode = Benchmark.IOMode.WRITE;
+
     
     /**
      * @param args the command line arguments
@@ -183,13 +183,12 @@ public class App {
     }
     
     public static void loadConfig() {
-        
         if (PROPERTIES_FILE.exists()) {
             System.out.println("loading: " + PROPERTIES_FILE.getAbsolutePath());
         } else {
             // generate default properties file if it does not exist
             System.out.println(PROPERTIES_FILE + " does not exist generating...");
-            saveConfig(); 
+            saveConfig();
         }
 
         // read properties file
@@ -200,35 +199,46 @@ public class App {
         } catch (IOException ex) {
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
         // configure settings from properties
         String value;
+
         value = p.getProperty("multiFile", String.valueOf(multiFile));
         multiFile = Boolean.parseBoolean(value);
+
         value = p.getProperty("autoRemoveData", String.valueOf(autoRemoveData));
         autoRemoveData = Boolean.parseBoolean(value);
+
         value = p.getProperty("autoReset", String.valueOf(autoReset));
         autoReset = Boolean.parseBoolean(value);
+
         value = p.getProperty("blockSequence", String.valueOf(blockSequence));
-        blockSequence = Benchmark.BlockSequence.valueOf(value);
+        blockSequence = Benchmark.BlockSequence.valueOf(value.toUpperCase());
+
+        value = p.getProperty("ioMode", String.valueOf(ioMode));
+        App.ioMode = Benchmark.IOMode.valueOf(value.toUpperCase());
+
         value = p.getProperty("showMaxMin", String.valueOf(showMaxMin));
         showMaxMin = Boolean.parseBoolean(value);
+
         value = p.getProperty("showDriveAccess", String.valueOf(showDriveAccess));
         showDriveAccess = Boolean.parseBoolean(value);
+
         value = p.getProperty("numOfSamples", String.valueOf(numOfSamples));
         numOfSamples = Integer.parseInt(value);
+
         value = p.getProperty("numOfBlocks", String.valueOf(numOfBlocks));
         numOfBlocks = Integer.parseInt(value);
+
         value = p.getProperty("blockSizeKb", String.valueOf(blockSizeKb));
         blockSizeKb = Integer.parseInt(value);
+
         value = p.getProperty("numOfThreads", String.valueOf(numOfThreads));
         numOfThreads = Integer.parseInt(value);
-        value = p.getProperty("writeTest", String.valueOf(writeTest));
-        writeTest = Boolean.parseBoolean(value);
-        value = p.getProperty("readTest", String.valueOf(readTest));
-        readTest = Boolean.parseBoolean(value);
+
         value = p.getProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         writeSyncEnable = Boolean.parseBoolean(value);
+
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
     }
@@ -240,18 +250,17 @@ public class App {
         p.setProperty("multiFile", String.valueOf(multiFile));
         p.setProperty("autoRemoveData", String.valueOf(autoRemoveData));
         p.setProperty("autoReset", String.valueOf(autoReset));
-        p.setProperty("blockSequence", String.valueOf(blockSequence));
+        p.setProperty("blockSequence", blockSequence.name());
         p.setProperty("showMaxMin", String.valueOf(showMaxMin));
         p.setProperty("showDriveAccess", String.valueOf(showDriveAccess));
         p.setProperty("numOfSamples", String.valueOf(numOfSamples));
         p.setProperty("numOfBlocks", String.valueOf(numOfBlocks));
         p.setProperty("blockSizeKb", String.valueOf(blockSizeKb));
         p.setProperty("numOfThreads", String.valueOf(numOfThreads));
-        p.setProperty("writeTest", String.valueOf(writeTest));
-        p.setProperty("readTest", String.valueOf(readTest));
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
-        p.setProperty("palette", String.valueOf(Gui.palette));
-        
+        p.setProperty("palette", Gui.palette.name());
+        p.setProperty("ioMode", ioMode.name());
+
         // write properties file
         try {
             OutputStream out = new FileOutputStream(PROPERTIES_FILE);
@@ -261,11 +270,20 @@ public class App {
         }
     }
     
+    public static boolean isReadEnabled() {
+        return ioMode == Benchmark.IOMode.READ || ioMode == Benchmark.IOMode.READ_WRITE;
+}
+
+    public static boolean isWriteEnabled() {
+        return ioMode == Benchmark.IOMode.WRITE || ioMode == Benchmark.IOMode.READ_WRITE;
+}
+
+    
     public static String getConfigString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Config for Java Disk Mark ").append(getVersion()).append('\n');
-        sb.append("readTest: ").append(readTest).append('\n');
-        sb.append("writeTest: ").append(writeTest).append('\n');
+        sb.append("readTest: ").append(isReadEnabled()).append('\n');
+        sb.append("writeTest: ").append(isWriteEnabled()).append('\n');
         sb.append("locationDir: ").append(locationDir).append('\n');
         sb.append("multiFile: ").append(multiFile).append('\n');
         sb.append("autoRemoveData: ").append(autoRemoveData).append('\n');
@@ -277,6 +295,7 @@ public class App {
         sb.append("blockSizeKb: ").append(blockSizeKb).append('\n');
         sb.append("numOfThreads: ").append(numOfThreads).append('\n');
         sb.append("palette: ").append(Gui.palette).append('\n');
+        sb.append("ioMode: ").append(ioMode).append('\n');
         return sb.toString();
     }
     
