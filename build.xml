@@ -81,6 +81,7 @@
     <property name="version" value="0.6.0-dev.h"/>
     <property name="msi.version" value="0.6.0"/>
     <property name="release.dir" value="${app.name}-${version}"/>
+    <property name="dmg.version" value="1.6.0"/>
 
     <!-- msi signing properties -->
     <property name="timestamp.server.url" value="http://timestamp.sectigo.com"/>
@@ -93,7 +94,10 @@
         <copy file="capacity.ps1" todir="dist"/>
         <copy file="disk-model.ps1" todir="dist"/>
         <antcall target="buildinfo"/>
+        <copy file="pkg/macos/JDM.icns" todir="${dist.dir}"/>
+        <copy file="pkg/macos/run.sh" todir="${dist.dir}"/>
         <copy file="build.properties" todir="dist"/>
+        <copy file="build.properties" todir="src/META-INF"/>
         <copy file="README.md" todir="dist"/>
         <mkdir dir="tmp"/>
         <mkdir dir="tmp/${release.dir}"/>
@@ -184,7 +188,39 @@
 
         <echo message="MSI installer created: ${dist.dir}/${jpackage.output.msi.targetname}"/>
     </target>
+    
+    <target name="create-dmg" depends="-post-jar, -prepare-jpackage-input-jar" description="Creates the DMG installer using jpackage">
+        <property name="jpackage.input.dir.relative" value="${release.dir}"/>
 
+        <echo message="Deleting existing dmg files: ${dist.dir}/${app.name}-*.dmg"/>
+        <delete failonerror="false">
+            <fileset dir="${dist.dir}" includes="${app.name}-*.dmg"/>
+        </delete>
+
+        <echo message="Running jpackage to create dmg installer..."/>
+        <exec executable="jpackage" failonerror="true">
+            <arg line="--type dmg"/>
+            <arg line="--input ${dist.dir}/${release.dir}"/>
+            <arg line="--main-jar ${app.name}.jar"/>
+            <arg line="--main-class ${app.name}.App"/>
+            <arg line="--name ${app.name}-${version}"/>
+            <arg line="--app-version ${dmg.version}"/>
+            <arg line="--vendor 'jdiskmark'"/>
+            <arg line="--icon '${dist.dir}/${release.dir}/JDM.icns'"/>
+            <arg line="--dest ${dist.dir}"/>
+        </exec>
+
+        <property name="jpackage.output.dmg.defaultname" value="${app.name}-${version}-${dmg.version}.dmg"/>
+        <property name="jpackage.output.dmg.targetname" value="${app.name}-${version}.dmg"/>
+        
+        <echo message="Renaming DMG from '${jpackage.output.dmg.defaultname}' to '${jpackage.output.dmg.targetname}' in ${dist.dir}"/>
+        <move file="${dist.dir}/${jpackage.output.dmg.defaultname}"
+              tofile="${dist.dir}/${jpackage.output.dmg.targetname}"
+              overwrite="true"/>
+
+        <echo message="DMG installer created: ${dist.dir}/${jpackage.output.dmg.targetname}"/>
+    </target>
+    
     <target name="sign-msi" description="Signs the MSI installer using signtool.exe (manual invocation)">
         <condition property="signtool.is.available">
             <available file="${signtool.executable}" type="file"/>
@@ -209,6 +245,7 @@
         <echo message="MSI file successfully signed: ${msi.file.to.sign.path}"/>
     </target>
 
-    <target name="package-all" depends="clean, jar, create-msi" description="Builds JAR and MSI installer"/>
+    <target name="package-msi" depends="clean, jar, create-msi" description="Builds JAR and MSI installer"/>
+    <target name="package-dmg" depends="clean, jar, create-dmg" description="Builds JAR and DMG installer"/>
 
 </project>
