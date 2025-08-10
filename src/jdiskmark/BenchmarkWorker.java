@@ -186,7 +186,7 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                         sample.bwMbSec = mbWritten / sec;
                         msg("s:" + s + " write IO is " + sample.getBwMbSecDisplay() + " MB/s   "
                                 + "(" + Util.displayString(mbWritten) + "MB written in "
-                                + Util.displayString(sec) + " sec)");
+                                + Util.displayString(sec) + " sec) elapsedNs: " + elapsedTimeNs);
                         App.updateMetrics(sample);
                         publish(sample);
 
@@ -289,8 +289,9 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                         double sec = (double)elapsedTimeNs / 1_000_000_000d;
                         double mbRead = (double)totalBytesReadInMark / (double)MEGABYTE;
                         sample.bwMbSec = mbRead / sec;
-                        msg("s:" + s + " READ IO is " + sample.bwMbSec + " MB/s    "
-                                + "(MBread " + mbRead + " in " + sec + " sec)");
+                        msg("s:" + s + " read IO is " + sample.getBwMbSecDisplay() + " MB/s   "
+                                + "(" + Util.displayString(mbRead) + "MB read in "
+                                + Util.displayString(sec) + " sec) elapsedNs: " + elapsedTimeNs);
                         App.updateMetrics(sample);
                         publish(sample);
 
@@ -303,6 +304,9 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
                     }
                 }));
             }
+            
+            executorService.shutdown();
+            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
             
             // GH-10 file IOPS processing
             run.endTime = LocalDateTime.now();
