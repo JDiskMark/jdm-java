@@ -77,7 +77,10 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 
 ## Release Notes
 
-### v0.6.0 dev g
+### v1.0.0 planned
+- TODO: GH-16 MacOS installer
+
+### v0.6.0
 - GH-13 Detect drive info on startup
 - GH-12 update look and feel (windows)
 - GH-22 foreign capacity reporting
@@ -87,7 +90,6 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 - write sync default off
 - GH-26 lowercase project and jar
 - GH-20 threading and queue depth
-- TODO: GH-16 MacOS installer
 
 ### v0.5.1
 - resolve GH-17 invalid disk usage reported win 10
@@ -145,3 +147,17 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 ## issues
 - read&write not consistant with order caps
 - bottom margins between table to bar to window edge should be the same
+
+## Windows Paths Examples for Building
+
+For ant builds
+
+`C:\apache-ant-1.10.15\bin`
+
+For maven builds
+
+`C:\apache-maven-3.9.10\bin`
+
+For code signing
+
+`C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x86\`

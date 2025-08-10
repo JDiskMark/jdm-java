@@ -72,13 +72,17 @@
 
     -->
     
+    <!-- build environment -->
+    <property name="dist.dir" value="dist"/>
+    <property name="build.dir" value="build"/>   
+
     <!-- dependencies -->
     <property name="jpackage.executable" value="C:\Program Files\java\jdk-21\bin\jpackage"/>
-    <property name="signtool.executable" value="C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x86\signtool.exe"/>
+    <property name="signtool.executable" value="C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x86\signtool.exe"/>
 
     <!-- version properties -->
     <property name="app.name" value="jdiskmark"/>
-    <property name="version" value="0.6.0-dev.h"/>
+    <property name="version" value="0.6.0"/>
     <property name="msi.version" value="0.6.0"/>
     <property name="release.dir" value="${app.name}-${version}"/>
 
@@ -186,6 +190,7 @@
     </target>
 
     <target name="sign-msi" description="Signs the MSI installer using signtool.exe (manual invocation)">
+        <echo message="Signing MSI installer..."/>
         <condition property="signtool.is.available">
             <available file="${signtool.executable}" type="file"/>
         </condition>
@@ -209,6 +214,6 @@
         <echo message="MSI file successfully signed: ${msi.file.to.sign.path}"/>
     </target>
 
-    <target name="package-all" depends="clean, jar, create-msi" description="Builds JAR and MSI installer"/>
+    <target name="package-msi" depends="clean, jar, create-msi, sign-msi" description="Builds JAR and MSI installer"/>
 
 </project>
