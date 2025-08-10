@@ -90,9 +90,11 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 - write sync default off
 - GH-26 lowercase project and jar
 - GH-20 threading and queue depth
+- GH-36 I/O Mode dropdown uses enum values for type safety
 
 ### v0.5.1
 - resolve GH-17 invalid disk usage reported win 10
+- msi installer available
 
 ### v0.5
 - update for java 21 LTS w NetBeans 20 environment: eclipselink 4.0, jpa 3.1, 
