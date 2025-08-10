@@ -129,14 +129,14 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
             run.txSize = App.targetTxSizeKb();
             run.numThreads = App.numOfThreads;
 
-            Gui.chart.getTitle().setVisible(true);
             Gui.chart.getTitle().setText(run.getDriveInfo());
+            Gui.chart.getTitle().setVisible(true);
             
             if (App.multiFile == false) {
                 testFile = new File(dataDir.getAbsolutePath() + File.separator + "testdata.jdm");
             }
             
-            // TODO: GH-20 instantiate threads to operate on each range
+            // GH-20 instantiate threads to operate on each range
             ExecutorService executorService = Executors.newFixedThreadPool(App.numOfThreads);
             
             for (int[] range : tRanges) {
@@ -241,8 +241,8 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
             run.txSize = App.targetTxSizeKb();
             run.numThreads = App.numOfThreads;
 
-            Gui.chart.getTitle().setVisible(true);
             Gui.chart.getTitle().setText(run.getDriveInfo());
+            Gui.chart.getTitle().setVisible(true);
             
             ExecutorService executorService = Executors.newFixedThreadPool(App.numOfThreads);
             
@@ -324,10 +324,9 @@ public class BenchmarkWorker extends SwingWorker <Boolean, Sample> {
     @Override
     protected void process(List<Sample> sampleList) {
         sampleList.stream().forEach((Sample s) -> {
-            if (s.type == Sample.Type.WRITE) {
-                Gui.addWriteSample(s);
-            } else {
-                Gui.addReadSample(s);
+            switch (s.type) {
+                case Sample.Type.WRITE -> Gui.addWriteSample(s);
+                case Sample.Type.READ -> Gui.addReadSample(s);
             }
         });
     }

@@ -9,6 +9,7 @@ import java.text.DecimalFormat;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
@@ -28,9 +29,9 @@ public final class MainFrame extends javax.swing.JFrame {
     public MainFrame() {
         initComponents();
         
-    javax.swing.DefaultComboBoxModel<Benchmark.IOMode> ioModel =
-        new javax.swing.DefaultComboBoxModel<>(Benchmark.IOMode.values());
-    modeCombo.setModel(ioModel);
+        DefaultComboBoxModel<Benchmark.IOMode> ioModel
+                = new DefaultComboBoxModel<>(Benchmark.IOMode.values());
+        modeCombo.setModel(ioModel);
 
         startButton.requestFocus();
         Gui.createChartPanel();
@@ -169,7 +170,7 @@ public final class MainFrame extends javax.swing.JFrame {
         jLabel18 = new javax.swing.JLabel();
         jLabel19 = new javax.swing.JLabel();
         wIopsLabel = new javax.swing.JLabel();
-        wIopsLabel1 = new javax.swing.JLabel();
+        rIopsLabel = new javax.swing.JLabel();
         jLabel20 = new javax.swing.JLabel();
         jLabel17 = new javax.swing.JLabel();
         rAccessLabel = new javax.swing.JLabel();
@@ -335,7 +336,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
         wIopsLabel.setText("- -");
 
-        wIopsLabel1.setText("- -");
+        rIopsLabel.setText("- -");
 
         jLabel20.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel20.setText("Read IO (MB/s)");
@@ -380,7 +381,7 @@ public final class MainFrame extends javax.swing.JFrame {
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jLabel19)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(wIopsLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(rIopsLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jLabel20)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jLabel17)
@@ -422,7 +423,7 @@ public final class MainFrame extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel19)
-                            .addComponent(wIopsLabel1)))
+                            .addComponent(rIopsLabel)))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel1)
@@ -488,7 +489,7 @@ public final class MainFrame extends javax.swing.JFrame {
                             .addComponent(modeCombo, javax.swing.GroupLayout.Alignment.TRAILING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(numThreadsCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                     .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(35, Short.MAX_VALUE))
+                .addContainerGap(36, Short.MAX_VALUE))
         );
         controlsPanelLayout.setVerticalGroup(
             controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -602,7 +603,7 @@ public final class MainFrame extends javax.swing.JFrame {
             .addGroup(centerPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(centerPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(controlsPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 393, Short.MAX_VALUE)
+                    .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 393, Short.MAX_VALUE)
                     .addComponent(mountPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(tabbedPane))
@@ -1067,6 +1068,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JPanel progressPanel;
     private javax.swing.JLabel rAccessLabel;
     private javax.swing.JLabel rAvgLabel;
+    private javax.swing.JLabel rIopsLabel;
     private javax.swing.JLabel rMaxLabel;
     private javax.swing.JLabel rMinLabel;
     private javax.swing.JMenuItem resetBenchmarkItem;
@@ -1081,7 +1083,6 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JLabel wAccessLabel;
     private javax.swing.JLabel wAvgLabel;
     private javax.swing.JLabel wIopsLabel;
-    private javax.swing.JLabel wIopsLabel1;
     private javax.swing.JLabel wMaxLabel;
     private javax.swing.JLabel wMinLabel;
     private javax.swing.JCheckBoxMenuItem writeSyncCheckBoxMenuItem;
@@ -1132,7 +1133,7 @@ public final class MainFrame extends javax.swing.JFrame {
         value = App.rAcc == -1 ? "- -" : DF.format(App.rAcc);
         rAccessLabel.setText(value);
         value = App.rIops == -1 ? "- -" : String.valueOf(App.rIops);
-        wIopsLabel1.setText(value);
+        rIopsLabel.setText(value);
     }
     
     public javax.swing.JProgressBar getProgressBar() {
@@ -1144,22 +1145,25 @@ public final class MainFrame extends javax.swing.JFrame {
     }
     
     public void adjustSensitivity() {
-        if (App.state == App.State.DISK_TEST_STATE) {
-            startButton.setText("Cancel");
-            orderComboBox.setEnabled(false);
-            blockSizeCombo.setEnabled(false);
-            numBlocksCombo.setEnabled(false);
-            numFilesCombo.setEnabled(false);
-            modeCombo.setEnabled(false);
-            resetBenchmarkItem.setEnabled(false);
-        } else if (App.state == App.State.IDLE_STATE){
-            startButton.setText("Start");
-            orderComboBox.setEnabled(true);
-            blockSizeCombo.setEnabled(true);
-            numBlocksCombo.setEnabled(true);
-            numFilesCombo.setEnabled(true);
-            modeCombo.setEnabled(true);
-            resetBenchmarkItem.setEnabled(true);
+        switch (App.state) {
+            case App.State.DISK_TEST_STATE -> {
+                startButton.setText("Cancel");
+                orderComboBox.setEnabled(false);
+                blockSizeCombo.setEnabled(false);
+                numBlocksCombo.setEnabled(false);
+                numFilesCombo.setEnabled(false);
+                modeCombo.setEnabled(false);
+                resetBenchmarkItem.setEnabled(false);
+            }
+            case App.State.IDLE_STATE -> {
+                startButton.setText("Start");
+                orderComboBox.setEnabled(true);
+                blockSizeCombo.setEnabled(true);
+                numBlocksCombo.setEnabled(true);
+                numFilesCombo.setEnabled(true);
+                modeCombo.setEnabled(true);
+                resetBenchmarkItem.setEnabled(true);
+            }
         }
     }   
     // Replace lowercase mode options with proper casing
