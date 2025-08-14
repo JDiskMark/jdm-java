@@ -79,6 +79,7 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 
 ### v1.0.0 planned
 - TODO: GH-16 MacOS installer
+- TODO: GH-15 Ubuntu installer
 
 ### v0.6.0
 - GH-13 Detect drive info on startup
