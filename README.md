@@ -35,8 +35,8 @@ Java 21 needs to be installed to run jdiskmark.
 3. Extract release zip archive into desired location.
    ```
    Examples:  
-   /Users/username/jdiskmark-v0.5  
-   /opt/jdiskmark-v0.5
+   /Users/username/jdiskmark-v0.6.0  
+   /opt/jdiskmark-v0.6.0
    ```
 
 ## Launching as normal process
@@ -65,11 +65,11 @@ benchmarks start with sudo or an administrator windows shell.
 
 - Linux: `sudo java -jar jdiskmark.jar`
 - Mac OS: `sudo java -jar jdiskmark.jar`
-- Windows: start powershell as administrator then `java -jar jDiskMark`
+- Windows: start powershell as administrator then `java -jar jdiskmark.jar`
 
 ## Development Environment
 
-jdiskmark client is developed with [NetBeans 20](https://netbeans.apache.org/front/main/download/) and [Java 21](https://www.oracle.com/java/technologies/downloads/)
+jdiskmark client is developed with [NetBeans 21](https://netbeans.apache.org/front/main/download/) and [Java 21](https://www.oracle.com/java/technologies/downloads/)
 
 ## Source
 
@@ -78,8 +78,11 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 ## Release Notes
 
 ### v1.0.0 planned
-- TODO: GH-16 MacOS installer
-- TODO: GH-15 Ubuntu installer
+- TODO: GH-16 MacOS installer - tyler
+- TODO: GH-15 Ubuntu installer - jeff
+- TODO: GH-64 persist IOPS, write sync - val
+- TODO: GH-33 maven build - lane
+- TODO: GH-40 gui presentation issues - james
 
 ### v0.6.0
 - GH-13 Detect drive info on startup
