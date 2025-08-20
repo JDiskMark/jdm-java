@@ -146,7 +146,7 @@ public final class Gui {
         bwAxis.setAutoRangeIncludesZero(false);
         
         // y axis on the right
-        msAxis = new NumberAxis("Average Access Time (ms)");
+        msAxis = new NumberAxis("Access Time (ms)");
         msAxis.setAutoRange(true);
         msAxis.setAutoRangeIncludesZero(false);
         
