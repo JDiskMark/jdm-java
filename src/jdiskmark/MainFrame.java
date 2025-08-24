@@ -218,7 +218,7 @@ public final class MainFrame extends javax.swing.JFrame {
         jMenuItem2 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("jDiskMark");
+        setTitle("JDiskMark");
 
         mountPanel.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         mountPanel.setMaximumSize(new java.awt.Dimension(503, 200));

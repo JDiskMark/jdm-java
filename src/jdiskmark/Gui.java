@@ -142,7 +142,7 @@ public final class Gui {
         plot.setRenderer(1, msRenderer);
         
         // y axis on the left
-        NumberAxis bwAxis = new NumberAxis("Bandwidth MB/s");
+        NumberAxis bwAxis = new NumberAxis("Bandwidth (MB/s)");
         bwAxis.setAutoRangeIncludesZero(false);
         
         // y axis on the right
