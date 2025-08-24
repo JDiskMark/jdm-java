@@ -84,6 +84,10 @@ Source code is available on our [github repo](https://github.com/jDiskMark/jdm-j
 - TODO: GH-33 maven build - lane
 - TODO: GH-40 gui presentation issues - james
 
+### v0.6.1 ms app store release
+- JDiskMark in title and msi vendor name
+- Remove "Average" from "Access Time" label
+
 ### v0.6.0
 - GH-13 Detect drive info on startup
 - GH-12 update look and feel (windows)
