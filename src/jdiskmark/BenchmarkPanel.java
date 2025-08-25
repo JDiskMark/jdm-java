@@ -18,27 +18,32 @@ public class BenchmarkPanel extends javax.swing.JPanel {
      * Creates new form TestPanel
      */
     public BenchmarkPanel() {
-        initComponents();
-        Gui.runPanel = BenchmarkPanel.this;
+    initComponents();
+    Gui.runPanel = BenchmarkPanel.this;
 
-        // center align cells 2 - 11
-        for (int i = 2; i <= 11; i++) {
-            TableColumn c = runTable.getColumnModel().getColumn(i);
-            c.setCellRenderer(new CenterTableCellRenderer());
-        }
-        
-        // right align cell 12 (avg bw)
-        TableColumn c = runTable.getColumnModel().getColumn(12);
-        c.setCellRenderer(new RightTableCellRenderer());
-        
-        // auto scroll to bottom when a new record is added
-        runTable.addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                runTable.scrollRectToVisible(runTable.getCellRect(runTable.getRowCount()-1, 0, true));
-            }
-        });
+    // Tooltip only – keep it simple
+    runTable.setToolTipText("Mode: Write* means Write Sync was enabled");
+
+    // center align cells 2 - 11
+    for (int i = 2; i <= 11; i++) {
+        TableColumn c = runTable.getColumnModel().getColumn(i);
+        c.setCellRenderer(new CenterTableCellRenderer());
     }
+
+    // right align cell 12 (avg bw)
+    TableColumn c = runTable.getColumnModel().getColumn(12);
+    c.setCellRenderer(new RightTableCellRenderer());
+
+    // auto scroll to bottom when a new record is added
+    runTable.addComponentListener(new ComponentAdapter() {
+        @Override
+        public void componentResized(ComponentEvent e) {
+            runTable.scrollRectToVisible(
+                runTable.getCellRect(runTable.getRowCount() - 1, 0, true)
+            );
+        }
+    });
+}
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -132,6 +137,13 @@ public class BenchmarkPanel extends javax.swing.JPanel {
     private javax.swing.JTable runTable;
     // End of variables declaration//GEN-END:variables
 
+    private String getModeDisplay(Benchmark run) {
+    if (run.ioMode == Benchmark.IOMode.WRITE && Boolean.TRUE.equals(run.getWriteSyncEnabled())) {
+        return "Write*";
+    }
+    return run.ioMode.toString(); // "Read", "Write", or "Read & Write"
+}
+
     public void addRun(Benchmark run) {
         DefaultTableModel model = (DefaultTableModel) this.runTable.getModel();
         model.addRow(
@@ -139,7 +151,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
                     run.id,
                     run.driveModel,
                     run.getUsageColumnDisplay(),
-                    run.ioMode,
+                    getModeDisplay(run),                     
                     run.blockOrder,
                     run.numSamples,
                     run.getBlocksDisplay(),

@@ -103,6 +103,10 @@ public class Benchmark implements Serializable {
     @Column
     int numThreads = 1;
     
+    // NEW: whether write-sync was enabled for this run (only meaningful for WRITE; may be null for READ)
+    @Column
+    Boolean writeSyncEnabled;
+    
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column(name = "startTime", columnDefinition = "TIMESTAMP")
@@ -214,6 +218,24 @@ public class Benchmark implements Serializable {
             double iopsDouble = (double) (totalOps * 1_000_000) / (double) diffMs;
             iops = Math.round(iopsDouble);
         }
+    }
+    
+    // NEW: getters/setters for writeSyncEnabled and iops (expose iops too if needed)
+
+    public Boolean getWriteSyncEnabled() {
+        return writeSyncEnabled;
+    }
+
+    public void setWriteSyncEnabled(Boolean writeSyncEnabled) {
+        this.writeSyncEnabled = writeSyncEnabled;
+    }
+
+    public long getIops() {
+        return iops;
+    }
+
+    public void setIops(long iops) {
+        this.iops = iops;
     }
     
     // utility methods for collection
