@@ -137,12 +137,6 @@ public class BenchmarkPanel extends javax.swing.JPanel {
     private javax.swing.JTable runTable;
     // End of variables declaration//GEN-END:variables
 
-    private String getModeDisplay(Benchmark run) {
-    if (run.ioMode == Benchmark.IOMode.WRITE && Boolean.TRUE.equals(run.getWriteSyncEnabled())) {
-        return "Write*";
-    }
-    return run.ioMode.toString(); // "Read", "Write", or "Read & Write"
-}
 
     public void addRun(Benchmark run) {
         DefaultTableModel model = (DefaultTableModel) this.runTable.getModel();
@@ -151,7 +145,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
                     run.id,
                     run.driveModel,
                     run.getUsageColumnDisplay(),
-                    getModeDisplay(run),                     
+                    run.getModeDisplay(), 
                     run.blockOrder,
                     run.numSamples,
                     run.getBlocksDisplay(),

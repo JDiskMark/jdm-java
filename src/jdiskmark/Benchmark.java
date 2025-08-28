@@ -165,6 +165,15 @@ public class Benchmark implements Serializable {
         return percentUsed + "%";
     }
     
+    public String getModeDisplay() {
+    // Show "Write*" when write-sync was enabled for a WRITE run
+        if (ioMode == IOMode.WRITE && Boolean.TRUE.equals(getWriteSyncEnabled())) {
+            return "Write*";
+        }
+    return (ioMode == null) ? "" : ioMode.toString(); // "Read", "Write", "Read & Write"
+    }
+
+    
     // GH-20 TODO: review should this be synchronized or redone to not be blocking?
     public synchronized void add(Sample s) {
         samples.add(s);

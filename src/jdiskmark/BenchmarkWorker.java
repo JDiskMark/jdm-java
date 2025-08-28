@@ -172,7 +172,7 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
                                     synchronized (BenchmarkWorker.this) {
                                         wUnitsComplete[0]++;
                                         unitsComplete[0] = rUnitsComplete[0] + wUnitsComplete[0];
-                                        float percentComplete = (float) unitsComplete[0] / (float) unitsTotal * 100f;
+                                        float percentComplete = (float)unitsComplete[0] / (float) unitsTotal * 100f;
                                         setProgress((int) percentComplete);
                                     }
                                 }
@@ -282,7 +282,7 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
                                     synchronized (BenchmarkWorker.this) {
                                         rUnitsComplete[0]++;
                                         unitsComplete[0] = rUnitsComplete[0] + wUnitsComplete[0];
-                                        float percentComplete = (float) unitsComplete[0] / (float) unitsTotal * 100f;
+                                        float percentComplete = (float)unitsComplete[0] / (float) unitsTotal * 100f;
                                         setProgress((int) percentComplete);
                                     }
                                 }

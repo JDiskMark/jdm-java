@@ -425,12 +425,14 @@ public final class Gui {
             App.rMax = benchmark.bwMax;
             App.rMin = benchmark.bwMin;
             App.rAcc = benchmark.accAvg;
+            App.rIops = benchmark.iops;
             Gui.mainFrame.refreshReadMetrics();
         } else {
             App.wAvg = benchmark.bwAvg;
             App.wMax = benchmark.bwMax;
             App.wMin = benchmark.bwMin;
             App.wAcc = benchmark.accAvg;
+            App.wIops = benchmark.iops;
             Gui.mainFrame.refreshWriteMetrics();
         }
     }
