@@ -166,11 +166,11 @@ public class Benchmark implements Serializable {
     }
     
     public String getModeDisplay() {
-    // Show "Write*" when write-sync was enabled for a WRITE run
+        // Show "Write*" when write-sync was enabled for a WRITE run
         if (ioMode == IOMode.WRITE && Boolean.TRUE.equals(getWriteSyncEnabled())) {
             return "Write*";
         }
-    return (ioMode == null) ? "" : ioMode.toString(); // "Read", "Write", "Read & Write"
+        return (ioMode == null) ? "" : ioMode.toString(); // "Read", "Write", "Read & Write"
     }
 
     
