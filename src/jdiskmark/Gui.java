@@ -65,12 +65,13 @@ public final class Gui {
 //                    }
 //                }
             } else if (App.os.contains("Linux")) {
-                for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-                    if ("Nimbus".equals(info.getName())) {
-                        UIManager.setLookAndFeel(info.getClassName());
-                        break;
-                    }
-                }
+                UIManager.setLookAndFeel(new FlatLightLaf()); // Light theme
+//                for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+//                    if ("Nimbus".equals(info.getName())) {
+//                        UIManager.setLookAndFeel(info.getClassName());
+//                        break;
+//                    }
+//                }
             }
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
