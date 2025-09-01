@@ -30,7 +30,8 @@ public final class MainFrame extends javax.swing.JFrame {
     public MainFrame() {
         initComponents();
         
-        controlsPanel.setBackground(Color.blue);
+        //for diagnostics
+        //controlsPanel.setBackground(Color.blue);
         
         DefaultComboBoxModel<Benchmark.IOMode> ioModel
                 = new DefaultComboBoxModel<>(Benchmark.IOMode.values());
