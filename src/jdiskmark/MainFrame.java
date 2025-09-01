@@ -48,7 +48,7 @@ public final class MainFrame extends javax.swing.JFrame {
         totalTxProgBar.setString("");
         
         StringBuilder titleSb = new StringBuilder();
-        titleSb.append(getTitle()).append(" ").append(App.getVersion());    
+        titleSb.append(getTitle()).append(" ").append(App.VERSION);    
 
         initializeComboSettings();
         
@@ -874,7 +874,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
     private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
         JOptionPane.showMessageDialog(Gui.mainFrame, 
-                "JDiskMark " + App.getVersion(), "About...", JOptionPane.PLAIN_MESSAGE);
+                "JDiskMark " + App.VERSION, "About...", JOptionPane.PLAIN_MESSAGE);
     }//GEN-LAST:event_aboutMenuItemActionPerformed
 
     private void openLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openLocButtonActionPerformed

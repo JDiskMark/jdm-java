@@ -83,7 +83,7 @@
     <!-- version properties -->
     <property name="pkg.name" value="jdiskmark"/>
     <property name="app.name" value="JDiskMark"/>
-    <property name="version" value="0.6.2-dev"/>
+    <property name="version" value="0.6.2"/>
     <!-- full semver does not work for msi product versions -->
     <property name="msi.version" value="0.6.2"/>
     <property name="msi.app.title" value="${app.name} ${version}"/>

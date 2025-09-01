@@ -22,7 +22,8 @@ import static javax.swing.SwingWorker.StateValue.STARTED;
  */
 public class App {
     
-    public static final String APP_CACHE_DIR_NAME = System.getProperty("user.home") + File.separator + ".jdm";
+    public static final String VERSION = App.getVersion();
+    public static final String APP_CACHE_DIR_NAME = System.getProperty("user.home") + File.separator + ".jdm" + File.separator + VERSION;
     public static final File APP_CACHE_DIR = new File(APP_CACHE_DIR_NAME);
     public static final String PROPERTIES_FILENAME = "jdm.properties";
     public static final File PROPERTIES_FILE = new File(APP_CACHE_DIR_NAME + File.separator + PROPERTIES_FILENAME);
@@ -287,7 +288,7 @@ public class App {
     
     public static String getConfigString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("Config for Java Disk Mark ").append(getVersion()).append('\n');
+        sb.append("Config for JDiskMark ").append(App.VERSION).append('\n');
         sb.append("readTest: ").append(isReadEnabled()).append('\n');
         sb.append("writeTest: ").append(isWriteEnabled()).append('\n');
         sb.append("locationDir: ").append(locationDir).append('\n');
