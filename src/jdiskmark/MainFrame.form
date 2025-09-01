@@ -385,7 +385,7 @@
             </Component>
             <Component class="javax.swing.JLabel" name="jLabel15">
               <Properties>
-                <Property name="text" type="java.lang.String" value="/jDiskMarkData"/>
+                <Property name="text" type="java.lang.String" value="/JDiskMarkData"/>
               </Properties>
             </Component>
             <Component class="javax.swing.JLabel" name="jLabel22">

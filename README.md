@@ -1,18 +1,19 @@
-# jDiskMark v0.6 beta (Windows/Mac/Linux)
+# JDiskMark v0.6.2 beta (Windows/Mac/Linux)
 
-Cross platform disk benchmark utility written in java.
+Java Disk Benchmark Utility
 
 ## Features
 
 - Java cross platform solution
 - Benchmark IO read/write performance
-- Graphs: sample bw, max, min, cum bw, disk acc time
+- Graphs: sample bw, max, min, cum bw, latency (access time)
 - Adjustable block size, block qty and sample qty
 - Single or multi file option
 - Sequential or random option
 - Detect drive model, capacity and processor
 - Save and load benchmark
 - Auto clear disk cache (when sudo or admin)
+- multi threaded benchmarks
 
 ## Releases
 
@@ -73,7 +74,7 @@ jdiskmark client is developed with [NetBeans 21](https://netbeans.apache.org/fro
 
 ## Source
 
-Source code is available on our [github repo](https://github.com/jDiskMark/jdm-java/)
+Source code is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 
 ## Release Notes
 

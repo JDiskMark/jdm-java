@@ -250,7 +250,7 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
 
-        jLabel15.setText("/jDiskMarkData");
+        jLabel15.setText("/JDiskMarkData");
 
         jLabel22.setText("Specify the location where the data files will be generated and read from to assess each sample's bandwidth.");
 
@@ -874,7 +874,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
     private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
         JOptionPane.showMessageDialog(Gui.mainFrame, 
-                "jDiskMark " + App.getVersion(), "About...", JOptionPane.PLAIN_MESSAGE);
+                "JDiskMark " + App.getVersion(), "About...", JOptionPane.PLAIN_MESSAGE);
     }//GEN-LAST:event_aboutMenuItemActionPerformed
 
     private void openLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openLocButtonActionPerformed

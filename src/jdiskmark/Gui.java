@@ -310,7 +310,7 @@ public final class Gui {
                 /* Revised the drop_caches command so it works. - JSL 2024-01-16 */
                 JOptionPane.showMessageDialog(Gui.mainFrame, 
                         """
-                        Run jDiskMark with sudo to automatically clear the disk cache.
+                        Run JDiskMark with sudo to automatically clear the disk cache.
                         
                         For a valid READ benchmark please clear the disk cache now 
                         by using: \"sudo sh -c \'sync; echo 1 > /proc/sys/vm/drop_caches\'\".
@@ -370,7 +370,7 @@ public final class Gui {
             } else if (!App.isAdmin) {
                 JOptionPane.showMessageDialog(Gui.mainFrame, 
                         """
-                        Run jDiskMark as admin to automatically clear the disk cache.
+                        Run JDiskMark as admin to automatically clear the disk cache.
 
                         For valid READ benchmarks please clear the disk cache by
                         using EmptyStandbyList.exe or RAMMap.exe utilities.

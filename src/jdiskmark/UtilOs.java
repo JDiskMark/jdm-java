@@ -17,7 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * OS Specific Utility methods for jDiskMark
+ * OS Specific Utility methods for JDiskMark
  */
 public class UtilOs {
     
@@ -213,11 +213,11 @@ public class UtilOs {
     
     /**
      * On Linux OS get the device path when given a file path.
-     * eg.  filePath = /home/james/Desktop/jDiskMarkData
+     * eg.  filePath = /home/james/Desktop/JDiskMarkData
      *      devicePath = /dev/sda
      *      
      * Example command and output:
-     * $ df /home/james/jDiskMarkData
+     * $ df /home/james/JDiskMarkData
      * Filesystem     1K-blocks     Used Available Use% Mounted on
      * /dev/sda2      238737052 54179492 172357524  24% /
      * 

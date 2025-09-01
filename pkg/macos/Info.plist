@@ -7,9 +7,9 @@
 	<key>CFBundleIconFile</key>
 	<string>JDM.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>net.jDiskMark</string>
+	<string>net.JDiskMark</string>
 	<key>CFBundleName</key>
-	<string>jDiskMark</string>
+	<string>JDiskMark</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

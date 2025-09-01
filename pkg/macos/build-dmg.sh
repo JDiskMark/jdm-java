@@ -13,7 +13,7 @@ echo "Starting JDiskMark macOS DMG build..."
 echo "Building DMG for version: $VERSION"
 
 jpackage --input JDiskMark.app/Contents/MacOS \
-         --name jDiskMark \
+         --name JDiskMark \
          --main-jar jdiskmark.jar \
          --main-class jdiskmark.App \
          --type dmg \

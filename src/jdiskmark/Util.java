@@ -14,7 +14,7 @@ import java.util.Random;
 import javax.swing.filechooser.FileSystemView;
 
 /**
- * Utility methods for jDiskMark
+ * Utility methods for JDiskMark
  */
 public class Util {
     

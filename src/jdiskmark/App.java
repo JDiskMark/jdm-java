@@ -158,7 +158,7 @@ public class App {
         Gui.mainFrame.setLocationRelativeTo(null);
         Gui.progressBar = Gui.mainFrame.getProgressBar();
         
-        // configure the embedded DB in .jDiskMark
+        // configure the embedded DB in .jdm
         System.setProperty("derby.system.home", APP_CACHE_DIR_NAME);
         loadBenchmarks();
 
@@ -270,7 +270,7 @@ public class App {
         // write properties file
         try {
             OutputStream out = new FileOutputStream(PROPERTIES_FILE);
-            p.store(out, "jDiskMark Properties File");
+            p.store(out, "JDiskMark Properties File");
         } catch (IOException ex) {
             Logger.getLogger(SelectDriveFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
