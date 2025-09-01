@@ -143,13 +143,14 @@ public final class MainFrame extends javax.swing.JFrame {
         palettebuttonGroup = new javax.swing.ButtonGroup();
         tabbedPane = new javax.swing.JTabbedPane();
         runPanel = new jdiskmark.BenchmarkPanel();
+        eventScrollPane = new javax.swing.JScrollPane();
+        msgTextArea = new javax.swing.JTextArea();
         locationPanel = new javax.swing.JPanel();
         chooseButton = new javax.swing.JButton();
         locationText = new javax.swing.JTextField();
         openLocButton = new javax.swing.JButton();
         jLabel15 = new javax.swing.JLabel();
-        eventScrollPane = new javax.swing.JScrollPane();
-        msgTextArea = new javax.swing.JTextArea();
+        jLabel22 = new javax.swing.JLabel();
         mountPanel = new javax.swing.JPanel();
         controlsPanel = new javax.swing.JPanel();
         numBlocksCombo = new javax.swing.JComboBox();
@@ -224,6 +225,15 @@ public final class MainFrame extends javax.swing.JFrame {
 
         tabbedPane.addTab("Benchmarks", runPanel);
 
+        msgTextArea.setEditable(false);
+        msgTextArea.setColumns(20);
+        msgTextArea.setFont(new java.awt.Font("Monospaced", 0, 11)); // NOI18N
+        msgTextArea.setRows(5);
+        msgTextArea.setTabSize(4);
+        eventScrollPane.setViewportView(msgTextArea);
+
+        tabbedPane.addTab("Events", eventScrollPane);
+
         chooseButton.setText("Browse");
         chooseButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -242,19 +252,26 @@ public final class MainFrame extends javax.swing.JFrame {
 
         jLabel15.setText("/jDiskMarkData");
 
+        jLabel22.setText("Specify the location where the data files will be generated and read from to assess each sample's bandwidth.");
+
         javax.swing.GroupLayout locationPanelLayout = new javax.swing.GroupLayout(locationPanel);
         locationPanel.setLayout(locationPanelLayout);
         locationPanelLayout.setHorizontalGroup(
             locationPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(locationPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(locationText, javax.swing.GroupLayout.PREFERRED_SIZE, 480, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel15, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGap(18, 18, 18)
-                .addComponent(chooseButton, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(openLocButton, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(locationPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(locationPanelLayout.createSequentialGroup()
+                        .addComponent(jLabel22, javax.swing.GroupLayout.PREFERRED_SIZE, 598, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(locationPanelLayout.createSequentialGroup()
+                        .addComponent(locationText, javax.swing.GroupLayout.PREFERRED_SIZE, 480, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel15, javax.swing.GroupLayout.DEFAULT_SIZE, 191, Short.MAX_VALUE)
+                        .addGap(18, 18, 18)
+                        .addComponent(chooseButton, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(openLocButton, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap())
         );
         locationPanelLayout.setVerticalGroup(
@@ -266,19 +283,12 @@ public final class MainFrame extends javax.swing.JFrame {
                     .addComponent(chooseButton)
                     .addComponent(openLocButton)
                     .addComponent(jLabel15))
-                .addContainerGap(78, Short.MAX_VALUE))
+                .addGap(18, 18, 18)
+                .addComponent(jLabel22)
+                .addContainerGap(48, Short.MAX_VALUE))
         );
 
         tabbedPane.addTab("Drive Location", locationPanel);
-
-        msgTextArea.setEditable(false);
-        msgTextArea.setColumns(20);
-        msgTextArea.setFont(new java.awt.Font("Monospaced", 0, 11)); // NOI18N
-        msgTextArea.setRows(5);
-        msgTextArea.setTabSize(4);
-        eventScrollPane.setViewportView(msgTextArea);
-
-        tabbedPane.addTab("Event Log", eventScrollPane);
 
         mountPanel.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         mountPanel.setMaximumSize(new java.awt.Dimension(503, 200));
@@ -493,7 +503,7 @@ public final class MainFrame extends javax.swing.JFrame {
                                             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                             .addComponent(rAccessLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))))))
                         .addGap(2, 2, 2)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(27, Short.MAX_VALUE))
         );
         controlsPanelLayout.setVerticalGroup(
             controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -526,7 +536,7 @@ public final class MainFrame extends javax.swing.JFrame {
                     .addComponent(jLabel9)
                     .addComponent(sampleSizeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(startButton, javax.swing.GroupLayout.DEFAULT_SIZE, 25, Short.MAX_VALUE)
+                .addComponent(startButton, javax.swing.GroupLayout.DEFAULT_SIZE, 43, Short.MAX_VALUE)
                 .addGap(18, 18, 18)
                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel20, javax.swing.GroupLayout.Alignment.TRAILING)
@@ -783,7 +793,7 @@ public final class MainFrame extends javax.swing.JFrame {
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(tabbedPane, javax.swing.GroupLayout.DEFAULT_SIZE, 887, Short.MAX_VALUE)
+                .addComponent(tabbedPane)
                 .addContainerGap())
             .addComponent(progressPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(layout.createSequentialGroup()
@@ -1016,6 +1026,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel20;
     private javax.swing.JLabel jLabel21;
+    private javax.swing.JLabel jLabel22;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
