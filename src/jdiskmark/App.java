@@ -22,12 +22,12 @@ import static javax.swing.SwingWorker.StateValue.STARTED;
  */
 public class App {
     
-    public static final String APP_CACHE_DIR_NAME = System.getProperty("user.home") + File.separator + ".jDiskMark";
+    public static final String APP_CACHE_DIR_NAME = System.getProperty("user.home") + File.separator + ".jdm";
     public static final File APP_CACHE_DIR = new File(APP_CACHE_DIR_NAME);
     public static final String PROPERTIES_FILENAME = "jdm.properties";
     public static final File PROPERTIES_FILE = new File(APP_CACHE_DIR_NAME + File.separator + PROPERTIES_FILENAME);
     public static final String BUILD_TOKEN_FILENAME = "build.properties";
-    public static final String DATADIRNAME = "jDiskMarkData";
+    public static final String DATADIRNAME = "JDiskMarkData";
     public static final String ESBL_EXE = "EmptyStandbyList.exe";
     
     public static final int MEGABYTE = 1024 * 1024;

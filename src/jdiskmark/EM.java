@@ -15,7 +15,7 @@ public class EM {
     
     static EntityManager getEntityManager() {
         if (em == null) {
-            EntityManagerFactory emf = Persistence.createEntityManagerFactory("jDiskMarkPU");
+            EntityManagerFactory emf = Persistence.createEntityManagerFactory("JDiskMarkPU");
             em = emf.createEntityManager();
         }
         return em;
