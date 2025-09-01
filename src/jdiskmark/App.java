@@ -93,8 +93,14 @@ public class App {
     public static String getVersion() {
         Properties bp = new Properties();
         String version = "0.0";
-        if (Files.exists(Paths.get(BUILD_TOKEN_FILENAME))) {
-            // ide and zip release
+        InputStream input = App.class.getResourceAsStream("/META-INF/build.properties");
+        if (input != null) {
+            try (input) {
+                bp.load(input);
+            } catch (IOException e) {
+                Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+            }
+        } else if (Files.exists(Paths.get(BUILD_TOKEN_FILENAME))) {            // ide and zip release
             try {
                 bp.load(new FileInputStream(BUILD_TOKEN_FILENAME));
             } catch (IOException ex) {

@@ -5,5 +5,5 @@
 /tmp
 *.zip
 *.patch
-/build.properties
+build.properties
 /derbyDB/
