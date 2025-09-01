@@ -82,8 +82,11 @@
 
     <!-- version properties -->
     <property name="pkg.name" value="jdiskmark"/>
-    <property name="version" value="0.6.2"/>
+    <property name="app.name" value="JDiskMark"/>
+    <property name="version" value="0.6.2-dev"/>
+    <!-- full semver does not work for msi product versions -->
     <property name="msi.version" value="0.6.2"/>
+    <property name="msi.app.title" value="${app.name} ${version}"/>
     <property name="release.dir" value="${pkg.name}-${version}"/>
 
     <!-- msi signing properties -->
@@ -171,16 +174,18 @@
             <arg line="--type msi"/>
             <arg line="--input ${jpackage.input.dir.relative}"/>
             <arg line="--main-jar ${pkg.name}.jar"/>
-            <arg line="--name ${pkg.name}-${version}"/>
+            <!-- intentionally adding version to the name for concurrent installs -->
+            <arg line="--name '${msi.app.title}'"/>
             <arg line="--app-version ${msi.version}"/>
             <arg line="--vendor 'JDiskMark'"/>
+            <arg line="--install-dir 'JDiskMark ${version}'"/>
             <arg line="--win-console"/>
             <arg line="--win-menu"/>
-            </exec>
+        </exec>
 
-        <property name="jpackage.output.msi.defaultname" value="${pkg.name}-${version}-${msi.version}.msi"/>
+        <!-- rename msi to use the pkg.name and remove the extra version from the app.name -->
+        <property name="jpackage.output.msi.defaultname" value="${msi.app.title}-${msi.version}.msi"/>
         <property name="jpackage.output.msi.targetname" value="${pkg.name}-${version}.msi"/>
-        
         <echo message="Renaming MSI from '${jpackage.output.msi.defaultname}' to '${jpackage.output.msi.targetname}' in ${dist.dir}"/>
         <move file="${dist.dir}/${jpackage.output.msi.defaultname}"
               tofile="${dist.dir}/${jpackage.output.msi.targetname}"
