@@ -748,7 +748,9 @@ static public String getDeviceModelMacOs(String devicePath) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     // Search for the line starting with "Model name:"
-                    if (line.startsWith("Model name:")) {
+                    if (line.startsWith("Model name:")
+                            || line.trim().startsWith("Nombre del modelo")) {
+                    
                         // Extract the processor name after the colon
                         return line.substring(line.indexOf(":") + 2).trim();
                     }

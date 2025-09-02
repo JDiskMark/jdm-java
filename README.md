@@ -79,30 +79,36 @@ Source code is available on our [github repo](https://github.com/JDiskMark/jdm-j
 ## Release Notes
 
 ### v1.0.0 planned
-- TODO: GH-16 MacOS installer - tyler
-- TODO: GH-15 Ubuntu installer - jeff
-- TODO: GH-64 persist IOPS, write sync - val
-- TODO: GH-33 maven build - lane
-- TODO: GH-40 gui presentation issues - james
+- TODO: #16 MacOS installer - tyler
+- TODO: #15 Ubuntu installer - jeff
+- TODO: #33 maven build - lane
+- TODO: #40 gui presentation issues - james
+- #84 processor info resolved for (sp) installs
+
+### v0.6.2 linux optimized ui
+- #64 persist IOPS, write sync - val
+- control panel on left
+- allow concurrent version runs
+- event tab swapped w disk location
 
 ### v0.6.1 ms app store release
 - JDiskMark in title and msi vendor name
 - Remove "Average" from "Access Time" label
 
 ### v0.6.0
-- GH-13 Detect drive info on startup
-- GH-12 update look and feel (windows)
-- GH-22 foreign capacity reporting
-- GH-23 delete selected benchmarks
-- GH-10 IOPS reporting
-- GH-25 linux crash, capacity w terabytes and exabytes
+- #13 Detect drive info on startup
+- #12 update look and feel (windows)
+- #22 foreign capacity reporting
+- #23 delete selected benchmarks
+- #10 IOPS reporting
+- #25 linux crash, capacity w terabytes and exabytes
 - write sync default off
-- GH-26 lowercase project and jar
-- GH-20 threading and queue depth
-- GH-36 I/O Mode dropdown uses enum values for type safety
+- #26 lowercase project and jar
+- #20 threading and queue depth
+- #36 I/O Mode dropdown uses enum values for type safety
 
 ### v0.5.1
-- resolve GH-17 invalid disk usage reported win 10
+- resolve #17 invalid disk usage reported win 10
 - msi installer available
 
 ### v0.5
