@@ -1140,6 +1140,7 @@ public final class MainFrame extends javax.swing.JFrame {
                 numBlocksCombo.setEnabled(false);
                 numFilesCombo.setEnabled(false);
                 modeCombo.setEnabled(false);
+                numThreadsCombo.setEnabled(false);
                 resetBenchmarkItem.setEnabled(false);
             }
             case App.State.IDLE_STATE -> {
@@ -1149,6 +1150,7 @@ public final class MainFrame extends javax.swing.JFrame {
                 numBlocksCombo.setEnabled(true);
                 numFilesCombo.setEnabled(true);
                 modeCombo.setEnabled(true);
+                numThreadsCombo.setEnabled(true);
                 resetBenchmarkItem.setEnabled(true);
             }
         }
