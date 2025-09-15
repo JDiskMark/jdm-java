@@ -48,7 +48,7 @@
                 <Column editable="false" title="ID" type="java.lang.Object"/>
                 <Column editable="false" title="Drive Model" type="java.lang.Object"/>
                 <Column editable="false" title="Usage" type="java.lang.Object"/>
-                <Column editable="false" title="Mode" type="java.lang.Object"/>
+                <Column editable="false" title="Type" type="java.lang.Object"/>
                 <Column editable="false" title="Order" type="java.lang.Object"/>
                 <Column editable="false" title="Samples" type="java.lang.Object"/>
                 <Column editable="false" title="Blocks (Size)" type="java.lang.Object"/>
@@ -136,9 +136,6 @@
               <TableHeader reorderingAllowed="true" resizingAllowed="true"/>
             </Property>
           </Properties>
-          <Events>
-            <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="runTableMouseClicked"/>
-          </Events>
           <AuxValues>
             <AuxValue name="JavaCodeGenerator_SerializeTo" type="java.lang.String" value="BenchmarkPanel_runTable"/>
           </AuxValues>
