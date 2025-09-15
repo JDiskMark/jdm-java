@@ -9,9 +9,6 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
-/**
- * @author James
- */
 public class BenchmarkPanel extends javax.swing.JPanel {
 
     /**
@@ -23,6 +20,10 @@ public class BenchmarkPanel extends javax.swing.JPanel {
 
     // Tooltip only – keep it simple
     runTable.setToolTipText("Mode: Write* means Write Sync was enabled");
+    
+    // #73 load new selected operation
+    OperationTableSelectionListener selectionListener = new OperationTableSelectionListener(runTable);
+    runTable.getSelectionModel().addListSelectionListener(selectionListener);
 
     // center align cells 2 - 11
     for (int i = 2; i <= 11; i++) {
@@ -74,11 +75,6 @@ public class BenchmarkPanel extends javax.swing.JPanel {
             }
         });
         runTable.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
-        runTable.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                runTableMouseClicked(evt);
-            }
-        });
         jScrollPane1.setViewportView(runTable);
         if (runTable.getColumnModel().getColumnCount() > 0) {
             runTable.getColumnModel().getColumn(0).setPreferredWidth(10);
@@ -119,17 +115,6 @@ public class BenchmarkPanel extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     static final int START_TIME_COLUMN = 7;
-    
-    private void runTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_runTableMouseClicked
-        int sRow = runTable.getSelectedRow();
-        String timeString = (String) runTable.getValueAt(sRow, START_TIME_COLUMN);
-        System.out.println("selected operation starttime=" + timeString);
-        BenchmarkOperation operation = App.operations.get(timeString);
-        if (operation != null) {
-            Gui.loadOperation(operation);
-        }
-    }//GEN-LAST:event_runTableMouseClicked
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JScrollPane jScrollPane1;
@@ -140,7 +125,6 @@ public class BenchmarkPanel extends javax.swing.JPanel {
     public void addRun(Benchmark run) {
         
         List<BenchmarkOperation> operations = run.getOperations();
-        System.out.println("number of operations: " + operations.size());
         DefaultTableModel model = (DefaultTableModel) this.runTable.getModel();
         for (BenchmarkOperation o : operations) {
             model.addRow(

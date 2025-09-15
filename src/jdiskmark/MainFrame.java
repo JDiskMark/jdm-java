@@ -117,9 +117,9 @@ public final class MainFrame extends javax.swing.JFrame {
     }
 
     public void initializeComboSettings() {
-    typeCombo.setSelectedItem(App.benchmarkType);
-    loadSettings();
-}
+        typeCombo.setSelectedItem(App.benchmarkType);
+        loadSettings();
+    }
 
     public void loadSettings() {
         typeCombo.setSelectedItem(App.benchmarkType);
@@ -129,7 +129,6 @@ public final class MainFrame extends javax.swing.JFrame {
         blockSizeCombo.setSelectedItem(String.valueOf(App.blockSizeKb));
         numSamplesCombo.setSelectedItem(String.valueOf(App.numOfSamples));
     }
-    
     
     /**
      * This method is called from within the constructor to initialize the form.
@@ -1156,18 +1155,15 @@ public final class MainFrame extends javax.swing.JFrame {
                 numThreadsCombo.setEnabled(true);
                 resetBenchmarkItem.setEnabled(true);
             }
-
-
-
         }
     }   
     // Replace lowercase mode options with proper casing
 
-@SuppressWarnings("unchecked")
-private void configureModeCombo() {
-    typeCombo.removeAllItems();
-    typeCombo.addItem("Write");
-    typeCombo.addItem("Read");
-    typeCombo.addItem("Read & Write");
-}    
+    @SuppressWarnings("unchecked")
+    private void configureModeCombo() {
+        typeCombo.removeAllItems();
+        typeCombo.addItem("Write");
+        typeCombo.addItem("Read");
+        typeCombo.addItem("Read & Write");
+    }    
 }
