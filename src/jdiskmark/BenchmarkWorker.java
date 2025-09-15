@@ -108,25 +108,25 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
 
         List<java.util.concurrent.Future<?>> futures = new ArrayList<>();
 
-        Benchmark run = new Benchmark(App.benchmarkType);
+        Benchmark benchmark = new Benchmark(App.benchmarkType);
 
         // system info
-        run.processorName = App.processorName;
-        run.os = App.os;
-        run.arch = App.arch;
+        benchmark.processorName = App.processorName;
+        benchmark.os = App.os;
+        benchmark.arch = App.arch;
         // drive information
-        run.driveModel = driveModel;
-        run.partitionId = partitionId;
-        run.percentUsed = usageInfo.percentUsed;
-        run.usedGb = usageInfo.usedGb;
-        run.totalGb = usageInfo.totalGb;        
+        benchmark.driveModel = driveModel;
+        benchmark.partitionId = partitionId;
+        benchmark.percentUsed = usageInfo.percentUsed;
+        benchmark.usedGb = usageInfo.usedGb;
+        benchmark.totalGb = usageInfo.totalGb;        
         
-        Gui.chart.getTitle().setText(run.getDriveInfo());
+        Gui.chart.getTitle().setText(benchmark.getDriveInfo());
         Gui.chart.getTitle().setVisible(true);
         
         if (App.isWriteEnabled()) {
             BenchmarkOperation wOperation = new BenchmarkOperation();
-            wOperation.setBenchmark(run);
+            wOperation.setBenchmark(benchmark);
             wOperation.ioMode = BenchmarkOperation.IOMode.WRITE;
             wOperation.blockOrder = App.blockSequence;
             wOperation.numSamples = App.numOfSamples;
@@ -136,7 +136,7 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
             wOperation.numThreads = App.numOfThreads;
             // persist whether write sync was enabled for this run
             wOperation.setWriteSyncEnabled(App.writeSyncEnable);
-            run.getOperations().add(wOperation);
+            benchmark.getOperations().add(wOperation);
 
             if (App.multiFile == false) {
                 testFile = new File(dataDir.getAbsolutePath() + File.separator + "testdata.jdm");
@@ -222,7 +222,7 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
 
         if (App.isReadEnabled()) {
             BenchmarkOperation rOperation = new BenchmarkOperation();
-            rOperation.setBenchmark(run);
+            rOperation.setBenchmark(benchmark);
             // operation parameters
             rOperation.ioMode = BenchmarkOperation.IOMode.READ;
             rOperation.blockOrder = App.blockSequence;
@@ -233,7 +233,7 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
             rOperation.numThreads = App.numOfThreads;
             // write sync does not apply to pure read benchmarks
             rOperation.setWriteSyncEnabled(null);
-            run.getOperations().add(rOperation);
+            benchmark.getOperations().add(rOperation);
 
             ExecutorService executorService = Executors.newFixedThreadPool(App.numOfThreads);
 
@@ -303,16 +303,16 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
             App.rIops = rOperation.iops;
             Gui.mainFrame.refreshReadMetrics();
         }
-        run.endTime = LocalDateTime.now();
+        benchmark.endTime = LocalDateTime.now();
         EntityManager em = EM.getEntityManager();
         em.getTransaction().begin();
-        em.persist(run);
+        em.persist(benchmark);
         em.getTransaction().commit();
-        App.benchmarks.put(run.getStartTimeString(), run);
-        for (BenchmarkOperation o : run.getOperations()) {
+        App.benchmarks.put(benchmark.getStartTimeString(), benchmark);
+        for (BenchmarkOperation o : benchmark.getOperations()) {
             App.operations.put(o.getStartTimeString(), o);
         }
-        Gui.runPanel.addRun(run);
+        Gui.runPanel.addRun(benchmark);
         
         App.nextSampleNumber += App.numOfSamples;
         return true;

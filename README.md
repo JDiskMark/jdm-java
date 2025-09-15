@@ -36,7 +36,7 @@ Java 21 needs to be installed to run jdiskmark.
 3. Extract release zip archive into desired location.
    ```
    Examples:  
-   /Users/username/jdiskmark-v0.6.0  
+   /Users/username/jdiskmark-v0.6.0
    /opt/jdiskmark-v0.6.0
    ```
 
@@ -84,6 +84,7 @@ Source code is available on our [github repo](https://github.com/JDiskMark/jdm-j
 - TODO: #33 maven build - lane
 - TODO: #40 gui presentation issues - james
 - #84 processor info resolved for (sp) installs
+- #73 refactor benchmark data model, keyboard op sel
 
 ### v0.6.2 linux optimized ui
 - #64 persist IOPS, write sync - val
