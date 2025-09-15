@@ -122,6 +122,7 @@ public final class MainFrame extends javax.swing.JFrame {
 }
 
     public void loadSettings() {
+        typeCombo.setSelectedItem(App.benchmarkType);
         numThreadsCombo.setSelectedItem(String.valueOf(App.numOfThreads));
         orderComboBox.setSelectedItem(App.blockSequence);
         numBlocksCombo.setSelectedItem(String.valueOf(App.numOfBlocks));
