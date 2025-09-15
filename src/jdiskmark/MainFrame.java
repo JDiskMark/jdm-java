@@ -33,9 +33,9 @@ public final class MainFrame extends javax.swing.JFrame {
         //for diagnostics
         //controlsPanel.setBackground(Color.blue);
         
-        DefaultComboBoxModel<Benchmark.IOMode> ioModel
-                = new DefaultComboBoxModel<>(Benchmark.IOMode.values());
-        modeCombo.setModel(ioModel);
+        DefaultComboBoxModel<Benchmark.BenchmarkType> ioModel
+                = new DefaultComboBoxModel<>(Benchmark.BenchmarkType.values());
+        typeCombo.setModel(ioModel);
 
         startButton.requestFocus();
         Gui.createChartPanel();
@@ -73,8 +73,8 @@ public final class MainFrame extends javax.swing.JFrame {
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         
         // init order combo box
-        orderComboBox.addItem(Benchmark.BlockSequence.SEQUENTIAL);
-        orderComboBox.addItem(Benchmark.BlockSequence.RANDOM);
+        orderComboBox.addItem(BenchmarkOperation.BlockSequence.SEQUENTIAL);
+        orderComboBox.addItem(BenchmarkOperation.BlockSequence.RANDOM);
     }
 
     public JPanel getMountPanel() {
@@ -117,17 +117,16 @@ public final class MainFrame extends javax.swing.JFrame {
     }
 
     public void initializeComboSettings() {
-    modeCombo.setSelectedItem(App.ioMode);
+    typeCombo.setSelectedItem(App.benchmarkType);
     loadSettings();
 }
 
     public void loadSettings() {
-        //String blockOrderStr = App.randomEnable ? "random":"sequential";
+        numThreadsCombo.setSelectedItem(String.valueOf(App.numOfThreads));
         orderComboBox.setSelectedItem(App.blockSequence);
-        
-        numFilesCombo.setSelectedItem(String.valueOf(App.numOfSamples));
         numBlocksCombo.setSelectedItem(String.valueOf(App.numOfBlocks));
-        blockSizeCombo.setSelectedItem(String.valueOf(App.blockSizeKb)); 
+        blockSizeCombo.setSelectedItem(String.valueOf(App.blockSizeKb));
+        numSamplesCombo.setSelectedItem(String.valueOf(App.numOfSamples));
     }
     
     
@@ -158,9 +157,9 @@ public final class MainFrame extends javax.swing.JFrame {
         jLabel6 = new javax.swing.JLabel();
         blockSizeCombo = new javax.swing.JComboBox();
         jLabel8 = new javax.swing.JLabel();
-        numFilesCombo = new javax.swing.JComboBox();
+        numSamplesCombo = new javax.swing.JComboBox();
         jLabel4 = new javax.swing.JLabel();
-        modeCombo = new javax.swing.JComboBox();
+        typeCombo = new javax.swing.JComboBox();
         jLabel9 = new javax.swing.JLabel();
         sampleSizeLabel = new javax.swing.JLabel();
         orderComboBox = new javax.swing.JComboBox<>();
@@ -223,7 +222,7 @@ public final class MainFrame extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("JDiskMark");
 
-        tabbedPane.addTab("Benchmarks", runPanel);
+        tabbedPane.addTab("Benchmark Operations", runPanel);
 
         msgTextArea.setEditable(false);
         msgTextArea.setColumns(20);
@@ -330,23 +329,23 @@ public final class MainFrame extends javax.swing.JFrame {
 
         jLabel8.setText("No. Samples");
 
-        numFilesCombo.setEditable(true);
-        numFilesCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "50", "100", "200", "300", "500", "1000", "2000", "3000", "5000", "10000" }));
-        numFilesCombo.setSelectedIndex(2);
-        numFilesCombo.setPreferredSize(new java.awt.Dimension(72, 24));
-        numFilesCombo.addActionListener(new java.awt.event.ActionListener() {
+        numSamplesCombo.setEditable(true);
+        numSamplesCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "50", "100", "200", "300", "500", "1000", "2000", "3000", "5000", "10000" }));
+        numSamplesCombo.setSelectedIndex(2);
+        numSamplesCombo.setPreferredSize(new java.awt.Dimension(72, 24));
+        numSamplesCombo.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                numFilesComboActionPerformed(evt);
+                numSamplesComboActionPerformed(evt);
             }
         });
 
-        jLabel4.setText("IO Mode");
+        jLabel4.setText("Benchmark Type");
 
-        modeCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { " ", " " }));
-        modeCombo.setPreferredSize(new java.awt.Dimension(60, 24));
-        modeCombo.addActionListener(new java.awt.event.ActionListener() {
+        typeCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { " ", " " }));
+        typeCombo.setPreferredSize(new java.awt.Dimension(60, 24));
+        typeCombo.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                modeComboActionPerformed(evt);
+                typeComboActionPerformed(evt);
             }
         });
 
@@ -452,12 +451,12 @@ public final class MainFrame extends javax.swing.JFrame {
                                     .addComponent(jLabel21))
                                 .addGap(18, 18, 18)
                                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(modeCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(typeCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(numThreadsCombo, 0, 100, Short.MAX_VALUE)
                                     .addComponent(orderComboBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(numBlocksCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(blockSizeCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(numFilesCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                    .addComponent(numSamplesCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                             .addGroup(controlsPanelLayout.createSequentialGroup()
                                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(jLabel13)
@@ -510,7 +509,7 @@ public final class MainFrame extends javax.swing.JFrame {
             .addGroup(controlsPanelLayout.createSequentialGroup()
                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
-                    .addComponent(modeCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(typeCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(numThreadsCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -530,13 +529,13 @@ public final class MainFrame extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel8)
-                    .addComponent(numFilesCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(numSamplesCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel9)
                     .addComponent(sampleSizeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(startButton, javax.swing.GroupLayout.DEFAULT_SIZE, 43, Short.MAX_VALUE)
+                .addComponent(startButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGap(18, 18, 18)
                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel20, javax.swing.GroupLayout.Alignment.TRAILING)
@@ -833,6 +832,7 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_startButtonActionPerformed
 
     private void blockSizeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_blockSizeComboActionPerformed
+        // NOTE: selecting a value from dropdown does not trigger the below
         if (blockSizeCombo.hasFocus()) {
             App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
             sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
@@ -842,6 +842,7 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_blockSizeComboActionPerformed
 
     private void numBlocksComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_numBlocksComboActionPerformed
+        // NOTE: selecting a value from dropdown does not trigger the below
         if (numBlocksCombo.hasFocus()) {
             App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
             sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
@@ -850,23 +851,23 @@ public final class MainFrame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_numBlocksComboActionPerformed
 
-    private void numFilesComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_numFilesComboActionPerformed
-        if (numFilesCombo.hasFocus()) {
-            App.numOfSamples = Integer.parseInt((String) numFilesCombo.getSelectedItem());
+    private void numSamplesComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_numSamplesComboActionPerformed
+        // NOTE: selecting a value from dropdown does not trigger the below
+        if (numSamplesCombo.hasFocus()) {
+            App.numOfSamples = Integer.parseInt((String) numSamplesCombo.getSelectedItem());
             sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
             totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
             App.saveConfig();
         }
-    }//GEN-LAST:event_numFilesComboActionPerformed
+    }//GEN-LAST:event_numSamplesComboActionPerformed
 
-    private void modeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_modeComboActionPerformed
-        if (modeCombo.hasFocus()) {
-            Benchmark.IOMode mode = (Benchmark.IOMode) modeCombo.getSelectedItem();
-            App.ioMode = mode;
+    private void typeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_typeComboActionPerformed
+        if (typeCombo.hasFocus()) {
+            Benchmark.BenchmarkType mode = (Benchmark.BenchmarkType) typeCombo.getSelectedItem();
+            App.benchmarkType = mode;
             App.saveConfig();
-            System.out.println("modeCombo changed to: " + mode);
         }
-    }//GEN-LAST:event_modeComboActionPerformed
+    }//GEN-LAST:event_typeComboActionPerformed
 
     private void exitMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exitMenuItemActionPerformed
         System.exit(0);
@@ -919,7 +920,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
     private void orderComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_orderComboBoxActionPerformed
         if (orderComboBox.hasFocus()) {
-            App.blockSequence = (Benchmark.BlockSequence) orderComboBox.getSelectedItem();
+            App.blockSequence = (BenchmarkOperation.BlockSequence) orderComboBox.getSelectedItem();
             App.saveConfig();
         }
     }//GEN-LAST:event_orderComboBoxActionPerformed
@@ -986,6 +987,7 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_resetBenchmarkItemActionPerformed
 
     private void numThreadsComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_numThreadsComboActionPerformed
+        // NOTE: selecting a value from dropdown does not trigger the below
         if (numThreadsCombo.hasFocus()) {
             App.numOfThreads = Integer.parseInt((String) numThreadsCombo.getSelectedItem());
             App.saveConfig();
@@ -1041,16 +1043,15 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JPanel locationPanel;
     private javax.swing.JTextField locationText;
     private javax.swing.JMenuBar menuBar;
-    private javax.swing.JComboBox modeCombo;
     private javax.swing.JPanel mountPanel;
     private javax.swing.JTextArea msgTextArea;
     private javax.swing.JCheckBoxMenuItem multiFileCheckBoxMenuItem;
     private javax.swing.JComboBox numBlocksCombo;
-    private javax.swing.JComboBox numFilesCombo;
+    private javax.swing.JComboBox numSamplesCombo;
     private javax.swing.JComboBox numThreadsCombo;
     private javax.swing.JButton openLocButton;
     private javax.swing.JMenu optionMenu;
-    private javax.swing.JComboBox<Benchmark.BlockSequence> orderComboBox;
+    private javax.swing.JComboBox<BenchmarkOperation.BlockSequence> orderComboBox;
     private javax.swing.ButtonGroup palettebuttonGroup;
     private javax.swing.JPanel progressPanel;
     private javax.swing.JLabel rAccessLabel;
@@ -1067,6 +1068,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JButton startButton;
     private javax.swing.JTabbedPane tabbedPane;
     private javax.swing.JProgressBar totalTxProgBar;
+    private javax.swing.JComboBox typeCombo;
     private javax.swing.JLabel wAccessLabel;
     private javax.swing.JLabel wAvgLabel;
     private javax.swing.JLabel wIopsLabel;
@@ -1084,10 +1086,10 @@ public final class MainFrame extends javax.swing.JFrame {
     }
   
     public void applyTestParams() {
-        Benchmark.IOMode mode = (Benchmark.IOMode) modeCombo.getSelectedItem();
-        App.ioMode = mode;
-        App.blockSequence = (Benchmark.BlockSequence) orderComboBox.getSelectedItem();
-        App.numOfSamples = Integer.parseInt((String) numFilesCombo.getSelectedItem());
+        Benchmark.BenchmarkType mode = (Benchmark.BenchmarkType) typeCombo.getSelectedItem();
+        App.benchmarkType = mode;
+        App.blockSequence = (BenchmarkOperation.BlockSequence) orderComboBox.getSelectedItem();
+        App.numOfSamples = Integer.parseInt((String) numSamplesCombo.getSelectedItem());
         App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
         App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
         App.numOfThreads = Integer.parseInt((String) numThreadsCombo.getSelectedItem());
@@ -1138,8 +1140,8 @@ public final class MainFrame extends javax.swing.JFrame {
                 orderComboBox.setEnabled(false);
                 blockSizeCombo.setEnabled(false);
                 numBlocksCombo.setEnabled(false);
-                numFilesCombo.setEnabled(false);
-                modeCombo.setEnabled(false);
+                numSamplesCombo.setEnabled(false);
+                typeCombo.setEnabled(false);
                 numThreadsCombo.setEnabled(false);
                 resetBenchmarkItem.setEnabled(false);
             }
@@ -1148,20 +1150,23 @@ public final class MainFrame extends javax.swing.JFrame {
                 orderComboBox.setEnabled(true);
                 blockSizeCombo.setEnabled(true);
                 numBlocksCombo.setEnabled(true);
-                numFilesCombo.setEnabled(true);
-                modeCombo.setEnabled(true);
+                numSamplesCombo.setEnabled(true);
+                typeCombo.setEnabled(true);
                 numThreadsCombo.setEnabled(true);
                 resetBenchmarkItem.setEnabled(true);
             }
+
+
+
         }
     }   
     // Replace lowercase mode options with proper casing
 
 @SuppressWarnings("unchecked")
 private void configureModeCombo() {
-    modeCombo.removeAllItems();
-    modeCombo.addItem("Write");
-    modeCombo.addItem("Read");
-    modeCombo.addItem("Read & Write");
+    typeCombo.removeAllItems();
+    typeCombo.addItem("Write");
+    typeCombo.addItem("Read");
+    typeCombo.addItem("Read & Write");
 }    
 }

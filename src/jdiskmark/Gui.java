@@ -224,7 +224,7 @@ public final class Gui {
             wDrvAccess.add(s.sampleNum, s.accessTimeMs);
         }
         Gui.mainFrame.refreshWriteMetrics();
-        System.out.println(s.toString());
+        //System.out.println(s.toString());
     }
     public static void addReadSample(Sample s) {
         rSeries.add(s.sampleNum, s.bwMbSec);
@@ -237,7 +237,7 @@ public final class Gui {
             rDrvAccess.add(s.sampleNum, s.accessTimeMs);
         }
         Gui.mainFrame.refreshReadMetrics();
-        System.out.println(s.toString());
+        //System.out.println(s.toString());
     }
     
     public static void resetBenchmarkData() {
@@ -273,9 +273,9 @@ public final class Gui {
         msAxis.setVisible(App.showDriveAccess);
     }
     
-    public static void updateLegendAndAxis(Benchmark b) {
-        boolean isWriteTest = b.ioMode == Benchmark.IOMode.WRITE;
-        boolean isReadTest = b.ioMode == Benchmark.IOMode.READ;
+    public static void updateLegendAndAxis(BenchmarkOperation o) {
+        boolean isWriteTest = o.ioMode == BenchmarkOperation.IOMode.WRITE;
+        boolean isReadTest = o.ioMode == BenchmarkOperation.IOMode.READ;
         bwRenderer.setSeriesVisibleInLegend(0, isWriteTest);
         bwRenderer.setSeriesVisibleInLegend(1, isWriteTest);
         bwRenderer.setSeriesVisibleInLegend(2, isWriteTest && App.showMaxMin);
@@ -400,41 +400,43 @@ public final class Gui {
         }
     }
     
-    static public void loadBenchmark(Benchmark benchmark) {
+    static public void loadOperation(BenchmarkOperation operation) {        
+        Benchmark benchmark = operation.getBenchmark();
+        System.out.println("benchmark type: " + benchmark.benchmarkType + " o: " + operation.ioMode);
         resetBenchmarkData();
-        updateLegendAndAxis(benchmark);
+        updateLegendAndAxis(operation);
         chart.getTitle().setText(benchmark.getDriveInfo());
-        ArrayList<Sample> samples = benchmark.samples;
+        ArrayList<Sample> samples = operation.getSamples();
         System.out.println("samples=" + samples.size());
         for (Sample s : samples) {
-            System.out.println(s);
-            if (benchmark.ioMode == Benchmark.IOMode.READ) {
+            if (operation.ioMode == BenchmarkOperation.IOMode.READ) {
                 addReadSample(s);
             } else {
                 addWriteSample(s);
             }
         }
-        
-        App.numOfBlocks = benchmark.numBlocks;
-        App.numOfSamples = benchmark.numSamples;
-        App.blockSizeKb = benchmark.blockSize;
-        App.blockSequence = benchmark.blockOrder;
+        App.numOfBlocks = operation.numBlocks;
+        App.numOfSamples = operation.numSamples;
+        App.blockSizeKb = operation.blockSize;
+        App.blockSequence = operation.blockOrder;
         Gui.mainFrame.loadSettings();
-        
-        if (benchmark.ioMode ==  Benchmark.IOMode.READ) {
-            App.rAvg = benchmark.bwAvg;
-            App.rMax = benchmark.bwMax;
-            App.rMin = benchmark.bwMin;
-            App.rAcc = benchmark.accAvg;
-            App.rIops = benchmark.iops;
-            Gui.mainFrame.refreshReadMetrics();
-        } else {
-            App.wAvg = benchmark.bwAvg;
-            App.wMax = benchmark.bwMax;
-            App.wMin = benchmark.bwMin;
-            App.wAcc = benchmark.accAvg;
-            App.wIops = benchmark.iops;
-            Gui.mainFrame.refreshWriteMetrics();
+        switch (operation.ioMode) {
+            case BenchmarkOperation.IOMode.READ -> {
+                App.rAvg = operation.bwAvg;
+                App.rMax = operation.bwMax;
+                App.rMin = operation.bwMin;
+                App.rAcc = operation.accAvg;
+                App.rIops = operation.iops;
+                Gui.mainFrame.refreshReadMetrics();                
+            }
+            case BenchmarkOperation.IOMode.WRITE -> {
+                App.wAvg = operation.bwAvg;
+                App.wMax = operation.bwMax;
+                App.wMin = operation.bwMin;
+                App.wAcc = operation.accAvg;
+                App.wIops = operation.iops;
+                Gui.mainFrame.refreshWriteMetrics();
+            }
         }
     }
 

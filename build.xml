@@ -83,12 +83,12 @@
     <!-- version properties -->
     <property name="pkg.name" value="jdiskmark"/>
     <property name="app.name" value="JDiskMark"/>
-    <property name="version" value="0.6.2"/>
+    <property name="version" value="0.6.3-dev"/>
     <!-- full semver does not work for msi product versions -->
-    <property name="msi.version" value="0.6.2"/>
+    <property name="msi.version" value="0.6.3"/>
     <property name="msi.app.title" value="${app.name} ${version}"/>
     <property name="release.dir" value="${pkg.name}-${version}"/>
-    <property name="dmg.version" value="1.6.0"/>
+    <property name="dmg.version" value="1.6.3"/>
 
     <!-- msi signing properties -->
     <property name="timestamp.server.url" value="http://timestamp.sectigo.com"/>

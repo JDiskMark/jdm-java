@@ -62,7 +62,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
 
             },
             new String [] {
-                "ID", "Drive Model", "Usage", "Mode", "Order", "Samples", "Blocks (Size)", "Thread", "Start Time", "Time (ms)", "Acc (ms)", "Min/Max (MB/s)", "IO (MB/s)"
+                "ID", "Drive Model", "Usage", "Type", "Order", "Samples", "Blocks (Size)", "Thread", "Start Time", "Time (ms)", "Acc (ms)", "Min/Max (MB/s)", "IO (MB/s)"
             }
         ) {
             boolean[] canEdit = new boolean [] {
@@ -123,11 +123,10 @@ public class BenchmarkPanel extends javax.swing.JPanel {
     private void runTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_runTableMouseClicked
         int sRow = runTable.getSelectedRow();
         String timeString = (String) runTable.getValueAt(sRow, START_TIME_COLUMN);
-        System.out.println("timeString=" + timeString);
-
-        Benchmark benchmark = App.benchmarks.get(timeString);
-        if (benchmark != null) {
-            Gui.loadBenchmark(benchmark);
+        System.out.println("selected operation starttime=" + timeString);
+        BenchmarkOperation operation = App.operations.get(timeString);
+        if (operation != null) {
+            Gui.loadOperation(operation);
         }
     }//GEN-LAST:event_runTableMouseClicked
 
@@ -139,23 +138,28 @@ public class BenchmarkPanel extends javax.swing.JPanel {
 
 
     public void addRun(Benchmark run) {
+        
+        List<BenchmarkOperation> operations = run.getOperations();
+        System.out.println("number of operations: " + operations.size());
         DefaultTableModel model = (DefaultTableModel) this.runTable.getModel();
-        model.addRow(
-                new Object[] {
-                    run.id,
-                    run.driveModel,
-                    run.getUsageColumnDisplay(),
-                    run.getModeDisplay(), 
-                    run.blockOrder,
-                    run.numSamples,
-                    run.getBlocksDisplay(),
-                    run.numThreads,
-                    run.getStartTimeString(),
-                    run.getDuration(),
-                    run.getAccTimeDisplay(),
-                    run.getBwMinMaxDisplay(),
-                    run.getBwAvgDisplay(),
-                });
+        for (BenchmarkOperation o : operations) {
+            model.addRow(
+                    new Object[] {
+                        run.id,
+                        run.driveModel,
+                        run.getUsageColumnDisplay(),
+                        o.getModeDisplay(),
+                        o.blockOrder,
+                        o.numSamples,
+                        o.getBlocksDisplay(),
+                        o.numThreads,
+                        o.getStartTimeString(),
+                        o.getDuration(),
+                        o.getAccTimeDisplay(),
+                        o.getBwMinMaxDisplay(),
+                        o.getBwAvgDisplay(),
+                    });
+        }
     }
     
     public void hideFirstColumn() {
