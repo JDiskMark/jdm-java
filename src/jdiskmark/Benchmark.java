@@ -89,17 +89,6 @@ public class Benchmark implements Serializable {
     @Column
     LocalDateTime endTime = null;
 
-    // results
-    @Column
-    double bwAvg = 0;
-    @Column
-    double bwMax = 0;
-    @Column
-    double bwMin = 0;
-    @Column
-    double accAvg = 0;
-    @Column
-    long iops = 0;
     
     @OneToMany(mappedBy = "benchmark", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BenchmarkOperation> operations = new ArrayList<>();
@@ -120,7 +109,7 @@ public class Benchmark implements Serializable {
     
     @Override
     public String toString() {
-        return "Benchmark(" + benchmarkType + "):  bw: " + bwAvg;
+        return "Benchmark(" + benchmarkType + ") start=" + startTime + "numOps=" + operations.size();
     }
     
     public Benchmark() {
@@ -160,29 +149,9 @@ public class Benchmark implements Serializable {
 //    public String getBlocksDisplay() {
 //        return numBlocks + " (" + blockSize + ")";
 //    }
-    
+   
     public String getStartTimeString() {
         return startTime.format(DATE_FORMAT);
-    }
-    
-    public String getAccTimeDisplay() {
-        return accAvg == -1? "- -" : DF.format(accAvg);
-    }
-    
-    public String getBwMinDisplay() {
-        return bwMin == -1 ? "- -" : DF.format(bwMin);
-    }
-    
-    public String getBwMaxDisplay() {
-        return bwMax == -1 ? "- -" : DF.format(bwMax);
-    }
-    
-    public String getBwMinMaxDisplay() {
-        return bwMax == -1 ? "- -" : DFT.format(bwMin) + "/" + DFT.format(bwMax);
-    }
-    
-    public String getBwAvgDisplay() {
-        return bwAvg == -1 ? "- -" : DF.format(bwAvg);
     }
     
     public String getDuration() {
@@ -191,26 +160,6 @@ public class Benchmark implements Serializable {
         }
         long diffMs = Duration.between(startTime, endTime).toMillis();
         return String.valueOf(diffMs);
-    }
-    
-    public void setTotalOps(long totalOps) {
-        // iops = operations / sec = ops / (elapsed ms / 1,000ms)
-        // Multiply by 1_000_000 to convert milliseconds to seconds
-        System.err.println("startTime=" + startTime);
-        System.err.println("endTime=" + endTime);
-        long diffMs = Duration.between(startTime, endTime).toMillis();
-        if (diffMs != 0) {
-            double iopsDouble = (double) (totalOps * 1_000_000) / (double) diffMs;
-            iops = Math.round(iopsDouble);
-        }
-    }
-
-    public long getIops() {
-        return iops;
-    }
-
-    public void setIops(long iops) {
-        this.iops = iops;
     }
     
     // utility methods for collection

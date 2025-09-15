@@ -415,10 +415,12 @@ public final class Gui {
                 addWriteSample(s);
             }
         }
+        App.benchmarkType = benchmark.benchmarkType;
         App.numOfBlocks = operation.numBlocks;
         App.numOfSamples = operation.numSamples;
         App.blockSizeKb = operation.blockSize;
         App.blockSequence = operation.blockOrder;
+        App.numOfThreads = operation.numThreads;
         Gui.mainFrame.loadSettings();
         switch (operation.ioMode) {
             case BenchmarkOperation.IOMode.READ -> {
