@@ -1,6 +1,7 @@
 
 package jdiskmark;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -10,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.text.DecimalFormat;
@@ -26,7 +28,7 @@ import java.util.List;
 @Table(name="Benchmark")
 @NamedQueries({
 @NamedQuery(name="Benchmark.findAll",
-    query="SELECT d FROM Benchmark d")
+    query="SELECT b FROM Benchmark b JOIN FETCH b.operations")
 })
 public class Benchmark implements Serializable {
     
@@ -34,7 +36,7 @@ public class Benchmark implements Serializable {
     static final DecimalFormat DFT = new DecimalFormat("###");
     static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
-    public enum IOMode {
+    public enum BenchmarkType {
         READ {
             @Override
             public String toString() { return "Read"; }
@@ -48,18 +50,6 @@ public class Benchmark implements Serializable {
             public String toString() { return "Read & Write"; }
         }
     }
-
-    public enum BlockSequence {
-        SEQUENTIAL {
-            @Override
-            public String toString() { return "Sequential"; }
-        },
-        RANDOM {
-            @Override
-            public String toString() { return "Random"; }
-        }
-    }
-
     
     // surrogate key
     @Column
@@ -89,24 +79,8 @@ public class Benchmark implements Serializable {
     
     // benchmark parameters
     @Column
-    IOMode ioMode;
-    @Column
-    BlockSequence blockOrder;
-    @Column
-    int numBlocks = 0;
-    @Column
-    int blockSize = 0;
-    @Column
-    int numSamples = 0;
-    @Column
-    long txSize = 0;
-    @Column
-    int numThreads = 1;
-    
-    // NEW: whether write-sync was enabled for this run (only meaningful for WRITE; may be null for READ)
-    @Column
-    Boolean writeSyncEnabled;
-    
+    BenchmarkType benchmarkType;
+
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column(name = "startTime", columnDefinition = "TIMESTAMP")
@@ -114,37 +88,37 @@ public class Benchmark implements Serializable {
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column
     LocalDateTime endTime = null;
+
     
-    // sample data
-    @Column
-    @Convert(converter = SampleAttributeConverter.class)
-    ArrayList<Sample> samples = new ArrayList<>();
+    @OneToMany(mappedBy = "benchmark", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BenchmarkOperation> operations = new ArrayList<>();
     
-    // results
-    @Column
-    double bwAvg = 0;
-    @Column
-    double bwMax = 0;
-    @Column
-    double bwMin = 0;
-    @Column
-    double accAvg = 0;
-    @Column
-    long iops = 0;
+    public List<BenchmarkOperation> getOperations() {
+        return operations;
+    }
+    
+    // get the first operation of that type
+    public BenchmarkOperation getOperation(BenchmarkOperation.IOMode mode) {
+        for (BenchmarkOperation operation : operations) {
+            if (operation.ioMode == mode) {
+                return operation;
+            }
+        }
+        return null;
+    }
     
     @Override
     public String toString() {
-        return "Benchmark(" + ioMode + "," + blockOrder + "): " + numSamples + " bw avg: " + bwAvg;
+        return "Benchmark(" + benchmarkType + ") start=" + startTime + "numOps=" + operations.size();
     }
     
     public Benchmark() {
         startTime = LocalDateTime.now();
     }
     
-    Benchmark(IOMode type, BlockSequence order) {
+    Benchmark(BenchmarkType type) {
         startTime = LocalDateTime.now();
-        ioMode = type;
-        blockOrder = order;
+        benchmarkType = type;
     }
     
     // basic getters and setters
@@ -164,49 +138,9 @@ public class Benchmark implements Serializable {
     public String getUsageColumnDisplay() {
         return percentUsed + "%";
     }
-    
-    public String getModeDisplay() {
-        // Show "Write*" when write-sync was enabled for a WRITE run
-        if (ioMode == IOMode.WRITE && Boolean.TRUE.equals(getWriteSyncEnabled())) {
-            return "Write*";
-        }
-        return (ioMode == null) ? "" : ioMode.toString(); // "Read", "Write", "Read & Write"
-    }
-
-    
-    // GH-20 TODO: review should this be synchronized or redone to not be blocking?
-    public synchronized void add(Sample s) {
-        samples.add(s);
-    }
-    
-    // display friendly methods
-    
-    public String getBlocksDisplay() {
-        return numBlocks + " (" + blockSize + ")";
-    }
-    
+       
     public String getStartTimeString() {
         return startTime.format(DATE_FORMAT);
-    }
-    
-    public String getAccTimeDisplay() {
-        return accAvg == -1? "- -" : DF.format(accAvg);
-    }
-    
-    public String getBwMinDisplay() {
-        return bwMin == -1 ? "- -" : DF.format(bwMin);
-    }
-    
-    public String getBwMaxDisplay() {
-        return bwMax == -1 ? "- -" : DF.format(bwMax);
-    }
-    
-    public String getBwMinMaxDisplay() {
-        return bwMax == -1 ? "- -" : DFT.format(bwMin) + "/" + DFT.format(bwMax);
-    }
-    
-    public String getBwAvgDisplay() {
-        return bwAvg == -1 ? "- -" : DF.format(bwAvg);
     }
     
     public String getDuration() {
@@ -215,36 +149,6 @@ public class Benchmark implements Serializable {
         }
         long diffMs = Duration.between(startTime, endTime).toMillis();
         return String.valueOf(diffMs);
-    }
-    
-    public void setTotalOps(long totalOps) {
-        // iops = operations / sec = ops / (elapsed ms / 1,000ms)
-        // Multiply by 1_000_000 to convert milliseconds to seconds
-        System.err.println("startTime=" + startTime);
-        System.err.println("endTime=" + endTime);
-        long diffMs = Duration.between(startTime, endTime).toMillis();
-        if (diffMs != 0) {
-            double iopsDouble = (double) (totalOps * 1_000_000) / (double) diffMs;
-            iops = Math.round(iopsDouble);
-        }
-    }
-    
-    // NEW: getters/setters for writeSyncEnabled and iops (expose iops too if needed)
-
-    public Boolean getWriteSyncEnabled() {
-        return writeSyncEnabled;
-    }
-
-    public void setWriteSyncEnabled(Boolean writeSyncEnabled) {
-        this.writeSyncEnabled = writeSyncEnabled;
-    }
-
-    public long getIops() {
-        return iops;
-    }
-
-    public void setIops(long iops) {
-        this.iops = iops;
     }
     
     // utility methods for collection
@@ -257,18 +161,28 @@ public class Benchmark implements Serializable {
     static int deleteAll() {
         EntityManager em = EM.getEntityManager();
         em.getTransaction().begin();
-        int deletedCount = em.createQuery("DELETE FROM Benchmark").executeUpdate();
+        int deletedOperationsCount = em.createQuery("DELETE FROM BenchmarkOperation").executeUpdate();
+        int deletedBenchmarksCount = em.createQuery("DELETE FROM Benchmark").executeUpdate();
         em.getTransaction().commit();
-        return deletedCount;
+        return deletedBenchmarksCount;
     }
     
     static int delete(List<Long> benchmarkIds) {
         EntityManager em = EM.getEntityManager();
         em.getTransaction().begin();
-        String jpql = "DELETE FROM Benchmark b WHERE b.id IN :benchmarkIds";
-        int deletedCount = em.createQuery(jpql)
+        
+        // delete the child BenchmarkOperation records.
+        String deleteOperationsJpql = "DELETE FROM BenchmarkOperation bo WHERE bo.benchmark.id IN :benchmarkIds";
+        int deletedOpsCount = em.createQuery(deleteOperationsJpql)
                 .setParameter("benchmarkIds", benchmarkIds)
                 .executeUpdate();
+        
+        // delete the parent BenchmarkOperation records
+        String deleteBenchmarksJpql = "DELETE FROM Benchmark b WHERE b.id IN :benchmarkIds";
+        int deletedCount = em.createQuery(deleteBenchmarksJpql)
+                .setParameter("benchmarkIds", benchmarkIds)
+                .executeUpdate();
+        
         em.getTransaction().commit();
         return deletedCount;
     }

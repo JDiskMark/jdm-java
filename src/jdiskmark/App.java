@@ -62,7 +62,7 @@ public class App {
     public static boolean writeSyncEnable = false;
     
     // run configuration
-    public static Benchmark.BlockSequence blockSequence = Benchmark.BlockSequence.SEQUENTIAL;
+    public static BenchmarkOperation.BlockSequence blockSequence = BenchmarkOperation.BlockSequence.SEQUENTIAL;
     public static int numOfSamples = 200;   // desired number of samples
     public static int numOfBlocks = 32;     // desired number of blocks
     public static int blockSizeKb = 512;    // size of a block in KBs
@@ -76,7 +76,9 @@ public class App {
     public static long rIops = -1;
     
     public static HashMap<String, Benchmark> benchmarks = new HashMap<>();
-    public static Benchmark.IOMode ioMode = Benchmark.IOMode.WRITE;
+    public static HashMap<String, BenchmarkOperation> operations = new HashMap<>();
+    public static Benchmark.BenchmarkType benchmarkType = Benchmark.BenchmarkType.WRITE;
+    public static BenchmarkOperation.IOMode ioMode = BenchmarkOperation.IOMode.WRITE;
 
     
     /**
@@ -210,6 +212,9 @@ public class App {
         // configure settings from properties
         String value;
 
+        value = p.getProperty("benchmarkType", String.valueOf(benchmarkType));
+        benchmarkType = Benchmark.BenchmarkType.valueOf(value.toUpperCase());
+        
         value = p.getProperty("multiFile", String.valueOf(multiFile));
         multiFile = Boolean.parseBoolean(value);
 
@@ -220,10 +225,7 @@ public class App {
         autoReset = Boolean.parseBoolean(value);
 
         value = p.getProperty("blockSequence", String.valueOf(blockSequence));
-        blockSequence = Benchmark.BlockSequence.valueOf(value.toUpperCase());
-
-        value = p.getProperty("ioMode", String.valueOf(ioMode));
-        App.ioMode = Benchmark.IOMode.valueOf(value.toUpperCase());
+        blockSequence = BenchmarkOperation.BlockSequence.valueOf(value.toUpperCase());
 
         value = p.getProperty("showMaxMin", String.valueOf(showMaxMin));
         showMaxMin = Boolean.parseBoolean(value);
@@ -254,6 +256,7 @@ public class App {
         if (p == null) { p = new Properties(); }
         
         // configure properties
+        p.setProperty("benchmarkType", benchmarkType.name());
         p.setProperty("multiFile", String.valueOf(multiFile));
         p.setProperty("autoRemoveData", String.valueOf(autoRemoveData));
         p.setProperty("autoReset", String.valueOf(autoReset));
@@ -266,7 +269,6 @@ public class App {
         p.setProperty("numOfThreads", String.valueOf(numOfThreads));
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         p.setProperty("palette", Gui.palette.name());
-        p.setProperty("ioMode", ioMode.name());
 
         // write properties file
         try {
@@ -278,13 +280,12 @@ public class App {
     }
     
     public static boolean isReadEnabled() {
-        return ioMode == Benchmark.IOMode.READ || ioMode == Benchmark.IOMode.READ_WRITE;
-}
+        return benchmarkType == Benchmark.BenchmarkType.READ || benchmarkType == Benchmark.BenchmarkType.READ_WRITE;
+    }
 
     public static boolean isWriteEnabled() {
-        return ioMode == Benchmark.IOMode.WRITE || ioMode == Benchmark.IOMode.READ_WRITE;
-}
-
+        return benchmarkType == Benchmark.BenchmarkType.WRITE || benchmarkType == Benchmark.BenchmarkType.READ_WRITE;
+    }
     
     public static String getConfigString() {
         StringBuilder sb = new StringBuilder();
@@ -302,7 +303,7 @@ public class App {
         sb.append("blockSizeKb: ").append(blockSizeKb).append('\n');
         sb.append("numOfThreads: ").append(numOfThreads).append('\n');
         sb.append("palette: ").append(Gui.palette).append('\n');
-        sb.append("ioMode: ").append(ioMode).append('\n');
+        sb.append("ioMode: ").append(benchmarkType).append('\n');
         return sb.toString();
     }
     
@@ -314,6 +315,9 @@ public class App {
         Benchmark.findAll().stream().forEach((Benchmark run) -> {
             benchmarks.put(run.getStartTimeString(), run);
             Gui.runPanel.addRun(run);
+            for (BenchmarkOperation o : run.getOperations()) {
+                operations.put(o.getStartTimeString(), o);
+            }
         });
     }
     

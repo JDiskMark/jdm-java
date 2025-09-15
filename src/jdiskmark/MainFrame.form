@@ -278,8 +278,8 @@
         <Component class="jdiskmark.BenchmarkPanel" name="runPanel">
           <Constraints>
             <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout$JTabbedPaneConstraintsDescription">
-              <JTabbedPaneConstraints tabName="Benchmarks">
-                <Property name="tabTitle" type="java.lang.String" value="Benchmarks"/>
+              <JTabbedPaneConstraints tabName="Benchmark Operations">
+                <Property name="tabTitle" type="java.lang.String" value="Benchmark Operations"/>
               </JTabbedPaneConstraints>
             </Constraint>
           </Constraints>
@@ -454,12 +454,12 @@
                                   </Group>
                                   <EmptySpace min="-2" pref="18" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="modeCombo" alignment="0" max="32767" attributes="0"/>
+                                      <Component id="typeCombo" alignment="0" max="32767" attributes="0"/>
                                       <Component id="numThreadsCombo" alignment="0" pref="100" max="32767" attributes="0"/>
                                       <Component id="orderComboBox" alignment="0" max="32767" attributes="0"/>
                                       <Component id="numBlocksCombo" alignment="0" max="32767" attributes="0"/>
                                       <Component id="blockSizeCombo" alignment="0" max="32767" attributes="0"/>
-                                      <Component id="numFilesCombo" alignment="0" max="32767" attributes="0"/>
+                                      <Component id="numSamplesCombo" alignment="0" max="32767" attributes="0"/>
                                   </Group>
                               </Group>
                               <Group type="102" alignment="0" attributes="0">
@@ -534,7 +534,7 @@
               <Group type="102" alignment="0" attributes="0">
                   <Group type="103" groupAlignment="3" attributes="0">
                       <Component id="jLabel4" alignment="3" min="-2" max="-2" attributes="0"/>
-                      <Component id="modeCombo" alignment="3" min="-2" max="-2" attributes="0"/>
+                      <Component id="typeCombo" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <EmptySpace max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="3" attributes="0">
@@ -559,7 +559,7 @@
                   <EmptySpace max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="3" attributes="0">
                       <Component id="jLabel8" alignment="3" min="-2" max="-2" attributes="0"/>
-                      <Component id="numFilesCombo" alignment="3" min="-2" max="-2" attributes="0"/>
+                      <Component id="numSamplesCombo" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <EmptySpace max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="3" attributes="0">
@@ -567,7 +567,7 @@
                       <Component id="sampleSizeLabel" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <EmptySpace max="-2" attributes="0"/>
-                  <Component id="startButton" pref="43" max="32767" attributes="0"/>
+                  <Component id="startButton" max="32767" attributes="0"/>
                   <EmptySpace type="separate" max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="0" attributes="0">
                       <Component id="jLabel20" alignment="1" min="-2" max="-2" attributes="0"/>
@@ -698,7 +698,7 @@
             <Property name="text" type="java.lang.String" value="No. Samples"/>
           </Properties>
         </Component>
-        <Component class="javax.swing.JComboBox" name="numFilesCombo">
+        <Component class="javax.swing.JComboBox" name="numSamplesCombo">
           <Properties>
             <Property name="editable" type="boolean" value="true"/>
             <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
@@ -721,15 +721,15 @@
             </Property>
           </Properties>
           <Events>
-            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="numFilesComboActionPerformed"/>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="numSamplesComboActionPerformed"/>
           </Events>
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel4">
           <Properties>
-            <Property name="text" type="java.lang.String" value="IO Mode"/>
+            <Property name="text" type="java.lang.String" value="Benchmark Type"/>
           </Properties>
         </Component>
-        <Component class="javax.swing.JComboBox" name="modeCombo">
+        <Component class="javax.swing.JComboBox" name="typeCombo">
           <Properties>
             <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
               <StringArray count="2">
@@ -742,7 +742,7 @@
             </Property>
           </Properties>
           <Events>
-            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="modeComboActionPerformed"/>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="typeComboActionPerformed"/>
           </Events>
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel9">
@@ -771,7 +771,7 @@
             <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="orderComboBoxActionPerformed"/>
           </Events>
           <AuxValues>
-            <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;Benchmark.BlockSequence&gt;"/>
+            <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;BenchmarkOperation.BlockSequence&gt;"/>
           </AuxValues>
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel14">
