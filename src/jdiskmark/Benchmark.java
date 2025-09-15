@@ -138,18 +138,7 @@ public class Benchmark implements Serializable {
     public String getUsageColumnDisplay() {
         return percentUsed + "%";
     }
-    
-    // GH-20 TODO: review should this be synchronized or redone to not be blocking?
-//    public synchronized void add(Sample s) {
-//        samples.add(s);
-//    }
-    
-    // display friendly methods
-    
-//    public String getBlocksDisplay() {
-//        return numBlocks + " (" + blockSize + ")";
-//    }
-   
+       
     public String getStartTimeString() {
         return startTime.format(DATE_FORMAT);
     }
