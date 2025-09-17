@@ -175,17 +175,19 @@ public final class Gui {
         
         chart = new JFreeChart("", null , plot, true);
         
-        // correct the parenthesis from being below vertical centering
         chart.getTitle().setFont(new Font("Verdana", Font.BOLD, 17));
         
         chartPanel = new ChartPanel(chart) {
-            // Only way to set the size of chart panel
-            // ref: http://www.jfree.org/phpBB2/viewtopic.php?p=75516
             @Override
             public Dimension getPreferredSize() {
                 return new Dimension(500, 325);
             }
         };
+
+        if (App.renderMode == App.RenderMode.TABLE) {
+            chartPanel.setVisible(false); // hide chart if user chose table-only mode
+        }
+
         
         chartPanel.addChartMouseListener(new ChartMouseListener() {
             private long lastClickTime = 0;
