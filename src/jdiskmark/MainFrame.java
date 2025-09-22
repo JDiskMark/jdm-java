@@ -15,6 +15,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
 import javax.swing.JComboBox;
+import javax.swing.JPopupMenu;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 
 
 /**
@@ -28,70 +31,121 @@ public final class MainFrame extends javax.swing.JFrame {
      * Creates new form MainFrame
      */
     
-    private JComboBox<App.RenderMode> renderCombo;
-    
-    @SuppressWarnings("unchecked")
-    public MainFrame() {
-        initComponents();
-        
-        //for diagnostics
-        //controlsPanel.setBackground(Color.blue);
-        
-        DefaultComboBoxModel<Benchmark.BenchmarkType> ioModel
-                = new DefaultComboBoxModel<>(Benchmark.BenchmarkType.values());
-        typeCombo.setModel(ioModel);
-        
-        // Initialize render mode combo box
-        renderCombo = new JComboBox<>(App.RenderMode.values());
-        renderCombo.setSelectedItem(App.renderMode);
-        renderCombo.addActionListener(e -> {
-            if (renderCombo.hasFocus()) {
-                App.renderMode = (App.RenderMode) renderCombo.getSelectedItem();
-                App.saveConfig(); // optional: persist across sessions
-            }
-        });
+    private javax.swing.JLabel renderModeLabel;
+    private javax.swing.JComboBox<RenderFrequencyMode> renderModeCombo;
 
-        
-        
-        startButton.requestFocus();
-        Gui.createChartPanel();
-        mountPanel.setLayout(new BorderLayout());
-        Gui.chartPanel.setSize(mountPanel.getSize());
-        Gui.chartPanel.setSize(mountPanel.getWidth(), 200);
-        mountPanel.add(Gui.chartPanel);
-        totalTxProgBar.setStringPainted(true);
-        totalTxProgBar.setValue(0);
-        totalTxProgBar.setString("");
-        
-        StringBuilder titleSb = new StringBuilder();
-        titleSb.append(getTitle()).append(" ").append(App.VERSION);    
-
-        initializeComboSettings();
-        
-        // architecture
-        if (App.arch != null && !App.arch.isEmpty()) {
-            titleSb.append(" - ").append(App.arch);
-        }
-        
-        // processor name
-        if (App.processorName != null && !App.processorName.isEmpty()) {
-            titleSb.append(" - ").append(App.processorName);
-        }
-        
-        // permission indicator
-        if (App.isAdmin) titleSb.append(" [Admin]");
-        if (App.isRoot) titleSb.append(" [root]");
-        
-        setTitle(titleSb.toString());
-        
-        // auto scroll the text area.
-        DefaultCaret caret = (DefaultCaret) msgTextArea.getCaret();
-        caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
-        
-        // init order combo box
-        orderComboBox.addItem(BenchmarkOperation.BlockSequence.SEQUENTIAL);
-        orderComboBox.addItem(BenchmarkOperation.BlockSequence.RANDOM);
+    private RenderFrequencyMode renderMode = RenderFrequencyMode.PER_SAMPLE;   
+    public RenderFrequencyMode getRenderMode() {
+        return Gui.getRenderFrequencyMode();
     }
+
+        @SuppressWarnings("unchecked")
+        public MainFrame() {
+            Gui.mainFrame = this; // safe enough here, only reference used after initComponents()
+
+            initComponents();
+
+            // Submenu for Render Interval
+            JMenu renderModeMenu = new JMenu("Render Interval");
+
+            // Create a menu item for each RenderFrequencyMode
+            for (RenderFrequencyMode mode : RenderFrequencyMode.values()) {
+                JMenuItem item = new JMenuItem(mode.toString());
+                item.addActionListener(e -> {
+                    Gui.setRenderFrequencyMode(mode);
+
+                    if (Gui.renderModeLabel != null) {
+                        Gui.renderModeLabel.setText("Render Mode: " + Gui.getRenderFrequencyMode());
+                    }
+
+                    Gui.updateRenderView();
+                });
+                renderModeMenu.add(item);
+            }
+
+            // Create the panel and combo box (only once)
+            JPanel renderPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
+            renderPanel.add(new javax.swing.JLabel("Select:"));
+
+            JComboBox<RenderFrequencyMode> menuRenderCombo = new JComboBox<>(RenderFrequencyMode.values());
+            menuRenderCombo.setSelectedItem(RenderFrequencyMode.PER_SAMPLE);
+            menuRenderCombo.addActionListener(e -> {
+                if (menuRenderCombo.hasFocus()) {
+                    RenderFrequencyMode selected = (RenderFrequencyMode) menuRenderCombo.getSelectedItem();
+                    Gui.setRenderFrequencyMode(selected);
+
+                    if (Gui.renderModeLabel != null) {
+                        Gui.renderModeLabel.setText("Render Mode: " + Gui.getRenderFrequencyMode());
+                    }
+
+                    Gui.updateRenderView();
+                }
+            });
+
+            renderPanel.add(menuRenderCombo);
+
+            JPopupMenu popup = new JPopupMenu();
+            popup.add(renderPanel);
+            renderModeMenu.add(popup);
+
+            // Add to the main Options menu
+            optionMenu.addSeparator();
+            optionMenu.add(renderModeMenu);
+
+            // --------- EXISTING UI SETUP BELOW ---------
+
+            // for diagnostics
+            // controlsPanel.setBackground(Color.blue);
+
+            DefaultComboBoxModel<Benchmark.BenchmarkType> ioModel =
+                    new DefaultComboBoxModel<>(Benchmark.BenchmarkType.values());
+            typeCombo.setModel(ioModel);
+
+            startButton.requestFocus();
+            mountPanel.setLayout(new BorderLayout());
+
+            JPanel wrapperPanel = Gui.createChartPanel();
+            wrapperPanel.setPreferredSize(new java.awt.Dimension(mountPanel.getWidth(), 200));
+            mountPanel.add(wrapperPanel, BorderLayout.CENTER);
+            mountPanel.revalidate();
+            mountPanel.repaint();
+
+            totalTxProgBar.setStringPainted(true);
+            totalTxProgBar.setValue(0);
+            totalTxProgBar.setString("");
+
+            StringBuilder titleSb = new StringBuilder();
+            titleSb.append(getTitle()).append(" ").append(App.VERSION);
+
+            initializeComboSettings();
+
+            // architecture
+            if (App.arch != null && !App.arch.isEmpty()) {
+                titleSb.append(" - ").append(App.arch);
+            }
+
+            // processor name
+            if (App.processorName != null && !App.processorName.isEmpty()) {
+                titleSb.append(" - ").append(App.processorName);
+            }
+
+            // permission indicator
+            if (App.isAdmin) titleSb.append(" [Admin]");
+            if (App.isRoot) titleSb.append(" [root]");
+
+            setTitle(titleSb.toString());
+
+            // auto scroll the text area
+            DefaultCaret caret = (DefaultCaret) msgTextArea.getCaret();
+            caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+
+            // init order combo box
+            orderComboBox.addItem(BenchmarkOperation.BlockSequence.SEQUENTIAL);
+            orderComboBox.addItem(BenchmarkOperation.BlockSequence.RANDOM);
+        }
+
+
+
 
     public JPanel getMountPanel() {
         return mountPanel;
@@ -139,7 +193,6 @@ public final class MainFrame extends javax.swing.JFrame {
     
     public void loadSettings() {
         typeCombo.setSelectedItem(App.benchmarkType);
-        renderCombo.setSelectedItem(App.renderMode);
         numThreadsCombo.setSelectedItem(String.valueOf(App.numOfThreads));
         orderComboBox.setSelectedItem(App.blockSequence);
         numBlocksCombo.setSelectedItem(String.valueOf(App.numOfBlocks));
@@ -852,7 +905,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
+    
     private void chooseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chooseButtonActionPerformed
         Gui.browseLocation();
     }//GEN-LAST:event_chooseButtonActionPerformed
@@ -904,23 +957,6 @@ public final class MainFrame extends javax.swing.JFrame {
             App.saveConfig();
         }
     }//GEN-LAST:event_typeComboActionPerformed
-    private void renderComboActionPerformed(java.awt.event.ActionEvent evt) {                                           
-        if (renderCombo.hasFocus()) {
-            String selected = (String) renderCombo.getSelectedItem();
-            switch (selected) {
-                case "Charts":
-                    App.renderMode = App.RenderMode.CHARTS;
-                    break;
-                case "Table":
-                    App.renderMode = App.RenderMode.TABLE;
-                    break;
-                case "Charts + Table":
-                    App.renderMode = App.RenderMode.CHARTS_AND_TABLE;
-                    break;
-            }
-            App.saveConfig();  // Optional if you're persisting this setting
-        }
-    }
 
     private void exitMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exitMenuItemActionPerformed
         System.exit(0);
@@ -1191,6 +1227,12 @@ public final class MainFrame extends javax.swing.JFrame {
     public void clearMessages() {
         msgTextArea.setText("");
     }
+    
+    public void setTableVisible(boolean visible) {
+        // TEMP: No table component yet, so just log or stub
+        System.out.println("Requested to set table visibility to: " + visible);
+    }
+
     
     public void adjustSensitivity() {
         switch (App.state) {

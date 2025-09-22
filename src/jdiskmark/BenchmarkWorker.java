@@ -24,12 +24,21 @@ import java.util.logging.Logger;
 import javax.swing.SwingWorker;
 import static jdiskmark.App.locationDir;
 import static jdiskmark.App.numOfSamples;
+import static jdiskmark.RenderFrequencyMode.*;
+
+
 
 /**
  * Thread running the disk benchmarking. only one of these threads can run at
  * once.
  */
 public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
+    
+    private final RenderFrequencyMode renderMode = Gui.mainFrame.getRenderMode();
+    private final List<Sample> sampleBuffer = new ArrayList<>();
+    private long lastRenderTimeMillis = System.currentTimeMillis() - 1000; // first update is allowed
+    private long lastUpdateTime = System.currentTimeMillis() - 1000; // allow immediate first update
+
 
     public static int[][] divideIntoRanges(int startIndex, int endIndex, int numThreads) {
         if (numThreads <= 0 || endIndex < startIndex) {
@@ -57,6 +66,10 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
 
     @Override
     protected Boolean doInBackground() throws Exception {
+        
+        RenderFrequencyMode currentMode = Gui.mainFrame.getRenderMode();
+        
+        List<Sample> renderBuffer = new ArrayList<>();
 
         System.out.println("*** starting new worker thread");
         msg("Running readTest " + App.isReadEnabled() + "   writeTest " + App.isWriteEnabled());
@@ -190,6 +203,50 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
                         double sec = (double) elapsedTimeNs / 1_000_000_000d;
                         double mbWritten = (double) totalBytesWrittenInSample / (double) MEGABYTE;
                         sample.bwMbSec = mbWritten / sec;
+                        
+                        switch (currentMode) {
+                            case PER_SAMPLE:                        
+                                break;
+
+                            case PER_OPERATION:
+                                renderBuffer.add(sample);
+                                if (s == endSample) { // Only push at the end of thread's range
+                                    for (Sample bufferedSample : renderBuffer) {
+                                        App.updateMetrics(bufferedSample);
+                                        publish(bufferedSample);
+                                        wOperation.bwMax = bufferedSample.cumMax;
+                                        wOperation.bwMin = bufferedSample.cumMin;
+                                        wOperation.bwAvg = bufferedSample.cumAvg;
+                                        wOperation.accAvg = bufferedSample.cumAccTimeMs;
+                                        wOperation.add(bufferedSample);
+                                    }
+                                    renderBuffer.clear();
+                                }
+                                break;
+
+                            case PER_100MS:
+                            case PER_500MS:
+                            case PER_1000MS:
+                                renderBuffer.add(sample);
+                                long now = System.currentTimeMillis();
+
+                                long selectedInterval = getIntervalMillis(currentMode);
+
+                                if (now - lastUpdateTime >= selectedInterval) {
+                                    for (Sample bufferedSample : renderBuffer) {
+                                        App.updateMetrics(bufferedSample);
+                                        publish(bufferedSample);
+                                        wOperation.bwMax = bufferedSample.cumMax;
+                                        wOperation.bwMin = bufferedSample.cumMin;
+                                        wOperation.bwAvg = bufferedSample.cumAvg;
+                                        wOperation.accAvg = bufferedSample.cumAccTimeMs;
+                                        wOperation.add(bufferedSample);
+                                    }
+                                    renderBuffer.clear();
+                                    lastUpdateTime = now;
+                                }
+                                break;
+                        }
 //                        msg("s:" + s + " write IO is " + sample.getBwMbSecDisplay() + " MB/s   "
 //                                + "(" + Util.displayString(mbWritten) + "MB written in "
 //                                + Util.displayString(sec) + " sec) elapsedNs: " + elapsedTimeNs);
@@ -240,7 +297,7 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
             for (int[] range : tRanges) {
                 final int startSample = range[0];
                 final int endSample = range[1];
-
+               
                 futures.add(executorService.submit(() -> {
                     for (int s = startSample; s <= endSample && !isCancelled(); s++) {
 
@@ -283,17 +340,68 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
 //                        msg("s:" + s + " read IO is " + sample.getBwMbSecDisplay() + " MB/s   "
 //                                + "(" + Util.displayString(mbRead) + "MB read in "
 //                                + Util.displayString(sec) + " sec) elapsedNs: " + elapsedTimeNs);
-                        App.updateMetrics(sample);
-                        publish(sample);
-                        rOperation.bwMax = sample.cumMax;
-                        rOperation.bwMin = sample.cumMin;
-                        rOperation.bwAvg = sample.cumAvg;
-                        rOperation.accAvg = sample.cumAccTimeMs;
-                        rOperation.add(sample);
+
+                        switch (currentMode) {
+                            case PER_SAMPLE:
+                                App.updateMetrics(sample);
+                                publish(sample);
+                                rOperation.bwMax = sample.cumMax;
+                                rOperation.bwMin = sample.cumMin;
+                                rOperation.bwAvg = sample.cumAvg;
+                                rOperation.accAvg = sample.cumAccTimeMs;
+                                rOperation.add(sample);
+                                break;
+
+                            case PER_OPERATION:
+                                renderBuffer.add(sample);
+                                if (s == endSample) { // End of this thread's operation range
+                                    for (Sample bufferedSample : renderBuffer) {
+                                        App.updateMetrics(bufferedSample);
+                                        publish(bufferedSample);
+                                        rOperation.bwMax = bufferedSample.cumMax;
+                                        rOperation.bwMin = bufferedSample.cumMin;
+                                        rOperation.bwAvg = bufferedSample.cumAvg;
+                                        rOperation.accAvg = bufferedSample.cumAccTimeMs;
+                                        rOperation.add(bufferedSample);
+                                    }
+                                    renderBuffer.clear();
+                                }
+                                break;
+
+                            case PER_100MS:
+                            case PER_500MS:
+                            case PER_1000MS:
+                                    renderBuffer.add(sample);
+                                    long now = System.currentTimeMillis();
+
+                                    long selectedInterval;
+                                    switch (currentMode) {
+                                        case PER_100MS: selectedInterval = 100; break;
+                                        case PER_500MS: selectedInterval = 500; break;
+                                        case PER_1000MS: selectedInterval = 1000; break;
+                                        default: selectedInterval = 500; // fallback
+                                    }
+
+                                    if (now - lastUpdateTime >= selectedInterval) {
+                                        for (Sample bufferedSample : renderBuffer) {
+                                            App.updateMetrics(bufferedSample);
+                                            publish(bufferedSample);
+                                            rOperation.bwMax = bufferedSample.cumMax;
+                                            rOperation.bwMin = bufferedSample.cumMin;
+                                            rOperation.bwAvg = bufferedSample.cumAvg;
+                                            rOperation.accAvg = bufferedSample.cumAccTimeMs;
+                                            rOperation.add(bufferedSample);
+                                        }
+                                        renderBuffer.clear();
+                                        lastUpdateTime = now;
+                                    }
+                                break;
+                        }
+
                     }
                 }));
             }
-
+            
             executorService.shutdown();
             executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 
@@ -316,6 +424,15 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
         
         App.nextSampleNumber += App.numOfSamples;
         return true;
+    }
+    
+    private long getIntervalMillis(RenderFrequencyMode mode) {
+        return switch (mode) {
+            case PER_100MS -> 100;
+            case PER_500MS -> 500;
+            case PER_1000MS -> 1000;
+            default -> 500;
+        };
     }
 
     @Override

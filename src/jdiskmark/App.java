@@ -39,25 +39,6 @@ public class App {
     public static enum State { IDLE_STATE, DISK_TEST_STATE };
     public static State state = State.IDLE_STATE;
     
-    public enum RenderMode {
-        CHARTS,
-        TABLE,
-        CHARTS_AND_TABLE;
-
-    @Override
-    public String toString() {
-        return switch (this) {
-            case CHARTS -> "Charts";
-            case TABLE -> "Table";
-            case CHARTS_AND_TABLE -> "Charts + Table";
-            };
-        }
-    }
-
-    
-    public static RenderMode renderMode = RenderMode.CHARTS;
-
-    
     public static Properties p;
     public static File locationDir = null;
     public static File dataDir = null;
