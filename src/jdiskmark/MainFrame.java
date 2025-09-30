@@ -18,6 +18,9 @@ import javax.swing.JComboBox;
 import javax.swing.JPopupMenu;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import javax.swing.JRadioButtonMenuItem;
+import javax.swing.ButtonGroup;
+
 
 
 /**
@@ -46,51 +49,63 @@ public final class MainFrame extends javax.swing.JFrame {
             initComponents();
 
             // Submenu for Render Interval
-            JMenu renderModeMenu = new JMenu("Render Interval");
+           // Render Mode submenu with radio buttons
+            JMenu renderModeMenu = new JMenu("Render Mode");
 
-            // Create a menu item for each RenderFrequencyMode
-            for (RenderFrequencyMode mode : RenderFrequencyMode.values()) {
-                JMenuItem item = new JMenuItem(mode.toString());
-                item.addActionListener(e -> {
-                    Gui.setRenderFrequencyMode(mode);
+            JRadioButtonMenuItem perSampleItem    = new JRadioButtonMenuItem("Per Sample");
+            JRadioButtonMenuItem perOperationItem = new JRadioButtonMenuItem("Per Operation");
+            JRadioButtonMenuItem per1000msItem    = new JRadioButtonMenuItem("Per 1000 ms");
+            JRadioButtonMenuItem per500msItem     = new JRadioButtonMenuItem("Per 500 ms");
 
-                    if (Gui.renderModeLabel != null) {
-                        Gui.renderModeLabel.setText("Render Mode: " + Gui.getRenderFrequencyMode());
-                    }
+            ButtonGroup group = new ButtonGroup();
+            group.add(perSampleItem);
+            group.add(perOperationItem);
+            group.add(per1000msItem);
+            group.add(per500msItem);
 
-                    Gui.updateRenderView();
-                });
-                renderModeMenu.add(item);
+            renderModeMenu.add(perSampleItem);
+            renderModeMenu.add(perOperationItem);
+            renderModeMenu.addSeparator();
+            renderModeMenu.add(per1000msItem);
+            renderModeMenu.add(per500msItem);
+
+            // initialize selected item from current app state
+            switch (Gui.getRenderFrequencyMode()) {
+                case PER_SAMPLE -> perSampleItem.setSelected(true);
+                case PER_OPERATION -> perOperationItem.setSelected(true);
+                case PER_1000MS -> per1000msItem.setSelected(true);
+                case PER_500MS -> per500msItem.setSelected(true);
             }
-
-            // Create the panel and combo box (only once)
-            JPanel renderPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
-            renderPanel.add(new javax.swing.JLabel("Select:"));
-
-            JComboBox<RenderFrequencyMode> menuRenderCombo = new JComboBox<>(RenderFrequencyMode.values());
-            menuRenderCombo.setSelectedItem(RenderFrequencyMode.PER_SAMPLE);
-            menuRenderCombo.addActionListener(e -> {
-                if (menuRenderCombo.hasFocus()) {
-                    RenderFrequencyMode selected = (RenderFrequencyMode) menuRenderCombo.getSelectedItem();
-                    Gui.setRenderFrequencyMode(selected);
-
-                    if (Gui.renderModeLabel != null) {
-                        Gui.renderModeLabel.setText("Render Mode: " + Gui.getRenderFrequencyMode());
-                    }
-
-                    Gui.updateRenderView();
-                }
+            
+            perSampleItem.addActionListener(e -> {
+                Gui.setRenderFrequencyMode(RenderFrequencyMode.PER_SAMPLE);
+                Gui.renderModeLabel.setText("Render Mode: Per Sample");
+                Gui.updateRenderView();
             });
 
-            renderPanel.add(menuRenderCombo);
+            perOperationItem.addActionListener(e -> {
+                Gui.setRenderFrequencyMode(RenderFrequencyMode.PER_OPERATION);
+                Gui.renderModeLabel.setText("Render Mode: Per Operation");
+                Gui.updateRenderView();
+            });
 
-            JPopupMenu popup = new JPopupMenu();
-            popup.add(renderPanel);
-            renderModeMenu.add(popup);
+            per1000msItem.addActionListener(e -> {
+                Gui.setRenderFrequencyMode(RenderFrequencyMode.PER_1000MS);
+                Gui.renderModeLabel.setText("Render Mode: Per 1000 ms");
+                Gui.updateRenderView();
+            });
 
-            // Add to the main Options menu
+            per500msItem.addActionListener(e -> {
+                Gui.setRenderFrequencyMode(RenderFrequencyMode.PER_500MS);
+                Gui.renderModeLabel.setText("Render Mode: Per 500 ms");
+                Gui.updateRenderView();
+            });
+
+
+            // Add to Options menu
             optionMenu.addSeparator();
             optionMenu.add(renderModeMenu);
+
 
             // --------- EXISTING UI SETUP BELOW ---------
 
