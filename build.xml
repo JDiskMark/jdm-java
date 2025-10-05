@@ -103,7 +103,7 @@
         <antcall target="buildinfo"/>
         <copy file="pkg/macos/JDM.icns" todir="${dist.dir}"/>
         <copy file="pkg/macos/run.sh" todir="${dist.dir}"/>
-        <copy file="build.properties" todir="dist"/>
+        <!--<copy file="build.properties" todir="dist"/>-->
         <copy file="build.properties" todir="src/META-INF"/>
         <copy file="README.md" todir="dist"/>
         <mkdir dir="tmp"/>
