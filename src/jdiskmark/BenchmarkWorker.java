@@ -128,9 +128,10 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
             BenchmarkOperation wOperation = new BenchmarkOperation();
             wOperation.setBenchmark(benchmark);
             wOperation.ioMode = BenchmarkOperation.IOMode.WRITE;
+            wOperation.setRenderMode(currentMode);   
             wOperation.blockOrder = App.blockSequence;
             wOperation.numSamples = App.numOfSamples;
-            wOperation.numBlocks = App.numOfSamples;
+            wOperation.numBlocks = App.numOfBlocks;
             wOperation.blockSize = App.blockSizeKb;
             wOperation.txSize = App.targetTxSizeKb();
             wOperation.numThreads = App.numOfThreads;
@@ -188,55 +189,75 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
                         /* Mode-specific rendering */
                         switch (currentMode) {
                             case PER_SAMPLE:
-                                App.updateMetrics(sample);
+                                App.updateMetrics(sample); 
                                 publish(sample);
+                                wOperation.bwMax = sample.cumMax;
+                                wOperation.bwMin = sample.cumMin;
+                                wOperation.bwAvg = sample.cumAvg;
+                                wOperation.accAvg = sample.cumAccTimeMs;
                                 wOperation.add(sample);
                                 break;
 
-                            case PER_OPERATION:
-                                renderBuffer.add(sample);
-                                if (s == endSample) {
-                                    for (Sample buffered : renderBuffer) {
-                                        App.updateMetrics(buffered);
-                                        publish(buffered);
-                                        wOperation.add(buffered);
+                                case PER_OPERATION:
+                                    renderBuffer.add(sample);
+                                    // flush once this thread finishes its assigned range
+                                    if (s == endSample) {
+                                        synchronized (renderBuffer) {
+                                            for (Sample buffered : renderBuffer) {
+                                                App.updateMetrics(buffered);
+                                                publish(buffered);
+                                                wOperation.add(buffered);
+                                            }
+                                            renderBuffer.clear();
+                                        }
                                     }
-                                    renderBuffer.clear();
-                                }
-                                break;
+                                    break;
 
-                            case PER_100MS:
-                            case PER_500MS:
-                            case PER_1000MS:
-                                renderBuffer.add(sample);
-                                long now = System.currentTimeMillis();
-                                if (now - lastUpdateTime >= getIntervalMillis(currentMode)) {
-                                    for (Sample buffered : renderBuffer) {
-                                        App.updateMetrics(buffered);
-                                        publish(buffered);
-                                        wOperation.add(buffered);
+                                case PER_100MS:
+                                case PER_500MS:
+                                case PER_1000MS:
+                                    renderBuffer.add(sample);
+                                    long now = System.currentTimeMillis();
+                                    synchronized (renderBuffer) {
+                                        if (now - lastUpdateTime >= getIntervalMillis(currentMode)) {
+                                            for (Sample buffered : renderBuffer) {
+                                                App.updateMetrics(buffered);
+                                                publish(buffered);
+                                                wOperation.add(buffered);
+                                            }
+                                            renderBuffer.clear();
+                                            lastUpdateTime = now;
+                                        }
                                     }
-                                    renderBuffer.clear();
-                                    lastUpdateTime = now;
-                                }
-                                break;
+                                    break;
                         }
                     }
                 }));
             }
             executorService.shutdown();
             executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-            wOperation.endTime = LocalDateTime.now();
-            wOperation.setTotalOps(wUnitsComplete[0]);
-            App.wIops = wOperation.iops;
-            Gui.mainFrame.refreshWriteMetrics();
-        }
+
+            if (!wOperation.getSamples().isEmpty()) {
+                Sample last = wOperation.getSamples().get(wOperation.getSamples().size() - 1);
+                wOperation.bwMax = last.cumMax;
+                wOperation.bwMin = last.cumMin;
+                wOperation.bwAvg = last.cumAvg;
+                wOperation.accAvg = last.cumAccTimeMs;
+            }
+
+
+                wOperation.endTime = LocalDateTime.now();
+                wOperation.setTotalOps(wUnitsComplete[0]);
+                App.wIops = wOperation.iops;
+                Gui.mainFrame.refreshWriteMetrics();
+            }
         
         /* ========================= READ LOOP ========================= */
         if (App.isReadEnabled()) {
             BenchmarkOperation rOperation = new BenchmarkOperation();
             rOperation.setBenchmark(benchmark);
             rOperation.ioMode = BenchmarkOperation.IOMode.READ;
+            rOperation.setRenderMode(currentMode);
             rOperation.blockOrder = App.blockSequence;
             rOperation.numSamples = App.numOfSamples;
             rOperation.numBlocks = App.numOfBlocks;
@@ -322,17 +343,32 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
                                     renderBuffer.clear();
                                     lastUpdateTime = now;
                                 }
-                                break;
+                                break;                               
                         }
                     }
                 }));
             }
             executorService.shutdown();
             executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+            
+            // --- Final stats sync for READ ---
+            if (!rOperation.getSamples().isEmpty()) {
+                Sample last = rOperation.getSamples().get(rOperation.getSamples().size() - 1);
+                rOperation.bwMax = last.cumMax;
+                rOperation.bwMin = last.cumMin;
+                rOperation.bwAvg = last.cumAvg;
+                rOperation.accAvg = last.cumAccTimeMs;
+            }
             rOperation.endTime = LocalDateTime.now();
             rOperation.setTotalOps(rUnitsComplete[0]);
             App.rIops = rOperation.iops;
             Gui.mainFrame.refreshReadMetrics();
+            
+            benchmark.endTime = LocalDateTime.now();
+            EntityManager em = EM.getEntityManager();
+            em.getTransaction().begin();
+            em.persist(benchmark);
+            em.getTransaction().commit();
         }
 
         /* ========================= FINALIZE BENCHMARK ========================= */

@@ -37,6 +37,8 @@ public class BenchmarkOperation implements Serializable {
     static final DecimalFormat DFT = new DecimalFormat("###");
     static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
+    
+   
     public enum IOMode {
         READ {
             @Override
@@ -75,6 +77,9 @@ public class BenchmarkOperation implements Serializable {
     IOMode ioMode;
     @Column
     BlockSequence blockOrder;
+    @Column
+    @Convert(converter = RenderFrequencyModeAttributeConverter.class)
+    private RenderFrequencyMode renderMode;
     @Column
     int numBlocks = 0;
     @Column
@@ -228,6 +233,15 @@ public class BenchmarkOperation implements Serializable {
     public void setIops(long iops) {
         this.iops = iops;
     }
+    
+    public RenderFrequencyMode getRenderMode() {
+        return renderMode;
+    }
+
+    public void setRenderMode(RenderFrequencyMode renderMode) {
+        this.renderMode = renderMode;
+    }
+
     
     // utility methods for collection
     
