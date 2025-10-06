@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -228,6 +229,8 @@ public class UtilOs {
         System.out.println("filePath=" + path.toString());
         try {
             ProcessBuilder pb = new ProcessBuilder("df", "-k", path.toString());
+            Map<String, String> env = pb.environment();
+            env.put("LC_ALL", "C"); // set language to english
             pb.redirectErrorStream(true);
             Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -256,6 +259,8 @@ public class UtilOs {
         List<String> deviceNames = new ArrayList<>();
         try {
             ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "pkname", partition);
+            Map<String, String> env = pb.environment();
+            env.put("LC_ALL", "C"); // set language to english
             pb.redirectErrorStream(true);
             Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -286,6 +291,8 @@ public class UtilOs {
     static public String getDeviceModelLinux(String devicePath) {
         try {
             ProcessBuilder pb = new ProcessBuilder("lsblk", devicePath, "--output", "MODEL");
+            Map<String, String> env = pb.environment();
+            env.put("LC_ALL", "C"); // set language to english
             pb.redirectErrorStream(true);
             Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -329,6 +336,8 @@ public class UtilOs {
         System.out.println("getting size of " + devicePath);
         try {
             ProcessBuilder pb = new ProcessBuilder("lsblk", devicePath, "--output", "SIZE");
+            Map<String, String> env = pb.environment();
+            env.put("LC_ALL", "C"); // set language to english
             pb.redirectErrorStream(true);
             Process process = pb.start();
 
@@ -349,6 +358,8 @@ public class UtilOs {
     static public String getDeviceFromPathMacOs(Path path) {
         try {
             ProcessBuilder pb = new ProcessBuilder("df", "-k", path.toString());
+            Map<String, String> env = pb.environment();
+            env.put("LC_ALL", "C"); // set language to english
             pb.redirectErrorStream(true);
             Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
@@ -365,57 +376,59 @@ public class UtilOs {
         return null;
     }
     
-static public String getDeviceModelMacOs(String devicePath) {
+    static public String getDeviceModelMacOs(String devicePath) {
 
-    if (devicePath == null || devicePath.isEmpty()) {
-        throw new IllegalArgumentException("Invalid device path");
-    }
-
-    try {
-        ProcessBuilder pb = new ProcessBuilder("diskutil", "info", devicePath);
-        pb.redirectErrorStream(true);
-        Process process = pb.start();
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            if (line.contains("Device / Media Name:")) {
-                return line.split("Device / Media Name:")[1].trim();
-            }
+        if (devicePath == null || devicePath.isEmpty()) {
+            throw new IllegalArgumentException("Invalid device path");
         }
-    } catch (IOException e) {
-        LOGGER.log(Level.SEVERE, null, e);
-    }
 
-    String deviceId = devicePath;
-    if (deviceId.contains("/dev/")) {
-        deviceId = deviceId.split("/dev/")[1];
-    }
+        try {
+            ProcessBuilder pb = new ProcessBuilder("diskutil", "info", devicePath);
+            Map<String, String> env = pb.environment();
+            env.put("LC_ALL", "C"); // set language to english
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
 
-    try {
-        ProcessBuilder pb = new ProcessBuilder("system_profiler", "SPStorageDataType");
-        pb.redirectErrorStream(true);
-        Process process = pb.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("Device / Media Name:")) {
+                    return line.split("Device / Media Name:")[1].trim();
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, null, e);
+        }
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            if (line.contains(deviceId)) {
-                // Lines after deviceId
-                String lineAfterId;
-                while ((lineAfterId = reader.readLine()) != null) {
-                    if (lineAfterId.contains("Device Name: ")) {
-                        return lineAfterId.split("Device Name: ")[1];
+        String deviceId = devicePath;
+        if (deviceId.contains("/dev/")) {
+            deviceId = deviceId.split("/dev/")[1];
+        }
+
+        try {
+            ProcessBuilder pb = new ProcessBuilder("system_profiler", "SPStorageDataType");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains(deviceId)) {
+                    // Lines after deviceId
+                    String lineAfterId;
+                    while ((lineAfterId = reader.readLine()) != null) {
+                        if (lineAfterId.contains("Device Name: ")) {
+                            return lineAfterId.split("Device Name: ")[1];
+                        }
                     }
                 }
             }
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, null, e);
         }
-    } catch (IOException e) {
-        LOGGER.log(Level.SEVERE, null, e);
-    }
 
-    return "Model unavailable for " + deviceId;
-}
+        return "Model unavailable for " + deviceId;
+    }
     
     static public void flushDataToDriveMacOs() {
         flushDataToDriveLinux();
@@ -530,8 +543,8 @@ static public String getDeviceModelMacOs(String devicePath) {
     
     public static boolean isRunningAsRootLinux() {
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder("id", "-u");
-            Process process = processBuilder.start();
+            ProcessBuilder pb = new ProcessBuilder("id", "-u");
+            Process process = pb.start();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line = reader.readLine();
                 if (line != null) {
@@ -699,8 +712,8 @@ static public String getDeviceModelMacOs(String devicePath) {
     
     public static String getProcessorNameWindows() {
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder("wmic", "cpu", "get", "Name");
-            Process process = processBuilder.start();
+            ProcessBuilder pb = new ProcessBuilder("wmic", "cpu", "get", "Name");
+            Process process = pb.start();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
@@ -724,8 +737,10 @@ static public String getDeviceModelMacOs(String devicePath) {
     
     public static String getProcessorNameMacOS() {
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder("sysctl", "-n", "machdep.cpu.brand_string");
-            Process process = processBuilder.start();
+            ProcessBuilder pb = new ProcessBuilder("sysctl", "-n", "machdep.cpu.brand_string");
+            Map<String, String> env = pb.environment();
+            env.put("LC_ALL", "C"); // set language to english
+            Process process = pb.start();
 
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line = reader.readLine();
@@ -741,16 +756,16 @@ static public String getDeviceModelMacOs(String devicePath) {
     public static String getProcessorNameLinux() {
         try {
             // Use lscpu command to get details about the CPU
-            ProcessBuilder processBuilder = new ProcessBuilder("lscpu");
-            Process process = processBuilder.start();
-
+            ProcessBuilder pb = new ProcessBuilder("lscpu");
+            Map<String, String> env = pb.environment();
+            env.put("LC_ALL", "C"); // set language to english
+            Process process = pb.start();
+            
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     // Search for the line starting with "Model name:"
-                    if (line.startsWith("Model name:")
-                            || line.trim().startsWith("Nombre del modelo")) {
-                    
+                    if (line.startsWith("Model name:")) {
                         // Extract the processor name after the colon
                         return line.substring(line.indexOf(":") + 2).trim();
                     }
