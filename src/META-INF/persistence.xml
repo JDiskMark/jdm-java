@@ -7,7 +7,11 @@
       <property name="jakarta.persistence.jdbc.url" value="jdbc:derby:derbyDB;create=true"/>
       <property name="jakarta.persistence.jdbc.driver" value="org.apache.derby.jdbc.EmbeddedDriver"/>
       <property name="eclipselink.logging.level" value="FINE"/>
-      <property name="eclipselink.ddl-generation" value="create-or-extend-tables"/>
+      <!-- per gemini this is deprecated -->
+      <!--<property name="eclipselink.ddl-generation" value="create-or-extend-tables"/>-->
+      <!-- this will drop and create a new db every time, useful for testing -->
+      <!--<property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/>-->
+      <property name="jakarta.persistence.schema-generation.database.action" value="create-or-extend-tables"/>
     </properties>
   </persistence-unit>
 </persistence>

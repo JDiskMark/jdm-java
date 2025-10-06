@@ -9,9 +9,6 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
-/**
- * @author James
- */
 public class BenchmarkPanel extends javax.swing.JPanel {
 
     /**
@@ -23,6 +20,10 @@ public class BenchmarkPanel extends javax.swing.JPanel {
 
     // Tooltip only – keep it simple
     runTable.setToolTipText("Mode: Write* means Write Sync was enabled");
+    
+    // #73 load new selected operation
+    OperationTableSelectionListener selectionListener = new OperationTableSelectionListener(runTable);
+    runTable.getSelectionModel().addListSelectionListener(selectionListener);
 
     // center align cells 2 - 11
     for (int i = 2; i <= 11; i++) {
@@ -62,7 +63,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
 
             },
             new String [] {
-                "ID", "Drive Model", "Usage", "Mode", "Order", "Samples", "Blocks (Size)", "Thread", "Start Time", "Time (ms)", "Acc (ms)", "Min/Max (MB/s)", "IO (MB/s)"
+                "ID", "Drive Model", "Usage", "Type", "Order", "Samples", "Blocks (Size)", "Thread", "Start Time", "Time (ms)", "Acc (ms)", "Min/Max (MB/s)", "IO (MB/s)"
             }
         ) {
             boolean[] canEdit = new boolean [] {
@@ -74,11 +75,6 @@ public class BenchmarkPanel extends javax.swing.JPanel {
             }
         });
         runTable.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
-        runTable.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                runTableMouseClicked(evt);
-            }
-        });
         jScrollPane1.setViewportView(runTable);
         if (runTable.getColumnModel().getColumnCount() > 0) {
             runTable.getColumnModel().getColumn(0).setPreferredWidth(10);
@@ -119,18 +115,6 @@ public class BenchmarkPanel extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     static final int START_TIME_COLUMN = 7;
-    
-    private void runTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_runTableMouseClicked
-        int sRow = runTable.getSelectedRow();
-        String timeString = (String) runTable.getValueAt(sRow, START_TIME_COLUMN);
-        System.out.println("timeString=" + timeString);
-
-        Benchmark benchmark = App.benchmarks.get(timeString);
-        if (benchmark != null) {
-            Gui.loadBenchmark(benchmark);
-        }
-    }//GEN-LAST:event_runTableMouseClicked
-
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JScrollPane jScrollPane1;
@@ -139,23 +123,27 @@ public class BenchmarkPanel extends javax.swing.JPanel {
 
 
     public void addRun(Benchmark run) {
+        
+        List<BenchmarkOperation> operations = run.getOperations();
         DefaultTableModel model = (DefaultTableModel) this.runTable.getModel();
-        model.addRow(
-                new Object[] {
-                    run.id,
-                    run.driveModel,
-                    run.getUsageColumnDisplay(),
-                    run.getModeDisplay(), 
-                    run.blockOrder,
-                    run.numSamples,
-                    run.getBlocksDisplay(),
-                    run.numThreads,
-                    run.getStartTimeString(),
-                    run.getDuration(),
-                    run.getAccTimeDisplay(),
-                    run.getBwMinMaxDisplay(),
-                    run.getBwAvgDisplay(),
-                });
+        for (BenchmarkOperation o : operations) {
+            model.addRow(
+                    new Object[] {
+                        run.id,
+                        run.driveModel,
+                        run.getUsageColumnDisplay(),
+                        o.getModeDisplay(),
+                        o.blockOrder,
+                        o.numSamples,
+                        o.getBlocksDisplay(),
+                        o.numThreads,
+                        o.getStartTimeString(),
+                        o.getDuration(),
+                        o.getAccTimeDisplay(),
+                        o.getBwMinMaxDisplay(),
+                        o.getBwAvgDisplay(),
+                    });
+        }
     }
     
     public void hideFirstColumn() {
