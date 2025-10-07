@@ -17,6 +17,10 @@ public class BenchmarkPanel extends javax.swing.JPanel {
     public BenchmarkPanel() {
     initComponents();
     Gui.runPanel = BenchmarkPanel.this;
+    
+    // Dynamically add Render Mode column
+    DefaultTableModel model = (DefaultTableModel) runTable.getModel();
+    model.addColumn("Render Mode");
 
     // Tooltip only – keep it simple
     runTable.setToolTipText("Mode: Write* means Write Sync was enabled");
@@ -123,7 +127,6 @@ public class BenchmarkPanel extends javax.swing.JPanel {
 
 
     public void addRun(Benchmark run) {
-        
         List<BenchmarkOperation> operations = run.getOperations();
         DefaultTableModel model = (DefaultTableModel) this.runTable.getModel();
         for (BenchmarkOperation o : operations) {
@@ -142,6 +145,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
                         o.getAccTimeDisplay(),
                         o.getBwMinMaxDisplay(),
                         o.getBwAvgDisplay(),
+                        (o.getRenderMode() != null ? o.getRenderMode().toString() : "-")
                     });
         }
     }

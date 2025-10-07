@@ -12,6 +12,8 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import org.jfree.chart.ChartMouseEvent;
 import org.jfree.chart.ChartMouseListener;
 import javax.swing.UIManager;
@@ -26,6 +28,8 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.RectangleInsets;
+import jdiskmark.App;
+
 
 /**
  * Store GUI references for easy access
@@ -35,7 +39,18 @@ public final class Gui {
     public static enum Palette { CLASSIC, BLUE_GREEN, BARD_COOL, BARD_WARM };
     public static Palette palette = Palette.CLASSIC;
     
+    private static jdiskmark.RenderFrequencyMode renderFrequencyMode = jdiskmark.RenderFrequencyMode.PER_SAMPLE;
+    
+    public static RenderFrequencyMode getRenderFrequencyMode() {
+    return renderFrequencyMode;
+    }
+
+    public static void setRenderFrequencyMode(RenderFrequencyMode mode) {
+    renderFrequencyMode = mode;
+    }
+
     public static ChartPanel chartPanel = null;
+    public static JLabel renderModeLabel = new JLabel("Render Mode: PER_SAMPLE");
     public static MainFrame mainFrame = null;
     public static SelectDriveFrame selFrame = null;
     public static XYSeries wSeries, wAvgSeries, wMaxSeries, wMinSeries, wDrvAccess;
@@ -87,7 +102,29 @@ public final class Gui {
         }
     }
     
-    public static ChartPanel createChartPanel() {
+    public static void updateRenderView() {
+        RenderFrequencyMode mode = Gui.mainFrame.getRenderMode();
+
+        boolean showChart = true; // all modes show chart in this example
+        boolean showTable = (mode == RenderFrequencyMode.PER_100MS ||
+                             mode == RenderFrequencyMode.PER_500MS ||
+                             mode == RenderFrequencyMode.PER_1000MS);
+
+        if (chartPanel != null) {
+            chartPanel.setVisible(showChart);
+        }
+
+        Gui.mainFrame.setTableVisible(showTable);
+        
+    }
+    
+    public static void refreshRenderLabel() {
+        if (renderModeLabel != null) {
+            renderModeLabel.setText("Render Mode: " + getRenderFrequencyMode());
+        }
+    }
+
+    public static JPanel createChartPanel() {
         
         wSeries = new XYSeries("Write");
         wAvgSeries = new XYSeries("Write Avg");
@@ -175,12 +212,9 @@ public final class Gui {
         
         chart = new JFreeChart("", null , plot, true);
         
-        // correct the parenthesis from being below vertical centering
         chart.getTitle().setFont(new Font("Verdana", Font.BOLD, 17));
         
         chartPanel = new ChartPanel(chart) {
-            // Only way to set the size of chart panel
-            // ref: http://www.jfree.org/phpBB2/viewtopic.php?p=75516
             @Override
             public Dimension getPreferredSize() {
                 return new Dimension(500, 325);
@@ -209,10 +243,35 @@ public final class Gui {
                 // no action
             }
         });
-        updateLegendAndAxis();
-        return chartPanel;
-    }
-    
+            updateLegendAndAxis();
+            
+        // Creates a wrapper panel with vertical layout 
+        JPanel wrapperPanel = new JPanel(new java.awt.BorderLayout());
+
+        // Creates a small left-aligned panel for the label
+        JPanel topPanel = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 5, 2));
+        topPanel.setOpaque(false);
+
+        // Render Mode label
+        renderModeLabel = new JLabel("Render Mode: " + Gui.getRenderFrequencyMode());
+        renderModeLabel.setFont(new Font("Verdana", Font.BOLD, 10));
+        renderModeLabel.setForeground(Color.BLACK);
+
+        // Add subtle light-gray background with slight transparency
+        renderModeLabel.setOpaque(true);
+        renderModeLabel.setBackground(new Color(240, 240, 240, 200)); // light gray w/ transparency
+        renderModeLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6)); // padding
+
+        // Add label to top panel
+        topPanel.add(renderModeLabel);
+
+        // Add top panel and chart panel to wrapper
+        wrapperPanel.add(topPanel, java.awt.BorderLayout.NORTH);
+        wrapperPanel.add(chartPanel, java.awt.BorderLayout.CENTER);
+
+        return wrapperPanel;
+        }
+
     public static void addWriteSample(Sample s) {
         wSeries.add(s.sampleNum, s.bwMbSec);
         wAvgSeries.add(s.sampleNum, s.cumAvg);
