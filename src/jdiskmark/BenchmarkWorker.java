@@ -83,6 +83,10 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
         }
 
         Gui.updateLegendAndAxis();
+        RenderFrequencyMode renderMode = App.rmOption; // selected from Advanced Options
+        final java.util.concurrent.atomic.AtomicLong lastUpdateTime =
+                new java.util.concurrent.atomic.AtomicLong(System.currentTimeMillis());
+
 
         if (App.autoReset == true) {
             App.resetTestData();
@@ -128,9 +132,10 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
             BenchmarkOperation wOperation = new BenchmarkOperation();
             wOperation.setBenchmark(benchmark);
             wOperation.ioMode = BenchmarkOperation.IOMode.WRITE;
+            wOperation.setRenderMode(renderMode);   //persist user-selected mode
             wOperation.blockOrder = App.blockSequence;
             wOperation.numSamples = App.numOfSamples;
-            wOperation.numBlocks = App.numOfSamples;
+            wOperation.numBlocks = App.numOfBlocks;
             wOperation.blockSize = App.blockSizeKb;
             wOperation.txSize = App.targetTxSizeKb();
             wOperation.numThreads = App.numOfThreads;
@@ -156,11 +161,11 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
                         if (App.multiFile == true) {
                             testFile = new File(dataDir.getAbsolutePath()
                                     + File.separator + "testdata" + s + ".jdm");
-                        }
+                        }                                           
                         Sample sample = new Sample(WRITE, s);
                         long startTime = System.nanoTime();
                         long totalBytesWrittenInSample = 0;
-                        String mode = (App.writeSyncEnable) ? "rwd" : "rw";
+                        String mode = (App.writeSyncEnable) ? "rwd" : "rw";                     
 
                         try {
                             try (RandomAccessFile rAccFile = new RandomAccessFile(testFile, mode)) {
@@ -193,20 +198,49 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
 //                        msg("s:" + s + " write IO is " + sample.getBwMbSecDisplay() + " MB/s   "
 //                                + "(" + Util.displayString(mbWritten) + "MB written in "
 //                                + Util.displayString(sec) + " sec) elapsedNs: " + elapsedTimeNs);
-                        App.updateMetrics(sample);
-                        publish(sample);
+                        // Determine when to publish based on render mode                                                                
 
-                        wOperation.bwMax = sample.cumMax;
-                        wOperation.bwMin = sample.cumMin;
-                        wOperation.bwAvg = sample.cumAvg;
-                        wOperation.accAvg = sample.cumAccTimeMs;
-                        wOperation.add(sample);
+                        switch (renderMode) {
+                            case PER_SAMPLE -> {
+                                App.updateMetrics(sample);
+                                publish(sample);
+                                wOperation.add(sample);
+                            }
+                            case PER_OPERATION -> {
+                                wOperation.add(sample);
+                            }
+                            case PER_100MS, PER_500MS, PER_1000MS -> {
+                                long interval = renderMode.getIntervalMillis();
+                                long now = System.currentTimeMillis();
+                                if (now - lastUpdateTime.get() >= interval) {
+                                    App.updateMetrics(sample);
+                                    publish(sample);
+                                    lastUpdateTime.set(now);
+                                }
+                                wOperation.add(sample);
+                            }
+                        }                                                  
                     }
                 }));
             }
 
             executorService.shutdown();
             executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+            
+            if (!wOperation.getSamples().isEmpty()) {
+                Sample last = wOperation.getSamples().get(wOperation.getSamples().size() - 1);
+                wOperation.bwMax = last.cumMax;
+                wOperation.bwMin = last.cumMin;
+                wOperation.bwAvg = last.cumAvg;
+                wOperation.accAvg = last.cumAccTimeMs;
+            } 
+
+            if (renderMode == RenderFrequencyMode.PER_OPERATION) {
+                for (Sample s : wOperation.getSamples()) {
+                    App.updateMetrics(s);
+                    publish(s);
+                }
+            }
 
             // GH-10 file IOPS processing
             wOperation.endTime = LocalDateTime.now();
@@ -225,6 +259,7 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
             rOperation.setBenchmark(benchmark);
             // operation parameters
             rOperation.ioMode = BenchmarkOperation.IOMode.READ;
+            rOperation.setRenderMode(renderMode);   //persist user-selected mode
             rOperation.blockOrder = App.blockSequence;
             rOperation.numSamples = App.numOfSamples;
             rOperation.numBlocks = App.numOfBlocks;
@@ -234,6 +269,9 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
             // write sync does not apply to pure read benchmarks
             rOperation.setWriteSyncEnabled(null);
             benchmark.getOperations().add(rOperation);
+            
+            //reset interval timer so READ updates are not throttled by WRITE timestamps
+            lastUpdateTime.set(System.currentTimeMillis());
 
             ExecutorService executorService = Executors.newFixedThreadPool(App.numOfThreads);
 
@@ -283,19 +321,50 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
 //                        msg("s:" + s + " read IO is " + sample.getBwMbSecDisplay() + " MB/s   "
 //                                + "(" + Util.displayString(mbRead) + "MB read in "
 //                                + Util.displayString(sec) + " sec) elapsedNs: " + elapsedTimeNs);
-                        App.updateMetrics(sample);
-                        publish(sample);
-                        rOperation.bwMax = sample.cumMax;
-                        rOperation.bwMin = sample.cumMin;
-                        rOperation.bwAvg = sample.cumAvg;
-                        rOperation.accAvg = sample.cumAccTimeMs;
-                        rOperation.add(sample);
+                        switch (renderMode) {
+                            case PER_SAMPLE -> {
+                                App.updateMetrics(sample);
+                                publish(sample);
+                                rOperation.add(sample); 
+                            }
+                            case PER_OPERATION -> {
+                                rOperation.add(sample);
+                            }
+                            case PER_100MS, PER_500MS, PER_1000MS -> {
+                                long interval = renderMode.getIntervalMillis();
+                                long now = System.currentTimeMillis();
+                                if (now - lastUpdateTime.get() >= interval) {
+                                    App.updateMetrics(sample);
+                                    publish(sample);
+                                    lastUpdateTime.set(now);
+                                }
+                                rOperation.add(sample);
+                            }
+                        }
+
+
+
+                        
+                        if (!rOperation.getSamples().isEmpty()) {
+                            Sample last = rOperation.getSamples().get(rOperation.getSamples().size() - 1);
+                            rOperation.bwMax = last.cumMax;
+                            rOperation.bwMin = last.cumMin;
+                            rOperation.bwAvg = last.cumAvg;
+                            rOperation.accAvg = last.cumAccTimeMs;
+                        }   
                     }
                 }));
-            }
+        }
 
             executorService.shutdown();
             executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+
+            if (renderMode == RenderFrequencyMode.PER_OPERATION) {
+                for (Sample s : rOperation.getSamples()) {
+                    App.updateMetrics(s);
+                    publish(s);
+                }
+            }
 
             // GH-10 file IOPS processing
             rOperation.endTime = LocalDateTime.now();
