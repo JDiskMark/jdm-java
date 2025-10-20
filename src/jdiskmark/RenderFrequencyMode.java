@@ -17,4 +17,13 @@ public enum RenderFrequencyMode {
     public String toString() {
         return label;
     }
+    
+    public long getIntervalMillis() {
+        return switch (this) {
+            case PER_100MS -> 100;
+            case PER_500MS -> 500;
+            case PER_1000MS -> 1000;
+            default -> 0;
+        };
+    }
 }
