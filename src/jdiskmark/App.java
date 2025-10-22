@@ -1,6 +1,7 @@
 
 package jdiskmark;
 
+import picocli.CommandLine;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -12,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingWorker.StateValue;
@@ -21,8 +23,12 @@ import static javax.swing.SwingWorker.StateValue.STARTED;
  * Primary class for global variables.
  */
 public class App {
+
+    // indicate if app is in command line or graphical mode
+    public enum Mode { CLI, GUI }    
+    public static Mode mode = Mode.CLI;
     
-    public static final String VERSION = App.getVersion();
+    public static final String VERSION = getVersion();
     public static final String APP_CACHE_DIR_NAME = System.getProperty("user.home") + File.separator + ".jdm" + File.separator + VERSION;
     public static final File APP_CACHE_DIR = new File(APP_CACHE_DIR_NAME);
     public static final String PROPERTIES_FILENAME = "jdm.properties";
@@ -85,8 +91,24 @@ public class App {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(App::init);
+
+        // no arguments = gui mode, otherwise cmd line interface
+        mode = (args.length == 0) ? Mode.GUI : Mode.CLI;
+        int exitCode = 0;
+        
+        switch (mode) {
+            case Mode.GUI -> java.awt.EventQueue.invokeLater(App::init);
+            case Mode.CLI -> {
+                init();
+                PicoCli cli = new PicoCli();
+                exitCode = new CommandLine(cli)
+                        .setUsageHelpWidth(100)
+                        .execute(args); // run command & exit w its code
+            }
+        }
+        
+        // If execution completes, exit the process.
+        System.exit(exitCode);
     }
     
     /**
@@ -128,14 +150,14 @@ public class App {
      */
     public static void init() {
         
-        App.os = System.getProperty("os.name");
-        App.arch = System.getProperty("os.arch");
-        if (App.os.startsWith("Windows")) {
-            App.processorName = UtilOs.getProcessorNameWindows();
+        os = System.getProperty("os.name");
+        arch = System.getProperty("os.arch");
+        if (os.startsWith("Windows")) {
+            processorName = UtilOs.getProcessorNameWindows();
         } else if (App.os.startsWith("Mac OS")) {
-            App.processorName = UtilOs.getProcessorNameMacOS();
+            processorName = UtilOs.getProcessorNameMacOS();
         } else if (App.os.contains("Linux")) {
-            App.processorName = UtilOs.getProcessorNameLinux();
+            processorName = UtilOs.getProcessorNameLinux();
         }
         
         checkPermission();
@@ -145,30 +167,32 @@ public class App {
         loadConfig();
         
         // initialize data dir if necessary
-        if (App.locationDir == null) {
-            App.locationDir = new File(System.getProperty("user.home"));
-            App.dataDir = new File(App.locationDir.getAbsolutePath()
-                    + File.separator + App.DATADIRNAME);
+        if (locationDir == null) {
+            locationDir = new File(System.getProperty("user.home"));
+            dataDir = new File(locationDir.getAbsolutePath()
+                    + File.separator + DATADIRNAME);
         }
         
-        Gui.configureLaf();
-        
-        Gui.mainFrame = new MainFrame();
-        Gui.runPanel.hideFirstColumn();
-        Gui.selFrame = new SelectDriveFrame();
-        System.out.println(App.getConfigString());
-        Gui.mainFrame.loadConfig();
-        Gui.mainFrame.setLocationRelativeTo(null);
-        Gui.progressBar = Gui.mainFrame.getProgressBar();
+        if (mode == Mode.GUI) {
+            Gui.configureLaf();
+            Gui.mainFrame = new MainFrame();
+            Gui.runPanel.hideFirstColumn();
+            Gui.selFrame = new SelectDriveFrame();
+            System.out.println(getConfigString());
+            Gui.mainFrame.loadConfig();
+            Gui.mainFrame.setLocationRelativeTo(null);
+            Gui.progressBar = Gui.mainFrame.getProgressBar();
+        }
         
         // configure the embedded DB in .jdm
         System.setProperty("derby.system.home", APP_CACHE_DIR_NAME);
         loadBenchmarks();
 
-        // load current drive
-        Gui.updateDiskInfo();
-        
-        Gui.mainFrame.setVisible(true);
+        if (mode == Mode.GUI) {
+            // load current drive
+            Gui.updateDiskInfo();
+            Gui.mainFrame.setVisible(true);
+        }
         
         // save configuration on exit...
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -308,13 +332,17 @@ public class App {
     }
     
     public static void loadBenchmarks() {
-        Gui.runPanel.clearTable();
+        if (mode == Mode.GUI) {
+            Gui.runPanel.clearTable();
+        }
         
         // populate run table with saved runs from db
         System.out.println("loading benchmarks");
         Benchmark.findAll().stream().forEach((Benchmark run) -> {
             benchmarks.put(run.getStartTimeString(), run);
-            Gui.runPanel.addRun(run);
+            if (mode == Mode.GUI) {
+                Gui.runPanel.addRun(run);
+            }
             for (BenchmarkOperation o : run.getOperations()) {
                 operations.put(o.getStartTimeString(), o);
             }
@@ -323,19 +351,22 @@ public class App {
     
     public static void deleteAllBenchmarks() {
         Benchmark.deleteAll();
-        App.benchmarks.clear();
+        benchmarks.clear();
         loadBenchmarks();
     }
     
     // only tested for single delete but should work
     public static void deleteBenchmarks(List<Long> benchmarkIds) {
         Benchmark.delete(benchmarkIds);
-        App.benchmarks.clear();  // clear the cache
+        benchmarks.clear();  // clear the cache
         loadBenchmarks();
     }
     
     public static void msg(String message) {
-        Gui.mainFrame.msg(message);
+        switch(mode) {
+            case GUI -> Gui.mainFrame.msg(message);
+            case CLI -> System.out.println(message);
+        }
     }
     
     public static void cancelBenchmark() {
@@ -364,13 +395,15 @@ public class App {
         
         // 3. update state
         state = State.DISK_TEST_STATE;
-        Gui.mainFrame.adjustSensitivity();
+        if (mode == Mode.GUI) {
+            Gui.mainFrame.adjustSensitivity();
+        }
         
         // 4. create data dir reference
         dataDir = new File (locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
         
         // 5. remove existing test data if exist
-        if (App.autoRemoveData && dataDir.exists()) {
+        if (autoRemoveData && dataDir.exists()) {
             if (dataDir.delete()) {
                 msg("removed existing data dir");
             } else {
@@ -383,23 +416,33 @@ public class App {
         
         // 7. start disk worker thread
         worker = new BenchmarkWorker();
-        worker.addPropertyChangeListener((final var event) -> {
-            switch (event.getPropertyName()) {
-                case "progress" -> {
-                    int value = (Integer)event.getNewValue();
-                    Gui.progressBar.setValue(value);
-                    long kbProcessed = value * App.targetTxSizeKb() / 100;
-                    Gui.progressBar.setString(String.valueOf(kbProcessed) + " / " + String.valueOf(App.targetTxSizeKb()));
+        if (mode == Mode.GUI) {
+            worker.addPropertyChangeListener((final var event) -> {
+                switch (event.getPropertyName()) {
+                    case "progress" -> {
+                        int value = (Integer)event.getNewValue();
+                        Gui.progressBar.setValue(value);
+                        long kbProcessed = value * App.targetTxSizeKb() / 100;
+                        Gui.progressBar.setString(String.valueOf(kbProcessed) + " / " + String.valueOf(App.targetTxSizeKb()));
+                    }
+                    case "state" -> {
+                        switch ((StateValue)event.getNewValue()) {
+                            case STARTED -> Gui.progressBar.setString("0 / " + String.valueOf(App.targetTxSizeKb()));
+                            case DONE -> {}
+                        } // end inner switch
+                    }
                 }
-                case "state" -> {
-                    switch ((StateValue)event.getNewValue()) {
-                        case STARTED -> Gui.progressBar.setString("0 / " + String.valueOf(App.targetTxSizeKb()));
-                        case DONE -> {}
-                    } // end inner switch
-                }
-            }
-        });
+            });
+        }
         worker.execute();
+    }
+    
+    public static void waitBenchmarkDone() {
+        try {
+            worker.get();
+        } catch (InterruptedException | ExecutionException ex) {
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     public static long targetMarkSizeKb() {
@@ -503,7 +546,7 @@ public class App {
         try {
             usageInfo = Util.getDiskUsage(locationDir.toString());
         } catch (IOException | InterruptedException ex) {
-            Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         }
         return driveModel + " - " + partitionId + ": " + usageInfo.getUsageTitleDisplay();
     }

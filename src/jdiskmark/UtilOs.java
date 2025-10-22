@@ -139,6 +139,8 @@ public class UtilOs {
      * @return the model as a string
      */
     public static String getDriveModelWindows(String driveLetter) {
+        // match powershell uppercase output
+        driveLetter = driveLetter.toUpperCase();
         File diskModelPsFile = new File(DISK_MODEL_PS_FILENAME);
         if (!diskModelPsFile.exists()) {
             diskModelPsFile = new File(".//app//" + DISK_MODEL_PS_FILENAME);
