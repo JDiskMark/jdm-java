@@ -82,12 +82,16 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
             }
         }
 
-        Gui.updateLegendAndAxis();
+        if (App.mode == App.Mode.GUI) {
+            Gui.updateLegendAndAxis();
+        }
 
         if (App.autoReset == true) {
             App.resetTestData();
-            Gui.resetBenchmarkData();
-            Gui.updateLegendAndAxis();
+            if (App.mode == App.Mode.GUI) {
+                Gui.resetBenchmarkData();
+                Gui.updateLegendAndAxis();
+            }
         }
 
         String driveModel = Util.getDriveModel(locationDir);
@@ -119,10 +123,12 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
         benchmark.partitionId = partitionId;
         benchmark.percentUsed = usageInfo.percentUsed;
         benchmark.usedGb = usageInfo.usedGb;
-        benchmark.totalGb = usageInfo.totalGb;        
+        benchmark.totalGb = usageInfo.totalGb;
         
-        Gui.chart.getTitle().setText(benchmark.getDriveInfo());
-        Gui.chart.getTitle().setVisible(true);
+        if (App.mode == App.Mode.GUI) {
+            Gui.chart.getTitle().setText(benchmark.getDriveInfo());
+            Gui.chart.getTitle().setVisible(true);
+        }
         
         if (App.isWriteEnabled()) {
             BenchmarkOperation wOperation = new BenchmarkOperation();
@@ -212,11 +218,14 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
             wOperation.endTime = LocalDateTime.now();
             wOperation.setTotalOps(wUnitsComplete[0]);
             App.wIops = wOperation.iops;
-            Gui.mainFrame.refreshWriteMetrics();
+            if (App.mode == App.Mode.GUI) {
+                Gui.mainFrame.refreshWriteMetrics();
+            }
         }
 
-        // try renaming all files to clear catch
+        // TODO: review renaming all files to clear catch
         if (App.isReadEnabled() && App.isWriteEnabled() && !isCancelled()) {
+            // TODO: review refactor to App/Cli.dropCache() & Gui.dropCache()
             Gui.dropCache();
         }
 
@@ -301,7 +310,9 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
             rOperation.endTime = LocalDateTime.now();
             rOperation.setTotalOps(rUnitsComplete[0]);
             App.rIops = rOperation.iops;
-            Gui.mainFrame.refreshReadMetrics();
+            if (App.mode == App.Mode.GUI) {
+                Gui.mainFrame.refreshReadMetrics();
+            }
         }
         benchmark.endTime = LocalDateTime.now();
         EntityManager em = EM.getEntityManager();
@@ -312,7 +323,9 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
         for (BenchmarkOperation o : benchmark.getOperations()) {
             App.operations.put(o.getStartTimeString(), o);
         }
-        Gui.runPanel.addRun(benchmark);
+        if (App.mode == App.Mode.GUI) {
+            Gui.runPanel.addRun(benchmark);
+        }
         
         App.nextSampleNumber += App.numOfSamples;
         return true;
@@ -322,10 +335,18 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
     protected void process(List<Sample> sampleList) {
         sampleList.stream().forEach((Sample s) -> {
             switch (s.type) {
-                case Sample.Type.WRITE ->
-                    Gui.addWriteSample(s);
-                case Sample.Type.READ ->
-                    Gui.addReadSample(s);
+                case Sample.Type.WRITE -> {
+                    switch (App.mode) {
+                        case App.Mode.GUI -> Gui.addWriteSample(s);
+                        case App.Mode.CLI -> System.out.println("w: " + s);
+                    }
+                }
+                case Sample.Type.READ -> {
+                    switch (App.mode) {
+                        case App.Mode.GUI -> Gui.addReadSample(s);
+                        case App.Mode.CLI -> System.out.println("r: " + s);
+                    }
+                }
             }
         });
     }
@@ -336,6 +357,8 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
             Util.deleteDirectory(dataDir);
         }
         App.state = App.State.IDLE_STATE;
-        Gui.mainFrame.adjustSensitivity();
+        if (App.mode == App.Mode.GUI) {
+            Gui.mainFrame.adjustSensitivity();
+        }
     }
 }

@@ -198,7 +198,7 @@ public final class Gui {
                     //boolean isInTitleArea = titleArea.contains(event.getTrigger().getX(), event.getTrigger().getY());
                     //if (isInTitleArea) {
                     // open selection dialog
-                        Gui.browseLocation();
+                        browseLocation();
                     //}
                 }
                 lastClickTime = currentTime;
@@ -223,8 +223,7 @@ public final class Gui {
         if (App.showDriveAccess) {
             wDrvAccess.add(s.sampleNum, s.accessTimeMs);
         }
-        Gui.mainFrame.refreshWriteMetrics();
-        //System.out.println(s.toString());
+        mainFrame.refreshWriteMetrics();
     }
     public static void addReadSample(Sample s) {
         rSeries.add(s.sampleNum, s.bwMbSec);
@@ -236,8 +235,7 @@ public final class Gui {
         if (App.showDriveAccess) {
             rDrvAccess.add(s.sampleNum, s.accessTimeMs);
         }
-        Gui.mainFrame.refreshReadMetrics();
-        //System.out.println(s.toString());
+        mainFrame.refreshReadMetrics();
     }
     
     public static void resetBenchmarkData() {
@@ -252,8 +250,8 @@ public final class Gui {
         wDrvAccess.clear();
         rDrvAccess.clear();
         progressBar.setValue(0);
-        Gui.mainFrame.refreshReadMetrics();
-        Gui.mainFrame.refreshWriteMetrics();
+        mainFrame.refreshReadMetrics();
+        mainFrame.refreshWriteMetrics();
     }
     
     public static void updateLegendAndAxis() {
@@ -268,7 +266,6 @@ public final class Gui {
 
         msRenderer.setSeriesVisibleInLegend(0, App.isWriteEnabled() && App.showDriveAccess);
         msRenderer.setSeriesVisibleInLegend(1, App.isReadEnabled() && App.showDriveAccess);
-
         
         msAxis.setVisible(App.showDriveAccess);
     }
@@ -292,8 +289,8 @@ public final class Gui {
     }
     
     static public void updateDiskInfo() {
-        Gui.mainFrame.setLocation(App.locationDir.getAbsolutePath());
-        Gui.chart.getTitle().setText(App.getDriveInfo());
+        mainFrame.setLocation(App.locationDir.getAbsolutePath());
+        chart.getTitle().setText(App.getDriveInfo());
     }
     
     /**
@@ -308,16 +305,19 @@ public final class Gui {
                 UtilOs.dropWriteCacheLinux();
             } else {
                 /* Revised the drop_caches command so it works. - JSL 2024-01-16 */
-                JOptionPane.showMessageDialog(Gui.mainFrame, 
-                        """
+                String message = """
                         Run JDiskMark with sudo to automatically clear the disk cache.
                         
                         For a valid READ benchmark please clear the disk cache now 
                         by using: \"sudo sh -c \'sync; echo 1 > /proc/sys/vm/drop_caches\'\".
                         
-                        Press OK to continue when disk cache has been dropped.""",
-                        "Clear Disk Cache Now",
+                        Press OK to continue when disk cache has been dropped.""";
+                switch(App.mode) {
+                    case App.Mode.GUI -> JOptionPane.showMessageDialog(mainFrame, 
+                        message, "Clear Disk Cache Now",
                         JOptionPane.PLAIN_MESSAGE);
+                    case App.Mode.CLI -> System.out.println(message);
+                }
             }
         } else if (osName.contains("Mac OS")) {
             if (App.isRoot) {
@@ -325,18 +325,21 @@ public final class Gui {
                 UtilOs.flushDataToDriveMacOs();
                 UtilOs.dropWriteCacheMacOs();
             } else {
-                JOptionPane.showMessageDialog(Gui.mainFrame, 
-                        """
+                String message = """
                         For valid READ benchmarks please clear the disk cache.
-                        
+
                         Removable drives can be disconnected and reconnected.
-                        
+
                         For system drives perform a WRITE benchmark, restart 
                         the OS and then perform a READ benchmark.
-                        
-                        Press OK to continue when disk cache has been cleared.""",
-                        "Clear Disk Cache Now",
+
+                        Press OK to continue when disk cache has been cleared.""";
+                switch (App.mode) {
+                    case App.Mode.GUI -> JOptionPane.showMessageDialog(mainFrame, 
+                        message, "Clear Disk Cache Now",
                         JOptionPane.PLAIN_MESSAGE);
+                    case App.Mode.CLI -> System.out.println(message);
+                }
             }
         } else if (osName.contains("Windows")) {
             File emptyStandbyListExe = new File(".\\" + App.ESBL_EXE);
@@ -351,8 +354,7 @@ public final class Gui {
                 UtilOs.emptyStandbyListWindows(emptyStandbyListExe);
                 try { Thread.sleep(700); } catch (InterruptedException ex) {}
             } else  if (App.isAdmin && !emptyStandbyListExe.exists()) {
-                JOptionPane.showMessageDialog(Gui.mainFrame, 
-                        """
+                String message = """
                         Unable to find EmptyStandbyList.exe. This must be
                         present in the install directory for the disk cache
                         to be automatically cleared.
@@ -364,12 +366,15 @@ public final class Gui {
                         the OS and then perform a READ benchmark.
 
                         Press OK to continue when disk cache has been cleared.
-                        """,
-                        "Missing Disk Cache Utility",
-                        JOptionPane.WARNING_MESSAGE);
+                        """;
+                switch (App.mode) {
+                    case App.Mode.GUI -> JOptionPane.showMessageDialog(mainFrame, 
+                            message, "Missing Disk Cache Utility",
+                            JOptionPane.WARNING_MESSAGE);
+                    case App.Mode.CLI -> System.out.println(message);
+                }
             } else if (!App.isAdmin) {
-                JOptionPane.showMessageDialog(Gui.mainFrame, 
-                        """
+                String message = """
                         Run JDiskMark as admin to automatically clear the disk cache.
 
                         For valid READ benchmarks please clear the disk cache by
@@ -378,25 +383,31 @@ public final class Gui {
                         For system drives perform a WRITE benchmark, restart 
                         the OS and then perform a READ benchmark.
 
-                        Press OK to continue when disk cache has been cleared.""",
-                        "Clear Disk Cache Now",
-                        JOptionPane.PLAIN_MESSAGE);
+                        Press OK to continue when disk cache has been cleared.""";
+                switch (App.mode) {
+                    case App.Mode.GUI -> JOptionPane.showMessageDialog(mainFrame, 
+                            message, "Clear Disk Cache Now",
+                            JOptionPane.PLAIN_MESSAGE);
+                    case App.Mode.CLI -> System.out.println(message);
+                }
             }
         } else {
-            String messagePrompt = "Unrecognized OS: " + osName + "\n" +
+            String message = "Unrecognized OS: " + osName + "\n" +
                     """
                     For valid READ benchmarks please clear the disk cache now.
-                    
+
                     Removable drives can be disconnected and reconnected.
-                    
+
                     For system drives perform a WRITE benchmark, restart 
                     the OS and then perform a READ benchmarks benchmark.
-                    
+
                     Press OK to continue when disk cache has been cleared.""";
-            JOptionPane.showMessageDialog(Gui.mainFrame, 
-                    messagePrompt,
-                    "Clear Disk Cache Now",
-                    JOptionPane.PLAIN_MESSAGE);
+            switch (App.mode) {
+                case App.Mode.GUI -> JOptionPane.showMessageDialog(mainFrame,
+                        message, "Clear Disk Cache Now",
+                        JOptionPane.PLAIN_MESSAGE);
+                case App.Mode.CLI -> System.out.println(message);
+            }
         }
     }
     
@@ -409,10 +420,9 @@ public final class Gui {
         ArrayList<Sample> samples = operation.getSamples();
         System.out.println("samples=" + samples.size());
         for (Sample s : samples) {
-            if (operation.ioMode == BenchmarkOperation.IOMode.READ) {
-                addReadSample(s);
-            } else {
-                addWriteSample(s);
+            switch (operation.ioMode) {
+                case BenchmarkOperation.IOMode.READ -> addReadSample(s);
+                case BenchmarkOperation.IOMode.WRITE -> addWriteSample(s);
             }
         }
         App.benchmarkType = benchmark.benchmarkType;
@@ -421,7 +431,7 @@ public final class Gui {
         App.blockSizeKb = operation.blockSize;
         App.blockSequence = operation.blockOrder;
         App.numOfThreads = operation.numThreads;
-        Gui.mainFrame.loadSettings();
+        mainFrame.loadSettings();
         switch (operation.ioMode) {
             case BenchmarkOperation.IOMode.READ -> {
                 App.rAvg = operation.bwAvg;
@@ -429,7 +439,7 @@ public final class Gui {
                 App.rMin = operation.bwMin;
                 App.rAcc = operation.accAvg;
                 App.rIops = operation.iops;
-                Gui.mainFrame.refreshReadMetrics();                
+                mainFrame.refreshReadMetrics();                
             }
             case BenchmarkOperation.IOMode.WRITE -> {
                 App.wAvg = operation.bwAvg;
@@ -437,7 +447,7 @@ public final class Gui {
                 App.wMin = operation.bwMin;
                 App.wAcc = operation.accAvg;
                 App.wIops = operation.iops;
-                Gui.mainFrame.refreshWriteMetrics();
+                mainFrame.refreshWriteMetrics();
             }
         }
     }
@@ -542,9 +552,9 @@ public final class Gui {
     
     public static void browseLocation() {
         if (App.locationDir != null && App.locationDir.exists()) {
-            Gui.selFrame.setInitDir(App.locationDir);
+            selFrame.setInitDir(App.locationDir);
         }
-        Gui.selFrame.setLocationRelativeTo(Gui.mainFrame);
-        Gui.selFrame.setVisible(true);
+        selFrame.setLocationRelativeTo(mainFrame);
+        selFrame.setVisible(true);
     }
 }
