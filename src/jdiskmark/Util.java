@@ -121,7 +121,7 @@ public class Util {
      * @return Disk info if available.
      */
     public static String getDriveModel(File dataDir) {
-        System.out.println("os: " + System.getProperty("os.name"));
+        //System.out.println("os: " + System.getProperty("os.name"));
         Path dataDirPath = Paths.get(dataDir.getAbsolutePath());
         String osName = System.getProperty("os.name");
         String deviceModel;

@@ -16,6 +16,7 @@ import java.io.RandomAccessFile;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -29,8 +30,10 @@ import static jdiskmark.App.numOfSamples;
  * Thread running the disk benchmarking. only one of these threads can run at
  * once.
  */
-public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
+public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
+    Benchmark benchmark;
+    
     public static int[][] divideIntoRanges(int startIndex, int endIndex, int numThreads) {
         if (numThreads <= 0 || endIndex < startIndex) {
             return new int[0][0]; // Handle invalid input
@@ -56,7 +59,7 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
     }
 
     @Override
-    protected Boolean doInBackground() throws Exception {
+    protected Benchmark doInBackground() throws Exception {
 
         System.out.println("*** starting new worker thread");
         msg("Running readTest " + App.isReadEnabled() + "   writeTest " + App.isWriteEnabled());
@@ -112,7 +115,7 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
 
         List<java.util.concurrent.Future<?>> futures = new ArrayList<>();
 
-        Benchmark benchmark = new Benchmark(App.benchmarkType);
+        benchmark = new Benchmark(App.benchmarkType);
 
         // system info
         benchmark.processorName = App.processorName;
@@ -328,7 +331,8 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
         }
         
         App.nextSampleNumber += App.numOfSamples;
-        return true;
+        
+        return benchmark;
     }
 
     @Override
