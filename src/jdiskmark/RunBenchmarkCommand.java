@@ -10,12 +10,12 @@ import java.util.logging.Logger;
 @Command(name = "run", description = "Starts a disk benchmark test with specified parameters.")
 public class RunBenchmarkCommand implements Callable<Integer> {
 
-    // --- REQUIRED PARAMETER ---
-    @Option(names = {"-l", "--location"}, description = "The directory path where test files will be created.", required = true)
+    // --- OPTIONAL PARAMETERS ---
+    @Option(names = {"-l", "--location"},
+            description = "The directory path where test files will be created.",
+            defaultValue = "${user.home}")
     File locationDir;
 
-    // --- OPTIONAL PARAMETERS (Mapped to GUI controls) ---
-    
     @Option(names = {"-t", "--type"},
             description = "Benchmark type: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
             defaultValue = "WRITE")

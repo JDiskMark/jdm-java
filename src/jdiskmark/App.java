@@ -97,7 +97,10 @@ public class App {
         int exitCode = 0;
         
         switch (mode) {
-            case Mode.GUI -> java.awt.EventQueue.invokeLater(App::init);
+            case Mode.GUI -> {
+                java.awt.EventQueue.invokeLater(App::init);
+                return;
+            }
             case Mode.CLI -> {
                 init();
                 PicoCli cli = new PicoCli();
@@ -439,7 +442,8 @@ public class App {
     
     public static void waitBenchmarkDone() {
         try {
-            worker.get();
+            Benchmark benchmark = worker.get();
+            System.out.println(benchmark.toResultString());
         } catch (InterruptedException | ExecutionException ex) {
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         }

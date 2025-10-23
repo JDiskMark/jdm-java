@@ -112,6 +112,36 @@ public class Benchmark implements Serializable {
         return "Benchmark(" + benchmarkType + ") start=" + startTime + "numOps=" + operations.size();
     }
     
+    /**
+     * Use for command line output
+     * @return the result string
+     */
+    public String toResultString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n");
+        sb.append("----------------------------------------\n");
+        sb.append("BENCHMARK RESULTS\n");
+        sb.append("----------------------------------------\n");
+        sb.append("Benchmark Type: ").append(benchmarkType).append("\n");
+        sb.append("Drive: ").append(App.getDriveInfo()).append("\n");
+        sb.append("Start: ").append(startTime).append("\n");
+        sb.append("End: ").append(endTime).append("\n");
+        sb.append("OS: ").append(os).append("\n");
+        for (BenchmarkOperation o : operations) {
+            sb.append("----------------------------------------\n");
+            sb.append("IO Mode: ").append(o.ioMode).append("\n");
+            sb.append("Threads: ").append(o.numThreads).append("\n");
+            sb.append("Block Order: ").append(o.blockOrder).append("\n");
+            sb.append("Blocks (size): ").append(o.numBlocks).append(" (").append(o.blockSize).append(")").append("\n");
+            sb.append("Samples: ").append(o.numSamples).append("\n");
+            sb.append("Min/Max: ").append(o.bwMin).append("/").append(o.bwMax).append("\n");
+            sb.append("BW: ").append(o.bwAvg).append("\n");
+            sb.append("Access: ").append(o.accAvg).append("\n");
+            sb.append("IOPS: ").append(o.iops).append("\n");
+        }
+        return sb.toString();
+    }
+    
     public Benchmark() {
         startTime = LocalDateTime.now();
     }
