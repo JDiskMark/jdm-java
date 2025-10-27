@@ -82,8 +82,6 @@ display top level help
 java -jar jdiskmark.jar -h
 ```
 
-```
-
 display benchmark options
 
 ```
