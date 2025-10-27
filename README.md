@@ -59,7 +59,7 @@ clearing the disk write cache before performing read benchmarks.
    - Windows: Run included EmptyStandbyList.exe or [RAMMap64.exe](https://learn.microsoft.com/en-us/sysinternals/downloads/rammap)
      - With RAMMap64 invalidate disk cache with Empty > Empty Standby List
 
-## Launching with elevated privileges
+## Launching gui with elevated privileges
 
 Note: Take advantage of automatic clearing of the disk cache for write read 
 benchmarks start with sudo or an administrator windows shell.
@@ -67,6 +67,53 @@ benchmarks start with sudo or an administrator windows shell.
 - Linux: `sudo java -jar jdiskmark.jar`
 - Mac OS: `sudo java -jar jdiskmark.jar`
 - Windows: start powershell as administrator then `java -jar jdiskmark.jar`
+
+## command line examples
+
+display version
+
+```
+java -jar jdiskmark.jar -v
+```
+
+display top level help
+
+```
+java -jar jdiskmark.jar -h
+```
+
+```
+
+display benchmark options
+
+```
+java -jar jdiskmark.jar run -h
+Starts a disk benchmark test with specified parameters.
+  -b, --blocks=<numOfBlocks>
+                  Number of blocks/chunks per sample. (Default: 32)
+      --clean     Remove existing JDiskMark data directory before starting.
+  -l, --location=<locationDir>
+                  The directory path where test files will be created.
+  -n, --samples=<numOfSamples>
+                  Total number of samples/files to write/read. (Default: 200)
+  -o, --order=<blockSequence>
+                  Block order: Sequential, Random. (Default: SEQUENTIAL)
+  -s, --block-size=<blockSizeKb>
+                  Size of a block/chunk in Kilobytes (KB). (Default: 512)
+  -t, --type=<benchmarkType>
+                  Benchmark type: Read, Write, Read & Write. (Default: WRITE)
+  -T, --threads=<numOfThreads>
+                  Number of threads to use for testing. (Default: 1)
+  -v, --verbose   Enable detailed logging.
+```
+
+run benchmarks example syntax
+
+```
+java -jar jdiskmark.jar run -n 25 -t "Write"
+java -jar jdiskmark.jar run -l D:\ -n 25 -t "Read"
+java -jar jdiskmark.jar run -n 25 -t "Read & Write"
+```
 
 ## Development Environment
 
