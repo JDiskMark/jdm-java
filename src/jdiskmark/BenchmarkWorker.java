@@ -121,6 +121,8 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         benchmark.processorName = App.processorName;
         benchmark.os = App.os;
         benchmark.arch = App.arch;
+        benchmark.jdk = App.jdk;
+        benchmark.locationDir = App.locationDir.toString();
         // drive information
         benchmark.driveModel = driveModel;
         benchmark.partitionId = partitionId;

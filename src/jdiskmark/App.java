@@ -23,11 +23,6 @@ import static javax.swing.SwingWorker.StateValue.STARTED;
  * Primary class for global variables.
  */
 public class App {
-
-    // indicate if app is in command line or graphical mode
-    public enum Mode { CLI, GUI }    
-    public static Mode mode = Mode.CLI;
-    
     public static final String VERSION = getVersion();
     public static final String APP_CACHE_DIR_NAME = System.getProperty("user.home") + File.separator + ".jdm" + File.separator + VERSION;
     public static final File APP_CACHE_DIR = new File(APP_CACHE_DIR_NAME);
@@ -36,29 +31,32 @@ public class App {
     public static final String BUILD_TOKEN_FILENAME = "build.properties";
     public static final String DATADIRNAME = "JDiskMarkData";
     public static final String ESBL_EXE = "EmptyStandbyList.exe";
-    
+    // error messages
+    public static final String LOCATION_NOT_SELECTED_ERROR = "Location has not been selected";
+    // numeric constants
     public static final int MEGABYTE = 1024 * 1024;
     public static final int KILOBYTE = 1024;
     public static final int IDLE_STATE = 0;
     public static final int DISK_TEST_STATE = 1;
-
+    // benchmark state
     public static enum State { IDLE_STATE, DISK_TEST_STATE };
     public static State state = State.IDLE_STATE;
-    
+    // app is in command line or graphical mode
+    public enum Mode { CLI, GUI }    
+    public static Mode mode = Mode.CLI;
+    // member
     public static Properties p;
     public static File locationDir = null;
     public static File dataDir = null;
     public static File testFile = null;
-    
     // system info
     public static String os;
     public static String arch;
     public static String processorName;
-    
+    public static String jdk;
     // elevated priviledges
     public static boolean isRoot = false;
     public static boolean isAdmin = false;
-    
     // options
     public static boolean multiFile = true;
     public static boolean autoRemoveData = false;
@@ -66,26 +64,24 @@ public class App {
     public static boolean showMaxMin = true;
     public static boolean showDriveAccess = true;
     public static boolean writeSyncEnable = false;
-    
-    // run configuration
+    // input configuration
+    public static Benchmark.BenchmarkType benchmarkType = Benchmark.BenchmarkType.WRITE;
+    public static BenchmarkOperation.IOMode ioMode = BenchmarkOperation.IOMode.WRITE;
     public static BenchmarkOperation.BlockSequence blockSequence = BenchmarkOperation.BlockSequence.SEQUENTIAL;
     public static int numOfSamples = 200;   // desired number of samples
     public static int numOfBlocks = 32;     // desired number of blocks
     public static int blockSizeKb = 512;    // size of a block in KBs
     public static int numOfThreads = 1;     // number of threads
-    
+    // run primitives
     public static BenchmarkWorker worker = null;
     public static int nextSampleNumber = 1;   // number of the next sample
     public static double wMax = -1, wMin = -1, wAvg = -1, wAcc = -1;
     public static double rMax = -1, rMin = -1, rAvg = -1, rAcc = -1;
     public static long wIops = -1;
     public static long rIops = -1;
-    
+    // run objectives
     public static HashMap<String, Benchmark> benchmarks = new HashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new HashMap<>();
-    public static Benchmark.BenchmarkType benchmarkType = Benchmark.BenchmarkType.WRITE;
-    public static BenchmarkOperation.IOMode ioMode = BenchmarkOperation.IOMode.WRITE;
-
     
     /**
      * @param args the command line arguments
@@ -155,13 +151,8 @@ public class App {
         
         os = System.getProperty("os.name");
         arch = System.getProperty("os.arch");
-        if (os.startsWith("Windows")) {
-            processorName = UtilOs.getProcessorNameWindows();
-        } else if (App.os.startsWith("Mac OS")) {
-            processorName = UtilOs.getProcessorNameMacOS();
-        } else if (App.os.contains("Linux")) {
-            processorName = UtilOs.getProcessorNameLinux();
-        }
+        processorName = Util.getProcessorName();
+        jdk = Util.getJvmInfo();
         
         checkPermission();
         if (!APP_CACHE_DIR.exists()) {
@@ -541,18 +532,39 @@ public class App {
      */
     static public String getDriveInfo() {
         if (locationDir == null) {
-            return "Location has not been selected";
+            return LOCATION_NOT_SELECTED_ERROR;
         }
-        
         String driveModel = Util.getDriveModel(locationDir);
         String partitionId = Util.getPartitionId(locationDir.toPath());
-        DiskUsageInfo usageInfo = new DiskUsageInfo(); // init to prevent null ref
+        DiskUsageInfo usageInfo = null;
         try {
             usageInfo = Util.getDiskUsage(locationDir.toString());
         } catch (IOException | InterruptedException ex) {
+            usageInfo = new DiskUsageInfo();
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         }
         return driveModel + " - " + partitionId + ": " + usageInfo.getUsageTitleDisplay();
+    }
+    
+    static public String getDriveModel() {
+        if (locationDir == null) {
+            return LOCATION_NOT_SELECTED_ERROR;
+        }
+        return Util.getDriveModel(locationDir);
+    }
+    
+    static public String getDriveCapacity() {
+        if (locationDir == null) {
+            return LOCATION_NOT_SELECTED_ERROR;
+        }
+        DiskUsageInfo usageInfo = null;
+        try {
+            usageInfo = Util.getDiskUsage(locationDir.toString());
+        } catch (IOException | InterruptedException ex) {
+            usageInfo = new DiskUsageInfo();
+            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return usageInfo.getUsageTitleDisplay();
     }
     
     /**
