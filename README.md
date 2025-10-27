@@ -112,6 +112,35 @@ java -jar jdiskmark.jar run -n 25 -t "Write"
 java -jar jdiskmark.jar run -l D:\ -n 25 -t "Read"
 java -jar jdiskmark.jar run -n 25 -t "Read & Write"
 ```
+run example benchmark
+```
+java -jar jdiskmark.jar run -n 25 -o Random -t "Write" -T 4
+...
+-------------------------------------------
+JDiskMark Benchmark Results (v0.6.3-dev)
+-------------------------------------------
+Benchmark: Write
+Drive: Samsung SSD 990 PRO 4TB
+Capacity: 32% (1178/3725 GB)
+Timestamp: 2025-10-26T18:17:37.529141200
+CPU: 13th Gen Intel(R) Core(TM) i9-13900K
+System: Windows 11 / amd64
+Java: Java(TM) SE Runtime Environment 21.0.3
+Path: C:\Users\james
+-------------------------------------------
+Order: Random
+IOMode: Write
+Thread(s): 4
+Blocks(size): 25(512)
+Samples: 25
+TxSize(KB): 409600
+Speed(MB/s): 3952.64
+SpeedMin(MB/s): 3397.24
+SpeedMax(MB/s): 4243.47
+Latency(ms): 0.13
+IOPS: 28892857
+-------------------------------------------
+```
 
 ## Development Environment
 
@@ -119,15 +148,18 @@ jdiskmark client is developed with [NetBeans 21](https://netbeans.apache.org/fro
 
 ## Source
 
-Source code is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
+Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 
 ## Release Notes
 
 ### v1.0.0 planned
 - TODO: #16 MacOS installer - tyler
 - TODO: #15 Ubuntu installer - jeff
+- TODO: #70 app icon - ian
 - TODO: #33 maven build - lane
 - TODO: #40 gui presentation issues - james
+- TODO: #78 throttle graphics render - valerio
+- TODO: #69 command line support - james
 - #84 processor info resolved for (sp) installs
 - #73 refactor benchmark data model, keyboard op sel
 
