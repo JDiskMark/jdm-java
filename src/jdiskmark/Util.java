@@ -254,4 +254,23 @@ public class Util {
             return partitionPath;
         }
     }
+    
+    public static String getJvmInfo() {
+        StringBuilder sb = new StringBuilder();
+        String vendor = System.getProperty("java.runtime.name");
+        String version = System.getProperty("java.version");
+        sb.append(vendor + " " + version);
+        return sb.toString();
+    }
+    
+    public static String getProcessorName() {
+        if (App.os.startsWith("Windows")) {
+            return UtilOs.getProcessorNameWindows();
+        } else if (App.os.startsWith("Mac OS")) {
+            return UtilOs.getProcessorNameMacOS();
+        } else if (App.os.contains("Linux")) {
+            return UtilOs.getProcessorNameLinux();
+        }
+        return "processor name unknown";
+    }
 }
