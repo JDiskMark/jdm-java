@@ -141,11 +141,11 @@ public class Benchmark implements Serializable {
             sb.append("Thread(s): ").append(o.numThreads).append("\n");
             sb.append("Blocks(size): ").append(o.numBlocks).append("(").append(o.blockSize).append(")").append("\n");
             sb.append("Samples: ").append(o.numSamples).append("\n");
-            sb.append("TxSize: ").append(o.txSize).append("\n");
-            sb.append("Speed(MB/s): ").append(o.bwAvg).append("\n");
-            sb.append("SpeedMin(MB/s): ").append(o.bwMin).append("\n");
-            sb.append("SpeedMax(MB/s): ").append(o.bwMax).append("\n");
-            sb.append("Latency(ms): ").append(o.accAvg).append("\n");
+            sb.append("TxSize(KB): ").append(o.txSize).append("\n");
+            sb.append("Speed(MB/s): ").append(DF.format(o.bwAvg)).append("\n");
+            sb.append("SpeedMin(MB/s): ").append(DF.format(o.bwMin)).append("\n");
+            sb.append("SpeedMax(MB/s): ").append(DF.format(o.bwMax)).append("\n");
+            sb.append("Latency(ms): ").append(DF.format(o.accAvg)).append("\n");
             sb.append("IOPS: ").append(o.iops).append("\n");
         }
         sb.append("-------------------------------------------\n");
