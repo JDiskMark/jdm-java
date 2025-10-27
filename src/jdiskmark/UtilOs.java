@@ -154,10 +154,11 @@ public class UtilOs {
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
             while ((line = reader.readLine()) != null) {
-                System.out.println(line);
+                if (App.verbose) {
+                    System.out.println(line);
+                }
                 if (line.trim().endsWith(driveLetter + ":")) {
                     String model = line.split(driveLetter + ":")[0].trim();
-                    System.out.println("model is: " + model);
                     return model;
                 }
             }

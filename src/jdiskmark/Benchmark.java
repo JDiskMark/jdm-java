@@ -95,7 +95,7 @@ public class Benchmark implements Serializable {
 
     
     @OneToMany(mappedBy = "benchmark", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<BenchmarkOperation> operations = new ArrayList<>();
+    private final List<BenchmarkOperation> operations;
     
     public List<BenchmarkOperation> getOperations() {
         return operations;
@@ -153,10 +153,12 @@ public class Benchmark implements Serializable {
     }
     
     public Benchmark() {
+        operations = new ArrayList<>();
         startTime = LocalDateTime.now();
     }
     
     Benchmark(BenchmarkType type) {
+        operations = new ArrayList<>();
         startTime = LocalDateTime.now();
         benchmarkType = type;
     }
@@ -203,6 +205,10 @@ public class Benchmark implements Serializable {
         em.getTransaction().begin();
         int deletedOperationsCount = em.createQuery("DELETE FROM BenchmarkOperation").executeUpdate();
         int deletedBenchmarksCount = em.createQuery("DELETE FROM Benchmark").executeUpdate();
+        if (App.verbose) {
+            App.msg("deletedOperations=" + deletedOperationsCount);
+            App.msg("deletedBenchmarks=" + deletedBenchmarksCount);
+        }
         em.getTransaction().commit();
         return deletedBenchmarksCount;
     }
@@ -213,17 +219,22 @@ public class Benchmark implements Serializable {
         
         // delete the child BenchmarkOperation records.
         String deleteOperationsJpql = "DELETE FROM BenchmarkOperation bo WHERE bo.benchmark.id IN :benchmarkIds";
-        int deletedOpsCount = em.createQuery(deleteOperationsJpql)
+        int deletedOperationsCount = em.createQuery(deleteOperationsJpql)
                 .setParameter("benchmarkIds", benchmarkIds)
                 .executeUpdate();
         
         // delete the parent BenchmarkOperation records
         String deleteBenchmarksJpql = "DELETE FROM Benchmark b WHERE b.id IN :benchmarkIds";
-        int deletedCount = em.createQuery(deleteBenchmarksJpql)
+        int deletedBenchmarksCount = em.createQuery(deleteBenchmarksJpql)
                 .setParameter("benchmarkIds", benchmarkIds)
                 .executeUpdate();
         
+        if (App.verbose) {
+            App.msg("deletedOperations=" + deletedOperationsCount);
+            App.msg("deletedBenchmarks=" + deletedBenchmarksCount);
+        }
+        
         em.getTransaction().commit();
-        return deletedCount;
+        return deletedBenchmarksCount;
     }
 }

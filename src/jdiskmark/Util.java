@@ -156,7 +156,7 @@ public class Util {
             String devicePath = UtilOs.getDeviceFromPathMacOs(dataDirPath);
             System.out.println("devicePath=" + devicePath);
             deviceModel = UtilOs.getDeviceModelMacOs(devicePath);
-            System.out.println("deviceModel=" + deviceModel);
+            //System.out.println("deviceModel=" + deviceModel);
             return deviceModel;
         } else if (osName.contains("Windows")) {
             // get disk info for windows
@@ -164,7 +164,7 @@ public class Util {
             if (driveLetter.length() == 1 && Character.isLetter(driveLetter.charAt(0))) {
                 // Only proceed if the driveLetter is a single character and a letter
                 deviceModel = UtilOs.getDriveModelWindows(driveLetter);
-                System.out.println("deviceModel=" + deviceModel);
+                //System.out.println("deviceModel=" + deviceModel);
                 return deviceModel;
             }
             return ERROR_DRIVE_INFO;

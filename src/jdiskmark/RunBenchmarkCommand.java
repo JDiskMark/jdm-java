@@ -67,11 +67,15 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             App.blockSizeKb = blockSizeKb;
             App.numOfSamples = numOfSamples;
             App.autoRemoveData = autoRemoveData; // Apply the --clean flag
+            App.verbose = verbose;
 
             // 2. Output final configuration before starting
             System.out.println("--- Starting JDiskMark Benchmark (CLI) ---");
             App.init();
-            System.out.println(App.getConfigString());
+            String configString = App.getConfigString();
+            if (App.verbose) {
+                System.out.println(configString);
+            }
             
             // 3. Execute the benchmark (You will need to adjust startBenchmark to run without a GUI)
             // NOTE: The existing App.startBenchmark() relies on a SwingWorker and Gui components.
