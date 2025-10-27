@@ -70,6 +70,7 @@ public class RunBenchmarkCommand implements Callable<Integer> {
 
             // 2. Output final configuration before starting
             System.out.println("--- Starting JDiskMark Benchmark (CLI) ---");
+            App.init();
             System.out.println(App.getConfigString());
             
             // 3. Execute the benchmark (You will need to adjust startBenchmark to run without a GUI)

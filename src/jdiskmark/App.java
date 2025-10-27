@@ -98,7 +98,6 @@ public class App {
                 return;
             }
             case Mode.CLI -> {
-                init();
                 PicoCli cli = new PicoCli();
                 exitCode = new CommandLine(cli)
                         .setUsageHelpWidth(100)
