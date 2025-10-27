@@ -60,12 +60,14 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
     @Override
     protected Benchmark doInBackground() throws Exception {
-
-        System.out.println("*** starting new worker thread");
-        msg("Running readTest " + App.isReadEnabled() + "   writeTest " + App.isWriteEnabled());
-        msg("num samples: " + App.numOfSamples + ", num blks: " + App.numOfBlocks
-                + ", blk size (kb): " + App.blockSizeKb + ", blockSequence: "
-                + App.blockSequence);
+        
+        if (App.verbose) {
+            msg("*** starting new worker thread");
+            msg("Running readTest " + App.isReadEnabled() + "   writeTest " + App.isWriteEnabled());
+            msg("num samples: " + App.numOfSamples + ", num blks: " + App.numOfBlocks
+                    + ", blk size (kb): " + App.blockSizeKb + ", blockSequence: "
+                    + App.blockSequence);
+        }
 
         // GH-20 final to aid w lambda usage
         final int[] wUnitsComplete = {0};
@@ -105,9 +107,11 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         } catch (IOException | InterruptedException ex) {
             Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, null, ex);
         }
-        msg("drive model=" + driveModel + " partitionId=" + partitionId
-                + " usage=" + usageInfo.toDisplayString());
-
+        if (App.verbose) {
+            msg("drive model=" + driveModel + " partitionId=" + partitionId
+                    + " usage=" + usageInfo.toDisplayString());
+        }
+        
         // GH-20 calculate ranges for concurrent thread IO
         int sIndex = App.nextSampleNumber;
         int eIndex = sIndex + numOfSamples;
@@ -344,13 +348,13 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                 case Sample.Type.WRITE -> {
                     switch (App.mode) {
                         case App.Mode.GUI -> Gui.addWriteSample(s);
-                        case App.Mode.CLI -> System.out.println("w: " + s);
+                        case App.Mode.CLI -> { if (App.verbose) System.out.println("w: " + s); }
                     }
                 }
                 case Sample.Type.READ -> {
                     switch (App.mode) {
                         case App.Mode.GUI -> Gui.addReadSample(s);
-                        case App.Mode.CLI -> System.out.println("r: " + s);
+                        case App.Mode.CLI -> { if (App.verbose) System.out.println("r: " + s); }
                     }
                 }
             }

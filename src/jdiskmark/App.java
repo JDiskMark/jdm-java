@@ -42,7 +42,7 @@ public class App {
     public static enum State { IDLE_STATE, DISK_TEST_STATE };
     public static State state = State.IDLE_STATE;
     // app is in command line or graphical mode
-    public enum Mode { CLI, GUI }    
+    public enum Mode { CLI, GUI }
     public static Mode mode = Mode.CLI;
     // member
     public static Properties p;
@@ -58,6 +58,7 @@ public class App {
     public static boolean isRoot = false;
     public static boolean isAdmin = false;
     // options
+    public static boolean verbose = false; // affects cli output
     public static boolean multiFile = true;
     public static boolean autoRemoveData = false;
     public static boolean autoReset = true;
@@ -94,6 +95,7 @@ public class App {
         
         switch (mode) {
             case Mode.GUI -> {
+                App.verbose = true; // force verbose to true
                 java.awt.EventQueue.invokeLater(App::init);
                 return;
             }
@@ -330,7 +332,9 @@ public class App {
         }
         
         // populate run table with saved runs from db
-        System.out.println("loading benchmarks");
+        if (App.verbose) {
+            System.out.println("loading benchmarks");
+        }
         Benchmark.findAll().stream().forEach((Benchmark run) -> {
             benchmarks.put(run.getStartTimeString(), run);
             if (mode == Mode.GUI) {
@@ -398,7 +402,9 @@ public class App {
         // 5. remove existing test data if exist
         if (autoRemoveData && dataDir.exists()) {
             if (dataDir.delete()) {
-                msg("removed existing data dir");
+                if (verbose) {
+                    msg("removed existing data dir");
+                }
             } else {
                 msg("unable to remove existing data dir");
             }
@@ -433,6 +439,7 @@ public class App {
     public static void waitBenchmarkDone() {
         try {
             Benchmark benchmark = worker.get();
+            // print results to terminal
             System.out.println(benchmark.toResultString());
         } catch (InterruptedException | ExecutionException ex) {
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
@@ -535,7 +542,7 @@ public class App {
         }
         String driveModel = Util.getDriveModel(locationDir);
         String partitionId = Util.getPartitionId(locationDir.toPath());
-        DiskUsageInfo usageInfo = null;
+        DiskUsageInfo usageInfo;
         try {
             usageInfo = Util.getDiskUsage(locationDir.toString());
         } catch (IOException | InterruptedException ex) {
@@ -556,7 +563,7 @@ public class App {
         if (locationDir == null) {
             return LOCATION_NOT_SELECTED_ERROR;
         }
-        DiskUsageInfo usageInfo = null;
+        DiskUsageInfo usageInfo;
         try {
             usageInfo = Util.getDiskUsage(locationDir.toString());
         } catch (IOException | InterruptedException ex) {

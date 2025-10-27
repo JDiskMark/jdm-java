@@ -6,7 +6,8 @@
     <properties>
       <property name="jakarta.persistence.jdbc.url" value="jdbc:derby:derbyDB;create=true"/>
       <property name="jakarta.persistence.jdbc.driver" value="org.apache.derby.jdbc.EmbeddedDriver"/>
-      <property name="eclipselink.logging.level" value="FINE"/>
+      <!-- valid log levels default WARNING, FINE... -->
+      <property name="eclipselink.logging.level" value="WARNING"/>
       <!-- per gemini this is deprecated -->
       <!--<property name="eclipselink.ddl-generation" value="create-or-extend-tables"/>-->
       <!-- this will drop and create a new db every time, useful for testing -->
