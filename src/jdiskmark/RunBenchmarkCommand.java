@@ -10,6 +10,10 @@ import java.util.logging.Logger;
 @Command(name = "run", description = "Starts a disk benchmark test with specified parameters.")
 public class RunBenchmarkCommand implements Callable<Integer> {
 
+    // for hiding and showing the cursor during a cli benchmark
+    public static final String ANSI_HIDE_CURSOR = "\u001b[?25l";
+    public static final String ANSI_SHOW_CURSOR = "\u001b[?25h";
+    
     // --- OPTIONAL PARAMETERS ---
     @Option(names = {"-l", "--location"},
             description = "The directory path where test files will be created.",
@@ -94,8 +98,13 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             // You MUST refactor the core benchmarking logic out of the SwingWorker and 
             // into a dedicated CLI execution class/method for this to work.
             
-            App.startBenchmark();
-            App.waitBenchmarkDone();
+            try {
+                System.out.print(ANSI_HIDE_CURSOR);
+                App.startBenchmark();
+                App.waitBenchmarkDone();
+            } finally {
+                System.out.print(ANSI_SHOW_CURSOR);
+            }
             return 0; // Success exit code
             
         } catch (RuntimeException e) {
