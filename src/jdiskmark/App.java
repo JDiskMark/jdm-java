@@ -47,6 +47,7 @@ public class App {
     // member
     public static Properties p;
     public static File locationDir = null;
+    public static File exportPath = null;
     public static File dataDir = null;
     public static File testFile = null;
     // system info
@@ -58,6 +59,7 @@ public class App {
     public static boolean isRoot = false;
     public static boolean isAdmin = false;
     // options
+    public static boolean autoSave = false;
     public static boolean verbose = false; // affects cli output
     public static boolean multiFile = true;
     public static boolean autoRemoveData = false;
@@ -95,6 +97,7 @@ public class App {
         
         switch (mode) {
             case Mode.GUI -> {
+                App.autoSave = true;
                 App.verbose = true; // force verbose to true
                 java.awt.EventQueue.invokeLater(App::init);
                 return;
@@ -159,7 +162,10 @@ public class App {
         if (!APP_CACHE_DIR.exists()) {
             APP_CACHE_DIR.mkdirs();
         }
-        loadConfig();
+        
+        if (mode == Mode.GUI) {
+            loadConfig();
+        }
         
         // initialize data dir if necessary
         if (locationDir == null) {
@@ -179,21 +185,22 @@ public class App {
             Gui.progressBar = Gui.mainFrame.getProgressBar();
         }
         
-        // configure the embedded DB in .jdm
-        System.setProperty("derby.system.home", APP_CACHE_DIR_NAME);
-        loadBenchmarks();
+        if (App.autoSave) {
+            // configure the embedded DB in .jdm
+            System.setProperty("derby.system.home", APP_CACHE_DIR_NAME);
+            loadBenchmarks();
+        }
 
         if (mode == Mode.GUI) {
             // load current drive
             Gui.updateDiskInfo();
             Gui.mainFrame.setVisible(true);
+            // save configuration on exit...
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                @Override
+                public void run() { App.saveConfig(); }
+            });
         }
-        
-        // save configuration on exit...
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() { App.saveConfig(); }
-        });
     }
     
     public static void checkPermission() {

@@ -16,7 +16,6 @@ import java.io.RandomAccessFile;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -324,13 +323,18 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             }
         }
         benchmark.endTime = LocalDateTime.now();
-        EntityManager em = EM.getEntityManager();
-        em.getTransaction().begin();
-        em.persist(benchmark);
-        em.getTransaction().commit();
-        App.benchmarks.put(benchmark.getStartTimeString(), benchmark);
-        for (BenchmarkOperation o : benchmark.getOperations()) {
-            App.operations.put(o.getStartTimeString(), o);
+        if (App.autoSave) {
+            EntityManager em = EM.getEntityManager();
+            em.getTransaction().begin();
+            em.persist(benchmark);
+            em.getTransaction().commit();
+            App.benchmarks.put(benchmark.getStartTimeString(), benchmark);
+            for (BenchmarkOperation o : benchmark.getOperations()) {
+                App.operations.put(o.getStartTimeString(), o);
+            }
+        }
+        if (App.exportPath != null) {
+            JsonExporter.writeBenchmarkToJson(benchmark, App.exportPath.getAbsolutePath());
         }
         if (App.mode == App.Mode.GUI) {
             Gui.runPanel.addRun(benchmark);
