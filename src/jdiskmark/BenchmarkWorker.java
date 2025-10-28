@@ -31,7 +31,22 @@ import static jdiskmark.App.numOfSamples;
  */
 public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
+    static final int CLI_BAR_LENGTH = 50;
     Benchmark benchmark;
+
+    // this is for rendering a progress bar in the cli
+    private void drawProgressBar(int percent, int totalSamples) {
+        // Ensure percent is capped at 100 for display (in case of >100% on final unit)
+        int displayPercent = Math.min(100, percent); 
+        int numChars = (int) Math.floor((double) displayPercent / 100 * CLI_BAR_LENGTH);
+        String bar = "[";
+        for (int i = 0; i < CLI_BAR_LENGTH; i++) {
+            bar += (i < numChars) ? "#" : " ";
+        }
+        bar += "]";
+        // Print the current progress bar using carriage return (\r)
+        System.out.printf("\rProgress: %s %3d%% (%d total operations) ", bar, displayPercent, totalSamples);
+    }
     
     public static int[][] divideIntoRanges(int startIndex, int endIndex, int numThreads) {
         if (numThreads <= 0 || endIndex < startIndex) {
@@ -191,7 +206,12 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                                         wUnitsComplete[0]++;
                                         unitsComplete[0] = rUnitsComplete[0] + wUnitsComplete[0];
                                         float percentComplete = (float)unitsComplete[0] / (float) unitsTotal * 100f;
-                                        setProgress((int) percentComplete);
+                                        int newProgress = (int) percentComplete;
+                                        if (App.mode == App.Mode.GUI) {
+                                            setProgress(newProgress);
+                                        } else if (App.mode == App.Mode.CLI) {
+                                            drawProgressBar(newProgress, unitsTotal);
+                                        }
                                     }
                                 }
                             }
@@ -284,7 +304,12 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                                         rUnitsComplete[0]++;
                                         unitsComplete[0] = rUnitsComplete[0] + wUnitsComplete[0];
                                         float percentComplete = (float)unitsComplete[0] / (float) unitsTotal * 100f;
-                                        setProgress((int) percentComplete);
+                                        int newProgress = (int) percentComplete;
+                                        if (App.mode == App.Mode.GUI) {
+                                            setProgress(newProgress);
+                                        } else if (App.mode == App.Mode.CLI) {
+                                            drawProgressBar(newProgress, unitsTotal);
+                                        }
                                     }
                                 }
                             }
@@ -373,6 +398,8 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         App.state = App.State.IDLE_STATE;
         if (App.mode == App.Mode.GUI) {
             Gui.mainFrame.adjustSensitivity();
+        } else if (App.mode == App.Mode.CLI) {
+            msg("\nBenchmark finished.");
         }
     }
 }
