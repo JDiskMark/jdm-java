@@ -86,23 +86,29 @@ display benchmark options
 
 ```
 java -jar jdiskmark.jar run -h
+Usage: jdm run [-chsv] [-b=<numOfBlocks>] [-e=<exportPath>] [-l=<locationDir>] [-n=<numOfSamples>]
+               [-o=<blockSequence>] [-t=<benchmarkType>] [-T=<numOfThreads>] [-z=<blockSizeKb>]
 Starts a disk benchmark test with specified parameters.
   -b, --blocks=<numOfBlocks>
                   Number of blocks/chunks per sample. (Default: 32)
-      --clean     Remove existing JDiskMark data directory before starting.
+  -c, --clean     Remove existing JDiskMark data directory before starting.
+  -e, --export=<exportPath>
+                  The output file to export benchmark results in json format.
+  -h, --help      Display this help and exit.
   -l, --location=<locationDir>
                   The directory path where test files will be created.
   -n, --samples=<numOfSamples>
                   Total number of samples/files to write/read. (Default: 200)
   -o, --order=<blockSequence>
                   Block order: Sequential, Random. (Default: SEQUENTIAL)
-  -s, --block-size=<blockSizeKb>
-                  Size of a block/chunk in Kilobytes (KB). (Default: 512)
+  -s, --save      Enable saving the benchmark.
   -t, --type=<benchmarkType>
                   Benchmark type: Read, Write, Read & Write. (Default: WRITE)
   -T, --threads=<numOfThreads>
                   Number of threads to use for testing. (Default: 1)
   -v, --verbose   Enable detailed logging.
+  -z, --block-size=<blockSizeKb>
+                  Size of a block/chunk in Kilobytes (KB). (Default: 512)
 ```
 
 run benchmarks example syntax

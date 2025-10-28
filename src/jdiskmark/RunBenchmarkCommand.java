@@ -62,12 +62,17 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     @Option(names = {"--save", "-s"}, description = "Enable saving the benchmark.")
     boolean save = false;
     
-    @Option(names = {"--clean"}, description = "Remove existing JDiskMark data directory before starting.")
+    @Option(names = {"--clean", "-c"}, description = "Remove existing JDiskMark data directory before starting.")
     boolean autoRemoveData = false;
 
+    @Option(names = {"-h", "--help"}, usageHelp = true, description = "Display this help and exit.")
+    boolean helpRequested;
 
     @Override
     public Integer call() {
+        if (helpRequested) {
+            return 0; // Return 0 (Success) immediately after help is printed
+        }
         try {
             // 1. Apply CLI parameters to the global App state
             App.setLocationDir(locationDir);
