@@ -1,6 +1,7 @@
 
 package jdiskmark;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -60,26 +61,36 @@ public class Benchmark implements Serializable {
     // system data
     @Column
     String os;
+    public String getOs() { return os; }
     @Column
     String arch;
+    public String getArch() { return arch; }
     @Column
     String processorName;
+    public String getProcessorName() { return processorName; }
     @Column
     String jdk;
+    public String getJdk() { return jdk; }
     @Column
     String locationDir;
+    public String getLocationDir() { return locationDir; }
     
     // drive info
     @Column
     String driveModel = null;
+    public String getDriveModel() { return driveModel; }
     @Column
     String partitionId;      // on windows the drive letter
+    public String getPartitionId() { return partitionId; }
     @Column
     long percentUsed;
+    public long getPercentUsed() { return percentUsed; }
     @Column
     double usedGb;
+    public double getUsedGb() { return usedGb; }
     @Column
     double totalGb;
+    public double getTotalGb() { return totalGb; }
     
     // benchmark parameters
     @Column
@@ -193,11 +204,13 @@ public class Benchmark implements Serializable {
     
     // utility methods for collection
     
+    @JsonIgnore
     static List<Benchmark> findAll() {
         EntityManager em = EM.getEntityManager();
         return em.createNamedQuery("Benchmark.findAll", Benchmark.class).getResultList();
     }
     
+    @JsonIgnore
     static int deleteAll() {
         EntityManager em = EM.getEntityManager();
         em.getTransaction().begin();
@@ -211,6 +224,7 @@ public class Benchmark implements Serializable {
         return deletedBenchmarksCount;
     }
     
+    @JsonIgnore
     static int delete(List<Long> benchmarkIds) {
         EntityManager em = EM.getEntityManager();
         em.getTransaction().begin();

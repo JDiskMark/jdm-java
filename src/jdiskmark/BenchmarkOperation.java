@@ -1,6 +1,7 @@
 
 package jdiskmark;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -68,6 +69,7 @@ public class BenchmarkOperation implements Serializable {
     // This is the foreign key relationship
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "benchmark_id") // Specifies the foreign key column
+    @JsonIgnore
     private Benchmark benchmark;
     
     // benchmark parameters
@@ -123,12 +125,6 @@ public class BenchmarkOperation implements Serializable {
         startTime = LocalDateTime.now();
     }
     
-    BenchmarkOperation(IOMode type, BlockSequence order) {
-        startTime = LocalDateTime.now();
-        ioMode = type;
-        blockOrder = order;
-    }
-    
     // basic getters and setters
     public Benchmark getBenchmark() {
         return benchmark;
@@ -150,7 +146,6 @@ public class BenchmarkOperation implements Serializable {
         }
         return (ioMode == null) ? "" : ioMode.toString(); // "Read", "Write", "Read & Write"
     }
-
     
     // GH-20 TODO: review should this be synchronized or redone to not be blocking?
     public synchronized void add(Sample s) {
@@ -233,25 +228,25 @@ public class BenchmarkOperation implements Serializable {
     
     // utility methods for collection
     
-    static List<BenchmarkOperation> findAll() {
+    public static List<BenchmarkOperation> findAll() {
         EntityManager em = EM.getEntityManager();
-        return em.createNamedQuery("Benchmark.findAll", BenchmarkOperation.class).getResultList();
+        return em.createNamedQuery("BenchmarkOperation.findAll", BenchmarkOperation.class).getResultList();
     }
     
-    static int deleteAll() {
+    public static int deleteAll() {
         EntityManager em = EM.getEntityManager();
         em.getTransaction().begin();
-        int deletedCount = em.createQuery("DELETE FROM Benchmark").executeUpdate();
+        int deletedCount = em.createQuery("DELETE FROM BenchmarkOperation").executeUpdate();
         em.getTransaction().commit();
         return deletedCount;
     }
     
-    static int delete(List<Long> benchmarkIds) {
+    public static int delete(List<Long> benchmarkIds) {
         EntityManager em = EM.getEntityManager();
         em.getTransaction().begin();
-        String jpql = "DELETE FROM Benchmark b WHERE b.id IN :benchmarkIds";
+        String jpql = "DELETE FROM BenchmarkOperation b WHERE b.id IN :benchmarkOperationIds";
         int deletedCount = em.createQuery(jpql)
-                .setParameter("benchmarkIds", benchmarkIds)
+                .setParameter("benchmarkOperationIds", benchmarkIds)
                 .executeUpdate();
         em.getTransaction().commit();
         return deletedCount;

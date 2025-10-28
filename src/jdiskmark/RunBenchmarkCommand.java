@@ -15,6 +15,10 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             description = "The directory path where test files will be created.",
             defaultValue = "${user.home}")
     File locationDir;
+    
+    @Option(names = {"-e", "--export"},
+            description = "The output file to export benchmark results in json format.")
+    File exportPath;
 
     @Option(names = {"-t", "--type"},
             description = "Benchmark type: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
@@ -31,17 +35,17 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             defaultValue = "SEQUENTIAL")
     BenchmarkOperation.BlockSequence blockSequence;
 
-    @Option(names = {"-b", "--blocks"}, 
+    @Option(names = {"-b", "--blocks"},
             description = "Number of blocks/chunks per sample. (Default: ${DEFAULT-VALUE})",
             defaultValue = "32")
     int numOfBlocks;
 
-    @Option(names = {"-s", "--block-size"}, 
+    @Option(names = {"-z", "--block-size"},
             description = "Size of a block/chunk in Kilobytes (KB). (Default: ${DEFAULT-VALUE})",
             defaultValue = "512")
     int blockSizeKb;
 
-    @Option(names = {"-n", "--samples"}, 
+    @Option(names = {"-n", "--samples"},
             description = "Total number of samples/files to write/read. (Default: ${DEFAULT-VALUE})",
             defaultValue = "200")
     int numOfSamples;
@@ -51,6 +55,9 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     @Option(names = {"--verbose", "-v"}, description = "Enable detailed logging.")
     boolean verbose = false;
 
+    @Option(names = {"--save", "-s"}, description = "Enable saving the benchmark.")
+    boolean save = false;
+    
     @Option(names = {"--clean"}, description = "Remove existing JDiskMark data directory before starting.")
     boolean autoRemoveData = false;
 
@@ -68,21 +75,25 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             App.numOfSamples = numOfSamples;
             App.autoRemoveData = autoRemoveData; // Apply the --clean flag
             App.verbose = verbose;
+            App.autoSave = save;
+            App.exportPath = exportPath;
 
             // 2. Output final configuration before starting
-            System.out.println("--- Starting JDiskMark Benchmark (CLI) ---");
-            App.init();
-            String configString = App.getConfigString();
             if (App.verbose) {
+                System.out.println("--- Starting JDiskMark Benchmark (CLI) ---");
+            }
+            App.init();
+            if (App.verbose) {
+                String configString = App.getConfigString();
                 System.out.println(configString);
+                System.out.println("Benchmark initiated successfully. Need to wait for completion...");
             }
             
             // 3. Execute the benchmark (You will need to adjust startBenchmark to run without a GUI)
             // NOTE: The existing App.startBenchmark() relies on a SwingWorker and Gui components.
             // You MUST refactor the core benchmarking logic out of the SwingWorker and 
             // into a dedicated CLI execution class/method for this to work.
-                        
-            System.out.println("Benchmark initiated successfully. Need to wait for completion...");
+            
             App.startBenchmark();
             App.waitBenchmarkDone();
             return 0; // Success exit code
