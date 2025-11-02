@@ -1,5 +1,6 @@
 package jdiskmark;
 
+import java.io.File;
 import picocli.CommandLine.Command;
 
 @Command(name = "jdiskmark", mixinStandardHelpOptions = true,
@@ -9,5 +10,93 @@ import picocli.CommandLine.Command;
             RunBenchmarkCommand.class
         })
 public class Cli {
-    // this class is just for structure
+    static public void dropCache() {
+        String osName = System.getProperty("os.name");
+        if (osName.contains("Linux")) {
+            if (App.isRoot) {
+                // GH-2 automate catch dropping
+                UtilOs.flushDataToDriveLinux();
+                UtilOs.dropWriteCacheLinux();
+            } else {
+                /* Revised the drop_caches command so it works. - JSL 2024-01-16 */
+                String message = """
+                        Run JDiskMark with sudo to automatically clear the disk cache.
+                        
+                        For a valid READ benchmark please clear the disk cache now 
+                        by using: \"sudo sh -c \'sync; echo 1 > /proc/sys/vm/drop_caches\'\".
+                        
+                        Press OK to continue when disk cache has been dropped.""";
+                System.out.println(message);
+            }
+        } else if (osName.contains("Mac OS")) {
+            if (App.isRoot) {
+                // GH-2 automate catch dropping
+                UtilOs.flushDataToDriveMacOs();
+                UtilOs.dropWriteCacheMacOs();
+            } else {
+                String message = """
+                        For valid READ benchmarks please clear the disk cache.
+
+                        Removable drives can be disconnected and reconnected.
+
+                        For system drives perform a WRITE benchmark, restart 
+                        the OS and then perform a READ benchmark.
+
+                        Press OK to continue when disk cache has been cleared.""";
+                System.out.println(message);
+            }
+        } else if (osName.contains("Windows")) {
+            File emptyStandbyListExe = new File(".\\" + App.ESBL_EXE);
+            if (!emptyStandbyListExe.exists()) {
+                // jpackage windows relative environment
+                emptyStandbyListExe = new File(".\\app\\" + App.ESBL_EXE);
+            }
+            System.out.println("emptyStandbyListExe.exist=" + emptyStandbyListExe.exists());
+            if (App.isAdmin && emptyStandbyListExe.exists()) {
+                // GH-2 drop cahe, delays in place of flushing cache
+                try { Thread.sleep(1300); } catch (InterruptedException ex) {}
+                UtilOs.emptyStandbyListWindows(emptyStandbyListExe);
+                try { Thread.sleep(700); } catch (InterruptedException ex) {}
+            } else  if (App.isAdmin && !emptyStandbyListExe.exists()) {
+                String message = """
+                        Unable to find EmptyStandbyList.exe. This must be
+                        present in the install directory for the disk cache
+                        to be automatically cleared.
+                        
+                        For valid READ benchmarks please clear the disk cache by
+                        using EmptyStandbyList.exe or RAMMap.exe utilities.
+
+                        For system drives perform a WRITE benchmark, restart 
+                        the OS and then perform a READ benchmark.
+
+                        Press OK to continue when disk cache has been cleared.
+                        """;
+                System.out.println(message);
+            } else if (!App.isAdmin) {
+                String message = """
+                        Run JDiskMark as admin to automatically clear the disk cache.
+
+                        For valid READ benchmarks please clear the disk cache by
+                        using EmptyStandbyList.exe or RAMMap.exe utilities.
+
+                        For system drives perform a WRITE benchmark, restart 
+                        the OS and then perform a READ benchmark.
+
+                        Press OK to continue when disk cache has been cleared.""";
+                System.out.println(message);
+            }
+        } else {
+            String message = "Unrecognized OS: " + osName + "\n" +
+                    """
+                    For valid READ benchmarks please clear the disk cache now.
+
+                    Removable drives can be disconnected and reconnected.
+
+                    For system drives perform a WRITE benchmark, restart 
+                    the OS and then perform a READ benchmarks benchmark.
+
+                    Press OK to continue when disk cache has been cleared.""";
+            System.out.println(message);
+        }
+    }
 }

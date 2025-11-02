@@ -231,7 +231,7 @@ public class BenchmarkCallable implements Callable<Benchmark> {
 
         // TODO: review renaming all files to clear catch
         if (App.isReadEnabled() && App.isWriteEnabled()) {
-            Gui.dropCache();
+            Cli.dropCache();
         }
 
         if (App.isReadEnabled()) {
