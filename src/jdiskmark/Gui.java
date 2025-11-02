@@ -312,12 +312,9 @@ public final class Gui {
                         by using: \"sudo sh -c \'sync; echo 1 > /proc/sys/vm/drop_caches\'\".
                         
                         Press OK to continue when disk cache has been dropped.""";
-                switch(App.mode) {
-                    case App.Mode.GUI -> JOptionPane.showMessageDialog(mainFrame, 
+                JOptionPane.showMessageDialog(mainFrame, 
                         message, "Clear Disk Cache Now",
                         JOptionPane.PLAIN_MESSAGE);
-                    case App.Mode.CLI -> System.out.println(message);
-                }
             }
         } else if (osName.contains("Mac OS")) {
             if (App.isRoot) {
@@ -334,12 +331,9 @@ public final class Gui {
                         the OS and then perform a READ benchmark.
 
                         Press OK to continue when disk cache has been cleared.""";
-                switch (App.mode) {
-                    case App.Mode.GUI -> JOptionPane.showMessageDialog(mainFrame, 
+                JOptionPane.showMessageDialog(mainFrame, 
                         message, "Clear Disk Cache Now",
                         JOptionPane.PLAIN_MESSAGE);
-                    case App.Mode.CLI -> System.out.println(message);
-                }
             }
         } else if (osName.contains("Windows")) {
             File emptyStandbyListExe = new File(".\\" + App.ESBL_EXE);
@@ -367,12 +361,10 @@ public final class Gui {
 
                         Press OK to continue when disk cache has been cleared.
                         """;
-                switch (App.mode) {
-                    case App.Mode.GUI -> JOptionPane.showMessageDialog(mainFrame, 
-                            message, "Missing Disk Cache Utility",
-                            JOptionPane.WARNING_MESSAGE);
-                    case App.Mode.CLI -> System.out.println(message);
-                }
+                JOptionPane.showMessageDialog(mainFrame, 
+                        message, "Missing Disk Cache Utility",
+                        JOptionPane.WARNING_MESSAGE);
+                
             } else if (!App.isAdmin) {
                 String message = """
                         Run JDiskMark as admin to automatically clear the disk cache.
@@ -384,12 +376,9 @@ public final class Gui {
                         the OS and then perform a READ benchmark.
 
                         Press OK to continue when disk cache has been cleared.""";
-                switch (App.mode) {
-                    case App.Mode.GUI -> JOptionPane.showMessageDialog(mainFrame, 
-                            message, "Clear Disk Cache Now",
-                            JOptionPane.PLAIN_MESSAGE);
-                    case App.Mode.CLI -> System.out.println(message);
-                }
+                JOptionPane.showMessageDialog(mainFrame, 
+                        message, "Clear Disk Cache Now",
+                        JOptionPane.PLAIN_MESSAGE);
             }
         } else {
             String message = "Unrecognized OS: " + osName + "\n" +
@@ -402,12 +391,9 @@ public final class Gui {
                     the OS and then perform a READ benchmarks benchmark.
 
                     Press OK to continue when disk cache has been cleared.""";
-            switch (App.mode) {
-                case App.Mode.GUI -> JOptionPane.showMessageDialog(mainFrame,
-                        message, "Clear Disk Cache Now",
-                        JOptionPane.PLAIN_MESSAGE);
-                case App.Mode.CLI -> System.out.println(message);
-            }
+            JOptionPane.showMessageDialog(mainFrame,
+                    message, "Clear Disk Cache Now",
+                    JOptionPane.PLAIN_MESSAGE);
         }
     }
     
