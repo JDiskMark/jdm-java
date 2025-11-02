@@ -229,7 +229,9 @@ public class UtilOs {
      * @return the device path
      */
     static public String getPartitionFromFilePathLinux(Path path) {
-        System.out.println("filePath=" + path.toString());
+        if (App.verbose) {
+            System.out.println("filePath=" + path.toString());
+        }
         try {
             ProcessBuilder pb = new ProcessBuilder("df", "-k", path.toString());
             Map<String, String> env = pb.environment();
@@ -240,7 +242,9 @@ public class UtilOs {
             String line;
             String curPartition;
             while ((line = reader.readLine()) != null) {
-                System.out.println("curLine=" + line);
+                if (App.verbose) {
+                    System.out.println("curLine=" + line);
+                }
                 if (line.contains("/dev/")) {
                     curPartition = line.split(" ")[0];
                     return curPartition;
@@ -270,7 +274,9 @@ public class UtilOs {
             // detect multiple lines and if so indicate it is an LVM
             String line;
             while ((line = reader.readLine()) != null) {
-                System.err.println("devName=" + line);
+                if (App.verbose) {
+                    System.err.println("devName=" + line);
+                }
                 deviceNames.add(line);
             }
         } catch (IOException e) {

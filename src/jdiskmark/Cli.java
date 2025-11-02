@@ -113,9 +113,9 @@ public class Cli {
                 }
             }
         } else {
-            String message = "Unrecognized OS: " + osName + "\n" +
+            String message = "\nUnrecognized OS: " + osName + "\n" +
                     """
-                    \nFor valid READ benchmarks please clear the disk cache now.
+                    For valid READ benchmarks please clear the disk cache now.
 
                     Removable drives can be disconnected and reconnected.
 
