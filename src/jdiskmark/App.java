@@ -491,7 +491,6 @@ public class App {
             if (wMin == -1 || wMin > s.bwMbSec) {
                 wMin = s.bwMbSec;
             }
-            
             // cumulative average bw
             if (wAvg == -1) {
                 wAvg = s.bwMbSec;
@@ -499,7 +498,6 @@ public class App {
                 int n = s.sampleNum;
                 wAvg = (((double)(n - 1) * wAvg) + s.bwMbSec) / (double)n;
             }
-            
             // cumulative access time
             if (wAcc == -1) {
                 wAcc = s.accessTimeMs;
@@ -507,7 +505,7 @@ public class App {
                 int n = s.sampleNum;
                 wAcc = (((double)(n - 1) * wAcc) + s.accessTimeMs) / (double)n;
             }
-            
+            // update sample
             s.cumAvg = wAvg;
             s.cumMax = wMax;
             s.cumMin = wMin;
@@ -519,7 +517,6 @@ public class App {
             if (rMin == -1 || rMin > s.bwMbSec) {
                 rMin = s.bwMbSec;
             }
-            
             // cumulative bw
             if (rAvg == -1) {
                 rAvg = s.bwMbSec;
@@ -527,7 +524,6 @@ public class App {
                 int n = s.sampleNum;
                 rAvg = (((double)(n-1) * rAvg) + s.bwMbSec) / (double)n;
             }
-            
             // cumulative access time
             if (rAcc == -1) {
                 rAcc = s.accessTimeMs;
@@ -535,7 +531,7 @@ public class App {
                 int n = s.sampleNum;
                 rAcc = (((double)(n - 1) * rAcc) + s.accessTimeMs) / (double)n;
             }
-            
+            // update sample
             s.cumAvg = rAvg;
             s.cumMax = rMax;
             s.cumMin = rMin;
