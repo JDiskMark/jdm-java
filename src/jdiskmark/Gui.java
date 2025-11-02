@@ -341,7 +341,9 @@ public final class Gui {
                 // jpackage windows relative environment
                 emptyStandbyListExe = new File(".\\app\\" + App.ESBL_EXE);
             }
-            System.out.println("emptyStandbyListExe.exist=" + emptyStandbyListExe.exists());
+            if (App.verbose) {
+                System.out.println("emptyStandbyListExe.exist=" + emptyStandbyListExe.exists());
+            }
             if (App.isAdmin && emptyStandbyListExe.exists()) {
                 // GH-2 drop cahe, delays in place of flushing cache
                 try { Thread.sleep(1300); } catch (InterruptedException ex) {}

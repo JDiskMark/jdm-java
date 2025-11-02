@@ -1,6 +1,7 @@
 package jdiskmark;
 
 import java.io.File;
+import java.util.Scanner;
 import picocli.CommandLine.Command;
 
 @Command(name = "jdiskmark", mixinStandardHelpOptions = true,
@@ -27,6 +28,12 @@ public class Cli {
                         
                         Press OK to continue when disk cache has been dropped.""";
                 System.out.println(message);
+                try (Scanner scanner = new Scanner(System.in)) {
+                    // Block until Enter is pressed
+                    scanner.nextLine();
+                } catch (java.util.NoSuchElementException ex) {
+                    System.err.println("Input stream closed unexpectedly.");
+                }
             }
         } else if (osName.contains("Mac OS")) {
             if (App.isRoot) {
@@ -44,6 +51,12 @@ public class Cli {
 
                         Press OK to continue when disk cache has been cleared.""";
                 System.out.println(message);
+                try (Scanner scanner = new Scanner(System.in)) {
+                    // Block until Enter is pressed
+                    scanner.nextLine();
+                } catch (java.util.NoSuchElementException ex) {
+                    System.err.println("Input stream closed unexpectedly.");
+                }
             }
         } else if (osName.contains("Windows")) {
             File emptyStandbyListExe = new File(".\\" + App.ESBL_EXE);
@@ -51,7 +64,9 @@ public class Cli {
                 // jpackage windows relative environment
                 emptyStandbyListExe = new File(".\\app\\" + App.ESBL_EXE);
             }
-            System.out.println("emptyStandbyListExe.exist=" + emptyStandbyListExe.exists());
+            if (App.verbose) {
+                System.out.println("\nemptyStandbyListExe.exist=" + emptyStandbyListExe.exists());
+            }
             if (App.isAdmin && emptyStandbyListExe.exists()) {
                 // GH-2 drop cahe, delays in place of flushing cache
                 try { Thread.sleep(1300); } catch (InterruptedException ex) {}
@@ -72,6 +87,12 @@ public class Cli {
                         Press OK to continue when disk cache has been cleared.
                         """;
                 System.out.println(message);
+                try (Scanner scanner = new Scanner(System.in)) {
+                    // Block until Enter is pressed
+                    scanner.nextLine();
+                } catch (java.util.NoSuchElementException ex) {
+                    System.err.println("Input stream closed unexpectedly.");
+                }
             } else if (!App.isAdmin) {
                 String message = """
                         Run JDiskMark as admin to automatically clear the disk cache.
@@ -84,6 +105,12 @@ public class Cli {
 
                         Press OK to continue when disk cache has been cleared.""";
                 System.out.println(message);
+                try (Scanner scanner = new Scanner(System.in)) {
+                    // Block until Enter is pressed
+                    scanner.nextLine();
+                } catch (java.util.NoSuchElementException ex) {
+                    System.err.println("Input stream closed unexpectedly.");
+                }
             }
         } else {
             String message = "Unrecognized OS: " + osName + "\n" +
@@ -97,6 +124,12 @@ public class Cli {
 
                     Press OK to continue when disk cache has been cleared.""";
             System.out.println(message);
+            try (Scanner scanner = new Scanner(System.in)) {
+                // Block until Enter is pressed
+                scanner.nextLine();
+            } catch (java.util.NoSuchElementException ex) {
+                System.err.println("Input stream closed unexpectedly.");
+            }
         }
     }
 }

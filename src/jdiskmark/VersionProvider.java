@@ -7,7 +7,7 @@ public class VersionProvider implements IVersionProvider {
     public String[] getVersion() throws Exception {
         return new String[]{
             "JDiskMark " + App.VERSION,
-            "Built on " + System.getProperty("java.version")
+            " Java " + System.getProperty("java.version")
         };
     }
 }
