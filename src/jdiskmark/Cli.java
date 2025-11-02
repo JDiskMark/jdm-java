@@ -21,7 +21,7 @@ public class Cli {
             } else {
                 /* Revised the drop_caches command so it works. - JSL 2024-01-16 */
                 String message = """
-                        Run JDiskMark with sudo to automatically clear the disk cache.
+                        \nRun JDiskMark with sudo to automatically clear the disk cache.
                         
                         For a valid READ benchmark please clear the disk cache now 
                         by using: \"sudo sh -c \'sync; echo 1 > /proc/sys/vm/drop_caches\'\".
@@ -42,7 +42,7 @@ public class Cli {
                 UtilOs.dropWriteCacheMacOs();
             } else {
                 String message = """
-                        For valid READ benchmarks please clear the disk cache.
+                        \nFor valid READ benchmarks please clear the disk cache.
 
                         Removable drives can be disconnected and reconnected.
 
@@ -74,7 +74,7 @@ public class Cli {
                 try { Thread.sleep(700); } catch (InterruptedException ex) {}
             } else  if (App.isAdmin && !emptyStandbyListExe.exists()) {
                 String message = """
-                        Unable to find EmptyStandbyList.exe. This must be
+                        \nUnable to find EmptyStandbyList.exe. This must be
                         present in the install directory for the disk cache
                         to be automatically cleared.
                         
@@ -95,7 +95,7 @@ public class Cli {
                 }
             } else if (!App.isAdmin) {
                 String message = """
-                        Run JDiskMark as admin to automatically clear the disk cache.
+                        \nRun JDiskMark as admin to automatically clear the disk cache.
 
                         For valid READ benchmarks please clear the disk cache by
                         using EmptyStandbyList.exe or RAMMap.exe utilities.
@@ -115,7 +115,7 @@ public class Cli {
         } else {
             String message = "Unrecognized OS: " + osName + "\n" +
                     """
-                    For valid READ benchmarks please clear the disk cache now.
+                    \nFor valid READ benchmarks please clear the disk cache now.
 
                     Removable drives can be disconnected and reconnected.
 
