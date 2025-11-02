@@ -42,6 +42,7 @@ public class BenchmarkCallable implements Callable<Benchmark> {
         bar += "]";
         // Print the current progress bar using carriage return (\r)
         System.out.printf("\rProgress: %s %3d%% (%d total operations) ", bar, displayPercent, totalSamples);
+        System.out.flush();
     }
     
     // Constructor to pass any necessary data to the task
@@ -344,6 +345,7 @@ public class BenchmarkCallable implements Callable<Benchmark> {
         
         App.nextSampleNumber += App.numOfSamples;
         long duration = System.currentTimeMillis() - start;
+        System.out.println();
         System.out.println(App.benchmarkType + " benchmark finished after " + duration + "ms.");
         return benchmark;
     }
