@@ -446,7 +446,7 @@ public class App {
             }
             case Mode.CLI -> {
                 ExecutorService executor = Executors.newFixedThreadPool(1);
-                BenchmarkCallable benchmarkCallable = new BenchmarkCallable(0);
+                BenchmarkCallable benchmarkCallable = new BenchmarkCallable();
                 cliResult = executor.submit(benchmarkCallable);
             }
         }

@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package jdiskmark;
 
 import jakarta.persistence.EntityManager;
@@ -33,7 +29,6 @@ import static jdiskmark.Sample.Type.WRITE;
 
 public class BenchmarkCallable implements Callable<Benchmark> {
     static final int CLI_BAR_LENGTH = 50;
-    private final int taskId;
     Benchmark benchmark;    
     // this is for rendering a progress bar in the cli
     private void drawProgressBar(int percent, int totalSamples) {
@@ -50,12 +45,11 @@ public class BenchmarkCallable implements Callable<Benchmark> {
     }
     
     // Constructor to pass any necessary data to the task
-    public BenchmarkCallable(int taskId) {
-        this.taskId = taskId;
+    public BenchmarkCallable() {
     }
     @Override
     public Benchmark call() throws Exception {
-        System.out.println("Task " + taskId + ": Background work started...");
+        System.out.println(App.benchmarkType + " benchmark started...");
         
         // The main, long-running logic goes here
         long start = System.currentTimeMillis();
@@ -350,7 +344,7 @@ public class BenchmarkCallable implements Callable<Benchmark> {
         
         App.nextSampleNumber += App.numOfSamples;
         long duration = System.currentTimeMillis() - start;
-        System.out.println("Task " + taskId + ": Finished after " + duration + "ms.");
+        System.out.println(App.benchmarkType + " benchmark finished after " + duration + "ms.");
         return benchmark;
     }
 }
