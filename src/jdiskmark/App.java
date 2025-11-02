@@ -14,6 +14,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingWorker.StateValue;
@@ -58,7 +61,7 @@ public class App {
     // elevated priviledges
     public static boolean isRoot = false;
     public static boolean isAdmin = false;
-    // options
+    // benchmark options
     public static boolean autoSave = false;
     public static boolean verbose = false; // affects cli output
     public static boolean multiFile = true;
@@ -67,7 +70,7 @@ public class App {
     public static boolean showMaxMin = true;
     public static boolean showDriveAccess = true;
     public static boolean writeSyncEnable = false;
-    // input configuration
+    // benchmark configuration
     public static Benchmark.BenchmarkType benchmarkType = Benchmark.BenchmarkType.WRITE;
     public static BenchmarkOperation.IOMode ioMode = BenchmarkOperation.IOMode.WRITE;
     public static BenchmarkOperation.BlockSequence blockSequence = BenchmarkOperation.BlockSequence.SEQUENTIAL;
@@ -75,14 +78,16 @@ public class App {
     public static int numOfBlocks = 32;     // desired number of blocks
     public static int blockSizeKb = 512;    // size of a block in KBs
     public static int numOfThreads = 1;     // number of threads
-    // run primitives
+    // benchmark result containers
     public static BenchmarkWorker worker = null;
+    public static Future<Benchmark> cliResult = null;
+    // benchmark primitives
     public static int nextSampleNumber = 1;   // number of the next sample
     public static double wMax = -1, wMin = -1, wAvg = -1, wAcc = -1;
     public static double rMax = -1, rMin = -1, rAvg = -1, rAcc = -1;
     public static long wIops = -1;
     public static long rIops = -1;
-    // run objectives
+    // benchmarks and operations
     public static HashMap<String, Benchmark> benchmarks = new HashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new HashMap<>();
     
@@ -103,13 +108,12 @@ public class App {
                 return;
             }
             case Mode.CLI -> {
-                PicoCli cli = new PicoCli();
+                Cli cli = new Cli();
                 exitCode = new CommandLine(cli)
                         .setUsageHelpWidth(100)
                         .execute(args); // run command & exit w its code
             }
         }
-        
         // If execution completes, exit the process.
         System.exit(exitCode);
     }
@@ -385,10 +389,8 @@ public class App {
         
         // 1. check that there isn't already a worker in progress
         if (state == State.DISK_TEST_STATE) {
-            //if (!worker.isCancelled() && !worker.isDone()) {
-                msg("Test in progress, aborting...");
-                return;
-            //}
+            msg("Test in progress, aborting...");
+            return;
         }
         
         // 2. check can write to location
@@ -421,35 +423,55 @@ public class App {
         if (dataDir.exists() == false) { dataDir.mkdirs(); }
         
         // 7. start disk worker thread
-        worker = new BenchmarkWorker();
-        if (mode == Mode.GUI) {
-            worker.addPropertyChangeListener((final var event) -> {
-                switch (event.getPropertyName()) {
-                    case "progress" -> {
-                        int value = (Integer)event.getNewValue();
-                        Gui.progressBar.setValue(value);
-                        long kbProcessed = value * App.targetTxSizeKb() / 100;
-                        Gui.progressBar.setString(String.valueOf(kbProcessed) + " / " + String.valueOf(App.targetTxSizeKb()));
+        switch (mode) {
+            case Mode.GUI -> {
+                worker = new BenchmarkWorker();
+                worker.addPropertyChangeListener((final var event) -> {
+                    switch (event.getPropertyName()) {
+                        case "progress" -> {
+                            int value = (Integer)event.getNewValue();
+                            Gui.progressBar.setValue(value);
+                            long kbProcessed = value * App.targetTxSizeKb() / 100;
+                            Gui.progressBar.setString(String.valueOf(kbProcessed) + " / " + String.valueOf(App.targetTxSizeKb()));
+                        }
+                        case "state" -> {
+                            switch ((StateValue)event.getNewValue()) {
+                                case STARTED -> Gui.progressBar.setString("0 / " + String.valueOf(App.targetTxSizeKb()));
+                                case DONE -> {}
+                            } // end inner switch
+                        }
                     }
-                    case "state" -> {
-                        switch ((StateValue)event.getNewValue()) {
-                            case STARTED -> Gui.progressBar.setString("0 / " + String.valueOf(App.targetTxSizeKb()));
-                            case DONE -> {}
-                        } // end inner switch
-                    }
-                }
-            });
+                });
+                worker.execute();
+            }
+            case Mode.CLI -> {
+                ExecutorService executor = Executors.newFixedThreadPool(1);
+                BenchmarkCallable benchmarkCallable = new BenchmarkCallable(0);
+                cliResult = executor.submit(benchmarkCallable);
+            }
         }
-        worker.execute();
     }
     
     public static void waitBenchmarkDone() {
-        try {
-            Benchmark benchmark = worker.get();
-            // print results to terminal
+        Benchmark benchmark = null;
+        switch (mode) {
+            case Mode.GUI -> {
+                try {
+                    benchmark = worker.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+                }
+            }
+            case Mode.CLI -> {
+                try {
+                    benchmark = cliResult.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+                }
+            }
+        }
+        if (benchmark != null) {
             System.out.println(benchmark.toResultString());
-        } catch (InterruptedException | ExecutionException ex) {
-            Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     

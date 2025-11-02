@@ -2,12 +2,12 @@ package jdiskmark;
 
 import picocli.CommandLine.Command;
 
-@Command(name = "jdm", mixinStandardHelpOptions = true,
+@Command(name = "jdiskmark", mixinStandardHelpOptions = true,
         versionProvider = VersionProvider.class,
-        description = "JDiskMark Disk Benchmark Utility. Use 'run' to start a test.",
+        description = "JDiskMark - Java Disk Benchmark Utility. Use 'run' to start a test.",
         subcommands = {
             RunBenchmarkCommand.class
         })
-public class PicoCli {
+public class Cli {
     // this class is just for structure
 }

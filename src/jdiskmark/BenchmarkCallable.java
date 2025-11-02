@@ -1,66 +1,64 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
 package jdiskmark;
 
 import jakarta.persistence.EntityManager;
-import static jdiskmark.App.KILOBYTE;
-import static jdiskmark.App.MEGABYTE;
-import static jdiskmark.App.blockSizeKb;
-import static jdiskmark.App.msg;
-import static jdiskmark.App.numOfBlocks;
-import static jdiskmark.App.testFile;
-import static jdiskmark.App.dataDir;
-import static jdiskmark.Sample.Type.READ;
-import static jdiskmark.Sample.Type.WRITE;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.SwingWorker;
+import static jdiskmark.App.KILOBYTE;
+import static jdiskmark.App.MEGABYTE;
+import static jdiskmark.App.blockSizeKb;
+import static jdiskmark.App.dataDir;
 import static jdiskmark.App.locationDir;
+import static jdiskmark.App.msg;
+import static jdiskmark.App.numOfBlocks;
 import static jdiskmark.App.numOfSamples;
+import static jdiskmark.App.testFile;
+import static jdiskmark.BenchmarkWorker.divideIntoRanges;
+import static jdiskmark.Sample.Type.READ;
+import static jdiskmark.Sample.Type.WRITE;
 
-/**
- * Thread running the disk benchmarking. only one of these threads can run at
- * once.
- */
-public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
-
-    Benchmark benchmark;
-    
-    public static int[][] divideIntoRanges(int startIndex, int endIndex, int numThreads) {
-        if (numThreads <= 0 || endIndex < startIndex) {
-            return new int[0][0]; // Handle invalid input
+public class BenchmarkCallable implements Callable<Benchmark> {
+    static final int CLI_BAR_LENGTH = 50;
+    private final int taskId;
+    Benchmark benchmark;    
+    // this is for rendering a progress bar in the cli
+    private void drawProgressBar(int percent, int totalSamples) {
+        // Ensure percent is capped at 100 for display (in case of >100% on final unit)
+        int displayPercent = Math.min(100, percent); 
+        int numChars = (int) Math.floor((double) displayPercent / 100 * CLI_BAR_LENGTH);
+        String bar = "[";
+        for (int i = 0; i < CLI_BAR_LENGTH; i++) {
+            bar += (i < numChars) ? "#" : " ";
         }
-
-        int numElements = endIndex - startIndex + 1; // Calculate the total number of elements
-        int[][] ranges = new int[numThreads][2];
-        int rangeSize = numElements / numThreads;
-        int remainder = numElements % numThreads;
-        int start = startIndex;
-
-        for (int i = 0; i < numThreads; i++) {
-            int end = start + rangeSize - 1;
-            if (remainder > 0) {
-                end++; // Distribute the remainder
-                remainder--;
-            }
-            ranges[i][0] = start;
-            ranges[i][1] = end;
-            start = end + 1;
-        }
-        return ranges;
+        bar += "]";
+        // Print the current progress bar using carriage return (\r)
+        System.out.printf("\rProgress: %s %3d%% (%d total operations) ", bar, displayPercent, totalSamples);
     }
-
+    
+    // Constructor to pass any necessary data to the task
+    public BenchmarkCallable(int taskId) {
+        this.taskId = taskId;
+    }
     @Override
-    protected Benchmark doInBackground() throws Exception {
+    public Benchmark call() throws Exception {
+        System.out.println("Task " + taskId + ": Background work started...");
+        
+        // The main, long-running logic goes here
+        long start = System.currentTimeMillis();
         
         if (App.verbose) {
             msg("*** starting new worker thread");
@@ -78,6 +76,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         int wUnitsTotal = App.isWriteEnabled() ? numOfBlocks * numOfSamples : 0;
         int rUnitsTotal = App.isReadEnabled() ? numOfBlocks * numOfSamples : 0;
         int unitsTotal = wUnitsTotal + rUnitsTotal;
+
         int blockSize = blockSizeKb * KILOBYTE;
         byte[] blockArr = new byte[blockSize];
         for (int b = 0; b < blockArr.length; b++) {
@@ -86,12 +85,8 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             }
         }
 
-        Gui.updateLegendAndAxis();
-
         if (App.autoReset == true) {
             App.resetTestData();
-            Gui.resetBenchmarkData();
-            Gui.updateLegendAndAxis();
         }
 
         String driveModel = Util.getDriveModel(locationDir);
@@ -126,9 +121,6 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         benchmark.percentUsed = usageInfo.percentUsed;
         benchmark.usedGb = usageInfo.usedGb;
         benchmark.totalGb = usageInfo.totalGb;
-        // update gui title
-        Gui.chart.getTitle().setText(benchmark.getDriveInfo());
-        Gui.chart.getTitle().setVisible(true);
         
         if (App.isWriteEnabled()) {
             BenchmarkOperation wOperation = new BenchmarkOperation();
@@ -155,10 +147,10 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             for (int[] range : tRanges) {
                 final int startSample = range[0];
                 final int endSample = range[1];
-                // submit inline range task thread
+
                 futures.add(executorService.submit(() -> {
 
-                    for (int s = startSample; s <= endSample && !isCancelled(); s++) {
+                    for (int s = startSample; s <= endSample; s++) {
 
                         if (App.multiFile == true) {
                             testFile = new File(dataDir.getAbsolutePath()
@@ -168,6 +160,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                         long startTime = System.nanoTime();
                         long totalBytesWrittenInSample = 0;
                         String mode = (App.writeSyncEnable) ? "rwd" : "rw";
+
                         try {
                             try (RandomAccessFile rAccFile = new RandomAccessFile(testFile, mode)) {
                                 for (int b = 0; b < numOfBlocks; b++) {
@@ -179,19 +172,17 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                                     }
                                     rAccFile.write(blockArr, 0, blockSize);
                                     totalBytesWrittenInSample += blockSize;
-                                    synchronized (BenchmarkWorker.this) {
+                                    synchronized (BenchmarkCallable.this) {
                                         wUnitsComplete[0]++;
                                         unitsComplete[0] = rUnitsComplete[0] + wUnitsComplete[0];
                                         float percentComplete = (float)unitsComplete[0] / (float) unitsTotal * 100f;
                                         int newProgress = (int) percentComplete;
-                                        if (0 <= newProgress && newProgress <= 100) {
-                                            setProgress(newProgress);
-                                        }
+                                        drawProgressBar(newProgress, unitsTotal);
                                     }
                                 }
                             }
                         } catch (IOException ex) {
-                            Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, null, ex);
+                            Logger.getLogger(BenchmarkCallable.class.getName()).log(Level.SEVERE, null, ex);
                         }
                         long endTime = System.nanoTime();
                         long elapsedTimeNs = endTime - startTime;
@@ -202,10 +193,13 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 //                        msg("s:" + s + " write IO is " + sample.getBwMbSecDisplay() + " MB/s   "
 //                                + "(" + Util.displayString(mbWritten) + "MB written in "
 //                                + Util.displayString(sec) + " sec) elapsedNs: " + elapsedTimeNs);
-                        // calculate the sample statistics and store in sample
                         App.updateMetrics(sample);
-                        publish(sample);
-
+                        if (App.verbose) {
+                            switch (sample.type) {
+                                case Sample.Type.WRITE -> System.out.println("w: " + s);
+                                case Sample.Type.READ -> System.out.println("r: " + s);
+                            }
+                        }
                         wOperation.bwMax = sample.cumMax;
                         wOperation.bwMin = sample.cumMin;
                         wOperation.bwAvg = sample.cumAvg;
@@ -214,32 +208,29 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                     }
                 }));
             }
-
-            executorService.shutdown(); // stop accepting new task
+            // stop accepting new task
+            executorService.shutdown();
             // block until all tasks are complete
             for (Future<?> future : futures) {
                 try {
                     future.get();
-                } catch (InterruptedException e) {
+                } catch (InterruptedException ex) {
                     // The primary benchmark thread was interrupted
                     Thread.currentThread().interrupt(); 
-                    throw e; // Re-throw to stop the benchmark
-                } catch (ExecutionException e) {
-                    Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, "Worker range thread failed.", e.getCause());
-                    throw new Exception("Benchmark operation failed in worker thread.", e.getCause());
+                    throw ex; // Re-throw to stop the benchmark
+                } catch (ExecutionException ex) {
+                    Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, "Worker range thread failed.", ex.getCause());
+                    throw new Exception("Benchmark operation failed in worker thread.", ex.getCause());
                 }
             }
-
             // GH-10 file IOPS processing
             wOperation.endTime = LocalDateTime.now();
             wOperation.setTotalOps(wUnitsComplete[0]);
             App.wIops = wOperation.iops;
-            Gui.mainFrame.refreshWriteMetrics();
         }
 
         // TODO: review renaming all files to clear catch
-        if (App.isReadEnabled() && App.isWriteEnabled() && !isCancelled()) {
-            // TODO: review refactor to App.dropCache() & Gui.dropCache()
+        if (App.isReadEnabled() && App.isWriteEnabled()) {
             Gui.dropCache();
         }
 
@@ -264,9 +255,8 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             for (int[] range : tRanges) {
                 final int startSample = range[0];
                 final int endSample = range[1];
-
                 futures.add(executorService.submit(() -> {
-                    for (int s = startSample; s <= endSample && !isCancelled(); s++) {
+                    for (int s = startSample; s <= endSample; s++) {
                         if (App.multiFile == true) {
                             testFile = new File(dataDir.getAbsolutePath()
                                     + File.separator + "testdata" + s + ".jdm");
@@ -285,19 +275,17 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                                     }
                                     rAccFile.readFully(blockArr, 0, blockSize);
                                     totalBytesReadInMark += blockSize;
-                                    synchronized (BenchmarkWorker.this) {
+                                    synchronized (BenchmarkCallable.this) {
                                         rUnitsComplete[0]++;
                                         unitsComplete[0] = rUnitsComplete[0] + wUnitsComplete[0];
                                         float percentComplete = (float)unitsComplete[0] / (float) unitsTotal * 100f;
                                         int newProgress = (int) percentComplete;
-                                        if (0 <= newProgress && newProgress <= 100) {
-                                            setProgress(newProgress);
-                                        }
+                                        drawProgressBar(newProgress, unitsTotal);
                                     }
                                 }
                             }
                         } catch (IOException ex) {
-                            Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, null, ex);
+                            Logger.getLogger(BenchmarkCallable.class.getName()).log(Level.SEVERE, null, ex);
                         }
                         long endTime = System.nanoTime();
                         long elapsedTimeNs = endTime - startTime;
@@ -308,9 +296,13 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 //                        msg("s:" + s + " read IO is " + sample.getBwMbSecDisplay() + " MB/s   "
 //                                + "(" + Util.displayString(mbRead) + "MB read in "
 //                                + Util.displayString(sec) + " sec) elapsedNs: " + elapsedTimeNs);
-                        // calculate the sample statistics and store in sample
                         App.updateMetrics(sample);
-                        publish(sample);
+                        if (App.verbose) {
+                            switch (sample.type) {
+                                case Sample.Type.WRITE -> System.out.println("w: " + s);
+                                case Sample.Type.READ -> System.out.println("r: " + s);
+                            }
+                        }
                         rOperation.bwMax = sample.cumMax;
                         rOperation.bwMin = sample.cumMin;
                         rOperation.bwAvg = sample.cumAvg;
@@ -319,27 +311,25 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                     }
                 }));
             }
-
-            executorService.shutdown(); // stop accepting new task
+            // stop accepting new task
+            executorService.shutdown();
             // block until all tasks are complete
             for (Future<?> future : futures) {
                 try {
                     future.get();
-                } catch (InterruptedException ex) {
-                    // primary benchmark thread was interrupted while waiting
+                } catch (InterruptedException e) {
+                    // Primary benchmark thread interrupted
                     Thread.currentThread().interrupt(); 
-                    throw ex; // Re-throw to stop the benchmark
-                } catch (ExecutionException ex) {
-                    Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, "Worker range thread failed.", ex.getCause());
-                    throw new Exception("Benchmark operation failed in worker thread.", ex.getCause());
+                    throw e; // Re-throw to stop the benchmark
+                } catch (ExecutionException e) {
+                    Logger.getLogger(BenchmarkCallable.class.getName()).log(Level.SEVERE, "Range thread failed.", e.getCause());
+                    throw new RuntimeException("Benchmark operation failed in worker thread.", e.getCause());
                 }
             }
-
             // GH-10 file IOPS processing
             rOperation.endTime = LocalDateTime.now();
             rOperation.setTotalOps(rUnitsComplete[0]);
             App.rIops = rOperation.iops;
-            Gui.mainFrame.refreshReadMetrics();
         }
         benchmark.endTime = LocalDateTime.now();
         if (App.autoSave) {
@@ -352,30 +342,15 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                 App.operations.put(o.getStartTimeString(), o);
             }
         }
+        
+        // process json export if path was set
         if (App.exportPath != null) {
             JsonExporter.writeBenchmarkToJson(benchmark, App.exportPath.getAbsolutePath());
         }
-        Gui.runPanel.addRun(benchmark);
+        
         App.nextSampleNumber += App.numOfSamples;
+        long duration = System.currentTimeMillis() - start;
+        System.out.println("Task " + taskId + ": Finished after " + duration + "ms.");
         return benchmark;
-    }
-
-    @Override
-    protected void process(List<Sample> sampleList) {
-        sampleList.stream().forEach((Sample s) -> {
-            switch (s.type) {
-                case Sample.Type.WRITE -> Gui.addWriteSample(s);
-                case Sample.Type.READ -> Gui.addReadSample(s);
-            }
-        });
-    }
-
-    @Override
-    protected void done() {
-        if (App.autoRemoveData) {
-            Util.deleteDirectory(dataDir);
-        }
-        App.state = App.State.IDLE_STATE;
-        Gui.mainFrame.adjustSensitivity();
     }
 }
