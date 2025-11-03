@@ -95,6 +95,7 @@ public class Benchmark implements Serializable {
     // benchmark parameters
     @Column
     BenchmarkType benchmarkType;
+    public BenchmarkType getBenchmarkType() { return benchmarkType; }
 
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
