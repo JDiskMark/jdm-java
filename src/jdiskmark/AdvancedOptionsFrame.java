@@ -12,6 +12,7 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
     /**
      * Creates new form AdvancedOptionsFrame
      */
+    @SuppressWarnings("unchecked")
     public AdvancedOptionsFrame() {
         initComponents();
         setLocationRelativeTo(Gui.mainFrame);
@@ -37,9 +38,9 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
         jLabel1.setText("Render Mode");
 
         renderModeCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "" }));
-        renderModeCombo.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseReleased(java.awt.event.MouseEvent evt) {
-                renderModeComboMouseReleased(evt);
+        renderModeCombo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                renderModeComboActionPerformed(evt);
             }
         });
 
@@ -67,13 +68,13 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void renderModeComboMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_renderModeComboMouseReleased
+    private void renderModeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_renderModeComboActionPerformed
         try {
             App.rmOption = (RenderFrequencyMode) renderModeCombo.getSelectedItem();
         } catch (RuntimeException re) {
             System.err.print(" error casting item object" + re.getMessage());
         }
-    }//GEN-LAST:event_renderModeComboMouseReleased
+    }//GEN-LAST:event_renderModeComboActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel jLabel1;
