@@ -232,18 +232,18 @@ public class BenchmarkOperation implements Serializable {
         this.iops = iops;
     }
     
-    @Enumerated(EnumType.STRING)
-    @Column
-    private RenderFrequencyMode renderMode;
+//    @Enumerated(EnumType.STRING)
+//    @Column
+//    private RenderFrequencyMode renderMode;
 
-    public void setRenderMode(RenderFrequencyMode renderMode) {
-        this.renderMode = renderMode;
-    }
+//    public void setRenderMode(RenderFrequencyMode renderMode) {
+//        this.renderMode = renderMode;
+//    }
 
-    public RenderFrequencyMode getRenderMode() {
-        // Gracefully default to PER_SAMPLE if null or missing
-        return renderMode != null ? renderMode : RenderFrequencyMode.PER_SAMPLE;
-    }
+//    public RenderFrequencyMode getRenderMode() {
+//        // Gracefully default to PER_SAMPLE if null or missing
+//        return renderMode != null ? renderMode : RenderFrequencyMode.PER_SAMPLE;
+//    }
     // utility methods for collection
     
     static List<BenchmarkOperation> findAll() {

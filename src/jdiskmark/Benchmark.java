@@ -20,6 +20,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 
 /**
  * A read or write benchmark
@@ -80,6 +82,10 @@ public class Benchmark implements Serializable {
     // benchmark parameters
     @Column
     BenchmarkType benchmarkType;
+    
+    @Enumerated(EnumType.STRING)
+    @Column
+    private RenderFrequencyMode renderMode = RenderFrequencyMode.PER_SAMPLE;
 
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
@@ -129,6 +135,15 @@ public class Benchmark implements Serializable {
     public void setId(Long id) {
         this.id = id;
     }
+    
+    public RenderFrequencyMode getRenderMode() {
+    return renderMode != null ? renderMode : RenderFrequencyMode.PER_SAMPLE;
+    }
+
+    public void setRenderMode(RenderFrequencyMode renderMode) {
+        this.renderMode = renderMode;
+    }
+     
     public String getDriveInfo() {
         return driveModel + " - " + partitionId + ": " + getUsageTitleDisplay();
     }
@@ -138,7 +153,7 @@ public class Benchmark implements Serializable {
     public String getUsageColumnDisplay() {
         return percentUsed + "%";
     }
-       
+    
     public String getStartTimeString() {
         return startTime.format(DATE_FORMAT);
     }

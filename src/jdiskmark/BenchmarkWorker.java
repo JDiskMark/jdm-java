@@ -25,11 +25,19 @@ import javax.swing.SwingWorker;
 import static jdiskmark.App.locationDir;
 import static jdiskmark.App.numOfSamples;
 
+
 /**
  * Thread running the disk benchmarking. only one of these threads can run at
  * once.
  */
 public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
+    
+    // Temporary buffer for timed render modes (100/500/1000 ms)
+    private final List<Sample> intervalBuffer = new ArrayList<>();
+    private long lastPublishTime = System.currentTimeMillis();
+    private long nextPublishTime = lastPublishTime;
+
+
 
     public static int[][] divideIntoRanges(int startIndex, int endIndex, int numThreads) {
         if (numThreads <= 0 || endIndex < startIndex) {
@@ -83,9 +91,7 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
         }
 
         Gui.updateLegendAndAxis();
-        RenderFrequencyMode renderMode = App.rmOption; // selected from Advanced Options
-        final java.util.concurrent.atomic.AtomicLong lastUpdateTime =
-                new java.util.concurrent.atomic.AtomicLong(System.currentTimeMillis());
+        
 
 
         if (App.autoReset == true) {
@@ -113,6 +119,8 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
         List<java.util.concurrent.Future<?>> futures = new ArrayList<>();
 
         Benchmark benchmark = new Benchmark(App.benchmarkType);
+        benchmark.setRenderMode(App.rmOption);
+        RenderFrequencyMode renderMode = benchmark.getRenderMode();
 
         // system info
         benchmark.processorName = App.processorName;
@@ -132,7 +140,6 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
             BenchmarkOperation wOperation = new BenchmarkOperation();
             wOperation.setBenchmark(benchmark);
             wOperation.ioMode = BenchmarkOperation.IOMode.WRITE;
-            wOperation.setRenderMode(renderMode);   //persist user-selected mode
             wOperation.blockOrder = App.blockSequence;
             wOperation.numSamples = App.numOfSamples;
             wOperation.numBlocks = App.numOfBlocks;
@@ -145,6 +152,17 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
 
             if (App.multiFile == false) {
                 testFile = new File(dataDir.getAbsolutePath() + File.separator + "testdata.jdm");
+            }
+            
+            if (renderMode == RenderFrequencyMode.PER_100MS
+                    || renderMode == RenderFrequencyMode.PER_500MS
+                    || renderMode == RenderFrequencyMode.PER_1000MS) {
+                synchronized (intervalBuffer) {
+                    intervalBuffer.clear();
+                }
+                long now = System.currentTimeMillis();
+                lastPublishTime = now;
+                nextPublishTime = now + renderMode.getIntervalMillis();
             }
 
             // GH-20 instantiate threads to operate on each range
@@ -212,13 +230,28 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
                             case PER_100MS, PER_500MS, PER_1000MS -> {
                                 long interval = renderMode.getIntervalMillis();
                                 long now = System.currentTimeMillis();
-                                if (now - lastUpdateTime.get() >= interval) {
-                                    App.updateMetrics(sample);
-                                    publish(sample);
-                                    lastUpdateTime.set(now);
+
+                                // collect samples into buffer
+                                synchronized (intervalBuffer) {
+                                    intervalBuffer.add(sample);
                                 }
+
+                                // check if it’s time to flush
+                                if (now >= nextPublishTime) {
+                                    synchronized (intervalBuffer) {
+                                        for (Sample sm : intervalBuffer) {
+                                            App.updateMetrics(sm);
+                                            publish(sm);
+                                        }
+                                        intervalBuffer.clear();
+                                        nextPublishTime = now + interval;
+                                    }
+                                    lastPublishTime = now;
+                                }
+
                                 wOperation.add(sample);
                             }
+
                         }                                                  
                     }
                 }));
@@ -258,8 +291,7 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
             BenchmarkOperation rOperation = new BenchmarkOperation();
             rOperation.setBenchmark(benchmark);
             // operation parameters
-            rOperation.ioMode = BenchmarkOperation.IOMode.READ;
-            rOperation.setRenderMode(renderMode);   //persist user-selected mode
+            rOperation.ioMode = BenchmarkOperation.IOMode.READ;           
             rOperation.blockOrder = App.blockSequence;
             rOperation.numSamples = App.numOfSamples;
             rOperation.numBlocks = App.numOfBlocks;
@@ -269,9 +301,6 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
             // write sync does not apply to pure read benchmarks
             rOperation.setWriteSyncEnabled(null);
             benchmark.getOperations().add(rOperation);
-            
-            //reset interval timer so READ updates are not throttled by WRITE timestamps
-            lastUpdateTime.set(System.currentTimeMillis());
 
             ExecutorService executorService = Executors.newFixedThreadPool(App.numOfThreads);
 
@@ -333,17 +362,26 @@ public class BenchmarkWorker extends SwingWorker<Boolean, Sample> {
                             case PER_100MS, PER_500MS, PER_1000MS -> {
                                 long interval = renderMode.getIntervalMillis();
                                 long now = System.currentTimeMillis();
-                                if (now - lastUpdateTime.get() >= interval) {
-                                    App.updateMetrics(sample);
-                                    publish(sample);
-                                    lastUpdateTime.set(now);
+
+                                synchronized (intervalBuffer) {
+                                    intervalBuffer.add(sample);
                                 }
+
+                                if (now >= nextPublishTime) {
+                                    synchronized (intervalBuffer) {
+                                        for (Sample sm : intervalBuffer) {
+                                            App.updateMetrics(sm);
+                                            publish(sm);
+                                        }
+                                        intervalBuffer.clear();
+                                        nextPublishTime = now + interval;
+                                    }
+                                    lastPublishTime = now;
+                                }
+
                                 rOperation.add(sample);
                             }
                         }
-
-
-
                         
                         if (!rOperation.getSamples().isEmpty()) {
                             Sample last = rOperation.getSamples().get(rOperation.getSamples().size() - 1);

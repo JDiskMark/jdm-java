@@ -254,7 +254,11 @@ public class App {
 
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
-    }
+        
+        value = p.getProperty("renderMode", String.valueOf(rmOption));
+        rmOption = RenderFrequencyMode.valueOf(value.toUpperCase());
+
+            }
     
     public static void saveConfig() {
         if (p == null) { p = new Properties(); }
@@ -273,6 +277,7 @@ public class App {
         p.setProperty("numOfThreads", String.valueOf(numOfThreads));
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         p.setProperty("palette", Gui.palette.name());
+        p.setProperty("renderMode", rmOption.name());
 
         // write properties file
         try {

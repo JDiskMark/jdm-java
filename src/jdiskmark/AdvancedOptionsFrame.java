@@ -2,6 +2,10 @@
 package jdiskmark;
 
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
 
 /**
  *
@@ -14,12 +18,17 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
      */
     @SuppressWarnings("unchecked")
     public AdvancedOptionsFrame() {
+        getContentPane().setLayout(new java.awt.BorderLayout()); 
         initComponents();
+
+        // --- Existing combo setup ---
         setLocationRelativeTo(Gui.mainFrame);
-        DefaultComboBoxModel<RenderFrequencyMode> rModeModel
-                = new DefaultComboBoxModel<>(RenderFrequencyMode.values());
+        DefaultComboBoxModel<RenderFrequencyMode> rModeModel =
+                new DefaultComboBoxModel<>(RenderFrequencyMode.values());
         renderModeCombo.setModel(rModeModel);
     }
+
+
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -32,6 +41,7 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
 
         jLabel1 = new javax.swing.JLabel();
         renderModeCombo = new javax.swing.JComboBox();
+        jButton1 = new javax.swing.JButton();
 
         setTitle("Advanced Options");
 
@@ -41,6 +51,13 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
         renderModeCombo.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 renderModeComboActionPerformed(evt);
+            }
+        });
+
+        jButton1.setLabel("Close");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                closeButtonActionPerformed(evt);
             }
         });
 
@@ -54,6 +71,10 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
                 .addGap(18, 18, 18)
                 .addComponent(renderModeCombo, javax.swing.GroupLayout.PREFERRED_SIZE, 128, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(177, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jButton1)
+                .addGap(26, 26, 26))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -62,7 +83,9 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel1)
                     .addComponent(renderModeCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(268, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 227, Short.MAX_VALUE)
+                .addComponent(jButton1)
+                .addGap(18, 18, 18))
         );
 
         pack();
@@ -76,8 +99,14 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_renderModeComboActionPerformed
 
+    private void closeButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_closeButtonActionPerformed
+        setVisible(false);
+    }//GEN-LAST:event_closeButtonActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JComboBox renderModeCombo;
     // End of variables declaration//GEN-END:variables
+
 }
