@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -103,7 +104,7 @@ public class App {
         switch (mode) {
             case Mode.GUI -> {
                 App.autoSave = true;
-                App.verbose = true; // force verbose to true
+                //App.verbose = true; // force verbose to true
                 java.awt.EventQueue.invokeLater(App::init);
                 return;
             }
@@ -364,7 +365,7 @@ public class App {
     }
     
     // only tested for single delete but should work
-    public static void deleteBenchmarks(List<Long> benchmarkIds) {
+    public static void deleteBenchmarks(List<UUID> benchmarkIds) {
         Benchmark.delete(benchmarkIds);
         benchmarks.clear();  // clear the cache
         loadBenchmarks();

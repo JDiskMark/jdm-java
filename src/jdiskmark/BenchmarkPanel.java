@@ -5,6 +5,7 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
@@ -129,8 +130,8 @@ public class BenchmarkPanel extends javax.swing.JPanel {
         for (BenchmarkOperation o : operations) {
             model.addRow(
                     new Object[] {
-                        run.id,
-                        run.driveModel,
+                        run.getId(),
+                        run.getDriveModel(),
                         run.getUsageColumnDisplay(),
                         o.getModeDisplay(),
                         o.blockOrder,
@@ -163,13 +164,13 @@ public class BenchmarkPanel extends javax.swing.JPanel {
     }
     
     // Get the selected benchmarks
-    public List<Long> getSelectedIds() {
-        LinkedList<Long> ids = new LinkedList<>();
+    public List<UUID> getSelectedIds() {
+        LinkedList<UUID> ids = new LinkedList<>();
         int[] selectedRows = runTable.getSelectedRows();
         // for each row get the benchmark id in the hidden column
         for (int r : selectedRows) {
             try {
-                long benchmarkId = (long) runTable.getModel().getValueAt(r, 0);
+                UUID benchmarkId = (UUID) runTable.getModel().getValueAt(r, 0);
                 ids.add(benchmarkId);
             } catch (RuntimeException re) {
                 System.err.println("Error retrieving id at row=" + r);

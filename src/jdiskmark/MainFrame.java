@@ -8,6 +8,7 @@ import java.awt.Desktop;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.List;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
@@ -975,7 +976,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
         if (result == JOptionPane.YES_OPTION) {
             App.msg("Deleting selected benchmarks.");
-            List<Long> benchmarkIds = Gui.runPanel.getSelectedIds();
+            List<UUID> benchmarkIds = Gui.runPanel.getSelectedIds();
             App.deleteBenchmarks(benchmarkIds);
         }
     }//GEN-LAST:event_deleteSelBenchmarksItemActionPerformed
