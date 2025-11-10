@@ -301,6 +301,8 @@ public final class MainFrame extends javax.swing.JFrame {
         blueGreenPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
         bardCoolPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
         bardWarmPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
+        jSeparator3 = new javax.swing.JPopupMenu.Separator();
+        jMenuItem3 = new javax.swing.JMenuItem();
         helpMenu = new javax.swing.JMenu();
         jMenuItem2 = new javax.swing.JMenuItem();
 
@@ -427,7 +429,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
         jLabel4.setText("Benchmark Type");
 
-        typeCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { " ", " " }));
+        typeCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "" }));
         typeCombo.setPreferredSize(new java.awt.Dimension(60, 24));
         typeCombo.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -850,6 +852,15 @@ public final class MainFrame extends javax.swing.JFrame {
         colorPaletteMenu.add(bardWarmPaletteMenuItem);
 
         optionMenu.add(colorPaletteMenu);
+        optionMenu.add(jSeparator3);
+
+        jMenuItem3.setText("Advanced Options");
+        jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem3ActionPerformed(evt);
+            }
+        });
+        optionMenu.add(jMenuItem3);
 
         menuBar.add(optionMenu);
 
@@ -1074,6 +1085,9 @@ public final class MainFrame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_numThreadsComboActionPerformed
 
+    private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
+        Gui.advancedFrame.setVisible(true);
+    }//GEN-LAST:event_jMenuItem3ActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
@@ -1118,8 +1132,10 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel9;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
+    private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JPopupMenu.Separator jSeparator2;
+    private javax.swing.JPopupMenu.Separator jSeparator3;
     private javax.swing.JPanel locationPanel;
     private javax.swing.JTextField locationText;
     private javax.swing.JMenuBar menuBar;
@@ -1245,11 +1261,11 @@ public final class MainFrame extends javax.swing.JFrame {
     }   
     // Replace lowercase mode options with proper casing
 
-    @SuppressWarnings("unchecked")
-    private void configureModeCombo() {
-        typeCombo.removeAllItems();
-        typeCombo.addItem("Write");
-        typeCombo.addItem("Read");
-        typeCombo.addItem("Read & Write");
-    }    
+//    @SuppressWarnings("unchecked")
+//    private void configureModeCombo() {
+//        typeCombo.removeAllItems();
+//        typeCombo.addItem("Write");
+//        typeCombo.addItem("Read");
+//        typeCombo.addItem("Read & Write");
+//    }    
 }

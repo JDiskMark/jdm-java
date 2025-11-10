@@ -52,6 +52,7 @@ public final class Gui {
     public static ChartPanel chartPanel = null;
     public static JLabel renderModeLabel = new JLabel("Render Mode: PER_SAMPLE");
     public static MainFrame mainFrame = null;
+    public static AdvancedOptionsFrame advancedFrame = null;
     public static SelectDriveFrame selFrame = null;
     public static XYSeries wSeries, wAvgSeries, wMaxSeries, wMinSeries, wDrvAccess;
     public static XYSeries rSeries, rAvgSeries, rMaxSeries, rMinSeries, rDrvAccess;

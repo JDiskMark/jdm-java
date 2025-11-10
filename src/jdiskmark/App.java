@@ -68,6 +68,9 @@ public class App {
     public static int blockSizeKb = 512;    // size of a block in KBs
     public static int numOfThreads = 1;     // number of threads
     
+    // advanced options
+    public static RenderFrequencyMode rmOption = RenderFrequencyMode.PER_SAMPLE;
+    
     public static BenchmarkWorker worker = null;
     public static int nextSampleNumber = 1;   // number of the next sample
     public static double wMax = -1, wMin = -1, wAvg = -1, wAcc = -1;
@@ -156,6 +159,7 @@ public class App {
         Gui.mainFrame = new MainFrame();
         Gui.runPanel.hideFirstColumn();
         Gui.selFrame = new SelectDriveFrame();
+        Gui.advancedFrame = new AdvancedOptionsFrame();
         System.out.println(App.getConfigString());
         Gui.mainFrame.loadConfig();
         Gui.mainFrame.setLocationRelativeTo(null);
@@ -250,7 +254,11 @@ public class App {
 
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
-    }
+        
+        value = p.getProperty("renderMode", String.valueOf(rmOption));
+        rmOption = RenderFrequencyMode.valueOf(value.toUpperCase());
+
+            }
     
     public static void saveConfig() {
         if (p == null) { p = new Properties(); }
@@ -269,6 +277,7 @@ public class App {
         p.setProperty("numOfThreads", String.valueOf(numOfThreads));
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         p.setProperty("palette", Gui.palette.name());
+        p.setProperty("renderMode", rmOption.name());
 
         // write properties file
         try {

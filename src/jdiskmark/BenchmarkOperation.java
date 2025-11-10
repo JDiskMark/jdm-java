@@ -21,6 +21,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
+
 
 /**
  * A read or write benchmark
@@ -37,8 +40,6 @@ public class BenchmarkOperation implements Serializable {
     static final DecimalFormat DFT = new DecimalFormat("###");
     static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
-    
-   
     public enum IOMode {
         READ {
             @Override
@@ -77,9 +78,6 @@ public class BenchmarkOperation implements Serializable {
     IOMode ioMode;
     @Column
     BlockSequence blockOrder;
-    @Column
-    @Convert(converter = RenderFrequencyModeAttributeConverter.class)
-    private RenderFrequencyMode renderMode;
     @Column
     int numBlocks = 0;
     @Column
@@ -234,15 +232,18 @@ public class BenchmarkOperation implements Serializable {
         this.iops = iops;
     }
     
-    public RenderFrequencyMode getRenderMode() {
-        return renderMode;
-    }
+//    @Enumerated(EnumType.STRING)
+//    @Column
+//    private RenderFrequencyMode renderMode;
 
-    public void setRenderMode(RenderFrequencyMode renderMode) {
-        this.renderMode = renderMode;
-    }
+//    public void setRenderMode(RenderFrequencyMode renderMode) {
+//        this.renderMode = renderMode;
+//    }
 
-    
+//    public RenderFrequencyMode getRenderMode() {
+//        // Gracefully default to PER_SAMPLE if null or missing
+//        return renderMode != null ? renderMode : RenderFrequencyMode.PER_SAMPLE;
+//    }
     // utility methods for collection
     
     static List<BenchmarkOperation> findAll() {
