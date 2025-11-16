@@ -106,6 +106,11 @@ public class Benchmark implements Serializable {
     @JsonSerialize(using = UuidToMongoIdSerializer.class)
     private UUID id;
     
+    // user account
+    @Column
+    String user = "anonymous";
+    public String getUser() { return user; }
+    
     // system data
     @Column
     String os;
