@@ -108,8 +108,8 @@ public class Benchmark implements Serializable {
     
     // user account
     @Column
-    String user = "anonymous";
-    public String getUser() { return user; }
+    String username;
+    public String getUsername() { return username; }
     
     // system data
     @Column
