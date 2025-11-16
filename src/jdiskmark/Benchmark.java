@@ -108,7 +108,7 @@ public class Benchmark implements Serializable {
     
     // user account
     @Column
-    String username = "anonymous"; // "user" is reserved
+    String username = "anonymous"; // "user" is reserved in Derby
     public String getUsername() { return username; }
     
     // system data
