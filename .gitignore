@@ -5,5 +5,7 @@
 /tmp
 *.zip
 *.patch
+*.log
+.VSCodeCounter*
 build.properties
 /derbyDB/

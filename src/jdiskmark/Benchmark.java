@@ -44,7 +44,7 @@ public class Benchmark implements Serializable {
     static final DecimalFormat DFT = new DecimalFormat("###");
     static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
-    public enum BenchmarkType {
+        public enum BenchmarkType {
         READ {
             @Override
             public String toString() { return "Read"; }
@@ -56,6 +56,28 @@ public class Benchmark implements Serializable {
         READ_WRITE {    
             @Override
             public String toString() { return "Read & Write"; }
+        }
+    }
+    
+    public enum IOMode {
+        READ {
+            @Override
+            public String toString() { return "Read"; }
+        },
+        WRITE {
+            @Override
+            public String toString() { return "Write"; }
+        }
+    }
+
+    public enum BlockSequence {
+        SEQUENTIAL {
+            @Override
+            public String toString() { return "Sequential"; }
+        },
+        RANDOM {
+            @Override
+            public String toString() { return "Random"; }
         }
     }
     
@@ -167,7 +189,7 @@ public class Benchmark implements Serializable {
     }
     
     // get the first operation of that type
-    public BenchmarkOperation getOperation(BenchmarkOperation.IOMode mode) {
+    public BenchmarkOperation getOperation(IOMode mode) {
         for (BenchmarkOperation operation : operations) {
             if (operation.ioMode == mode) {
                 return operation;
