@@ -1,4 +1,3 @@
-
 package jdiskmark;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -96,6 +95,21 @@ public class Benchmark implements Serializable {
     @Column
     BenchmarkType benchmarkType;
 
+    // ---------------------------------------------------
+    // Cache purge metadata (for read-after-write benchmarks)
+    // ---------------------------------------------------
+    @Column
+    boolean cachePurgePerformed;
+
+    @Column
+    long cachePurgeSizeBytes;
+
+    @Column
+    long cachePurgeDurationMs;
+
+    @Column
+    String cachePurgeMethod;
+
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column(name = "startTime", columnDefinition = "TIMESTAMP")
@@ -165,11 +179,19 @@ public class Benchmark implements Serializable {
     
     public Benchmark() {
         startTime = LocalDateTime.now();
+        cachePurgePerformed = false;
+        cachePurgeSizeBytes = 0L;
+        cachePurgeDurationMs = 0L;
+        cachePurgeMethod = "none";
     }
     
     Benchmark(BenchmarkType type) {
         startTime = LocalDateTime.now();
         benchmarkType = type;
+        cachePurgePerformed = false;
+        cachePurgeSizeBytes = 0L;
+        cachePurgeDurationMs = 0L;
+        cachePurgeMethod = "none";
     }
     
     // basic getters and setters
@@ -200,6 +222,23 @@ public class Benchmark implements Serializable {
         }
         long diffMs = Duration.between(startTime, endTime).toMillis();
         return String.valueOf(diffMs);
+    }
+
+    // cache purge getters (for UI / JSON)
+    public boolean isCachePurgePerformed() {
+        return cachePurgePerformed;
+    }
+
+    public long getCachePurgeSizeBytes() {
+        return cachePurgeSizeBytes;
+    }
+
+    public long getCachePurgeDurationMs() {
+        return cachePurgeDurationMs;
+    }
+
+    public String getCachePurgeMethod() {
+        return cachePurgeMethod;
     }
     
     // utility methods for collection
@@ -235,7 +274,7 @@ public class Benchmark implements Serializable {
                 .setParameter("benchmarkIds", benchmarkIds)
                 .executeUpdate();
         
-        // delete the parent BenchmarkOperation records
+        // delete the parent Benchmark records
         String deleteBenchmarksJpql = "DELETE FROM Benchmark b WHERE b.id IN :benchmarkIds";
         int deletedBenchmarksCount = em.createQuery(deleteBenchmarksJpql)
                 .setParameter("benchmarkIds", benchmarkIds)

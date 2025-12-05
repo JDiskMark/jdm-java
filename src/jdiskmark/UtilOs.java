@@ -40,6 +40,60 @@ public class UtilOs {
         System.out.println("content " + Arrays.toString(content));
     }
     
+    public static boolean isProcessElevated() {
+        try {
+            String groups = System.getProperty("user.name");
+            Process p = Runtime.getRuntime().exec("net session");
+            p.waitFor();
+            return p.exitValue() == 0;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+    
+    public static void restartAsAdmin() {
+        try {
+            String javaBin = System.getProperty("java.home") + "\\bin\\java.exe";
+            String jarPath = new File(App.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI()).getPath();
+
+            String cmd = "powershell -Command \"Start-Process '" + javaBin + "' -ArgumentList '-jar \"" + jarPath + "\"' -Verb RunAs\"";
+
+            Runtime.getRuntime().exec(cmd);
+            System.exit(0);
+        } catch (Exception e) {
+            e.printStackTrace();
+            App.msg("Failed to restart as Admin.");
+        }
+    }
+  
+    public static boolean dropOsCache() {
+            System.out.println(">>> DROP CACHE CALLED inside UtilOs");  // DEBUG
+        try {
+            if (App.isWindows()) {
+                // Windows requires EmptyStandbyList.exe
+                File exe = new File(App.ESBL_EXE);
+                if (!exe.exists()) {
+                    return false;
+                }
+                Process p = new ProcessBuilder(exe.getAbsolutePath(), "standbylist").start();
+                p.waitFor();
+                return true;
+            } else if (App.isLinux() || App.isMac()) {
+                // Attempt typical Linux drop cache
+                Process p = new ProcessBuilder("sync").start();
+                p.waitFor();
+                p = new ProcessBuilder("sudo", "sh", "-c", "echo 3 > /proc/sys/vm/drop_caches").start();
+                p.waitFor();
+                return true;
+            } else {
+                return false;
+            }
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+    
     /**
      * This method became obsolete with an updated version of windows 10. 
      * A newer version of the method is used.

@@ -48,6 +48,11 @@ public final class Gui {
     public static XYLineAndShapeRenderer bwRenderer;
     public static XYLineAndShapeRenderer msRenderer;
     
+    public static void msg(String s) {
+        App.msg(s);
+    }
+
+    
     /**
      * Setup the look and feel
      */
@@ -297,6 +302,7 @@ public final class Gui {
      * GH-2 need solution for dropping catch
      */
     static public void dropCache() {
+        App.msg(">>> Dropping OS cache...");
         String osName = System.getProperty("os.name");
         if (osName.contains("Linux")) {
             if (App.isRoot) {

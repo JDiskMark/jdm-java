@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import javax.swing.filechooser.FileSystemView;
+import java.io.RandomAccessFile;
 
 /**
  * Utility methods for JDiskMark
@@ -39,6 +40,28 @@ public class Util {
             }
         }
         return (path.delete());
+    }
+    
+    public static void readPurge(long estimatedBytes) {
+        try {
+            int block = 1024 * 1024; // 1MB chunks
+            long toRead = Math.min(estimatedBytes, 512L * 1024 * 1024); // cap at 512MB for safety
+            byte[] buf = new byte[block];
+            long read = 0;
+
+            File f = App.testFile;
+            if (f != null && f.exists()) {
+                try (RandomAccessFile raf = new RandomAccessFile(f, "r")) {
+                    while (read < toRead) {
+                        int r = raf.read(buf, 0, block);
+                        if (r == -1) break;
+                        read += r;
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // Soft purge — failure is not fatal
+        }
     }
     
     /**
