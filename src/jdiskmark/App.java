@@ -90,6 +90,8 @@ public class App {
     // benchmarks and operations
     public static HashMap<String, Benchmark> benchmarks = new HashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new HashMap<>();
+    //Cli Mode
+    public static boolean isCliMode = false;
     
     public static boolean isWindows() {
         return os != null && os.toLowerCase().contains("win");

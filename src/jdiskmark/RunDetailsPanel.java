@@ -56,7 +56,7 @@ public class RunDetailsPanel extends JPanel {
         minMaxLabel.setText(op.getBwMinMaxDisplay());
         accLabel.setText(op.getAccTimeDisplay());
 
-        purgeMethodLabel.setText(b.cachePurgeMethod);
+        purgeMethodLabel.setText(b.cachePurgeMethod.toString());
         purgeSizeLabel.setText(String.valueOf(b.cachePurgeSizeBytes / (1024 * 1024)));
         purgeDurationLabel.setText(String.valueOf(b.cachePurgeDurationMs));
     }

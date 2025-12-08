@@ -20,6 +20,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 
 /**
  * A read or write benchmark
@@ -94,6 +96,21 @@ public class Benchmark implements Serializable {
     // benchmark parameters
     @Column
     BenchmarkType benchmarkType;
+    
+    public enum CachePurgeMethod {
+        NONE,
+        DROP_CACHE,
+        SOFT_PURGE;
+
+        @Override
+        public String toString() {
+            return switch (this) {
+                case DROP_CACHE -> "Drop Cache (OS Flush)";
+                case SOFT_PURGE -> "Soft Purge (Read-Through)";
+                case NONE -> "None";
+            };
+        }
+    }
 
     // ---------------------------------------------------
     // Cache purge metadata (for read-after-write benchmarks)
@@ -108,7 +125,8 @@ public class Benchmark implements Serializable {
     long cachePurgeDurationMs;
 
     @Column
-    String cachePurgeMethod;
+    @Enumerated(EnumType.STRING)
+    CachePurgeMethod cachePurgeMethod;
 
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
@@ -182,7 +200,7 @@ public class Benchmark implements Serializable {
         cachePurgePerformed = false;
         cachePurgeSizeBytes = 0L;
         cachePurgeDurationMs = 0L;
-        cachePurgeMethod = "none";
+        cachePurgeMethod = CachePurgeMethod.NONE;
     }
     
     Benchmark(BenchmarkType type) {
@@ -191,7 +209,7 @@ public class Benchmark implements Serializable {
         cachePurgePerformed = false;
         cachePurgeSizeBytes = 0L;
         cachePurgeDurationMs = 0L;
-        cachePurgeMethod = "none";
+        cachePurgeMethod = CachePurgeMethod.NONE;
     }
     
     // basic getters and setters
@@ -237,10 +255,10 @@ public class Benchmark implements Serializable {
         return cachePurgeDurationMs;
     }
 
-    public String getCachePurgeMethod() {
+    public CachePurgeMethod getCachePurgeMethod() {
         return cachePurgeMethod;
     }
-    
+   
     // utility methods for collection
     
     @JsonIgnore

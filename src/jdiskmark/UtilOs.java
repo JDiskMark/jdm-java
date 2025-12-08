@@ -53,20 +53,61 @@ public class UtilOs {
     
     public static void restartAsAdmin() {
         try {
-            String javaBin = System.getProperty("java.home") + "\\bin\\java.exe";
-            String jarPath = new File(App.class.getProtectionDomain()
-                    .getCodeSource().getLocation().toURI()).getPath();
+            String os = System.getProperty("os.name").toLowerCase();
 
-            String cmd = "powershell -Command \"Start-Process '" + javaBin + "' -ArgumentList '-jar \"" + jarPath + "\"' -Verb RunAs\"";
+            // -------------------------------------------------------------------
+            // WINDOWS
+            // -------------------------------------------------------------------
+            if (os.contains("win")) {
 
-            Runtime.getRuntime().exec(cmd);
-            System.exit(0);
+                String javaBin = System.getProperty("java.home") + "\\bin\\java.exe";
+                String jarPath = new File(App.class.getProtectionDomain()
+                        .getCodeSource().getLocation().toURI()).getPath();
+
+                String cmd = "powershell -Command \"Start-Process '" + javaBin +
+                             "' -ArgumentList '-jar \"" + jarPath +
+                             "\"' -Verb RunAs\"";
+
+                Runtime.getRuntime().exec(cmd);
+                System.exit(0);
+                return;
+            }
+
+            // -------------------------------------------------------------------
+            // MAC / LINUX
+            // -------------------------------------------------------------------
+            App.msg("⚠ Restart-as-admin is only supported on Windows.");
+            System.out.println(">>> restartAsAdmin(): unsupported OS = " + os);
+
         } catch (Exception e) {
             e.printStackTrace();
             App.msg("Failed to restart as Admin.");
         }
     }
-  
+    
+    /**
+    * Attempts to purge the OS filesystem cache.
+    *
+    * OS Behavior Summary:
+    * ---------------------
+    * WINDOWS:
+    *   - Admin user: uses EmptyStandbyList.exe to drop standby lists.
+    *   - Non-admin: cannot drop OS cache; BenchmarkWorker falls back
+    *                to soft purge (single-pass read).
+    *
+    * LINUX:
+    *   - drop-cache requires root ("sync; echo 3 > /proc/sys/vm/drop_caches").
+    *   - JDiskMark does NOT attempt privileged Linux cache purge.
+    *   - Always falls back to soft purge.
+    *
+    * MACOS:
+    *   - No supported user-mode drop-cache command.
+    *   - Always falls back to soft purge.
+    *
+    * The caller (BenchmarkWorker) must detect user privilege and select
+    * either admin purge (Windows only) or soft purge.
+    */
+
     public static boolean dropOsCache() {
             System.out.println(">>> DROP CACHE CALLED inside UtilOs");  // DEBUG
         try {

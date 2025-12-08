@@ -15,6 +15,8 @@ import javax.swing.filechooser.FileSystemView;
 import java.io.RandomAccessFile;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.lang.management.ManagementFactory;
+import com.sun.management.OperatingSystemMXBean;
 
 /**
  * Utility methods for JDiskMark
@@ -44,23 +46,33 @@ public class Util {
         return (path.delete());
     }
     
-    public static void readPurge(long estimatedBytes) {
+    public static void readPurge(long estimatedBytes, java.util.function.IntConsumer progressCallback) {
         try {
             int block = 1024 * 1024; // 1MB chunks
-            long toRead = Math.min(estimatedBytes, 512L * 1024 * 1024); // cap at 512MB for safety
+            long toRead = Util.getRecommendedPurgeSize(estimatedBytes);
+
+            System.out.println(">>> Soft purge dynamic size = " + (toRead / (1024*1024)) + " MB");
+
             byte[] buf = new byte[block];
             long read = 0;
 
             File f = App.testFile;
+
             if (f != null && f.exists()) {
                 try (RandomAccessFile raf = new RandomAccessFile(f, "r")) {
                     while (read < toRead) {
                         int r = raf.read(buf, 0, block);
                         if (r == -1) break;
+
                         read += r;
+
+                        // ✔ NEW: progress callback
+                        int pct = (int)((read * 100) / toRead);
+                        progressCallback.accept(pct);
                     }
                 }
             }
+
         } catch (Exception ex) {
             Logger.getLogger(Util.class.getName())
                   .log(Level.WARNING, "Soft cache purge failed: " + ex.getMessage(), ex);
@@ -69,7 +81,7 @@ public class Util {
             ex.printStackTrace(System.out);
         }
     }
-    
+   
     /**
      * Returns a pseudo-random number between min and max, inclusive.
      * The difference between min and max can be at most
@@ -90,6 +102,24 @@ public class Util {
         int randomNum = rand.nextInt((max - min) + 1) + min;
 
         return randomNum;
+    }
+    
+    public static long getRecommendedPurgeSize(long estimatedBytes) {
+        try {
+            OperatingSystemMXBean osBean =
+                    (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+
+            long totalRam = osBean.getTotalPhysicalMemorySize();  // system RAM in bytes
+            long twentyPercent = (long)(totalRam * 0.20);         // use 20% of RAM
+            long minSafe = 128L * 1024 * 1024;                    // never below 128MB
+
+            long dynamicCap = Math.max(minSafe, twentyPercent);
+
+            return Math.min(estimatedBytes, dynamicCap);
+        } catch (Throwable t) {
+            // If anything fails, fall back to old 512MB cap
+            return Math.min(estimatedBytes, 512L * 1024 * 1024);
+        }
     }
     
     /*

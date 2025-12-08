@@ -247,7 +247,9 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
             long purgeStartNs = System.nanoTime();
             benchmark.cachePurgePerformed = true;
-            benchmark.cachePurgeMethod = App.isAdmin ? "drop-cache" : "single-pass-read";
+            benchmark.cachePurgeMethod = App.isAdmin
+                    ? Benchmark.CachePurgeMethod.DROP_CACHE
+                    : Benchmark.CachePurgeMethod.SOFT_PURGE;
 
             // Detect purge size roughly equal to the full test data footprint
             long estimatedBytes = (long) App.numOfSamples * (long) App.numOfBlocks * 
@@ -275,14 +277,14 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                         Gui.msg("⚠ drop-cache failed — switching to soft purge.");
 
                         System.out.println(">>> BenchmarkWorker: Starting SOFT purge (fallback)");
-                        Util.readPurge(estimatedBytes);
+                        Util.readPurge(estimatedBytes, pct -> setProgress(Math.min(99, pct)));
                         System.out.println(">>> BenchmarkWorker: Soft purge completed.");
                     }
                 } catch (Exception ex) {
                     System.out.println(">>> BenchmarkWorker: EXCEPTION in dropOsCache — fallback to read purge");
                     ex.printStackTrace();
                     Gui.msg("⚠ Exception during drop-cache, fallback to read purge.");
-                    Util.readPurge(estimatedBytes);
+                    Util.readPurge(estimatedBytes, pct -> setProgress(Math.min(99, pct)));
                 }
 
             } else {
@@ -292,7 +294,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                 System.out.println(">>> BenchmarkWorker: Starting SOFT purge (readPurge)");
                 Gui.msg("Performing soft cache purge (read-through)…");
 
-                Util.readPurge(estimatedBytes);
+                Util.readPurge(estimatedBytes, pct -> setProgress(Math.min(99, pct)));
 
                 System.out.println(">>> BenchmarkWorker: Soft purge completed.");
             }
@@ -430,7 +432,11 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                 case Sample.Type.WRITE -> Gui.addWriteSample(s);
                 case Sample.Type.READ -> Gui.addReadSample(s);
             }
-        });
+        });       
+        if (App.isCliMode) {
+            int pct = this.getProgress();
+            printCliProgress(pct);
+        }
     }
 
     @Override
@@ -440,5 +446,18 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         }
         App.state = App.State.IDLE_STATE;
         Gui.mainFrame.adjustSensitivity();
+    }
+    
+    private void printCliProgress(int pct) {
+        int bars = pct / 5;      // 20-bar progress
+        int spaces = 20 - bars;
+
+        String bar = "[" + "#".repeat(bars) + "-".repeat(spaces) + "] " + pct + "%";
+
+        System.out.print("\r" + bar);
+
+        if (pct >= 100) {
+            System.out.println();
+        }
     }
 }

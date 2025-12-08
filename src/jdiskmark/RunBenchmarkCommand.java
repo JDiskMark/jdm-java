@@ -74,6 +74,9 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             return 0; // Return 0 (Success) immediately after help is printed
         }
         try {
+            
+            App.isCliMode = true;
+
             // 1. Apply CLI parameters to the global App state
             App.setLocationDir(locationDir);
             App.benchmarkType = benchmarkType;
