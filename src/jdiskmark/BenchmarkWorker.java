@@ -271,9 +271,12 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                     System.out.println(">>> BenchmarkWorker: dropOsCache() returned = " + ok);
 
                     if (!ok) {
-                        System.out.println(">>> BenchmarkWorker: dropOsCache FAILED — fallback to read purge");
-                        Gui.msg("⚠ drop-cache failed — falling back to read purge.");
+                        System.out.println(">>> BenchmarkWorker: dropOsCache FAILED — fallback to SOFT purge");
+                        Gui.msg("⚠ drop-cache failed — switching to soft purge.");
+
+                        System.out.println(">>> BenchmarkWorker: Starting SOFT purge (fallback)");
                         Util.readPurge(estimatedBytes);
+                        System.out.println(">>> BenchmarkWorker: Soft purge completed.");
                     }
                 } catch (Exception ex) {
                     System.out.println(">>> BenchmarkWorker: EXCEPTION in dropOsCache — fallback to read purge");
@@ -286,7 +289,12 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                 // ==========================
                 // USER MODE: Soft purge
                 // ==========================
+                System.out.println(">>> BenchmarkWorker: Starting SOFT purge (readPurge)");
+                Gui.msg("Performing soft cache purge (read-through)…");
+
                 Util.readPurge(estimatedBytes);
+
+                System.out.println(">>> BenchmarkWorker: Soft purge completed.");
             }
 
             long purgeEndNs = System.nanoTime();
