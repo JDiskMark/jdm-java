@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Random;
 import javax.swing.filechooser.FileSystemView;
 import java.io.RandomAccessFile;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Utility methods for JDiskMark
@@ -59,8 +61,12 @@ public class Util {
                     }
                 }
             }
-        } catch (Exception ignored) {
-            // Soft purge — failure is not fatal
+        } catch (Exception ex) {
+            Logger.getLogger(Util.class.getName())
+                  .log(Level.WARNING, "Soft cache purge failed: " + ex.getMessage(), ex);
+
+            System.out.println(">>> Util.readPurge: EXCEPTION during soft purge");
+            ex.printStackTrace(System.out);
         }
     }
     
