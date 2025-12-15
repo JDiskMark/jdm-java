@@ -127,6 +127,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         benchmark.percentUsed = usageInfo.percentUsed;
         benchmark.usedGb = usageInfo.usedGb;
         benchmark.totalGb = usageInfo.totalGb;
+        
         // update gui title
         Gui.chart.getTitle().setText(benchmark.getDriveInfo());
         Gui.chart.getTitle().setVisible(true);

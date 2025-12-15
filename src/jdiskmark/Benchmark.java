@@ -166,12 +166,24 @@ public class Benchmark implements Serializable {
     @Column
     double totalGb;
     public double getTotalGb() { return totalGb; }
+
+    // benchmark configuration
+    
+    // app version performing the benchmark
+    @Column
+    String appVersion;
+    public String getAppVersion() { return appVersion; }
+    
+    // name of the profile used
+    @Column
+    String profileName;
+    public String getProfileName() { return profileName; }
     
     // benchmark parameters
     @Column
     BenchmarkType benchmarkType;
     public BenchmarkType getBenchmarkType() { return benchmarkType; }
-
+    
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column(name = "startTime", columnDefinition = "TIMESTAMP")
@@ -242,12 +254,16 @@ public class Benchmark implements Serializable {
     public Benchmark() {
         operations = new ArrayList<>();
         startTime = LocalDateTime.now();
+        appVersion = App.VERSION;
+        profileName = App.activeProfile.getName();
     }
     
     Benchmark(BenchmarkType type) {
         operations = new ArrayList<>();
         startTime = LocalDateTime.now();
         benchmarkType = type;
+        appVersion = App.VERSION;
+        profileName = App.activeProfile.getName();
     }
     
     // basic getters and setters
