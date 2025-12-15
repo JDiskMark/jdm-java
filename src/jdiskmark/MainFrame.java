@@ -1258,10 +1258,15 @@ public final class MainFrame extends javax.swing.JFrame {
         msgTextArea.setText("");
     }
     
+    /**
+     * Disable buttons during a benchmark operation to avoid
+     * the user from updating parameters.
+     */
     public void adjustSensitivity() {
         switch (App.state) {
             case App.State.DISK_TEST_STATE -> {
                 startButton.setText("Cancel");
+                profileCombo.setEnabled(false);
                 orderComboBox.setEnabled(false);
                 blockSizeCombo.setEnabled(false);
                 numBlocksCombo.setEnabled(false);
@@ -1272,6 +1277,7 @@ public final class MainFrame extends javax.swing.JFrame {
             }
             case App.State.IDLE_STATE -> {
                 startButton.setText("Start");
+                profileCombo.setEnabled(true);
                 orderComboBox.setEnabled(true);
                 blockSizeCombo.setEnabled(true);
                 numBlocksCombo.setEnabled(true);
@@ -1281,14 +1287,5 @@ public final class MainFrame extends javax.swing.JFrame {
                 resetBenchmarkItem.setEnabled(true);
             }
         }
-    }   
-    // Replace lowercase mode options with proper casing
-
-    @SuppressWarnings("unchecked")
-    private void configureModeCombo() {
-        typeCombo.removeAllItems();
-        typeCombo.addItem("Write");
-        typeCombo.addItem("Read");
-        typeCombo.addItem("Read & Write");
-    }    
+    }
 }
