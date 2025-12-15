@@ -28,31 +28,31 @@ public class BenchmarkProfile {
     // --- 1. Max Sequential Speed (Peak Throughput) ---
     public static final BenchmarkProfile MAX_SEQUENTIAL_SPEED = new BenchmarkProfile(
         "Max Sequential", BenchmarkType.READ_WRITE, 
-        BlockSequence.SEQUENTIAL, 1, 10, 200, 1024
+        BlockSequence.SEQUENTIAL, 1, 100, 200, 1024
     );
 
     // --- 2. High-Load Random (Q32T1 Proxy / Max IOPS) ---
     public static final BenchmarkProfile HIGH_LOAD_RANDOM_Q32T1 = new BenchmarkProfile(
         "Random 4K (Q32T1)", BenchmarkType.READ_WRITE, 
-        BlockSequence.RANDOM, 32, 20, 100, 4
+        BlockSequence.RANDOM, 32, 200, 100, 4
     );
 
     // --- 3. Low-Load Random (Q1T1 / System Responsiveness) ---
     public static final BenchmarkProfile LOW_LOAD_RANDOM_Q1T1 = new BenchmarkProfile(
         "Random 4K (Q1T1)", BenchmarkType.READ_WRITE, 
-        BlockSequence.RANDOM, 1, 15, 50, 4
+        BlockSequence.RANDOM, 1, 150, 50, 4
     );
 
     // --- 4. Max Write Stress (Endurance/Sustained Write Test) ---
     public static final BenchmarkProfile MAX_WRITE_STRESS = new BenchmarkProfile(
         "Max Write Stress", BenchmarkType.WRITE, 
-        BlockSequence.SEQUENTIAL, 4, 25, 500, 512
+        BlockSequence.SEQUENTIAL, 4, 250, 500, 512
     );
 
     // --- 5. Quick Functional Test (Fastest check) ---
     public static final BenchmarkProfile QUICK_TEST = new BenchmarkProfile(
         "Quick Test", BenchmarkType.READ_WRITE, 
-        BlockSequence.SEQUENTIAL, 1, 5, 25, 64
+        BlockSequence.SEQUENTIAL, 1, 50, 25, 64
     );
     
     // --- 6. Custom ---
