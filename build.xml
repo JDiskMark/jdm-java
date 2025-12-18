@@ -304,7 +304,8 @@ Architecture: all
 Depends: default-jre | openjdk-21-jre | openjdk-17-jre
 Maintainer: JDiskMark Team
 Description: JDiskMark - Disk Benchmark Utility
- JDiskMark is a cross-platform disk benchmark utility written in Java.</echo>
+ JDiskMark is a cross-platform disk benchmark utility written in Java.
+ </echo>
 
         <echo file="${deb.dir}/usr/bin/jdiskmark"><![CDATA[#!/bin/sh
 CLASSPATH="/usr/share/jdiskmark/jdiskmark.jar"
@@ -329,7 +330,7 @@ Categories=Utility;System;</echo>
             <arg value="${deb.dir}"/>
         </exec>
         
-        <move file="${deb.dir}.deb" tofile="jdiskmark_${deb.version}_all.deb"/>
+        <move file="${deb.dir}.deb" tofile="dist/jdiskmark_${deb.version}_all.deb"/>
         
         <delete dir="${deb.dir}"/>
         <echo message="Package created: jdiskmark_${deb.version}_all.deb"/>
