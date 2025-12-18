@@ -96,7 +96,16 @@
     <property name="sign.digest.fd" value="sha256"/>
     <property name="msi.file.to.sign.path" value="${dist.dir}/${pkg.name}-${version}.msi"/>
     
-    <target name="-post-jar">
+    <target name="-check-if-built">
+        <condition property="build.exists">
+            <or>
+                <available file="dist/${release.dir}" type="dir"/>
+                <available file="dist/${release.dir}/${pkg.name}.jar"/>
+            </or>
+        </condition>
+    </target>
+
+    <target name="-post-jar" depends="-check-if-built" unless="build.exists">
         <copy file="EmptyStandbyList.exe" todir="dist"/>
         <copy file="capacity.ps1" todir="dist"/>
         <copy file="disk-model.ps1" todir="dist"/>
@@ -278,7 +287,6 @@
         <mkdir dir="${deb.dir}/usr/share/pixmaps"/>
 
         <copy file="dist/${release.dir}/${pkg.name}.jar" todir="${deb.dir}${deb.install.dir}" failonerror="false"/>
-        <copy file="dist/${pkg.name}.jar" todir="${deb.dir}${deb.install.dir}" failonerror="false"/>
 
         <copy todir="${deb.dir}${deb.install.dir}/libs">
             <fileset dir="libs">
@@ -286,7 +294,7 @@
             </fileset>
         </copy>
 
-        <copy file="src/jdiskmark/resources/icon.png" tofile="${deb.dir}/usr/share/pixmaps/jdiskmark.png" failonerror="false"/>
+        <!--<copy file="src/jdiskmark/resources/icon.png" tofile="${deb.dir}/usr/share/pixmaps/jdiskmark.png" failonerror="false"/>-->
 
         <echo file="${deb.dir}/DEBIAN/control">Package: jdiskmark
 Version: ${deb.version}
