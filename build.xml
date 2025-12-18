@@ -256,4 +256,68 @@
     </target>
     <target name="package-msi" depends="clean, jar, create-msi, sign-msi" description="Builds JAR and MSI installer"/>
     <target name="package-dmg" depends="clean, jar, create-dmg" description="Builds JAR and DMG installer"/>
+
+    <property name="deb.dir" value="jdiskmark-deb"/>
+    <property name="deb.version" value="${version}-1"/>
+    <property name="deb.install.dir" value="/usr/share/jdiskmark"/>
+
+    <target name="build-deb" depends="jar" description="Build Debian Package">
+        <echo message="Creating Debian package structure..."/>
+        
+        <delete dir="${deb.dir}"/>
+        <mkdir dir="${deb.dir}/DEBIAN"/>
+        <mkdir dir="${deb.dir}${deb.install.dir}/libs"/>
+        <mkdir dir="${deb.dir}/usr/bin"/>
+        <mkdir dir="${deb.dir}/usr/share/applications"/>
+        <mkdir dir="${deb.dir}/usr/share/pixmaps"/>
+
+        <copy file="dist/${release.dir}/${pkg.name}.jar" todir="${deb.dir}${deb.install.dir}" failonerror="false"/>
+        <copy file="dist/${pkg.name}.jar" todir="${deb.dir}${deb.install.dir}" failonerror="false"/>
+
+        <copy todir="${deb.dir}${deb.install.dir}/libs">
+            <fileset dir="libs">
+                <include name="*.jar"/>
+            </fileset>
+        </copy>
+
+        <copy file="src/jdiskmark/resources/icon.png" tofile="${deb.dir}/usr/share/pixmaps/jdiskmark.png" failonerror="false"/>
+
+        <echo file="${deb.dir}/DEBIAN/control">Package: jdiskmark
+Version: ${deb.version}
+Section: utils
+Priority: optional
+Architecture: all
+Depends: default-jre | openjdk-21-jre | openjdk-17-jre
+Maintainer: JDiskMark Team
+Description: JDiskMark - Disk Benchmark Utility
+ JDiskMark is a cross-platform disk benchmark utility written in Java.</echo>
+
+        <echo file="${deb.dir}/usr/bin/jdiskmark"><![CDATA[#!/bin/sh
+CLASSPATH="/usr/share/jdiskmark/jdiskmark.jar"
+for jar in /usr/share/jdiskmark/libs/*.jar; do
+    CLASSPATH="$CLASSPATH:$jar"
+done
+exec java -cp "$CLASSPATH" jdiskmark.App "$@"
+]]></echo>
+        <chmod file="${deb.dir}/usr/bin/jdiskmark" perm="755"/>
+
+        <echo file="${deb.dir}/usr/share/applications/jdiskmark.desktop">[Desktop Entry]
+Type=Application
+Name=jDiskMark
+Comment=Disk Benchmark Utility
+Exec=jdiskmark
+Icon=jdiskmark
+Terminal=false
+Categories=Utility;System;</echo>
+
+        <exec executable="dpkg-deb">
+            <arg value="--build"/>
+            <arg value="${deb.dir}"/>
+        </exec>
+        
+        <move file="${deb.dir}.deb" tofile="jdiskmark_${deb.version}_all.deb"/>
+        
+        <delete dir="${deb.dir}"/>
+        <echo message="Package created: jdiskmark_${deb.version}_all.deb"/>
+    </target>
 </project>
