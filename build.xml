@@ -261,7 +261,13 @@
     <property name="deb.version" value="${version}-1"/>
     <property name="deb.install.dir" value="/usr/share/jdiskmark"/>
 
-    <target name="build-deb" depends="jar" description="Build Debian Package">
+    <target name="create-deb" depends="-post-jar" description="Build Debian Package">
+
+        <condition property="is.linux">
+            <os family="unix" />
+        </condition>
+        <fail unless="is.linux" message="The build-deb target can only be run on Linux."/>
+
         <echo message="Creating Debian package structure..."/>
         
         <delete dir="${deb.dir}"/>
