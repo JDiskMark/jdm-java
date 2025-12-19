@@ -364,6 +364,9 @@ Categories=Utility;System;</echo>
             <arg value="--add-modules" />
             <arg value="java.base,java.desktop,java.logging,java.prefs,java.management,java.instrument,java.sql,java.rmi,java.naming" />
 
+            <arg value="--resource-dir" />
+            <arg value="pkg/ubuntu/symlink" />
+
             <arg value="--linux-shortcut" />
             
             <arg value="--linux-menu-group" />
