@@ -74,7 +74,7 @@
     
     <!-- build environment -->
     <property name="dist.dir" value="dist"/>
-    <property name="build.dir" value="build"/>   
+    <property name="build.dir" value="build"/>
 
     <!-- dependencies -->
     <property name="jpackage.executable" value="C:\Program Files\java\jdk-21\bin\jpackage"/>
@@ -83,12 +83,12 @@
     <!-- version properties -->
     <property name="pkg.name" value="jdiskmark"/>
     <property name="app.name" value="JDiskMark"/>
-    <property name="version" value="0.6.3-dev"/>
+    <property name="version" value="0.6.3-dev.fat"/>
     <!-- full semver does not work for msi product versions -->
     <property name="msi.version" value="0.6.3"/>
     <property name="msi.app.title" value="${app.name} ${version}"/>
     <property name="release.dir" value="${pkg.name}-${version}"/>
-    <property name="dmg.version" value="1.6.3"/>
+    <property name="dmg.version" value="1.0.0"/>
 
     <!-- msi signing properties -->
     <property name="timestamp.server.url" value="http://timestamp.sectigo.com"/>
@@ -96,7 +96,16 @@
     <property name="sign.digest.fd" value="sha256"/>
     <property name="msi.file.to.sign.path" value="${dist.dir}/${pkg.name}-${version}.msi"/>
     
-    <target name="-post-jar">
+    <target name="-check-if-built">
+        <condition property="build.exists">
+            <or>
+                <available file="dist/${release.dir}" type="dir"/>
+                <available file="dist/${release.dir}/${pkg.name}.jar"/>
+            </or>
+        </condition>
+    </target>
+
+    <target name="-post-jar" depends="-check-if-built" unless="build.exists">
         <copy file="EmptyStandbyList.exe" todir="dist"/>
         <copy file="capacity.ps1" todir="dist"/>
         <copy file="disk-model.ps1" todir="dist"/>
@@ -181,7 +190,7 @@
             <!-- intentionally adding version to the name for concurrent installs -->
             <arg line="--name '${msi.app.title}'"/>
             <arg line="--app-version ${msi.version}"/>
-            <arg line="--vendor 'JDiskMark'"/>
+            <arg line="--vendor 'JDiskMark Developers'"/>
             <arg line="--install-dir 'JDiskMark ${version}'"/>
             <arg line="--win-console"/>
             <arg line="--win-menu"/>
@@ -210,9 +219,9 @@
         <exec executable="jpackage" failonerror="true">
             <arg line="--type dmg"/>
             <arg line="--input ${dist.dir}/${release.dir}"/>
-            <arg line="--main-jar ${app.name}.jar"/>
-            <arg line="--main-class ${app.name}.App"/>
-            <arg line="--name ${app.name}-${version}"/>
+            <arg line="--main-jar ${pkg.name}.jar"/>
+            <arg line="--main-class ${pkg.name}.App"/>
+            <arg line="--name ${pkg.name}-${version}"/>
             <arg line="--app-version ${dmg.version}"/>
             <arg line="--vendor 'jdiskmark'"/>
             <arg line="--icon '${dist.dir}/${release.dir}/JDM.icns'"/>
@@ -256,4 +265,118 @@
     </target>
     <target name="package-msi" depends="clean, jar, create-msi, sign-msi" description="Builds JAR and MSI installer"/>
     <target name="package-dmg" depends="clean, jar, create-dmg" description="Builds JAR and DMG installer"/>
+
+    <property name="deb.dir" value="jdiskmark-deb"/>
+    <property name="deb.version" value="${version}-1"/>
+    <property name="deb.install.dir" value="/usr/share/jdiskmark"/>
+
+    <target name="create-deb" depends="-post-jar" description="Build Debian Package">
+
+        <condition property="is.linux">
+            <os family="unix" />
+        </condition>
+        <fail unless="is.linux" message="The build-deb target can only be run on Linux."/>
+
+        <echo message="Creating Debian package structure..."/>
+        
+        <delete dir="${deb.dir}"/>
+        <mkdir dir="${deb.dir}/DEBIAN"/>
+        <mkdir dir="${deb.dir}${deb.install.dir}/libs"/>
+        <mkdir dir="${deb.dir}/usr/bin"/>
+        <mkdir dir="${deb.dir}/usr/share/applications"/>
+        <mkdir dir="${deb.dir}/usr/share/pixmaps"/>
+
+        <copy file="dist/${release.dir}/${pkg.name}.jar" todir="${deb.dir}${deb.install.dir}" failonerror="false"/>
+
+        <copy todir="${deb.dir}${deb.install.dir}/libs">
+            <fileset dir="libs">
+                <include name="*.jar"/>
+            </fileset>
+        </copy>
+
+        <!--<copy file="src/jdiskmark/resources/icon.png" tofile="${deb.dir}/usr/share/pixmaps/jdiskmark.png" failonerror="false"/>-->
+
+        <echo file="${deb.dir}/DEBIAN/control">Package: jdiskmark
+Version: ${deb.version}
+Section: utils
+Priority: optional
+Architecture: all
+Depends: default-jre | openjdk-21-jre | openjdk-17-jre
+Maintainer: JDiskMark Team
+Description: JDiskMark - Disk Benchmark Utility
+ JDiskMark is a cross-platform disk benchmark utility written in Java.
+ </echo>
+
+        <echo file="${deb.dir}/usr/bin/jdiskmark"><![CDATA[#!/bin/sh
+CLASSPATH="/usr/share/jdiskmark/jdiskmark.jar"
+for jar in /usr/share/jdiskmark/libs/*.jar; do
+    CLASSPATH="$CLASSPATH:$jar"
+done
+exec java -cp "$CLASSPATH" jdiskmark.App "$@"
+]]></echo>
+        <chmod file="${deb.dir}/usr/bin/jdiskmark" perm="755"/>
+
+        <echo file="${deb.dir}/usr/share/applications/jdiskmark.desktop">[Desktop Entry]
+Type=Application
+Name=jDiskMark
+Comment=Disk Benchmark Utility
+Exec=jdiskmark
+Icon=jdiskmark
+Terminal=false
+Categories=Utility;System;</echo>
+
+        <exec executable="dpkg-deb">
+            <arg value="--build"/>
+            <arg value="${deb.dir}"/>
+        </exec>
+        
+        <move file="${deb.dir}.deb" tofile="dist/jdiskmark_${deb.version}_all.deb"/>
+        
+        <delete dir="${deb.dir}"/>
+        <echo message="Package created: jdiskmark_${deb.version}_all.deb"/>
+    </target>
+    
+    <target name="create-fat-deb" description="Create a self-contained DEB with JRE 21">
+        <property name="jpackage.path" value="${java.home}/bin/jpackage" />
+
+        <exec executable="${jpackage.path}" failonerror="true">
+            <arg value="--type" />
+            <arg value="deb" />
+
+            <arg value="--dest" />
+            <arg value="dist" />
+
+            <arg value="--name" />
+            <arg value="${pkg.name}" />
+
+            <arg value="--app-version" />
+            <arg value="${version}" />
+
+            <arg value="--input" />
+            <arg value="dist/${release.dir}" />
+
+            <arg value="--main-jar" />
+            <arg value="${pkg.name}.jar" />
+
+            <arg value="--main-class" />
+            <arg value="jdiskmark.App" />
+
+            <arg value="--add-modules" />
+            <arg value="java.base,java.desktop,java.logging,java.prefs,java.management,java.instrument,java.sql,java.rmi,java.naming" />
+
+            <arg value="--resource-dir" />
+            <arg value="pkg/ubuntu/symlink" />
+
+            <arg value="--linux-shortcut" />
+            
+            <arg value="--linux-menu-group" />
+            <arg value="Utility" />
+            
+            <arg value="--linux-deb-maintainer" />
+            <arg value="james.m.chan@jdiskmark.net" />
+            
+            <arg value="--linux-package-name" />
+            <arg value="${pkg.name}" />
+        </exec>
+    </target>
 </project>

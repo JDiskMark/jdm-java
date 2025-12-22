@@ -5,7 +5,8 @@
 /tmp
 *.zip
 *.patch
-*.log
 .VSCodeCounter*
 build.properties
 /derbyDB/
+hs_err_pid*.log
+jdiskmark-deb
