@@ -1,0 +1,4 @@
+#!/bin/bash
+# Create a symlink so 'jdiskmark' works in the terminal
+ln -sf /opt/jdiskmark/bin/jdiskmark /usr/bin/jdiskmark
+chmod +x /usr/bin/jdiskmark

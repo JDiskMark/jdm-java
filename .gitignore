@@ -8,3 +8,4 @@
 build.properties
 /derbyDB/
 hs_err_pid*.log
+jdiskmark-deb
