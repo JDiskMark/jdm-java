@@ -3,7 +3,6 @@ package jdiskmark;
 
 import static jdiskmark.App.dataDir;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Desktop;
 import java.io.IOException;
 import java.text.DecimalFormat;
