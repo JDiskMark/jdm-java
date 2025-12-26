@@ -3,11 +3,12 @@
 /build/
 /jdm.properties
 /tmp
+/derbyDB/
+
 *.zip
 *.patch
 .VSCodeCounter*
 build.properties
-/derbyDB/
 hs_err_pid*.log
 
 # deb packaging

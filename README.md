@@ -13,7 +13,8 @@ Java Disk Benchmark Utility
 - Auto clear disk cache (when sudo or admin)
 - multi threaded benchmarks
 - Default profiles
-- Command line usage
+- Command line interface
+- available in msi, deb, rpm and zip releses
 
 ## Releases
 
@@ -29,7 +30,15 @@ To install launch the `jdiskmark-<version>.msi`.
 
 The deb installer is used on Debian linux distributions like ubuntu.
 
-To install use `sudo dpkg -i jdiskmark_<version>_amd64.deb`
+To install use `sudo dpkg -i jdiskmark_<version>_amd64.deb` and to remove `sudo dpkg -r jdiskmark`
+
+### RPM Installer (.rpm)
+
+The rpm installer is used on RHEL, CENTOS, SUSELinux and Fedora distributions.
+
+To install use `sudo rpm -i jdiskmark-<rpm.version>.x86_64.rpm` and to remove use `sudo rpm -e jdiskmark`
+
+Note: the `rpm.version` is similar to the `version` but replaces hyphens with periods.
 
 ### Zip Archive (.zip)
 
