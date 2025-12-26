@@ -336,7 +336,7 @@ Categories=Utility;System;</echo>
         <echo message="Package created: jdiskmark_${deb.version}_all.deb"/>
     </target>
     
-    <target name="create-fat-deb" depends="jar, -post-jar"
+    <target name="create-fat-deb" depends="clean, jar, -post-jar"
             description="Create a self-contained DEB with JRE 21">
         
         <condition property="is.linux">
@@ -390,7 +390,8 @@ Categories=Utility;System;</echo>
         </exec>
     </target>
     
-    <target name="create-fat-rpm" depends="jar, -post-jar"
+    <!-- depends="jar, -post-jar" -->
+    <target name="create-fat-rpm" depends="clean, jar, -post-jar"
             description="Create a self-contained RPM with JRE 21">
         
         <condition property="is.linux">
@@ -400,18 +401,38 @@ Categories=Utility;System;</echo>
         
         <property name="jpackage.path" value="${java.home}/bin/jpackage" />
 
+        <!-- rpm version format does not allow use of "-" -->
+        <loadresource property="rpm.version">
+            <propertyresource name="version"/>
+            <filterchain>
+                <replacestring from="-" to="."/>
+            </filterchain>
+        </loadresource>
+        
+        <!-- custom spec file to inject sym link  -->
+        <copy file="pkg/rpm/resources/jdiskmark.spec.template" 
+            tofile="pkg/rpm/resources/jdiskmark.spec" 
+            overwrite="true">
+            <filterset>
+                <filter token="VERSION" value="${rpm.version}"/>
+                <filter token="LICENSE_PATH" value="${basedir}/LICENSE.md"/>
+            </filterset>
+        </copy>
+
+        <!-- add the jpackage \-\-verbose flag to debug -->
+        <!-- use \-\- temp temp_resources to generate spec file -->
         <exec executable="${jpackage.path}" failonerror="true">
             <arg value="--type" />
             <arg value="rpm" />
-
+            
             <arg value="--dest" />
             <arg value="dist" />
-
+            
             <arg value="--name" />
             <arg value="${pkg.name}" />
 
             <arg value="--app-version" />
-            <arg value="${version}" />
+            <arg value="${rpm.version}" />
 
             <arg value="--input" />
             <arg value="dist/${release.dir}" />

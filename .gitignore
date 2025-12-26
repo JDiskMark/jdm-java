@@ -9,4 +9,10 @@
 build.properties
 /derbyDB/
 hs_err_pid*.log
+
+# deb packaging
 jdiskmark-deb
+
+# rpm packaging
+jdiskmark.spec
+temp_resources
