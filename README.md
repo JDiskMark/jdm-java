@@ -186,11 +186,12 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 - TODO: #33 maven build - lane
 - TODO: #40 gui presentation issues - james
 - TODO: #78 throttle graphics render - valerio
-- TODO: disk cache purging - valerio
-- #15 Ubuntu installer
+- TODO: #95 disk cache purging - valerio
+- #15 deb installer (Ubuntu)
+- #98 rpm installer (Redhat)
 - #42 default profiles
-- #69 command line support
-- #84 processor info resolved for (sp) installs
+- #69 command line interface
+- #84 processor info resolved for (SP) installs
 - #73 refactor benchmark data model, keyboard op sel
 
 ### v0.6.2 linux optimized ui
