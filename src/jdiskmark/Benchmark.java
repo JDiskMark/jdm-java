@@ -2,6 +2,11 @@
 package jdiskmark;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -14,6 +19,7 @@ import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.io.IOException;
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.time.Duration;
@@ -21,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * A read or write benchmark
@@ -37,7 +44,7 @@ public class Benchmark implements Serializable {
     static final DecimalFormat DFT = new DecimalFormat("###");
     static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
-    public enum BenchmarkType {
+        public enum BenchmarkType {
         READ {
             @Override
             public String toString() { return "Read"; }
@@ -52,11 +59,79 @@ public class Benchmark implements Serializable {
         }
     }
     
+    public enum IOMode {
+        READ {
+            @Override
+            public String toString() { return "Read"; }
+        },
+        WRITE {
+            @Override
+            public String toString() { return "Write"; }
+        }
+    }
+
+    public enum BlockSequence {
+        SEQUENTIAL {
+            @Override
+            public String toString() { return "Sequential"; }
+        },
+        RANDOM {
+            @Override
+            public String toString() { return "Random"; }
+        }
+    }
+    
+    /**
+     * Jackson custom serializer to convert the Java UUID into a plain string.
+     *
+     * IMPORTANT NOTE on UUID vs ObjectId:
+     * - UUID is a 16-byte value (36-character string representation).
+     * - MongoDB ObjectId is a 12-byte value (24-character hex string).
+     * Since they are different lengths and structures, a direct conversion
+     * is non-standard. The industry best practice for external clients sending
+     * their own primary key is to send the UUID as a simple string, and the MERN
+     * backend will store it as the document's _id (usually as a string, not a native ObjectId object).
+     * This serializer performs that essential conversion.
+     */
+    public static class UuidToMongoIdSerializer extends JsonSerializer<UUID> {
+        @Override
+        public void serialize(UUID value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            if (value == null) {
+                gen.writeNull();
+            } else {
+                // Serializes the UUID into its standard string representation.
+                // Example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+                gen.writeString(value.toString());
+            }
+        }
+    }
+    
     // surrogate key
-    @Column
+    /**
+     * The unique identifier for this benchmark run.
+     * Mapped as the primary key for JPA/Derby.
+     * The GenerationType.UUID tells JPA to use the database's UUID generation
+     * mechanism (or an equivalent strategy provided by the JPA vendor).
+     */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    // --- JSON Serialization for MERN App ---
+
+    /**
+     * @JsonProperty("_id"): Ensures that when this object is serialized to JSON,
+     * the key name for this field is "_id", matching the standard MongoDB primary key convention.
+     *
+     * @JsonSerialize(using = UuidToMongoIdSerializer.class): Tells Jackson to use
+     * our custom inner class serializer to handle the conversion logic of UUID -> JSON string.
+     */
+    @JsonProperty("_id")
+    @JsonSerialize(using = UuidToMongoIdSerializer.class)
+    private UUID id;
+    
+    // user account
+    @Column
+    String username = "anonymous"; // "user" is reserved in Derby
+    public String getUsername() { return username; }
     
     // system data
     @Column
@@ -91,11 +166,24 @@ public class Benchmark implements Serializable {
     @Column
     double totalGb;
     public double getTotalGb() { return totalGb; }
+
+    // benchmark configuration
+    
+    // app version performing the benchmark
+    @Column
+    String appVersion;
+    public String getAppVersion() { return appVersion; }
+    
+    // name of the profile used
+    @Column
+    String profileName;
+    public String getProfileName() { return profileName; }
     
     // benchmark parameters
     @Column
     BenchmarkType benchmarkType;
-
+    public BenchmarkType getBenchmarkType() { return benchmarkType; }
+    
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column(name = "startTime", columnDefinition = "TIMESTAMP")
@@ -106,14 +194,14 @@ public class Benchmark implements Serializable {
 
     
     @OneToMany(mappedBy = "benchmark", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<BenchmarkOperation> operations = new ArrayList<>();
+    List<BenchmarkOperation> operations;
     
     public List<BenchmarkOperation> getOperations() {
         return operations;
     }
     
     // get the first operation of that type
-    public BenchmarkOperation getOperation(BenchmarkOperation.IOMode mode) {
+    public BenchmarkOperation getOperation(IOMode mode) {
         for (BenchmarkOperation operation : operations) {
             if (operation.ioMode == mode) {
                 return operation;
@@ -164,20 +252,26 @@ public class Benchmark implements Serializable {
     }
     
     public Benchmark() {
+        operations = new ArrayList<>();
         startTime = LocalDateTime.now();
+        appVersion = App.VERSION;
+        profileName = App.activeProfile.getName();
     }
     
     Benchmark(BenchmarkType type) {
+        operations = new ArrayList<>();
         startTime = LocalDateTime.now();
         benchmarkType = type;
+        appVersion = App.VERSION;
+        profileName = App.activeProfile.getName();
     }
     
     // basic getters and setters
     
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
     public String getDriveInfo() {
@@ -225,7 +319,11 @@ public class Benchmark implements Serializable {
     }
     
     @JsonIgnore
-    static int delete(List<Long> benchmarkIds) {
+    static int delete(List<UUID> benchmarkIds) {
+        if (benchmarkIds.isEmpty()) {
+            return 0;
+        }
+        
         EntityManager em = EM.getEntityManager();
         em.getTransaction().begin();
         

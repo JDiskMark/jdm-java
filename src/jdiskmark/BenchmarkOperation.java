@@ -22,6 +22,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import jdiskmark.Benchmark.BlockSequence;
+import jdiskmark.Benchmark.IOMode;
 
 /**
  * A read or write benchmark
@@ -37,29 +39,7 @@ public class BenchmarkOperation implements Serializable {
     static final DecimalFormat DF = new DecimalFormat("###.##");
     static final DecimalFormat DFT = new DecimalFormat("###");
     static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    
-    public enum IOMode {
-        READ {
-            @Override
-            public String toString() { return "Read"; }
-        },
-        WRITE {
-            @Override
-            public String toString() { return "Write"; }
-        }
-    }
 
-    public enum BlockSequence {
-        SEQUENTIAL {
-            @Override
-            public String toString() { return "Sequential"; }
-        },
-        RANDOM {
-            @Override
-            public String toString() { return "Random"; }
-        }
-    }
-    
     // surrogate key
     @Column
     @Id

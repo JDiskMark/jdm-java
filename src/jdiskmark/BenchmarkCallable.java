@@ -23,6 +23,8 @@ import static jdiskmark.App.msg;
 import static jdiskmark.App.numOfBlocks;
 import static jdiskmark.App.numOfSamples;
 import static jdiskmark.App.testFile;
+import static jdiskmark.Benchmark.BlockSequence;
+import static jdiskmark.Benchmark.IOMode;
 import static jdiskmark.BenchmarkWorker.divideIntoRanges;
 import static jdiskmark.Sample.Type.READ;
 import static jdiskmark.Sample.Type.WRITE;
@@ -120,7 +122,7 @@ public class BenchmarkCallable implements Callable<Benchmark> {
         if (App.isWriteEnabled()) {
             BenchmarkOperation wOperation = new BenchmarkOperation();
             wOperation.setBenchmark(benchmark);
-            wOperation.ioMode = BenchmarkOperation.IOMode.WRITE;
+            wOperation.ioMode = IOMode.WRITE;
             wOperation.blockOrder = App.blockSequence;
             wOperation.numSamples = App.numOfSamples;
             wOperation.numBlocks = App.numOfSamples;
@@ -159,7 +161,7 @@ public class BenchmarkCallable implements Callable<Benchmark> {
                         try {
                             try (RandomAccessFile rAccFile = new RandomAccessFile(testFile, mode)) {
                                 for (int b = 0; b < numOfBlocks; b++) {
-                                    if (App.blockSequence == BenchmarkOperation.BlockSequence.RANDOM) {
+                                    if (App.blockSequence == BlockSequence.RANDOM) {
                                         int rLoc = Util.randInt(0, numOfBlocks - 1);
                                         rAccFile.seek(rLoc * blockSize);
                                     } else {
@@ -233,7 +235,7 @@ public class BenchmarkCallable implements Callable<Benchmark> {
             BenchmarkOperation rOperation = new BenchmarkOperation();
             rOperation.setBenchmark(benchmark);
             // operation parameters
-            rOperation.ioMode = BenchmarkOperation.IOMode.READ;
+            rOperation.ioMode = IOMode.READ;
             rOperation.blockOrder = App.blockSequence;
             rOperation.numSamples = App.numOfSamples;
             rOperation.numBlocks = App.numOfBlocks;
@@ -262,7 +264,7 @@ public class BenchmarkCallable implements Callable<Benchmark> {
                         try {
                             try (RandomAccessFile rAccFile = new RandomAccessFile(testFile, "r")) {
                                 for (int b = 0; b < numOfBlocks; b++) {
-                                    if (App.blockSequence == BenchmarkOperation.BlockSequence.RANDOM) {
+                                    if (App.blockSequence == BlockSequence.RANDOM) {
                                         int rLoc = Util.randInt(0, numOfBlocks - 1);
                                         rAccFile.seek(rLoc * blockSize);
                                     } else {

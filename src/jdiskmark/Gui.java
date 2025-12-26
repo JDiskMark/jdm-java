@@ -16,6 +16,7 @@ import org.jfree.chart.ChartMouseEvent;
 import org.jfree.chart.ChartMouseListener;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import jdiskmark.Benchmark.IOMode;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.AxisLocation;
@@ -271,8 +272,8 @@ public final class Gui {
     }
     
     public static void updateLegendAndAxis(BenchmarkOperation o) {
-        boolean isWriteTest = o.ioMode == BenchmarkOperation.IOMode.WRITE;
-        boolean isReadTest = o.ioMode == BenchmarkOperation.IOMode.READ;
+        boolean isWriteTest = o.ioMode == IOMode.WRITE;
+        boolean isReadTest = o.ioMode == IOMode.READ;
         bwRenderer.setSeriesVisibleInLegend(0, isWriteTest);
         bwRenderer.setSeriesVisibleInLegend(1, isWriteTest);
         bwRenderer.setSeriesVisibleInLegend(2, isWriteTest && App.showMaxMin);
@@ -409,8 +410,8 @@ public final class Gui {
         System.out.println("samples=" + samples.size());
         for (Sample s : samples) {
             switch (operation.ioMode) {
-                case BenchmarkOperation.IOMode.READ -> addReadSample(s);
-                case BenchmarkOperation.IOMode.WRITE -> addWriteSample(s);
+                case IOMode.READ -> addReadSample(s);
+                case IOMode.WRITE -> addWriteSample(s);
             }
         }
         App.benchmarkType = benchmark.benchmarkType;
@@ -421,7 +422,7 @@ public final class Gui {
         App.numOfThreads = operation.numThreads;
         mainFrame.loadSettings();
         switch (operation.ioMode) {
-            case BenchmarkOperation.IOMode.READ -> {
+            case IOMode.READ -> {
                 App.rAvg = operation.bwAvg;
                 App.rMax = operation.bwMax;
                 App.rMin = operation.bwMin;
@@ -429,7 +430,7 @@ public final class Gui {
                 App.rIops = operation.iops;
                 mainFrame.refreshReadMetrics();                
             }
-            case BenchmarkOperation.IOMode.WRITE -> {
+            case IOMode.WRITE -> {
                 App.wAvg = operation.bwAvg;
                 App.wMax = operation.bwMax;
                 App.wMin = operation.bwMin;

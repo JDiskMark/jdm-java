@@ -3,17 +3,19 @@ package jdiskmark;
 
 import static jdiskmark.App.dataDir;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Desktop;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.List;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
+import jdiskmark.Benchmark.BenchmarkType;
+import jdiskmark.Benchmark.BlockSequence;
 
 /**
  * The parent frame of the app
@@ -33,10 +35,14 @@ public final class MainFrame extends javax.swing.JFrame {
         //for diagnostics
         //controlsPanel.setBackground(Color.blue);
         
-        DefaultComboBoxModel<Benchmark.BenchmarkType> ioModel
-                = new DefaultComboBoxModel<>(Benchmark.BenchmarkType.values());
-        typeCombo.setModel(ioModel);
-
+        DefaultComboBoxModel<BenchmarkProfile> profileModel
+            = new DefaultComboBoxModel<>(BenchmarkProfile.getDefaults());
+        profileCombo.setModel(profileModel);
+        
+        DefaultComboBoxModel<BenchmarkType> bTypeModel
+                = new DefaultComboBoxModel<>(BenchmarkType.values());
+        typeCombo.setModel(bTypeModel);
+        
         startButton.requestFocus();
         Gui.createChartPanel();
         mountPanel.setLayout(new BorderLayout());
@@ -73,8 +79,8 @@ public final class MainFrame extends javax.swing.JFrame {
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         
         // init order combo box
-        orderComboBox.addItem(BenchmarkOperation.BlockSequence.SEQUENTIAL);
-        orderComboBox.addItem(BenchmarkOperation.BlockSequence.RANDOM);
+        orderComboBox.addItem(BlockSequence.SEQUENTIAL);
+        orderComboBox.addItem(BlockSequence.RANDOM);
     }
 
     public JPanel getMountPanel() {
@@ -115,19 +121,90 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         }
     }
-
+    
+    private void setProfileToCustom() {
+        // do not adjust if profile is being triggered
+        if (profileCombo.hasFocus()) return;
+        // Check if the current profile is already CUSTOM_TEST to prevent unnecessary UI flicker
+        if (App.activeProfile == BenchmarkProfile.CUSTOM_TEST) return;
+        
+        App.activeProfile = BenchmarkProfile.CUSTOM_TEST;
+        profileCombo.setSelectedItem(BenchmarkProfile.CUSTOM_TEST);
+        System.out.println("Profile reset to CUSTOM_TEST due to configuration change.");
+    }
+    
     public void initializeComboSettings() {
-        typeCombo.setSelectedItem(App.benchmarkType);
         loadSettings();
+        
+        // action listeners to detect change and update custom profile
+        final BenchmarkType[] previousBenchmarkType = { (BenchmarkType) typeCombo.getSelectedItem() };
+        typeCombo.addActionListener(e -> {
+            if (!typeCombo.hasFocus()) return;
+            BenchmarkType currentSelection = (BenchmarkType)typeCombo.getSelectedItem();
+            if (currentSelection != null && !currentSelection.equals(previousBenchmarkType[0])) {
+                //System.out.println("previous=" + previousBenchmarkType[0] + " curr=" + currentSelection);
+                previousBenchmarkType[0] = currentSelection; // update for next check
+                setProfileToCustom();
+            }
+        });
+        final BlockSequence[] previousSequence = { (BlockSequence) orderComboBox.getSelectedItem() };
+        orderComboBox.addActionListener(e -> {
+            if (!orderComboBox.hasFocus()) return;
+            BlockSequence currentSelection = (BlockSequence)orderComboBox.getSelectedItem();
+            if (currentSelection != null && !currentSelection.equals(previousSequence[0])) {
+                previousSequence[0] = currentSelection; // update for next check
+                setProfileToCustom();
+            }
+        });
+        final int[] previousNumThreads = { Integer.parseInt((String)numThreadsCombo.getSelectedItem()) };
+        numThreadsCombo.addActionListener(e -> {
+            int currentSelection = Integer.parseInt((String)numThreadsCombo.getSelectedItem());
+            System.out.println("prev: " + previousNumThreads[0] + " curr: "+ currentSelection);
+            if (currentSelection != previousNumThreads[0]) {
+                previousNumThreads[0] = currentSelection; // update for next check
+                setProfileToCustom();
+            }
+        });
+        final int[] previousNumSamples = { Integer.parseInt((String)numSamplesCombo.getSelectedItem()) };
+        numSamplesCombo.addActionListener(e -> {
+            int currentSelection = Integer.parseInt((String)numSamplesCombo.getSelectedItem());
+            if (currentSelection != previousNumSamples[0]) {
+                previousNumSamples[0] = currentSelection; // update for next check
+                setProfileToCustom();
+            }
+        });
+        final int[] previousNumBlocks = { Integer.parseInt((String)numBlocksCombo.getSelectedItem()) };
+        numBlocksCombo.addActionListener(e -> {
+            int currentSelection = Integer.parseInt((String)numBlocksCombo.getSelectedItem());
+            if (currentSelection != previousNumBlocks[0]) {
+                previousNumBlocks[0] = currentSelection; // update for next check
+                setProfileToCustom();
+            }
+        });
+        final int[] previousBlockSize = { Integer.parseInt((String)blockSizeCombo.getSelectedItem()) };
+        blockSizeCombo.addActionListener(e -> {
+            int currentSelection = Integer.parseInt((String)blockSizeCombo.getSelectedItem());
+            if (currentSelection != previousBlockSize[0]) {
+                previousBlockSize[0] = currentSelection; // update for next check
+                setProfileToCustom();
+            }
+        });
     }
 
+    // later rename to loadBenchmarkConfiguration
     public void loadSettings() {
+        profileCombo.setSelectedItem(App.activeProfile);
+        typeCombo.setSelectedItem(App.benchmarkType);
+        // basic benchmark config
         typeCombo.setSelectedItem(App.benchmarkType);
         numThreadsCombo.setSelectedItem(String.valueOf(App.numOfThreads));
         orderComboBox.setSelectedItem(App.blockSequence);
         numBlocksCombo.setSelectedItem(String.valueOf(App.numOfBlocks));
         blockSizeCombo.setSelectedItem(String.valueOf(App.blockSizeKb));
         numSamplesCombo.setSelectedItem(String.valueOf(App.numOfSamples));
+        // advanced benchmark config
+        multiFileCheckBoxMenuItem.setSelected(App.multiFile);
+        writeSyncCheckBoxMenuItem.setSelected(App.writeSyncEnable);
     }
     
     /**
@@ -189,6 +266,8 @@ public final class MainFrame extends javax.swing.JFrame {
         jLabel12 = new javax.swing.JLabel();
         wMaxLabel = new javax.swing.JLabel();
         jLabel18 = new javax.swing.JLabel();
+        jLabel23 = new javax.swing.JLabel();
+        profileCombo = new javax.swing.JComboBox();
         progressPanel = new javax.swing.JPanel();
         totalTxProgBar = new javax.swing.JProgressBar();
         jLabel7 = new javax.swing.JLabel();
@@ -427,6 +506,16 @@ public final class MainFrame extends javax.swing.JFrame {
 
         jLabel18.setText("IOPS");
 
+        jLabel23.setText("Profile");
+
+        profileCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { " ", " " }));
+        profileCombo.setPreferredSize(new java.awt.Dimension(60, 24));
+        profileCombo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                profileComboActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout controlsPanelLayout = new javax.swing.GroupLayout(controlsPanel);
         controlsPanel.setLayout(controlsPanelLayout);
         controlsPanelLayout.setHorizontalGroup(
@@ -434,79 +523,91 @@ public final class MainFrame extends javax.swing.JFrame {
             .addGroup(controlsPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(controlsPanelLayout.createSequentialGroup()
-                        .addComponent(jLabel9)
-                        .addGap(18, 18, 18)
-                        .addComponent(sampleSizeLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addComponent(startButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(controlsPanelLayout.createSequentialGroup()
                         .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(controlsPanelLayout.createSequentialGroup()
-                                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel5)
-                                    .addComponent(jLabel4)
-                                    .addComponent(jLabel14)
-                                    .addComponent(jLabel6)
-                                    .addComponent(jLabel8)
-                                    .addComponent(jLabel21))
-                                .addGap(18, 18, 18)
-                                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(typeCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(numThreadsCombo, 0, 100, Short.MAX_VALUE)
-                                    .addComponent(orderComboBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(numBlocksCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(blockSizeCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(numSamplesCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                .addComponent(jLabel9)
+                                .addGap(20, 20, 20)
+                                .addComponent(sampleSizeLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                             .addGroup(controlsPanelLayout.createSequentialGroup()
-                                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel13)
+                                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                     .addGroup(controlsPanelLayout.createSequentialGroup()
-                                        .addComponent(jLabel18)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(wIopsLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                    .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                        .addGroup(controlsPanelLayout.createSequentialGroup()
-                                            .addComponent(jLabel16)
-                                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                            .addComponent(wAccessLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 38, Short.MAX_VALUE))
-                                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, controlsPanelLayout.createSequentialGroup()
-                                            .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                .addComponent(jLabel1)
-                                                .addComponent(jLabel2)
-                                                .addComponent(jLabel3))
-                                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(jLabel23)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 27, Short.MAX_VALUE)
+                                        .addComponent(profileCombo, javax.swing.GroupLayout.PREFERRED_SIZE, 146, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addGroup(controlsPanelLayout.createSequentialGroup()
+                                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(jLabel5)
+                                            .addComponent(jLabel4)
+                                            .addComponent(jLabel14)
+                                            .addComponent(jLabel6)
+                                            .addComponent(jLabel8)
+                                            .addComponent(jLabel21))
+                                        .addGap(18, 18, 18)
+                                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                            .addComponent(typeCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                            .addComponent(numThreadsCombo, 0, 100, Short.MAX_VALUE)
+                                            .addComponent(orderComboBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                            .addComponent(numBlocksCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                            .addComponent(blockSizeCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                            .addComponent(numSamplesCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                                    .addGroup(controlsPanelLayout.createSequentialGroup()
+                                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(jLabel13)
+                                            .addGroup(controlsPanelLayout.createSequentialGroup()
+                                                .addComponent(jLabel18)
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                .addComponent(wIopsLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))
                                             .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                                .addComponent(wAvgLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                                .addComponent(wMaxLabel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                                .addComponent(wMinLabel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 61, javax.swing.GroupLayout.PREFERRED_SIZE)))))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel20)
-                                    .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                        .addGroup(controlsPanelLayout.createSequentialGroup()
-                                            .addComponent(jLabel19)
-                                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                            .addComponent(rIopsLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, controlsPanelLayout.createSequentialGroup()
-                                            .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                .addComponent(jLabel10)
-                                                .addComponent(jLabel12)
-                                                .addComponent(jLabel11))
-                                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                            .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                                .addComponent(rMinLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                                .addComponent(rMaxLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                                .addComponent(rAvgLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 65, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, controlsPanelLayout.createSequentialGroup()
-                                            .addComponent(jLabel17)
-                                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                            .addComponent(rAccessLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))))))
+                                                .addGroup(controlsPanelLayout.createSequentialGroup()
+                                                    .addComponent(jLabel16)
+                                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                    .addComponent(wAccessLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 38, Short.MAX_VALUE))
+                                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, controlsPanelLayout.createSequentialGroup()
+                                                    .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                        .addComponent(jLabel1)
+                                                        .addComponent(jLabel2)
+                                                        .addComponent(jLabel3))
+                                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                    .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                                        .addComponent(wAvgLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                        .addComponent(wMaxLabel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                        .addComponent(wMinLabel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 61, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(jLabel20)
+                                            .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                                .addGroup(controlsPanelLayout.createSequentialGroup()
+                                                    .addComponent(jLabel19)
+                                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                    .addComponent(rIopsLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, controlsPanelLayout.createSequentialGroup()
+                                                    .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                        .addComponent(jLabel10)
+                                                        .addComponent(jLabel12)
+                                                        .addComponent(jLabel11))
+                                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                    .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                                        .addComponent(rMinLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                        .addComponent(rMaxLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                        .addComponent(rAvgLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 65, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, controlsPanelLayout.createSequentialGroup()
+                                                    .addComponent(jLabel17)
+                                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                    .addComponent(rAccessLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))))))
+                                .addGap(0, 0, Short.MAX_VALUE)))
                         .addGap(2, 2, 2)))
                 .addContainerGap(27, Short.MAX_VALUE))
         );
         controlsPanelLayout.setVerticalGroup(
             controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(controlsPanelLayout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel23)
+                    .addComponent(profileCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
                     .addComponent(typeCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -535,8 +636,8 @@ public final class MainFrame extends javax.swing.JFrame {
                     .addComponent(jLabel9)
                     .addComponent(sampleSizeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(startButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGap(18, 18, 18)
+                .addComponent(startButton)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel20, javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(jLabel13, javax.swing.GroupLayout.Alignment.TRAILING))
@@ -863,9 +964,10 @@ public final class MainFrame extends javax.swing.JFrame {
 
     private void typeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_typeComboActionPerformed
         if (typeCombo.hasFocus()) {
-            Benchmark.BenchmarkType mode = (Benchmark.BenchmarkType) typeCombo.getSelectedItem();
+            BenchmarkType mode = (BenchmarkType) typeCombo.getSelectedItem();
             App.benchmarkType = mode;
             App.saveConfig();
+            System.out.println("emulate custom: " + evt.paramString());
         }
     }//GEN-LAST:event_typeComboActionPerformed
 
@@ -920,7 +1022,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
     private void orderComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_orderComboBoxActionPerformed
         if (orderComboBox.hasFocus()) {
-            App.blockSequence = (BenchmarkOperation.BlockSequence) orderComboBox.getSelectedItem();
+            App.blockSequence = (BlockSequence) orderComboBox.getSelectedItem();
             App.saveConfig();
         }
     }//GEN-LAST:event_orderComboBoxActionPerformed
@@ -975,7 +1077,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
         if (result == JOptionPane.YES_OPTION) {
             App.msg("Deleting selected benchmarks.");
-            List<Long> benchmarkIds = Gui.runPanel.getSelectedIds();
+            List<UUID> benchmarkIds = Gui.runPanel.getSelectedIds();
             App.deleteBenchmarks(benchmarkIds);
         }
     }//GEN-LAST:event_deleteSelBenchmarksItemActionPerformed
@@ -994,6 +1096,27 @@ public final class MainFrame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_numThreadsComboActionPerformed
 
+    private void profileComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_profileComboActionPerformed
+        BenchmarkProfile profile = (BenchmarkProfile) profileCombo.getSelectedItem();
+        App.activeProfile = profile;
+        
+        // skip adjustments if custom test was selected
+        if (profile.equals(BenchmarkProfile.CUSTOM_TEST)) {
+            return;
+        }
+        
+        // TODO: later relocate into a BenchmarkConfiguration.java
+        App.benchmarkType = profile.getBenchmarkType();
+        App.blockSequence = profile.getBlockSequence();
+        App.numOfThreads = profile.getNumThreads();
+        App.numOfSamples = profile.getNumSamples();
+        App.numOfBlocks = profile.getNumBlocks();
+        App.blockSizeKb = profile.getBlockSizeKb();
+        App.writeSyncEnable = profile.isWriteSyncEnable();
+        App.multiFile = profile.isMultiFile();
+        
+        loadSettings();
+    }//GEN-LAST:event_profileComboActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
@@ -1029,6 +1152,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel20;
     private javax.swing.JLabel jLabel21;
     private javax.swing.JLabel jLabel22;
+    private javax.swing.JLabel jLabel23;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
@@ -1051,8 +1175,9 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JComboBox numThreadsCombo;
     private javax.swing.JButton openLocButton;
     private javax.swing.JMenu optionMenu;
-    private javax.swing.JComboBox<BenchmarkOperation.BlockSequence> orderComboBox;
+    private javax.swing.JComboBox<BlockSequence> orderComboBox;
     private javax.swing.ButtonGroup palettebuttonGroup;
+    private javax.swing.JComboBox profileCombo;
     private javax.swing.JPanel progressPanel;
     private javax.swing.JLabel rAccessLabel;
     private javax.swing.JLabel rAvgLabel;
@@ -1086,9 +1211,9 @@ public final class MainFrame extends javax.swing.JFrame {
     }
   
     public void applyTestParams() {
-        Benchmark.BenchmarkType mode = (Benchmark.BenchmarkType) typeCombo.getSelectedItem();
+        BenchmarkType mode = (BenchmarkType) typeCombo.getSelectedItem();
         App.benchmarkType = mode;
-        App.blockSequence = (BenchmarkOperation.BlockSequence) orderComboBox.getSelectedItem();
+        App.blockSequence = (BlockSequence) orderComboBox.getSelectedItem();
         App.numOfSamples = Integer.parseInt((String) numSamplesCombo.getSelectedItem());
         App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
         App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
@@ -1133,10 +1258,15 @@ public final class MainFrame extends javax.swing.JFrame {
         msgTextArea.setText("");
     }
     
+    /**
+     * Disable buttons during a benchmark operation to avoid
+     * the user from updating parameters.
+     */
     public void adjustSensitivity() {
         switch (App.state) {
             case App.State.DISK_TEST_STATE -> {
                 startButton.setText("Cancel");
+                profileCombo.setEnabled(false);
                 orderComboBox.setEnabled(false);
                 blockSizeCombo.setEnabled(false);
                 numBlocksCombo.setEnabled(false);
@@ -1147,6 +1277,7 @@ public final class MainFrame extends javax.swing.JFrame {
             }
             case App.State.IDLE_STATE -> {
                 startButton.setText("Start");
+                profileCombo.setEnabled(true);
                 orderComboBox.setEnabled(true);
                 blockSizeCombo.setEnabled(true);
                 numBlocksCombo.setEnabled(true);
@@ -1156,14 +1287,5 @@ public final class MainFrame extends javax.swing.JFrame {
                 resetBenchmarkItem.setEnabled(true);
             }
         }
-    }   
-    // Replace lowercase mode options with proper casing
-
-    @SuppressWarnings("unchecked")
-    private void configureModeCombo() {
-        typeCombo.removeAllItems();
-        typeCombo.addItem("Write");
-        typeCombo.addItem("Read");
-        typeCombo.addItem("Read & Write");
-    }    
+    }
 }
