@@ -174,7 +174,7 @@
               overwrite="true"/>
     </target>
 
-    <target name="create-msi" depends="-post-jar, -prepare-jpackage-input-jar" description="Creates the MSI installer using jpackage and WiX">
+    <target name="create-msi" depends="clean, jar, -post-jar, -prepare-jpackage-input-jar" description="Creates the MSI installer using jpackage and WiX">
         <property name="jpackage.input.dir.relative" value="${release.dir}"/>
 
         <echo message="Deleting existing MSI files: ${dist.dir}/${pkg.name}-*.msi"/>
@@ -207,7 +207,7 @@
         <echo message="MSI installer created: ${dist.dir}/${jpackage.output.msi.targetname}"/>
     </target>
     
-    <target name="create-dmg" depends="-post-jar, -prepare-jpackage-input-jar" description="Creates the DMG installer using jpackage">
+    <target name="create-dmg" depends="clean, jar, -post-jar, -prepare-jpackage-input-jar" description="Creates the DMG installer using jpackage">
         <property name="jpackage.input.dir.relative" value="${release.dir}"/>
 
         <echo message="Deleting existing dmg files: ${dist.dir}/${app.name}-*.dmg"/>
@@ -239,7 +239,7 @@
         <echo message="DMG installer created: ${dist.dir}/${jpackage.output.dmg.targetname}"/>
     </target>
     
-    <target name="sign-msi" description="Signs the MSI installer using signtool.exe (manual invocation)">
+    <target name="sign-msi" depends="create-msi" description="Signs the MSI installer using signtool.exe (manual invocation)">
         <echo message="Signing MSI installer..."/>
         <condition property="signtool.is.available">
             <available file="${signtool.executable}" type="file"/>
@@ -270,7 +270,7 @@
     <property name="deb.version" value="${version}-1"/>
     <property name="deb.install.dir" value="/usr/share/jdiskmark"/>
 
-    <target name="create-deb" depends="-post-jar" description="Build Debian Package">
+    <target name="create-deb" depends="clean, jar, -post-jar" description="Build Debian Package">
 
         <condition property="is.linux">
             <os family="unix" />
