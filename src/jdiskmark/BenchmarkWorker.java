@@ -22,7 +22,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.SwingWorker;
+import javax.swing.*;
+
 import static jdiskmark.App.locationDir;
 import static jdiskmark.App.numOfSamples;
 import jdiskmark.Benchmark.BlockSequence;
@@ -62,7 +63,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
     @Override
     protected Benchmark doInBackground() throws Exception {
-        
+
         if (App.verbose) {
             msg("*** starting new worker thread");
             msg("Running readTest " + App.isReadEnabled() + "   writeTest " + App.isWriteEnabled());
@@ -88,6 +89,19 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         }
 
         Gui.updateLegendAndAxis();
+
+        File file = locationDir;
+
+        if (!file.canRead() || !file.canWrite()) {
+
+            String msg = "Target location does not allow drive access. \n" +
+                    "Read Permission : " + file.canRead() + "\n" +
+                    "Write Permission : " + file.canWrite() + "\n";
+
+            Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, "Target location does not allow drive access at " + file);
+
+            javax.swing.JOptionPane.showMessageDialog(null, msg, "Target location does not allow drive access", JOptionPane.ERROR_MESSAGE);
+        }
 
         if (App.autoReset == true) {
             App.resetTestData();
