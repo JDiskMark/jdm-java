@@ -105,15 +105,20 @@
         </condition>
     </target>
 
+    <target name="-pre-jar">
+        <antcall target="buildinfo"/>
+        <copy file="build.properties" todir="src/META-INF"/>
+    </target>
+
     <target name="-post-jar" depends="-check-if-built" unless="build.exists">
         <copy file="EmptyStandbyList.exe" todir="dist"/>
         <copy file="capacity.ps1" todir="dist"/>
         <copy file="disk-model.ps1" todir="dist"/>
-        <antcall target="buildinfo"/>
+        <!--<antcall target="buildinfo"/>-->
         <copy file="pkg/macos/JDM.icns" todir="${dist.dir}"/>
         <copy file="pkg/macos/run.sh" todir="${dist.dir}"/>
         <!--<copy file="build.properties" todir="dist"/>-->
-        <copy file="build.properties" todir="src/META-INF"/>
+        <!--<copy file="build.properties" todir="src/META-INF"/>-->
         <copy file="README.md" todir="dist"/>
         <mkdir dir="tmp"/>
         <mkdir dir="tmp/${release.dir}"/>
@@ -229,7 +234,7 @@
         </exec>
 
         <property name="jpackage.output.dmg.defaultname" value="${app.name}-${version}-${dmg.version}.dmg"/>
-        <property name="jpackage.output.dmg.targetname" value="${app.name}-${version}.dmg"/>
+        <property name="jpackage.output.dmg.targetname" value="${pkg.name}-${version}.dmg"/>
         
         <echo message="Renaming DMG from '${jpackage.output.dmg.defaultname}' to '${jpackage.output.dmg.targetname}' in ${dist.dir}"/>
         <move file="${dist.dir}/${jpackage.output.dmg.defaultname}"
