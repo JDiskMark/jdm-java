@@ -6,6 +6,8 @@ import java.io.File;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jdiskmark.Benchmark.BenchmarkType;
+import jdiskmark.Benchmark.BlockSequence;
 
 @Command(name = "run", description = "Starts a disk benchmark test with specified parameters.")
 public class RunBenchmarkCommand implements Callable<Integer> {
@@ -27,7 +29,7 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     @Option(names = {"-t", "--type"},
             description = "Benchmark type: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
             defaultValue = "WRITE")
-    Benchmark.BenchmarkType benchmarkType;
+    BenchmarkType benchmarkType;
 
     @Option(names = {"-T", "--threads"}, 
             description = "Number of threads to use for testing. (Default: ${DEFAULT-VALUE})",
@@ -37,7 +39,7 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     @Option(names = {"-o", "--order"}, 
             description = "Block order: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
             defaultValue = "SEQUENTIAL")
-    BenchmarkOperation.BlockSequence blockSequence;
+    BlockSequence blockSequence;
 
     @Option(names = {"-b", "--blocks"},
             description = "Number of blocks/chunks per sample. (Default: ${DEFAULT-VALUE})",

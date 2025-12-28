@@ -20,12 +20,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingWorker;
 import static jdiskmark.App.locationDir;
 import static jdiskmark.App.numOfSamples;
+import jdiskmark.Benchmark.BlockSequence;
+import jdiskmark.Benchmark.IOMode;
 
 /**
  * Thread running the disk benchmarking. only one of these threads can run at
@@ -127,6 +128,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         benchmark.percentUsed = usageInfo.percentUsed;
         benchmark.usedGb = usageInfo.usedGb;
         benchmark.totalGb = usageInfo.totalGb;
+        
         // update gui title
         Gui.chart.getTitle().setText(benchmark.getDriveInfo());
         Gui.chart.getTitle().setVisible(true);
@@ -134,7 +136,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         if (App.isWriteEnabled()) {
             BenchmarkOperation wOperation = new BenchmarkOperation();
             wOperation.setBenchmark(benchmark);
-            wOperation.ioMode = BenchmarkOperation.IOMode.WRITE;
+            wOperation.ioMode = IOMode.WRITE;
             wOperation.blockOrder = App.blockSequence;
             wOperation.numSamples = App.numOfSamples;
             wOperation.numBlocks = App.numOfSamples;
@@ -172,7 +174,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                         try {
                             try (RandomAccessFile rAccFile = new RandomAccessFile(testFile, mode)) {
                                 for (int b = 0; b < numOfBlocks; b++) {
-                                    if (App.blockSequence == BenchmarkOperation.BlockSequence.RANDOM) {
+                                    if (App.blockSequence == BlockSequence.RANDOM) {
                                         int rLoc = Util.randInt(0, numOfBlocks - 1);
                                         rAccFile.seek(rLoc * blockSize);
                                     } else {
@@ -312,7 +314,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             BenchmarkOperation rOperation = new BenchmarkOperation();
             rOperation.setBenchmark(benchmark);
             // operation parameters
-            rOperation.ioMode = BenchmarkOperation.IOMode.READ;
+            rOperation.ioMode = IOMode.READ;
             rOperation.blockOrder = App.blockSequence;
             rOperation.numSamples = App.numOfSamples;
             rOperation.numBlocks = App.numOfBlocks;
@@ -342,7 +344,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                         try {
                             try (RandomAccessFile rAccFile = new RandomAccessFile(testFile, "r")) {
                                 for (int b = 0; b < numOfBlocks; b++) {
-                                    if (App.blockSequence == BenchmarkOperation.BlockSequence.RANDOM) {
+                                    if (App.blockSequence == BlockSequence.RANDOM) {
                                         int rLoc = Util.randInt(0, numOfBlocks - 1);
                                         rAccFile.seek(rLoc * blockSize);
                                     } else {

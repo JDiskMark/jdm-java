@@ -1,4 +1,4 @@
-# JDiskMark v0.6.2 beta (Windows/Mac/Linux)
+# JDiskMark v0.6.3 beta (Windows/Mac/Linux)
 
 Java Disk Benchmark Utility
 
@@ -7,21 +7,43 @@ Java Disk Benchmark Utility
 - Java cross platform solution
 - Benchmark IO read/write performance
 - Graphs: sample bw, max, min, cum bw, latency (access time)
-- Adjustable block size, block qty and sample qty
-- Single or multi file option
-- Sequential or random option
+- Configure block size, blocks, samples and other benchmark parameters
 - Detect drive model, capacity and processor
 - Save and load benchmark
 - Auto clear disk cache (when sudo or admin)
 - multi threaded benchmarks
+- Default profiles
+- Command line interface
+- available in msi, deb, rpm and zip releses
 
 ## Releases
 
 https://sourceforge.net/projects/jdiskmark/
 
-## Installation
+### Windows Installer (.msi)
 
-Java 21 needs to be installed to run jdiskmark.
+A signed windows installer is available for windows environment and can be installed as an administrator.
+
+To install launch the `jdiskmark-<version>.msi`.
+
+### Deb Installer (.deb)
+
+The deb installer is used on Debian linux distributions like ubuntu.
+
+To install use `sudo dpkg -i jdiskmark_<version>_amd64.deb` and to remove `sudo dpkg -r jdiskmark`
+
+### RPM Installer (.rpm)
+
+The rpm installer is used on RHEL, CENTOS, SUSELinux and Fedora distributions.
+
+To install use `sudo rpm -i jdiskmark-<rpm.version>.x86_64.rpm` and to remove use `sudo rpm -e jdiskmark`
+
+Note: the `rpm.version` is similar to the `version` but replaces hyphens with periods.
+
+### Zip Archive (.zip)
+
+The zip distribution does not require admin for installing but does require 
+Java 21 to be installed seperately.
 
 1. Download and install [java 21](https://www.oracle.com/java/technologies/downloads/) from Oracle.
 
@@ -160,17 +182,20 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 
 ### v1.0.0 planned
 - TODO: #16 MacOS installer - tyler
-- TODO: #15 Ubuntu installer - jeff
 - TODO: #70 app icon - ian
 - TODO: #33 maven build - lane
 - TODO: #40 gui presentation issues - james
 - TODO: #78 throttle graphics render - valerio
-- TODO: #69 command line support - james
-- #84 processor info resolved for (sp) installs
+- TODO: #95 disk cache purging - valerio
+- #15 deb installer (Ubuntu)
+- #98 rpm installer (Redhat)
+- #42 default profiles
+- #69 command line interface
+- #84 processor info resolved for (SP) installs
 - #73 refactor benchmark data model, keyboard op sel
 
 ### v0.6.2 linux optimized ui
-- #64 persist IOPS, write sync - val
+- #64 persist IOPS, write sync
 - control panel on left
 - allow concurrent version runs
 - event tab swapped w disk location

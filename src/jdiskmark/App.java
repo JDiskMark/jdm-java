@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,6 +22,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingWorker.StateValue;
 import static javax.swing.SwingWorker.StateValue.STARTED;
+import static jdiskmark.Benchmark.BenchmarkType;
+import static jdiskmark.Benchmark.BlockSequence;
+import static jdiskmark.Benchmark.IOMode;
 
 /**
  * Primary class for global variables.
@@ -71,9 +75,10 @@ public class App {
     public static boolean showDriveAccess = true;
     public static boolean writeSyncEnable = false;
     // benchmark configuration
-    public static Benchmark.BenchmarkType benchmarkType = Benchmark.BenchmarkType.WRITE;
-    public static BenchmarkOperation.IOMode ioMode = BenchmarkOperation.IOMode.WRITE;
-    public static BenchmarkOperation.BlockSequence blockSequence = BenchmarkOperation.BlockSequence.SEQUENTIAL;
+    public static BenchmarkProfile activeProfile = BenchmarkProfile.QUICK_TEST;
+    public static BenchmarkType benchmarkType = BenchmarkType.WRITE;
+    public static IOMode ioMode = IOMode.WRITE;
+    public static BlockSequence blockSequence = BlockSequence.SEQUENTIAL;
     public static int numOfSamples = 200;   // desired number of samples
     public static int numOfBlocks = 32;     // desired number of blocks
     public static int blockSizeKb = 512;    // size of a block in KBs
@@ -117,7 +122,7 @@ public class App {
         switch (mode) {
             case Mode.GUI -> {
                 App.autoSave = true;
-                App.verbose = true; // force verbose to true
+                //App.verbose = true; // force verbose to true
                 java.awt.EventQueue.invokeLater(App::init);
                 return;
             }
@@ -281,7 +286,7 @@ public class App {
         String value;
 
         value = p.getProperty("benchmarkType", String.valueOf(benchmarkType));
-        benchmarkType = Benchmark.BenchmarkType.valueOf(value.toUpperCase());
+        benchmarkType = BenchmarkType.valueOf(value.toUpperCase());
         
         value = p.getProperty("multiFile", String.valueOf(multiFile));
         multiFile = Boolean.parseBoolean(value);
@@ -293,7 +298,7 @@ public class App {
         autoReset = Boolean.parseBoolean(value);
 
         value = p.getProperty("blockSequence", String.valueOf(blockSequence));
-        blockSequence = BenchmarkOperation.BlockSequence.valueOf(value.toUpperCase());
+        blockSequence = BlockSequence.valueOf(value.toUpperCase());
 
         value = p.getProperty("showMaxMin", String.valueOf(showMaxMin));
         showMaxMin = Boolean.parseBoolean(value);
@@ -348,11 +353,11 @@ public class App {
     }
     
     public static boolean isReadEnabled() {
-        return benchmarkType == Benchmark.BenchmarkType.READ || benchmarkType == Benchmark.BenchmarkType.READ_WRITE;
+        return benchmarkType == BenchmarkType.READ || benchmarkType == BenchmarkType.READ_WRITE;
     }
 
     public static boolean isWriteEnabled() {
-        return benchmarkType == Benchmark.BenchmarkType.WRITE || benchmarkType == Benchmark.BenchmarkType.READ_WRITE;
+        return benchmarkType == BenchmarkType.WRITE || benchmarkType == BenchmarkType.READ_WRITE;
     }
     
     public static String getConfigString() {
@@ -402,7 +407,7 @@ public class App {
     }
     
     // only tested for single delete but should work
-    public static void deleteBenchmarks(List<Long> benchmarkIds) {
+    public static void deleteBenchmarks(List<UUID> benchmarkIds) {
         Benchmark.delete(benchmarkIds);
         benchmarks.clear();  // clear the cache
         loadBenchmarks();
