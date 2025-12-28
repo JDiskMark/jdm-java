@@ -90,17 +90,22 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
         Gui.updateLegendAndAxis();
 
-        File file = locationDir;
+        File targetLocation = locationDir;
 
-        if (!file.canRead() || !file.canWrite()) {
+        if (!targetLocation.canRead() || !targetLocation.canWrite()) {
 
             String msg = "Target location does not allow drive access. \n" +
-                    "Read Permission : " + file.canRead() + "\n" +
-                    "Write Permission : " + file.canWrite() + "\n";
+                    "Read Permission : " + targetLocation.canRead() + "\n" +
+                    "Write Permission : " + targetLocation.canWrite() + "\n";
 
-            Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, "Target location does not allow drive access at " + file);
+            Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, "Target location does not allow drive access at " + targetLocation);
 
-            javax.swing.JOptionPane.showMessageDialog(null, msg, "Target location does not allow drive access", JOptionPane.ERROR_MESSAGE);
+            javax.swing.JOptionPane.showMessageDialog(Gui.mainFrame, msg, "Target location does not allow drive access", JOptionPane.ERROR_MESSAGE);
+            cancel(true);
+
+            return null;
+
+
         }
 
         if (App.autoReset == true) {
