@@ -96,7 +96,21 @@ public class App {
     // benchmarks and operations
     public static HashMap<String, Benchmark> benchmarks = new HashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new HashMap<>();
+    //Cli Mode
+    public static boolean isCliMode = false;
     
+    public static boolean isWindows() {
+        return os != null && os.toLowerCase().contains("win");
+    }
+
+    public static boolean isLinux() {
+        return os != null && os.toLowerCase().contains("linux");
+    }
+
+    public static boolean isMac() {
+        return os != null && os.toLowerCase().contains("mac");
+    }
+   
     /**
      * @param args the command line arguments
      */
@@ -161,29 +175,59 @@ public class App {
     /**
      * Initialize the GUI Application.
      */
+    /**
+    * Initialize the GUI Application.
+    */
     public static void init() {
-        
+
+        // ========= SAFE ELEVATION CHECK (NETBEANS + EXE/JAR) ============
+        if (!UtilOs.isProcessElevated()) {
+
+            // Detect if running inside NetBeans (dev mode)
+            String classPath = System.getProperty("java.class.path");
+            boolean runningInNetBeans =
+                    classPath != null && classPath.toLowerCase().contains("netbeans");
+
+            if (!runningInNetBeans) {
+                // Only elevate when running as packaged JAR/EXE
+                System.out.println("Restarting JDiskMark with Administrator privileges...");
+                UtilOs.restartAsAdmin();
+                return;
+            } else {
+                System.out.println("Running inside NetBeans — skipping elevation.");
+            }
+        }
+        // ================================================================
+
+
         os = System.getProperty("os.name");
         arch = System.getProperty("os.arch");
-        processorName = Util.getProcessorName();
-        jdk = Util.getJvmInfo();
-        
+
+        // Processor name based on OS
+        if (os.startsWith("Windows")) {
+            processorName = UtilOs.getProcessorNameWindows();
+        } else if (os.startsWith("Mac OS")) {
+            processorName = UtilOs.getProcessorNameMacOS();
+        } else if (os.contains("Linux")) {
+            processorName = UtilOs.getProcessorNameLinux();
+        }
+
         checkPermission();
         if (!APP_CACHE_DIR.exists()) {
             APP_CACHE_DIR.mkdirs();
         }
-        
+
         if (mode == Mode.GUI) {
             loadConfig();
         }
-        
+
         // initialize data dir if necessary
         if (locationDir == null) {
             locationDir = new File(System.getProperty("user.home"));
             dataDir = new File(locationDir.getAbsolutePath()
                     + File.separator + DATADIRNAME);
         }
-        
+
         if (mode == Mode.GUI) {
             Gui.configureLaf();
             Gui.mainFrame = new MainFrame();
@@ -194,25 +238,19 @@ public class App {
             Gui.mainFrame.setLocationRelativeTo(null);
             Gui.progressBar = Gui.mainFrame.getProgressBar();
         }
-        
+
         if (App.autoSave) {
-            // configure the embedded DB in .jdm
             System.setProperty("derby.system.home", APP_CACHE_DIR_NAME);
             loadBenchmarks();
         }
 
         if (mode == Mode.GUI) {
-            // load current drive
             Gui.updateDiskInfo();
             Gui.mainFrame.setVisible(true);
-            // save configuration on exit...
-            Runtime.getRuntime().addShutdownHook(new Thread() {
-                @Override
-                public void run() { App.saveConfig(); }
-            });
+            Runtime.getRuntime().addShutdownHook(new Thread(App::saveConfig));
         }
     }
-    
+   
     public static void checkPermission() {
         String osName = System.getProperty("os.name");
         if (osName.contains("Linux")) {

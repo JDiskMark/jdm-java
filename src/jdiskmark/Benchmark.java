@@ -1,4 +1,3 @@
-
 package jdiskmark;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -27,6 +26,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 import java.util.UUID;
 
 /**
@@ -184,6 +185,37 @@ public class Benchmark implements Serializable {
     BenchmarkType benchmarkType;
     public BenchmarkType getBenchmarkType() { return benchmarkType; }
     
+    public enum CachePurgeMethod {
+        NONE,
+        DROP_CACHE,
+        SOFT_PURGE;
+
+        @Override
+        public String toString() {
+            return switch (this) {
+                case DROP_CACHE -> "Drop Cache (OS Flush)";
+                case SOFT_PURGE -> "Soft Purge (Read-Through)";
+                case NONE -> "None";
+            };
+        }
+    }
+
+    // ---------------------------------------------------
+    // Cache purge metadata (for read-after-write benchmarks)
+    // ---------------------------------------------------
+    @Column
+    boolean cachePurgePerformed;
+
+    @Column
+    long cachePurgeSizeBytes;
+
+    @Column
+    long cachePurgeDurationMs;
+
+    @Column
+    @Enumerated(EnumType.STRING)
+    CachePurgeMethod cachePurgeMethod;
+
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column(name = "startTime", columnDefinition = "TIMESTAMP")
@@ -194,7 +226,7 @@ public class Benchmark implements Serializable {
 
     
     @OneToMany(mappedBy = "benchmark", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<BenchmarkOperation> operations;
+    List<BenchmarkOperation> operations = new ArrayList<>();
     
     public List<BenchmarkOperation> getOperations() {
         return operations;
@@ -252,16 +284,22 @@ public class Benchmark implements Serializable {
     }
     
     public Benchmark() {
-        operations = new ArrayList<>();
         startTime = LocalDateTime.now();
+        cachePurgePerformed = false;
+        cachePurgeSizeBytes = 0L;
+        cachePurgeDurationMs = 0L;
+        cachePurgeMethod = CachePurgeMethod.NONE;
         appVersion = App.VERSION;
         profileName = App.activeProfile.getName();
     }
     
     Benchmark(BenchmarkType type) {
-        operations = new ArrayList<>();
         startTime = LocalDateTime.now();
         benchmarkType = type;
+        cachePurgePerformed = false;
+        cachePurgeSizeBytes = 0L;
+        cachePurgeDurationMs = 0L;
+        cachePurgeMethod = CachePurgeMethod.NONE;
         appVersion = App.VERSION;
         profileName = App.activeProfile.getName();
     }
@@ -295,7 +333,24 @@ public class Benchmark implements Serializable {
         long diffMs = Duration.between(startTime, endTime).toMillis();
         return String.valueOf(diffMs);
     }
-    
+
+    // cache purge getters (for UI / JSON)
+    public boolean isCachePurgePerformed() {
+        return cachePurgePerformed;
+    }
+
+    public long getCachePurgeSizeBytes() {
+        return cachePurgeSizeBytes;
+    }
+
+    public long getCachePurgeDurationMs() {
+        return cachePurgeDurationMs;
+    }
+
+    public CachePurgeMethod getCachePurgeMethod() {
+        return cachePurgeMethod;
+    }
+   
     // utility methods for collection
     
     @JsonIgnore
@@ -333,7 +388,7 @@ public class Benchmark implements Serializable {
                 .setParameter("benchmarkIds", benchmarkIds)
                 .executeUpdate();
         
-        // delete the parent BenchmarkOperation records
+        // delete the parent Benchmark records
         String deleteBenchmarksJpql = "DELETE FROM Benchmark b WHERE b.id IN :benchmarkIds";
         int deletedBenchmarksCount = em.createQuery(deleteBenchmarksJpql)
                 .setParameter("benchmarkIds", benchmarkIds)

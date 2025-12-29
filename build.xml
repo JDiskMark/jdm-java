@@ -83,7 +83,7 @@
     <!-- version properties -->
     <property name="pkg.name" value="jdiskmark"/>
     <property name="app.name" value="JDiskMark"/>
-    <property name="version" value="0.6.3-dev.fat"/>
+    <property name="version" value="0.6.3-purge"/>
     <!-- full semver does not work for msi product versions -->
     <property name="msi.version" value="0.6.3"/>
     <property name="msi.app.title" value="${app.name} ${version}"/>
@@ -114,11 +114,8 @@
         <copy file="EmptyStandbyList.exe" todir="dist"/>
         <copy file="capacity.ps1" todir="dist"/>
         <copy file="disk-model.ps1" todir="dist"/>
-        <!--<antcall target="buildinfo"/>-->
         <copy file="pkg/macos/JDM.icns" todir="${dist.dir}"/>
         <copy file="pkg/macos/run.sh" todir="${dist.dir}"/>
-        <!--<copy file="build.properties" todir="dist"/>-->
-        <!--<copy file="build.properties" todir="src/META-INF"/>-->
         <copy file="README.md" todir="dist"/>
         <mkdir dir="tmp"/>
         <mkdir dir="tmp/${release.dir}"/>

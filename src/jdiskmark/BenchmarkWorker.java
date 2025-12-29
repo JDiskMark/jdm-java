@@ -64,6 +64,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
     protected Benchmark doInBackground() throws Exception {
         
         if (App.verbose) {
+            msg(">>> USING CUSTOM PURGE BUILD (V1)");
             msg("*** starting new worker thread");
             msg("Running readTest " + App.isReadEnabled() + "   writeTest " + App.isWriteEnabled());
             msg("num samples: " + App.numOfSamples + ", num blks: " + App.numOfBlocks
@@ -238,12 +239,76 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             App.wIops = wOperation.iops;
             Gui.mainFrame.refreshWriteMetrics();
         }
+        
+        System.out.println(">>> BenchmarkWorker: ENTERING CACHE PURGE SECTION");
 
-        // TODO: review renaming all files to clear catch
-        if (App.isReadEnabled() && App.isWriteEnabled() && !isCancelled()) {
-            // TODO: review refactor to App.dropCache() & Gui.dropCache()
-            Gui.dropCache();
+        // ------------------------------------------------------------
+        // Cache Purge Step (only for Read-after-Write scenario)
+        // ------------------------------------------------------------
+        if (App.isWriteEnabled() && App.isReadEnabled() && !isCancelled()) {
+
+            long purgeStartNs = System.nanoTime();
+            benchmark.cachePurgePerformed = true;
+            benchmark.cachePurgeMethod = App.isAdmin
+                    ? Benchmark.CachePurgeMethod.DROP_CACHE
+                    : Benchmark.CachePurgeMethod.SOFT_PURGE;
+
+            // Detect purge size roughly equal to the full test data footprint
+            long estimatedBytes = (long) App.numOfSamples * (long) App.numOfBlocks * 
+                                  ((long) App.blockSizeKb * 1024L);
+            benchmark.cachePurgeSizeBytes = estimatedBytes;
+
+            Gui.msg("⚡ Starting cache purge (" + benchmark.cachePurgeMethod + 
+                    ", ~" + (estimatedBytes / (1024*1024)) + " MB)");
+
+            if (App.isAdmin) {
+                // ==========================
+                // ADMIN MODE: Use drop-cache
+                // ==========================
+
+                System.out.println(">>> BenchmarkWorker: ADMIN purge path selected");
+                System.out.println(">>> BenchmarkWorker: Calling UtilOs.dropOsCache() ...");
+
+                try {
+                    boolean ok = UtilOs.dropOsCache();
+
+                    System.out.println(">>> BenchmarkWorker: dropOsCache() returned = " + ok);
+
+                    if (!ok) {
+                        System.out.println(">>> BenchmarkWorker: dropOsCache FAILED — fallback to SOFT purge");
+                        Gui.msg("⚠ drop-cache failed — switching to soft purge.");
+
+                        System.out.println(">>> BenchmarkWorker: Starting SOFT purge (fallback)");
+                        Util.readPurge(estimatedBytes, pct -> setProgress(Math.min(99, pct)));
+                        System.out.println(">>> BenchmarkWorker: Soft purge completed.");
+                    }
+                } catch (Exception ex) {
+                    System.out.println(">>> BenchmarkWorker: EXCEPTION in dropOsCache — fallback to read purge");
+                    ex.printStackTrace();
+                    Gui.msg("⚠ Exception during drop-cache, fallback to read purge.");
+                    Util.readPurge(estimatedBytes, pct -> setProgress(Math.min(99, pct)));
+                }
+
+            } else {
+                // ==========================
+                // USER MODE: Soft purge
+                // ==========================
+                System.out.println(">>> BenchmarkWorker: Starting SOFT purge (readPurge)");
+                Gui.msg("Performing soft cache purge (read-through)…");
+
+                Util.readPurge(estimatedBytes, pct -> setProgress(Math.min(99, pct)));
+
+                System.out.println(">>> BenchmarkWorker: Soft purge completed.");
+            }
+
+            long purgeEndNs = System.nanoTime();
+            long purgeDurationMs = (purgeEndNs - purgeStartNs) / 1_000_000L;
+
+            benchmark.cachePurgeDurationMs = purgeDurationMs;
+
+            Gui.msg("✔ Purge finished in " + purgeDurationMs + " ms");
         }
+
 
         if (App.isReadEnabled()) {
             BenchmarkOperation rOperation = new BenchmarkOperation();
@@ -369,7 +434,11 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                 case Sample.Type.WRITE -> Gui.addWriteSample(s);
                 case Sample.Type.READ -> Gui.addReadSample(s);
             }
-        });
+        });       
+        if (App.isCliMode) {
+            int pct = this.getProgress();
+            printCliProgress(pct);
+        }
     }
 
     @Override
@@ -379,5 +448,18 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         }
         App.state = App.State.IDLE_STATE;
         Gui.mainFrame.adjustSensitivity();
+    }
+    
+    private void printCliProgress(int pct) {
+        int bars = pct / 5;      // 20-bar progress
+        int spaces = 20 - bars;
+
+        String bar = "[" + "#".repeat(bars) + "-".repeat(spaces) + "] " + pct + "%";
+
+        System.out.print("\r" + bar);
+
+        if (pct >= 100) {
+            System.out.println();
+        }
     }
 }
