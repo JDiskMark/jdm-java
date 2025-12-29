@@ -226,7 +226,7 @@ public class Benchmark implements Serializable {
 
     
     @OneToMany(mappedBy = "benchmark", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<BenchmarkOperation> operations;
+    List<BenchmarkOperation> operations = new ArrayList<>();
     
     public List<BenchmarkOperation> getOperations() {
         return operations;
@@ -284,7 +284,6 @@ public class Benchmark implements Serializable {
     }
     
     public Benchmark() {
-        operations = new ArrayList<>();
         startTime = LocalDateTime.now();
         cachePurgePerformed = false;
         cachePurgeSizeBytes = 0L;
@@ -295,7 +294,6 @@ public class Benchmark implements Serializable {
     }
     
     Benchmark(BenchmarkType type) {
-        operations = new ArrayList<>();
         startTime = LocalDateTime.now();
         benchmarkType = type;
         cachePurgePerformed = false;
