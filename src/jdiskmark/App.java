@@ -21,6 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.*;
 import javax.swing.SwingWorker.StateValue;
 import static javax.swing.SwingWorker.StateValue.STARTED;
 import static jdiskmark.Benchmark.BenchmarkType;
@@ -194,6 +195,20 @@ public class App {
             Gui.mainFrame.loadConfig();
             Gui.mainFrame.setLocationRelativeTo(null);
             Gui.progressBar = Gui.mainFrame.getProgressBar();
+
+            File targetLocation = locationDir;
+
+            if (!targetLocation.canRead() || !targetLocation.canWrite()) {
+
+                String msg = "Target location does not allow drive access. \n" +
+                        "Read Permission : " + targetLocation.canRead() + "\n" +
+                        "Write Permission : " + targetLocation.canWrite() + "\n";
+
+                Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, "Target location does not allow drive access at " + targetLocation);
+
+                javax.swing.JOptionPane.showMessageDialog(Gui.mainFrame, msg, "Target location does not allow drive access", JOptionPane.ERROR_MESSAGE);
+               return;
+            }
         }
         
         if (App.autoSave) {
