@@ -160,7 +160,6 @@ public final class MainFrame extends javax.swing.JFrame {
         final int[] previousNumThreads = { Integer.parseInt((String)numThreadsCombo.getSelectedItem()) };
         numThreadsCombo.addActionListener(e -> {
             int currentSelection = Integer.parseInt((String)numThreadsCombo.getSelectedItem());
-            System.out.println("prev: " + previousNumThreads[0] + " curr: "+ currentSelection);
             if (currentSelection != previousNumThreads[0]) {
                 previousNumThreads[0] = currentSelection; // update for next check
                 setProfileToCustom();

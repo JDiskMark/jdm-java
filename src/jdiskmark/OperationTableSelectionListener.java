@@ -23,7 +23,7 @@ public class OperationTableSelectionListener implements ListSelectionListener {
         int selectedRow = table.getSelectedRow();
         if (selectedRow != -1) {
             String timeString = (String) table.getValueAt(selectedRow, START_TIME_COLUMN);
-            System.out.println("selected operation starttime=" + timeString);
+            System.out.println("sel op start=" + timeString);
             BenchmarkOperation operation = App.operations.get(timeString);
             if (operation != null) {
                 Gui.loadOperation(operation);
