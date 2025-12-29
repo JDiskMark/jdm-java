@@ -418,7 +418,7 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
 
-        jLabel4.setText("Benchmark Type");
+        jLabel4.setText("Type");
 
         typeCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { " ", " " }));
         typeCombo.setPreferredSize(new java.awt.Dimension(60, 24));
@@ -533,20 +533,14 @@ public final class MainFrame extends javax.swing.JFrame {
                             .addGroup(controlsPanelLayout.createSequentialGroup()
                                 .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                     .addGroup(controlsPanelLayout.createSequentialGroup()
-                                        .addComponent(jLabel23)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 27, Short.MAX_VALUE)
-                                        .addComponent(profileCombo, javax.swing.GroupLayout.PREFERRED_SIZE, 146, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                    .addGroup(controlsPanelLayout.createSequentialGroup()
                                         .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                             .addComponent(jLabel5)
-                                            .addComponent(jLabel4)
                                             .addComponent(jLabel14)
                                             .addComponent(jLabel6)
                                             .addComponent(jLabel8)
                                             .addComponent(jLabel21))
                                         .addGap(18, 18, 18)
                                         .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                            .addComponent(typeCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                             .addComponent(numThreadsCombo, 0, 100, Short.MAX_VALUE)
                                             .addComponent(orderComboBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                             .addComponent(numBlocksCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -595,7 +589,15 @@ public final class MainFrame extends javax.swing.JFrame {
                                                 .addGroup(javax.swing.GroupLayout.Alignment.LEADING, controlsPanelLayout.createSequentialGroup()
                                                     .addComponent(jLabel17)
                                                     .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                    .addComponent(rAccessLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))))))
+                                                    .addComponent(rAccessLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, controlsPanelLayout.createSequentialGroup()
+                                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(jLabel23)
+                                            .addComponent(jLabel4))
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                            .addComponent(typeCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                            .addComponent(profileCombo, 0, 146, Short.MAX_VALUE))))
                                 .addGap(0, 0, Short.MAX_VALUE)))
                         .addGap(2, 2, 2)))
                 .addContainerGap(27, Short.MAX_VALUE))

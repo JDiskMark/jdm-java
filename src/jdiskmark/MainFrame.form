@@ -446,14 +446,8 @@
                               <Group type="102" attributes="0">
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
                                       <Group type="102" alignment="0" attributes="0">
-                                          <Component id="jLabel23" min="-2" max="-2" attributes="0"/>
-                                          <EmptySpace pref="27" max="32767" attributes="0"/>
-                                          <Component id="profileCombo" min="-2" pref="146" max="-2" attributes="0"/>
-                                      </Group>
-                                      <Group type="102" alignment="0" attributes="0">
                                           <Group type="103" groupAlignment="0" attributes="0">
                                               <Component id="jLabel5" alignment="0" min="-2" max="-2" attributes="0"/>
-                                              <Component id="jLabel4" alignment="0" min="-2" max="-2" attributes="0"/>
                                               <Component id="jLabel14" alignment="0" min="-2" max="-2" attributes="0"/>
                                               <Component id="jLabel6" alignment="0" min="-2" max="-2" attributes="0"/>
                                               <Component id="jLabel8" alignment="0" min="-2" max="-2" attributes="0"/>
@@ -461,7 +455,6 @@
                                           </Group>
                                           <EmptySpace min="-2" pref="18" max="-2" attributes="0"/>
                                           <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                              <Component id="typeCombo" alignment="0" max="32767" attributes="0"/>
                                               <Component id="numThreadsCombo" alignment="0" pref="100" max="32767" attributes="0"/>
                                               <Component id="orderComboBox" alignment="0" max="32767" attributes="0"/>
                                               <Component id="numBlocksCombo" alignment="0" max="32767" attributes="0"/>
@@ -526,6 +519,17 @@
                                                       <Component id="rAccessLabel" min="-2" pref="40" max="-2" attributes="0"/>
                                                   </Group>
                                               </Group>
+                                          </Group>
+                                      </Group>
+                                      <Group type="102" alignment="1" attributes="0">
+                                          <Group type="103" groupAlignment="0" attributes="0">
+                                              <Component id="jLabel23" alignment="0" min="-2" max="-2" attributes="0"/>
+                                              <Component id="jLabel4" alignment="0" min="-2" max="-2" attributes="0"/>
+                                          </Group>
+                                          <EmptySpace max="32767" attributes="0"/>
+                                          <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                              <Component id="typeCombo" max="32767" attributes="0"/>
+                                              <Component id="profileCombo" pref="146" max="32767" attributes="0"/>
                                           </Group>
                                       </Group>
                                   </Group>
@@ -742,7 +746,7 @@
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel4">
           <Properties>
-            <Property name="text" type="java.lang.String" value="Benchmark Type"/>
+            <Property name="text" type="java.lang.String" value="Type"/>
           </Properties>
         </Component>
         <Component class="javax.swing.JComboBox" name="typeCombo">
