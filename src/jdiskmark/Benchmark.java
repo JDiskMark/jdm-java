@@ -30,13 +30,13 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * A read or write benchmark
+ * A benchmark
  */
 @Entity
 @Table(name="Benchmark")
 @NamedQueries({
 @NamedQuery(name="Benchmark.findAll",
-    query="SELECT b FROM Benchmark b JOIN FETCH b.operations")
+    query="SELECT b FROM Benchmark b")    
 })
 public class Benchmark implements Serializable {
     

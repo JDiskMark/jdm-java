@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
@@ -94,8 +95,8 @@ public class App {
     public static long wIops = -1;
     public static long rIops = -1;
     // benchmarks and operations
-    public static HashMap<String, Benchmark> benchmarks = new HashMap<>();
-    public static HashMap<String, BenchmarkOperation> operations = new HashMap<>();
+    public static HashMap<String, Benchmark> benchmarks = new LinkedHashMap<>();
+    public static HashMap<String, BenchmarkOperation> operations = new LinkedHashMap<>();
     
     /**
      * @param args the command line arguments
@@ -344,23 +345,27 @@ public class App {
     }
     
     public static void loadBenchmarks() {
-        if (mode == Mode.GUI) {
-            Gui.runPanel.clearTable();
-        }
-        
-        // populate run table with saved runs from db
         if (App.verbose) {
             System.out.println("loading benchmarks");
         }
+
+        // populate benchmark and operation map w runs from db
+        benchmarks.clear();
+        operations.clear();
         Benchmark.findAll().stream().forEach((Benchmark run) -> {
             benchmarks.put(run.getStartTimeString(), run);
-            if (mode == Mode.GUI) {
-                Gui.runPanel.addRun(run);
-            }
             for (BenchmarkOperation o : run.getOperations()) {
                 operations.put(o.getStartTimeString(), o);
             }
         });
+
+        // populate gui table
+        if (mode == Mode.GUI) {
+            Gui.runPanel.clearTable();
+            for (Benchmark run : benchmarks.values()) {
+                Gui.runPanel.addRun(run);
+            }
+        }
     }
     
     public static void deleteAllBenchmarks() {

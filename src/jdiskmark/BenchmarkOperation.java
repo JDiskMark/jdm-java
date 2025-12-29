@@ -32,7 +32,7 @@ import jdiskmark.Benchmark.IOMode;
 @Table(name="BenchmarkOperation")
 @NamedQueries({
 @NamedQuery(name="BenchmarkOperation.findAll",
-    query="SELECT d FROM BenchmarkOperation d")
+    query="SELECT o FROM BenchmarkOperation o")
 })
 public class BenchmarkOperation implements Serializable {
     
