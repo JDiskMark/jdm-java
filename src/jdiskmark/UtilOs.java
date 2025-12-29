@@ -217,11 +217,11 @@ public class UtilOs {
     
     /**
      * On Linux OS get the device path when given a file path.
-     * eg.  filePath = /home/james/Desktop/JDiskMarkData
+     * eg.  filePath = /home/james/Desktop/jdm-data
      *      devicePath = /dev/sda
      *      
      * Example command and output:
-     * $ df /home/james/JDiskMarkData
+     * $ df /home/james/jdm-data
      * Filesystem     1K-blocks     Used Available Use% Mounted on
      * /dev/sda2      238737052 54179492 172357524  24% /
      * 

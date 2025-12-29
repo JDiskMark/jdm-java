@@ -2,6 +2,7 @@
 package jdiskmark;
 
 import static jdiskmark.App.dataDir;
+import static jdiskmark.App.SLASH_DATADIRNAME;
 import java.awt.BorderLayout;
 import java.awt.Desktop;
 import java.io.IOException;
@@ -225,7 +226,7 @@ public final class MainFrame extends javax.swing.JFrame {
         chooseButton = new javax.swing.JButton();
         locationText = new javax.swing.JTextField();
         openLocButton = new javax.swing.JButton();
-        jLabel15 = new javax.swing.JLabel();
+        dataDirLabel = new javax.swing.JLabel();
         jLabel22 = new javax.swing.JLabel();
         mountPanel = new javax.swing.JPanel();
         controlsPanel = new javax.swing.JPanel();
@@ -328,9 +329,9 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
 
-        jLabel15.setText("/JDiskMarkData");
+        dataDirLabel.setText(SLASH_DATADIRNAME);
 
-        jLabel22.setText("Specify the location where the data files will be generated and read from to assess each sample's bandwidth.");
+        jLabel22.setText("Specify drive location where data files will be generated and read from to mesaure performance.");
 
         javax.swing.GroupLayout locationPanelLayout = new javax.swing.GroupLayout(locationPanel);
         locationPanel.setLayout(locationPanelLayout);
@@ -340,12 +341,12 @@ public final class MainFrame extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(locationPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(locationPanelLayout.createSequentialGroup()
-                        .addComponent(jLabel22, javax.swing.GroupLayout.PREFERRED_SIZE, 598, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jLabel22, javax.swing.GroupLayout.PREFERRED_SIZE, 561, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(locationPanelLayout.createSequentialGroup()
                         .addComponent(locationText, javax.swing.GroupLayout.PREFERRED_SIZE, 480, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel15, javax.swing.GroupLayout.DEFAULT_SIZE, 191, Short.MAX_VALUE)
+                        .addComponent(dataDirLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 191, Short.MAX_VALUE)
                         .addGap(18, 18, 18)
                         .addComponent(chooseButton, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -360,7 +361,7 @@ public final class MainFrame extends javax.swing.JFrame {
                     .addComponent(locationText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(chooseButton)
                     .addComponent(openLocButton)
-                    .addComponent(jLabel15))
+                    .addComponent(dataDirLabel))
                 .addGap(18, 18, 18)
                 .addComponent(jLabel22)
                 .addContainerGap(48, Short.MAX_VALUE))
@@ -1133,6 +1134,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem clearLogsItem;
     private javax.swing.JMenu colorPaletteMenu;
     private javax.swing.JPanel controlsPanel;
+    private javax.swing.JLabel dataDirLabel;
     private javax.swing.JMenuItem deleteAllBenchmarksItem;
     private javax.swing.JMenuItem deleteDataMenuItem;
     private javax.swing.JMenuItem deleteSelBenchmarksItem;
@@ -1145,7 +1147,6 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel14;
-    private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel17;
     private javax.swing.JLabel jLabel18;

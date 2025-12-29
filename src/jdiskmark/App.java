@@ -36,7 +36,8 @@ public class App {
     public static final String PROPERTIES_FILENAME = "jdm.properties";
     public static final File PROPERTIES_FILE = new File(APP_CACHE_DIR_NAME + File.separator + PROPERTIES_FILENAME);
     public static final String BUILD_TOKEN_FILENAME = "build.properties";
-    public static final String DATADIRNAME = "JDiskMarkData";
+    public static final String DATADIRNAME = "jdm-data";
+    public static final String SLASH_DATADIRNAME = "/" + DATADIRNAME;
     public static final String ESBL_EXE = "EmptyStandbyList.exe";
     // error messages
     public static final String LOCATION_NOT_SELECTED_ERROR = "Location has not been selected";
@@ -55,7 +56,7 @@ public class App {
     public static Properties p;
     public static File locationDir = null;
     public static File exportPath = null;
-    public static File dataDir = null;
+    public static File dataDir = null; // refactor to dataPath after all branches merged
     public static File testFile = null;
     // system info
     public static String os;
