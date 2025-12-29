@@ -138,7 +138,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             wOperation.ioMode = IOMode.WRITE;
             wOperation.blockOrder = App.blockSequence;
             wOperation.numSamples = App.numOfSamples;
-            wOperation.numBlocks = App.numOfSamples;
+            wOperation.numBlocks = App.numOfBlocks;
             wOperation.blockSize = App.blockSizeKb;
             wOperation.txSize = App.targetTxSizeKb();
             wOperation.numThreads = App.numOfThreads;
