@@ -402,7 +402,7 @@ public final class Gui {
     
     static public void loadOperation(BenchmarkOperation operation) {        
         Benchmark benchmark = operation.getBenchmark();
-        System.out.println("benchmark type: " + benchmark.benchmarkType + " o: " + operation.ioMode);
+        System.out.println("loading benchmark w type: " + benchmark.benchmarkType + " o: " + operation.ioMode);
         resetBenchmarkData();
         updateLegendAndAxis(operation);
         chart.getTitle().setText(benchmark.getDriveInfo());
