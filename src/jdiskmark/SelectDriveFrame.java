@@ -3,6 +3,8 @@ package jdiskmark;
 
 import java.io.File;
 
+import static jdiskmark.DriveAccessChecker.validateTargetDirectory;
+
 /**
  *
  */
@@ -55,6 +57,9 @@ public class SelectDriveFrame extends javax.swing.JFrame {
         System.out.println(evt);
         switch (evt.getActionCommand()) {
             case "ApproveSelection" -> {
+
+                if(!validateTargetDirectory(jFileChooser1.getSelectedFile(),true)) return;
+
                 App.setLocationDir(jFileChooser1.getSelectedFile());
                 App.saveConfig();
                 Gui.updateDiskInfo();
