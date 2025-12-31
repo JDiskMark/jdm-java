@@ -96,6 +96,7 @@ public final class MainFrame extends javax.swing.JFrame {
         if (App.locationDir != null) { // set the location dir if not null
             setLocation(App.locationDir.getAbsolutePath());
         }
+        portalUploadMenuItem.setSelected(App.sharePortal);
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
         autoRemoveCheckBoxMenuItem.setSelected(App.autoRemoveData);
         autoResetCheckBoxMenuItem.setSelected(App.autoReset);
@@ -282,6 +283,7 @@ public final class MainFrame extends javax.swing.JFrame {
         resetSequenceMenuItem = new javax.swing.JMenuItem();
         resetBenchmarkItem = new javax.swing.JMenuItem();
         optionMenu = new javax.swing.JMenu();
+        portalUploadMenuItem = new javax.swing.JCheckBoxMenuItem();
         writeSyncCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         multiFileCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         autoRemoveCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -777,6 +779,15 @@ public final class MainFrame extends javax.swing.JFrame {
 
         optionMenu.setText("Options");
 
+        portalUploadMenuItem.setSelected(true);
+        portalUploadMenuItem.setText("Dev Portal Upload");
+        portalUploadMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                portalUploadMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(portalUploadMenuItem);
+
         writeSyncCheckBoxMenuItem.setSelected(true);
         writeSyncCheckBoxMenuItem.setText("Write Sync");
         writeSyncCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -1120,6 +1131,12 @@ public final class MainFrame extends javax.swing.JFrame {
         loadSettings();
     }//GEN-LAST:event_profileComboActionPerformed
 
+    private void portalUploadMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_portalUploadMenuItemActionPerformed
+        App.sharePortal = portalUploadMenuItem.getState();
+        App.msg("sharePortal=" + App.sharePortal);
+        App.saveConfig();
+    }//GEN-LAST:event_portalUploadMenuItemActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
     private javax.swing.JCheckBoxMenuItem autoRemoveCheckBoxMenuItem;
@@ -1179,6 +1196,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenu optionMenu;
     private javax.swing.JComboBox<BlockSequence> orderComboBox;
     private javax.swing.ButtonGroup palettebuttonGroup;
+    private javax.swing.JCheckBoxMenuItem portalUploadMenuItem;
     private javax.swing.JComboBox profileCombo;
     private javax.swing.JPanel progressPanel;
     private javax.swing.JLabel rAccessLabel;

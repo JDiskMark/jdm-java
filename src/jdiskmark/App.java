@@ -69,6 +69,7 @@ public class App {
     public static boolean isAdmin = false;
     // benchmark options
     public static boolean autoSave = false;
+    public static boolean sharePortal = false;
     public static boolean verbose = false; // affects cli output
     public static boolean multiFile = true;
     public static boolean autoRemoveData = false;
@@ -249,6 +250,9 @@ public class App {
         // configure settings from properties
         String value;
 
+        value = p.getProperty("sharePortal", String.valueOf(sharePortal));
+        sharePortal = Boolean.parseBoolean(value);
+        
         value = p.getProperty("benchmarkType", String.valueOf(benchmarkType));
         benchmarkType = BenchmarkType.valueOf(value.toUpperCase());
         
@@ -293,6 +297,7 @@ public class App {
         if (p == null) { p = new Properties(); }
         
         // configure properties
+        p.setProperty("sharePortal", String.valueOf(sharePortal));
         p.setProperty("benchmarkType", benchmarkType.name());
         p.setProperty("multiFile", String.valueOf(multiFile));
         p.setProperty("autoRemoveData", String.valueOf(autoRemoveData));
