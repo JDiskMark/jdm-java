@@ -398,8 +398,7 @@ public class App {
     
     public static void startBenchmark() {
 
-
-        if(!validateTargetDirectory(locationDir,false)) return;
+        if (!validateTargetDirectory(locationDir, false))  { return; }
         
         // 1. check that there isn't already a worker in progress
         if (state == State.DISK_TEST_STATE) {

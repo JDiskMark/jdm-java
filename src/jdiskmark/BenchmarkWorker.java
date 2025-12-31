@@ -23,8 +23,6 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingWorker;
-
-
 import static jdiskmark.App.locationDir;
 import static jdiskmark.App.numOfSamples;
 import jdiskmark.Benchmark.BlockSequence;
@@ -90,7 +88,6 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         }
 
         Gui.updateLegendAndAxis();
-
 
         if (App.autoReset == true) {
             App.resetTestData();
