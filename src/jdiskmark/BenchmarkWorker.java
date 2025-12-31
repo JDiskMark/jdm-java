@@ -268,7 +268,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                 final int endSample = range[1];
 
                 futures.add(executorService.submit(() -> {
-                    for (int s = startSample; s <= endSample && !isCancelled(); s++) {
+                    for (int s = startSample; s < endSample && !isCancelled(); s++) {
                         if (App.multiFile == true) {
                             testFile = new File(dataDir.getAbsolutePath()
                                     + File.separator + "testdata" + s + ".jdm");
