@@ -1,6 +1,7 @@
 package jdiskmark;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -61,7 +62,7 @@ public class Portal {
             return;
         }
         
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
         String jsonBody;
         try {
             jsonBody = mapper.writeValueAsString(benchmark);
