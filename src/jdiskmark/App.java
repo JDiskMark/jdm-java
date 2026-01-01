@@ -22,10 +22,10 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingWorker.StateValue;
-import static javax.swing.SwingWorker.StateValue.STARTED;
 import static jdiskmark.Benchmark.BenchmarkType;
 import static jdiskmark.Benchmark.BlockSequence;
 import static jdiskmark.Benchmark.IOMode;
+import static jdiskmark.DriveAccessChecker.validateTargetDirectory;
 
 /**
  * Primary class for global variables.
@@ -397,6 +397,8 @@ public class App {
     }
     
     public static void startBenchmark() {
+
+        if (!validateTargetDirectory(locationDir, false))  { return; }
         
         // 1. check that there isn't already a worker in progress
         if (state == State.DISK_TEST_STATE) {

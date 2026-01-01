@@ -62,7 +62,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
     @Override
     protected Benchmark doInBackground() throws Exception {
-        
+
         if (App.verbose) {
             msg("*** starting new worker thread");
             msg("Running readTest " + App.isReadEnabled() + "   writeTest " + App.isWriteEnabled());
