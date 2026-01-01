@@ -77,7 +77,7 @@
     <property name="build.dir" value="build"/>
 
     <!-- dependencies -->
-    <property name="jpackage.executable" value="C:\Program Files\java\jdk-21\bin\jpackage"/>
+    <property name="jpackage.executable" value="C:\Program Files\java\jdk-25\bin\jpackage"/>
     <property name="signtool.executable" value="C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x86\signtool.exe"/>
 
     <!-- version properties -->
@@ -179,7 +179,7 @@
               overwrite="true"/>
     </target>
 
-    <target name="create-msi" depends="clean, jar, -post-jar, -prepare-jpackage-input-jar" description="Creates the MSI installer using jpackage and WiX">
+    <target name="create-msi" depends="clean, -pre-jar, jar,  -post-jar, -prepare-jpackage-input-jar" description="Creates the MSI installer using jpackage and WiX">
         <property name="jpackage.input.dir.relative" value="${release.dir}"/>
 
         <echo message="Deleting existing MSI files: ${dist.dir}/${pkg.name}-*.msi"/>

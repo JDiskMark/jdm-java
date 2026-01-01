@@ -6,12 +6,14 @@ import static jdiskmark.App.SLASH_DATADIRNAME;
 import java.awt.BorderLayout;
 import java.awt.Desktop;
 import java.io.IOException;
+import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
@@ -27,12 +29,24 @@ public final class MainFrame extends javax.swing.JFrame {
     
     /**
      * Creates new form MainFrame
-     */
-    
+     */ 
     @SuppressWarnings("unchecked")
     public MainFrame() {
         initComponents();
         
+        //ImageIcon icon;
+        //icon = new ImageIcon(getClass().getClassLoader().getResource("/images/jdmturtleV1.2.png"));
+        //this.setIconImage(icon.getImage());
+        
+        URL iconUrl = getClass().getResource("/images/jdmturtleV1.2.png");
+
+    if (iconUrl != null) {
+        ImageIcon icon = new ImageIcon(iconUrl);
+        setIconImage(icon.getImage());
+    } else {
+        System.err.println("Warning: Icon resource not found!");
+    // The app will still run, just without the icon
+    }
         //for diagnostics
         //controlsPanel.setBackground(Color.blue);
         
