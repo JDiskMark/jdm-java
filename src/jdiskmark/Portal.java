@@ -46,19 +46,19 @@ public class Portal {
         // 2. Pre-upload checks
         try {
             if (InetAddress.getLocalHost() == null) {
-                System.err.println("No local network connection detected.");
+                App.err("No local network connection detected.");
                 return;
             }
             if (!isHostReachable(host, port)) {
-                System.err.println("Target host " + host + " is unreachable.");
+                App.err("Target host " + host + " is unreachable.");
                 return;
             }
         } catch (UnknownHostException e) {
-            System.err.println("Connectivity check failed: " + e.getMessage());
+            App.err("Connectivity check failed: " + e.getMessage());
             return;
         } catch (SecurityException e) {
             // If a local firewall or security manager blocks the socket attempt
-            System.err.println("Security Error: Connection blocked by local system - " + e.getMessage());
+            App.err("Security Error: Connection blocked by local system - " + e.getMessage());
             return;
         }
         
@@ -88,8 +88,8 @@ public class Portal {
             if (response.statusCode() == 201 || response.statusCode() == 200) {
                 App.msg("Benchmark uploaded successfully!");
             } else {
-                System.err.println("Upload failed. Status: " + response.statusCode());
-                System.err.println("Server Response: " + response.body());
+                App.err("Upload failed. Status: " + response.statusCode());
+                App.err("Server Response: " + response.body());
             }
         } catch (IOException | InterruptedException ex) {
             Logger.getLogger(Portal.class.getName()).log(Level.SEVERE, null, ex);

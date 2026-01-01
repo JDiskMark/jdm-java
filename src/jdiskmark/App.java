@@ -386,6 +386,16 @@ public class App {
         loadBenchmarks();
     }
     
+    public static void err(String message) {
+        switch(mode) {
+            case GUI -> { 
+                System.err.println(message);
+                Gui.mainFrame.msg(message);
+            }
+            case CLI -> System.err.println(message);
+        }
+    }
+    
     public static void msg(String message) {
         switch(mode) {
             case GUI -> Gui.mainFrame.msg(message);
