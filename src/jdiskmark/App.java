@@ -95,6 +95,7 @@ public class App {
     public static String os;
     public static String arch;
     public static String processorName;
+    public static String motherBoardName;
     public static String jdk;
     // elevated priviledges
     public static boolean isRoot = false;
@@ -200,6 +201,7 @@ public class App {
         os = System.getProperty("os.name");
         arch = System.getProperty("os.arch");
         processorName = Util.getProcessorName();
+        motherBoardName=Util.getMotherBoardName();
         jdk = Util.getJvmInfo();
         
         checkPermission();
@@ -672,6 +674,7 @@ public class App {
         if (locationDir == null) {
             return LOCATION_NOT_SELECTED_ERROR;
         }
+        String interFaceType=Util.getInterfaceType();
         String driveModel = Util.getDriveModel(locationDir);
         String partitionId = Util.getPartitionId(locationDir.toPath());
         DiskUsageInfo usageInfo;
@@ -681,7 +684,7 @@ public class App {
             usageInfo = new DiskUsageInfo();
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return driveModel + " - " + partitionId + ": " + usageInfo.getUsageTitleDisplay();
+        return interFaceType + " - " + driveModel + " - " + partitionId + ": " + usageInfo.getUsageTitleDisplay();
     }
     
     static public String getDriveModel() {

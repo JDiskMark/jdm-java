@@ -11,6 +11,8 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.filechooser.FileSystemView;
 
 /**
@@ -49,7 +51,7 @@ public class Util {
      * @param min Minimum value
      * @param max Maximum value.  Must be greater than min.
      * @return Integer between min and max, inclusive.
-     * @see java.util.Random#nextInt(int)
+     * @see Random#nextInt(int)
      */
     public static int randInt(int min, int max) {
 
@@ -273,4 +275,89 @@ public class Util {
         }
         return "processor name unknown";
     }
+
+    public static String getMotherBoardName() {
+
+        Process process = null;
+
+        try {
+            if (App.os.startsWith("Windows")) {
+                process = new ProcessBuilder("wmic", "baseboard", "get", "Product").start();
+            } else if (App.os.contains("Linux")) {
+                process = new ProcessBuilder("cat", "/sys/devices/virtual/dmi/id/board_name").start();
+            } else if (App.os.startsWith("Mac OS")) {
+                process = new ProcessBuilder("system_profiler", "SPHardwareDataType").start();
+            }
+        } catch (IOException e) {
+            Logger.getLogger(Util.class.getName())
+                    .log(Level.FINE, "Unable to get Motherboard Name", e);
+            return null;
+        }
+
+        // If no command was set (unsupported OS)
+        if (process == null) { return null; }
+
+        try (BufferedReader reader =
+                     new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+
+            StringBuilder builder = new StringBuilder();
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                builder.append(line).append(" ");
+            }
+
+            return builder.toString().trim();
+
+        } catch (IOException e) {
+            Logger.getLogger(Util.class.getName())
+                    .log(Level.FINE, "Unable to read Motherboard Name", e);
+            return null;
+        }
+    }
+
+    public static String getInterfaceType(){
+        Process process = null;
+
+        try {
+            if (App.os.startsWith("Windows")) {
+                process = new ProcessBuilder("wmic", "diskdrive", "get", "InterfaceType").start();
+            } else if (App.os.contains("Linux")) {
+                process = new ProcessBuilder("lsblk", "-d", "-o", "tran").start();
+            } else if (App.os.startsWith("Mac OS")) {
+                process = new ProcessBuilder("diskutil", "info", "disk0").start();
+            }
+        } catch (IOException e) {
+            Logger.getLogger(Util.class.getName())
+                    .log(Level.FINE, "Unable to get Interface Type", e);
+            return "OS not supported";
+        }
+
+        if (process == null)  { return  "OS not supported"; }
+
+        try (BufferedReader reader =
+                     new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+
+                line=line.trim();
+
+                if(line.isEmpty()) { continue;}
+
+                if(line.equalsIgnoreCase("InterfaceType") || line.equalsIgnoreCase("TRAN")|| line.equalsIgnoreCase("NAME")) { continue;}
+
+                return line;
+            }
+
+        } catch (IOException e) {
+            Logger.getLogger(Util.class.getName())
+                    .log(Level.FINE, "Unable to read Interface Type", e);
+            return  "OS not supported";
+        }
+
+        return  "OS not supported";
+    }
+
 }

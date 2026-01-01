@@ -70,6 +70,10 @@ public final class MainFrame extends javax.swing.JFrame {
         if (App.processorName != null && !App.processorName.isEmpty()) {
             titleSb.append(" - ").append(App.processorName);
         }
+
+        if (App.motherBoardName != null && !App.motherBoardName.isEmpty()) {
+            titleSb.append(" | ").append(App.motherBoardName);
+        }
         
         // permission indicator
         if (App.isAdmin) titleSb.append(" [Admin]");
