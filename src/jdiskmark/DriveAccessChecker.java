@@ -17,8 +17,7 @@ public class DriveAccessChecker {
 
         if (targetLocation == null) {
             String msg = "Target location is null";
-            Logger.getLogger(DriveAccessChecker.class.getName())
-                    .log(Level.SEVERE, msg);
+            Logger.getLogger(DriveAccessChecker.class.getName()).log(Level.SEVERE, msg);
 
             if (showPopup) {
                 JOptionPane.showMessageDialog(
@@ -30,7 +29,7 @@ public class DriveAccessChecker {
             return false;
         }
 
-        File dataDir = new File(targetLocation, "JDiskMarkData");
+        File dataDir = new File(targetLocation, App.DATADIRNAME);
 
         if (!dataDir.exists() && !dataDir.mkdirs()) {
             String msg = "Cannot create data directory at: " + dataDir +
@@ -44,9 +43,13 @@ public class DriveAccessChecker {
         }
 
         if (!dataDir.canRead() || !dataDir.canWrite()) {
-            String msg = "Target location does not allow drive access. \n" +
-                    "Read Permission : " + dataDir.canRead() + "\n" +
-                    "Write Permission : " + dataDir.canWrite() + "\n";
+
+            String msg = """
+                        Target location does not allow drive access.
+                        Read Permission : %b
+                        Write Permission : %b
+                      """.formatted(dataDir.canRead(), dataDir.canWrite());
+
             Logger.getLogger(DriveAccessChecker.class.getName()).log(Level.SEVERE, msg);
             if (showPopup) {
                 JOptionPane.showMessageDialog(Gui.mainFrame, msg,
