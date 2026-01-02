@@ -291,8 +291,14 @@ public class App {
         value = p.getProperty("numOfThreads", String.valueOf(numOfThreads));
         numOfThreads = Integer.parseInt(value);
 
+        value = p.getProperty("ioEngine", ioEngine.name());
+        ioEngine = IoEngine.valueOf(value.toUpperCase());
+        
         value = p.getProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         writeSyncEnable = Boolean.parseBoolean(value);
+        
+        value = p.getProperty("directEnable", String.valueOf(directEnable));
+        directEnable = Boolean.parseBoolean(value);
 
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
@@ -313,13 +319,15 @@ public class App {
         p.setProperty("numOfBlocks", String.valueOf(numOfBlocks));
         p.setProperty("blockSizeKb", String.valueOf(blockSizeKb));
         p.setProperty("numOfThreads", String.valueOf(numOfThreads));
+        p.setProperty("ioEngine", ioEngine.name());
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
+        p.setProperty("directEnable", String.valueOf(directEnable));
         p.setProperty("palette", Gui.palette.name());
 
         // write properties file
         try {
             OutputStream out = new FileOutputStream(PROPERTIES_FILE);
-            p.store(out, "JDiskMark Properties File");
+            p.store(out, "JDiskMark " + VERSION + " Properties File");
         } catch (IOException ex) {
             Logger.getLogger(SelectDriveFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -335,7 +343,7 @@ public class App {
     
     public static String getConfigString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("Config for JDiskMark ").append(App.VERSION).append('\n');
+        sb.append("Config for JDiskMark ").append(VERSION).append('\n');
         sb.append("readTest: ").append(isReadEnabled()).append('\n');
         sb.append("writeTest: ").append(isWriteEnabled()).append('\n');
         sb.append("locationDir: ").append(locationDir).append('\n');
@@ -349,7 +357,10 @@ public class App {
         sb.append("blockSizeKb: ").append(blockSizeKb).append('\n');
         sb.append("numOfThreads: ").append(numOfThreads).append('\n');
         sb.append("palette: ").append(Gui.palette).append('\n');
-        sb.append("ioMode: ").append(benchmarkType).append('\n');
+        sb.append("benchmarkType: ").append(benchmarkType).append('\n');
+        sb.append("ioEngine: ").append(ioEngine).append('\n');
+        sb.append("writeSyncEnable: ").append(writeSyncEnable).append('\n');
+        sb.append("directEnable: ").append(directEnable).append('\n');
         return sb.toString();
     }
     

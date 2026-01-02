@@ -5,7 +5,6 @@ import static jdiskmark.App.MEGABYTE;
 import static jdiskmark.Benchmark.BlockSequence.RANDOM;
 // global app settings
 import static jdiskmark.App.blockSequence;
-import static jdiskmark.App.blockSizeKb;
 import static jdiskmark.App.dataDir;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
