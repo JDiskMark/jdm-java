@@ -1,8 +1,16 @@
 
 package jdiskmark;
 
+import static jdiskmark.App.MEGABYTE;
+import static jdiskmark.App.dataDir;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.text.DecimalFormat;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A unit of IO measurement
@@ -10,8 +18,7 @@ import java.text.DecimalFormat;
 public class Sample {
     
     static final DecimalFormat DF = new DecimalFormat("###.###");
-    public enum Type { READ, WRITE; }
-    
+    static public enum Type { READ, WRITE; }
     
     Type type;
     int sampleNum = 0;     // x-axis
@@ -83,5 +90,72 @@ public class Sample {
     @JsonIgnore
     public String getMinDisplay() {
         return DF.format(cumMin);
+    }
+    
+    @JsonIgnore
+    public File getTestFile() {
+        if (App.multiFile) {
+            return new File(dataDir.getAbsolutePath() + File.separator + "testdata" + sampleNum + ".jdm");
+        }
+        return new File(dataDir.getAbsolutePath() + File.separator + "testdata.jdm");
+    }
+    
+    public void measureWrite(int blockSize, int numOfBlocks, byte[] blockArr, BenchmarkWorker worker) {
+        File testFile = getTestFile();
+        long startTime = System.nanoTime();
+        long totalBytesWrittenInSample = 0;
+        String mode = (App.writeSyncEnable) ? "rwd" : "rw";
+        try {
+            try (RandomAccessFile rAccFile = new RandomAccessFile(testFile, mode)) {
+                for (int b = 0; b < numOfBlocks; b++) {
+                    if (App.blockSequence == Benchmark.BlockSequence.RANDOM) {
+                        int rLoc = Util.randInt(0, numOfBlocks - 1);
+                        rAccFile.seek(rLoc * blockSize);
+                    } else {
+                        rAccFile.seek(b * blockSize);
+                    }
+                    rAccFile.write(blockArr, 0, blockSize);
+                    totalBytesWrittenInSample += blockSize;
+                    worker.writeProgress();
+                }
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        long endTime = System.nanoTime();
+        long elapsedTimeNs = endTime - startTime;
+        accessTimeMs = (elapsedTimeNs / 1_000_000f) / numOfBlocks;
+        double sec = (double) elapsedTimeNs / 1_000_000_000d;
+        double mbWritten = (double) totalBytesWrittenInSample / (double) MEGABYTE;
+        bwMbSec = mbWritten / sec;
+    }
+    
+    public void measureRead(int blockSize, int numOfBlocks, byte[] blockArr, BenchmarkWorker worker) {
+        File testFile = getTestFile();
+        long startTime = System.nanoTime();
+        long totalBytesReadInMark = 0;
+        try {
+            try (RandomAccessFile rAccFile = new RandomAccessFile(testFile, "r")) {
+                for (int b = 0; b < numOfBlocks; b++) {
+                    if (App.blockSequence == Benchmark.BlockSequence.RANDOM) {
+                        int rLoc = Util.randInt(0, numOfBlocks - 1);
+                        rAccFile.seek(rLoc * blockSize);
+                    } else {
+                        rAccFile.seek(b * blockSize);
+                    }
+                    rAccFile.readFully(blockArr, 0, blockSize);
+                    totalBytesReadInMark += blockSize;
+                    worker.readProgress();
+                }
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        long endTime = System.nanoTime();
+        long elapsedTimeNs = endTime - startTime;
+        accessTimeMs = (elapsedTimeNs / 1_000_000f) / (float) numOfBlocks;
+        double sec = (double) elapsedTimeNs / 1_000_000_000d;
+        double mbRead = (double) totalBytesReadInMark / (double) MEGABYTE;
+        bwMbSec = mbRead / sec;
     }
 }

@@ -83,7 +83,7 @@
     <!-- version properties -->
     <property name="pkg.name" value="jdiskmark"/>
     <property name="app.name" value="JDiskMark"/>
-    <property name="version" value="0.6.3-dev.fat"/>
+    <property name="version" value="0.6.3-dev.align"/>
     <!-- full semver does not work for msi product versions -->
     <property name="msi.version" value="0.6.3"/>
     <property name="msi.app.title" value="${app.name} ${version}"/>
@@ -341,7 +341,7 @@ Categories=Utility;System;</echo>
         <echo message="Package created: jdiskmark_${deb.version}_all.deb"/>
     </target>
     
-    <target name="create-fat-deb" depends="clean, jar, -post-jar"
+    <target name="create-fat-deb" depends="clean, -pre-jar, jar, -post-jar"
             description="Create a self-contained DEB with JRE 21">
         
         <condition property="is.linux">
