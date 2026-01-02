@@ -217,6 +217,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private void initComponents() {
 
         palettebuttonGroup = new javax.swing.ButtonGroup();
+        ioEnginebuttonGroup = new javax.swing.ButtonGroup();
         tabbedPane = new javax.swing.JTabbedPane();
         runPanel = new jdiskmark.BenchmarkPanel();
         eventScrollPane = new javax.swing.JScrollPane();
@@ -282,6 +283,10 @@ public final class MainFrame extends javax.swing.JFrame {
         resetSequenceMenuItem = new javax.swing.JMenuItem();
         resetBenchmarkItem = new javax.swing.JMenuItem();
         optionMenu = new javax.swing.JMenu();
+        ioEngineMenu = new javax.swing.JMenu();
+        engModernRbMenuItem = new javax.swing.JRadioButtonMenuItem();
+        engLegacyRbMenuItem = new javax.swing.JRadioButtonMenuItem();
+        directIoCbMenuItem = new javax.swing.JCheckBoxMenuItem();
         writeSyncCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         multiFileCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         autoRemoveCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -777,6 +782,37 @@ public final class MainFrame extends javax.swing.JFrame {
 
         optionMenu.setText("Options");
 
+        ioEngineMenu.setText("IO Engine");
+
+        ioEnginebuttonGroup.add(engModernRbMenuItem);
+        engModernRbMenuItem.setText("Modern (FFM API)");
+        engModernRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                engModernRbMenuItemActionPerformed(evt);
+            }
+        });
+        ioEngineMenu.add(engModernRbMenuItem);
+
+        ioEnginebuttonGroup.add(engLegacyRbMenuItem);
+        engLegacyRbMenuItem.setText("Legacy (RandomAccessFile)");
+        engLegacyRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                engLegacyRbMenuItemActionPerformed(evt);
+            }
+        });
+        ioEngineMenu.add(engLegacyRbMenuItem);
+
+        optionMenu.add(ioEngineMenu);
+
+        directIoCbMenuItem.setSelected(true);
+        directIoCbMenuItem.setText("Direct IO (unbuffered)");
+        directIoCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                directIoCbMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(directIoCbMenuItem);
+
         writeSyncCheckBoxMenuItem.setSelected(true);
         writeSyncCheckBoxMenuItem.setText("Write Sync");
         writeSyncCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -1120,6 +1156,20 @@ public final class MainFrame extends javax.swing.JFrame {
         loadSettings();
     }//GEN-LAST:event_profileComboActionPerformed
 
+    private void directIoCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_directIoCbMenuItemActionPerformed
+        App.directEnable = directIoCbMenuItem.isSelected();
+    }//GEN-LAST:event_directIoCbMenuItemActionPerformed
+
+    private void engModernRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_engModernRbMenuItemActionPerformed
+        App.ioEngine = App.IoEngine.MODERN;
+        directIoCbMenuItem.setEnabled(true);
+    }//GEN-LAST:event_engModernRbMenuItemActionPerformed
+
+    private void engLegacyRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_engLegacyRbMenuItemActionPerformed
+        App.ioEngine = App.IoEngine.LEGACY;
+        directIoCbMenuItem.setEnabled(false);
+    }//GEN-LAST:event_engLegacyRbMenuItemActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
     private javax.swing.JCheckBoxMenuItem autoRemoveCheckBoxMenuItem;
@@ -1137,9 +1187,14 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem deleteAllBenchmarksItem;
     private javax.swing.JMenuItem deleteDataMenuItem;
     private javax.swing.JMenuItem deleteSelBenchmarksItem;
+    private javax.swing.JCheckBoxMenuItem directIoCbMenuItem;
+    private javax.swing.JRadioButtonMenuItem engLegacyRbMenuItem;
+    private javax.swing.JRadioButtonMenuItem engModernRbMenuItem;
     private javax.swing.JScrollPane eventScrollPane;
     private javax.swing.JMenu fileMenu;
     private javax.swing.JMenu helpMenu;
+    private javax.swing.JMenu ioEngineMenu;
+    private javax.swing.ButtonGroup ioEnginebuttonGroup;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
