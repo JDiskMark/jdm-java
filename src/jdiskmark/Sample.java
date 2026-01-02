@@ -1,14 +1,26 @@
 
 package jdiskmark;
-
+// constants
 import static jdiskmark.App.MEGABYTE;
+import static jdiskmark.Benchmark.BlockSequence.RANDOM;
+// global app settings
+import static jdiskmark.App.blockSequence;
+import static jdiskmark.App.blockSizeKb;
 import static jdiskmark.App.dataDir;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.sun.nio.file.ExtendedOpenOption;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.nio.channels.FileChannel;
+import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.text.DecimalFormat;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,6 +31,8 @@ public class Sample {
     
     static final DecimalFormat DF = new DecimalFormat("###.###");
     static public enum Type { READ, WRITE; }
+    
+    static final int SECTOR_ALIGNMENT = 4096;
     
     Type type;
     int sampleNum = 0;     // x-axis
@@ -100,7 +114,8 @@ public class Sample {
         return new File(dataDir.getAbsolutePath() + File.separator + "testdata.jdm");
     }
     
-    public void measureWrite(int blockSize, int numOfBlocks, byte[] blockArr, BenchmarkWorker worker) {
+    // pre jdk 25 io api
+    public void measureWriteLegacy(int blockSize, int numOfBlocks, byte[] blockArr, BenchmarkWorker worker) {
         File testFile = getTestFile();
         long startTime = System.nanoTime();
         long totalBytesWrittenInSample = 0;
@@ -116,7 +131,7 @@ public class Sample {
                     }
                     rAccFile.write(blockArr, 0, blockSize);
                     totalBytesWrittenInSample += blockSize;
-                    worker.writeProgress();
+                    worker.updateWriteProgress();
                 }
             }
         } catch (IOException ex) {
@@ -130,7 +145,8 @@ public class Sample {
         bwMbSec = mbWritten / sec;
     }
     
-    public void measureRead(int blockSize, int numOfBlocks, byte[] blockArr, BenchmarkWorker worker) {
+    // pre jdk 25 io api
+    public void measureReadLegacy(int blockSize, int numOfBlocks, byte[] blockArr, BenchmarkWorker worker) {
         File testFile = getTestFile();
         long startTime = System.nanoTime();
         long totalBytesReadInMark = 0;
@@ -145,7 +161,7 @@ public class Sample {
                     }
                     rAccFile.readFully(blockArr, 0, blockSize);
                     totalBytesReadInMark += blockSize;
-                    worker.readProgress();
+                    worker.updateReadProgress();
                 }
             }
         } catch (IOException ex) {
@@ -157,5 +173,78 @@ public class Sample {
         double sec = (double) elapsedTimeNs / 1_000_000_000d;
         double mbRead = (double) totalBytesReadInMark / (double) MEGABYTE;
         bwMbSec = mbRead / sec;
+    }
+    
+    public void measureWrite(int blockSize, int numOfBlocks, BenchmarkWorker worker) {
+        long totalBytesWritten = 0;
+        
+        File testFile = getTestFile();
+        long startTime = System.nanoTime();
+        
+        Set<OpenOption> options = new HashSet<>();
+        options.add(StandardOpenOption.WRITE);
+        options.add(StandardOpenOption.CREATE);
+        if (App.writeSyncEnable) {
+            options.add(StandardOpenOption.DSYNC);
+        }
+        if (App.directEnable) {
+            options.add(ExtendedOpenOption.DIRECT); // non-standard api
+        }
+        try (FileChannel fc = FileChannel.open(testFile.toPath(), options)) {
+
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment segment = arena.allocate(blockSize, SECTOR_ALIGNMENT);
+                // Populate segment with random data if needed
+                // segment.copyFrom(MemorySegment.ofArray(new byte[(int)bufferSize]));
+                for (int b = 0; b < numOfBlocks; b++) {
+
+                    long blockIndex = (blockSequence == RANDOM) ?
+                            Util.randInt(0, numOfBlocks - 1) : b;
+                    long byteOffset = blockIndex * blockSize;
+
+                    int written = fc.write(segment.asByteBuffer(), byteOffset);
+                    totalBytesWritten += written;
+                    worker.updateWriteProgress();
+                }
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        long elapsedTimeNs = System.nanoTime() - startTime;
+        accessTimeMs = (elapsedTimeNs / 1_000_000f) / (float) numOfBlocks;
+        double sec = (double) elapsedTimeNs / 1_000_000_000d;
+        bwMbSec = (double) totalBytesWritten / (double) MEGABYTE / sec;
+    }
+    
+    public void measureRead(int blockSize, int numOfBlocks, BenchmarkWorker worker) {
+        long totalBytesRead = 0;
+        File testFile = getTestFile();
+        long startTime = System.nanoTime();
+
+        Set<OpenOption> options = new HashSet<>();
+        options.add(StandardOpenOption.READ);
+        if (App.directEnable) {
+            options.add(ExtendedOpenOption.DIRECT); // non-standard api
+        }
+        try (FileChannel fc = FileChannel.open(testFile.toPath(), options)) {
+
+            try (Arena arena = Arena.ofConfined()) {
+                MemorySegment segment = arena.allocate(blockSize, SECTOR_ALIGNMENT);
+                for (int b = 0; b < numOfBlocks; b++) {
+                    if (worker.isCancelled()) break;
+                    long blockIndex = (blockSequence == RANDOM) ? Util.randInt(0, numOfBlocks - 1) : b;
+                    long byteOffset = blockIndex * blockSize;
+                    int read = fc.read(segment.asByteBuffer(), byteOffset);
+                    totalBytesRead += read;
+                    worker.updateReadProgress();
+                }
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        long elapsedTimeNs = System.nanoTime() - startTime;
+        accessTimeMs = (elapsedTimeNs / 1_000_000f) / (float) numOfBlocks;
+        double sec = (double) elapsedTimeNs / 1_000_000_000d;
+        bwMbSec = ((double) totalBytesRead / (double) MEGABYTE) / sec;
     }
 }

@@ -1,6 +1,10 @@
 
 package jdiskmark;
 
+import static jdiskmark.Benchmark.BenchmarkType;
+import static jdiskmark.Benchmark.BlockSequence;
+import static jdiskmark.DriveAccessChecker.validateTargetDirectory;
+
 import picocli.CommandLine;
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,10 +26,6 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingWorker.StateValue;
-import static jdiskmark.Benchmark.BenchmarkType;
-import static jdiskmark.Benchmark.BlockSequence;
-import static jdiskmark.Benchmark.IOMode;
-import static jdiskmark.DriveAccessChecker.validateTargetDirectory;
 
 /**
  * Primary class for global variables.
@@ -53,12 +53,21 @@ public class App {
     // app is in command line or graphical mode
     public enum Mode { CLI, GUI }
     public static Mode mode = Mode.CLI;
+    // io api, modern introduced w jdk 25 lts
+    public enum IoEngine {
+        MODERN("Modern (FFM API)"),
+        LEGACY("Legacy (RandomAccessFile)");
+        private final String label;
+        IoEngine(String label) { this.label = label; }
+        @Override public String toString() { return label; }
+    }
+    public static IoEngine ioEngine = IoEngine.MODERN;
     // member
     public static Properties p;
     public static File locationDir = null;
     public static File exportPath = null;
     public static File dataDir = null; // refactor to dataPath after all branches merged
-    public static File testFile = null;
+    public static File testFile = null; // still used for cli
     // system info
     public static String os;
     public static String arch;
@@ -75,11 +84,11 @@ public class App {
     public static boolean autoReset = true;
     public static boolean showMaxMin = true;
     public static boolean showDriveAccess = true;
+    public static boolean directEnable = false;
     public static boolean writeSyncEnable = false;
     // benchmark configuration
     public static BenchmarkProfile activeProfile = BenchmarkProfile.QUICK_TEST;
     public static BenchmarkType benchmarkType = BenchmarkType.WRITE;
-    public static IOMode ioMode = IOMode.WRITE;
     public static BlockSequence blockSequence = BlockSequence.SEQUENTIAL;
     public static int numOfSamples = 200;   // desired number of samples
     public static int numOfBlocks = 32;     // desired number of blocks

@@ -1,20 +1,19 @@
 package jdiskmark;
-
+// constants
 import static jdiskmark.App.KILOBYTE;
 import static jdiskmark.Benchmark.IOMode;
 import static jdiskmark.Sample.Type.READ;
 import static jdiskmark.Sample.Type.WRITE;
-
+// global variables
 import static jdiskmark.App.blockSizeKb;
+import static jdiskmark.App.ioEngine;
 import static jdiskmark.App.locationDir;
 import static jdiskmark.App.msg;
 import static jdiskmark.App.numOfBlocks;
 import static jdiskmark.App.numOfSamples;
-import static jdiskmark.App.testFile;
 import static jdiskmark.App.dataDir;
 
 import jakarta.persistence.EntityManager;
-import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -26,6 +25,7 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingWorker;
+import jdiskmark.App.IoEngine;
 
 /**
  * Thread running the disk benchmarking. only one of these threads can run at
@@ -41,6 +41,8 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
     final int[] unitsComplete = {0};
     
     int unitsTotal;
+    int blockSize;
+    byte[] blockArr; // for legacy jdk io
     
     public static int[][] divideIntoRanges(int startIndex, int endIndex, int numThreads) {
         if (numThreads <= 0 || endIndex < startIndex) {
@@ -66,7 +68,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         return ranges;
     }
 
-    public synchronized void writeProgress() {
+    public synchronized void updateWriteProgress() {
         wUnitsComplete[0]++;
         unitsComplete[0] = rUnitsComplete[0] + wUnitsComplete[0];
         float percentComplete = (float)unitsComplete[0] / (float) unitsTotal * 100f;
@@ -76,7 +78,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         }
     }
     
-    public synchronized void readProgress() {
+    public synchronized void updateReadProgress() {
         rUnitsComplete[0]++;
         unitsComplete[0] = rUnitsComplete[0] + wUnitsComplete[0];
         float percentComplete = (float)unitsComplete[0] / (float) unitsTotal * 100f;
@@ -100,14 +102,15 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         int wUnitsTotal = App.isWriteEnabled() ? numOfBlocks * numOfSamples : 0;
         int rUnitsTotal = App.isReadEnabled() ? numOfBlocks * numOfSamples : 0;
         unitsTotal = wUnitsTotal + rUnitsTotal;
-        int blockSize = blockSizeKb * KILOBYTE;
-        byte[] blockArr = new byte[blockSize];
-        for (int b = 0; b < blockArr.length; b++) {
-            if (b % 2 == 0) {
-                blockArr[b] = (byte) 0xFF;
+        blockSize = blockSizeKb * KILOBYTE;
+        if (ioEngine == IoEngine.LEGACY) {
+            blockArr = new byte[blockSize];
+            for (int b = 0; b < blockArr.length; b++) {
+                if (b % 2 == 0) {
+                    blockArr[b] = (byte) 0xFF;
+                }
             }
         }
-
         Gui.updateLegendAndAxis();
 
         if (App.autoReset == true) {
@@ -167,10 +170,6 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             wOperation.setWriteSyncEnabled(App.writeSyncEnable);
             benchmark.getOperations().add(wOperation);
 
-            if (App.multiFile == false) {
-                testFile = new File(dataDir.getAbsolutePath() + File.separator + "testdata.jdm");
-            }
-
             // GH-20 instantiate threads to operate on each range
             ExecutorService executorService = Executors.newFixedThreadPool(App.numOfThreads);
             List<Future<?>> futures = new ArrayList<>();
@@ -184,8 +183,12 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                     for (int s = startSample; s < endSample && !isCancelled(); s++) {
                         
                         Sample sample = new Sample(WRITE, s);
-                        sample.measureWrite(blockSize, numOfBlocks, blockArr, this);
-
+                        if (ioEngine == IoEngine.LEGACY) {
+                            sample.measureWriteLegacy(blockSize, numOfBlocks, blockArr, this);
+                        } else {
+                            sample.measureWrite(blockSize, numOfBlocks, this);
+                        }
+                        
                         // calculate the sample statistics and store in sample
                         App.updateMetrics(sample);
                         publish(sample);
@@ -251,9 +254,13 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
                 futures.add(executorService.submit(() -> {
                     for (int s = startSample; s < endSample && !isCancelled(); s++) {
-                        
+
                         Sample sample = new Sample(READ, s);
-                        sample.measureRead(blockSize, numOfBlocks, blockArr, this);
+                        if (ioEngine == IoEngine.LEGACY) {
+                            sample.measureReadLegacy(blockSize, numOfBlocks, blockArr, this);
+                        } else {
+                            sample.measureRead(blockSize, numOfBlocks, this);
+                        }
                         
                         // calculate the sample statistics and store in sample
                         App.updateMetrics(sample);
