@@ -133,6 +133,8 @@
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="writeSyncCheckBoxMenuItemActionPerformed"/>
               </Events>
             </MenuItem>
+            <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator3">
+            </MenuItem>
             <MenuItem class="javax.swing.JCheckBoxMenuItem" name="multiFileCheckBoxMenuItem">
               <Properties>
                 <Property name="selected" type="boolean" value="true"/>

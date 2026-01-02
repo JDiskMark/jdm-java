@@ -204,7 +204,10 @@ public final class MainFrame extends javax.swing.JFrame {
         numSamplesCombo.setSelectedItem(String.valueOf(App.numOfSamples));
         // advanced benchmark config
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
+        engModernRbMenuItem.setSelected(App.ioEngine == App.IoEngine.MODERN);
+        engLegacyRbMenuItem.setSelected(App.ioEngine == App.IoEngine.LEGACY);
         writeSyncCheckBoxMenuItem.setSelected(App.writeSyncEnable);
+        directIoCbMenuItem.setSelected(App.directEnable);
     }
     
     /**
@@ -288,6 +291,7 @@ public final class MainFrame extends javax.swing.JFrame {
         engLegacyRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         directIoCbMenuItem = new javax.swing.JCheckBoxMenuItem();
         writeSyncCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
+        jSeparator3 = new javax.swing.JPopupMenu.Separator();
         multiFileCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         autoRemoveCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         autoResetCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -821,6 +825,7 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
         optionMenu.add(writeSyncCheckBoxMenuItem);
+        optionMenu.add(jSeparator3);
 
         multiFileCheckBoxMenuItem.setSelected(true);
         multiFileCheckBoxMenuItem.setText("Multi Data File");
@@ -1221,6 +1226,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JPopupMenu.Separator jSeparator2;
+    private javax.swing.JPopupMenu.Separator jSeparator3;
     private javax.swing.JPanel locationPanel;
     private javax.swing.JTextField locationText;
     private javax.swing.JMenuBar menuBar;
