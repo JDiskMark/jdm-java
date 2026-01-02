@@ -62,6 +62,29 @@ public class App {
         @Override public String toString() { return label; }
     }
     public static IoEngine ioEngine = IoEngine.MODERN;
+    
+    public enum SectorAlignment {
+        ALIGN_512(512, "512 B (Legacy)"),
+        ALIGN_4K(4096, "4 KB (Standard)"),
+        ALIGN_8K(8192, "8 KB (Enterprise)"),
+        ALIGN_16K(16384, "16 KB (High-End)"),
+        ALIGN_64K(65536, "64 KB (RAID/Stripe)");
+
+        public final int bytes;
+        public final String label;
+
+        SectorAlignment(int bytes, String label) {
+            this.bytes = bytes;
+            this.label = label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+    public static SectorAlignment sectorAlignment = SectorAlignment.ALIGN_4K;
+    
     // member
     public static Properties p;
     public static File locationDir = null;
@@ -200,7 +223,7 @@ public class App {
             Gui.runPanel.hideFirstColumn();
             Gui.selFrame = new SelectDriveFrame();
             System.out.println(getConfigString());
-            Gui.mainFrame.loadConfig();
+            Gui.mainFrame.loadPropertiesConfig();
             Gui.mainFrame.setLocationRelativeTo(null);
             Gui.progressBar = Gui.mainFrame.getProgressBar();
         }
@@ -302,6 +325,9 @@ public class App {
         
         value = p.getProperty("directEnable", String.valueOf(directEnable));
         directEnable = Boolean.parseBoolean(value);
+        
+        value = p.getProperty("sectorAlignment", sectorAlignment.name());
+        sectorAlignment = SectorAlignment.valueOf(value.toUpperCase());
 
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
@@ -326,6 +352,7 @@ public class App {
         p.setProperty("ioEngine", ioEngine.name());
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         p.setProperty("directEnable", String.valueOf(directEnable));
+        p.setProperty("sectorAlignment", sectorAlignment.name());
         p.setProperty("palette", Gui.palette.name());
 
         // write properties file

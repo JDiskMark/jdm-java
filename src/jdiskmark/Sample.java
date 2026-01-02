@@ -6,6 +6,7 @@ import static jdiskmark.Benchmark.BlockSequence.RANDOM;
 // global app settings
 import static jdiskmark.App.blockSequence;
 import static jdiskmark.App.dataDir;
+import static jdiskmark.App.sectorAlignment;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sun.nio.file.ExtendedOpenOption;
@@ -31,8 +32,6 @@ public class Sample {
     static final DecimalFormat DF = new DecimalFormat("###.###");
     static public enum Type { READ, WRITE; }
     
-    static final int SECTOR_ALIGNMENT = 4096;
-    
     Type type;
     int sampleNum = 0;     // x-axis
     double bwMbSec = 0;    // y-axis
@@ -41,7 +40,6 @@ public class Sample {
     double cumMin = 0;
     double accessTimeMs;
     double cumAccTimeMs;
-    
         
     // needed for jackson
     public Sample() {}
@@ -192,7 +190,7 @@ public class Sample {
         try (FileChannel fc = FileChannel.open(testFile.toPath(), options)) {
 
             try (Arena arena = Arena.ofConfined()) {
-                MemorySegment segment = arena.allocate(blockSize, SECTOR_ALIGNMENT);
+                MemorySegment segment = arena.allocate(blockSize, sectorAlignment.bytes);
                 // Populate segment with random data if needed
                 // segment.copyFrom(MemorySegment.ofArray(new byte[(int)bufferSize]));
                 for (int b = 0; b < numOfBlocks; b++) {
@@ -228,7 +226,7 @@ public class Sample {
         try (FileChannel fc = FileChannel.open(testFile.toPath(), options)) {
 
             try (Arena arena = Arena.ofConfined()) {
-                MemorySegment segment = arena.allocate(blockSize, SECTOR_ALIGNMENT);
+                MemorySegment segment = arena.allocate(blockSize, sectorAlignment.bytes);
                 for (int b = 0; b < numOfBlocks; b++) {
                     if (worker.isCancelled()) break;
                     long blockIndex = (blockSequence == RANDOM) ? Util.randInt(0, numOfBlocks - 1) : b;

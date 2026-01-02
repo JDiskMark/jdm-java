@@ -15,6 +15,8 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
+import static jdiskmark.App.IoEngine.MODERN;
+import static jdiskmark.App.SectorAlignment.ALIGN_512;
 import jdiskmark.Benchmark.BenchmarkType;
 import jdiskmark.Benchmark.BlockSequence;
 
@@ -92,17 +94,17 @@ public final class MainFrame extends javax.swing.JFrame {
      * This method is called when the gui needs to be updated after a new config
      * has been loaded.
      */
-    public void loadConfig() {
+    public void loadPropertiesConfig() {
+        loadBenchmarkConfig();
         if (App.locationDir != null) { // set the location dir if not null
             setLocation(App.locationDir.getAbsolutePath());
         }
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
         autoRemoveCheckBoxMenuItem.setSelected(App.autoRemoveData);
         autoResetCheckBoxMenuItem.setSelected(App.autoReset);
+        // display preferences
         showMaxMinCheckBoxMenuItem.setSelected(App.showMaxMin);
         showAccessCheckBoxMenuItem.setSelected(App.showDriveAccess);
-        writeSyncCheckBoxMenuItem.setSelected(App.writeSyncEnable);
-
         switch (Gui.palette) {
             case Gui.Palette.CLASSIC -> {
                 classicPaletteMenuItem.setSelected(true);
@@ -135,7 +137,7 @@ public final class MainFrame extends javax.swing.JFrame {
     }
     
     public void initializeComboSettings() {
-        loadSettings();
+        loadBenchmarkConfig();
         
         // action listeners to detect change and update custom profile
         final BenchmarkType[] previousBenchmarkType = { (BenchmarkType) typeCombo.getSelectedItem() };
@@ -191,8 +193,7 @@ public final class MainFrame extends javax.swing.JFrame {
         });
     }
 
-    // later rename to loadBenchmarkConfiguration
-    public void loadSettings() {
+    public void loadBenchmarkConfig() {
         profileCombo.setSelectedItem(App.activeProfile);
         typeCombo.setSelectedItem(App.benchmarkType);
         // basic benchmark config
@@ -204,10 +205,20 @@ public final class MainFrame extends javax.swing.JFrame {
         numSamplesCombo.setSelectedItem(String.valueOf(App.numOfSamples));
         // advanced benchmark config
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
-        engModernRbMenuItem.setSelected(App.ioEngine == App.IoEngine.MODERN);
-        engLegacyRbMenuItem.setSelected(App.ioEngine == App.IoEngine.LEGACY);
+        switch (App.ioEngine) {
+            case MODERN -> engModernRbMenuItem.setSelected(true);
+            case LEGACY -> engLegacyRbMenuItem.setSelected(true);
+        }
         writeSyncCheckBoxMenuItem.setSelected(App.writeSyncEnable);
         directIoCbMenuItem.setSelected(App.directEnable);
+        // sector alignment
+        switch (App.sectorAlignment) {
+            case ALIGN_512 -> align512RbMenuItem.setSelected(true);
+            case ALIGN_4K -> align4KRbMenuItem.setSelected(true);
+            case ALIGN_8K -> align8KRbMenuItem.setSelected(true);
+            case ALIGN_16K -> align16KRbMenuItem.setSelected(true);
+            case ALIGN_64K -> align64KRbMenuItem.setSelected(true);
+        }
     }
     
     /**
@@ -221,6 +232,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
         palettebuttonGroup = new javax.swing.ButtonGroup();
         ioEnginebuttonGroup = new javax.swing.ButtonGroup();
+        sectorAlignbuttonGroup = new javax.swing.ButtonGroup();
         tabbedPane = new javax.swing.JTabbedPane();
         runPanel = new jdiskmark.BenchmarkPanel();
         eventScrollPane = new javax.swing.JScrollPane();
@@ -291,6 +303,12 @@ public final class MainFrame extends javax.swing.JFrame {
         engLegacyRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         directIoCbMenuItem = new javax.swing.JCheckBoxMenuItem();
         writeSyncCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
+        sectorAlignmentMenu = new javax.swing.JMenu();
+        align512RbMenuItem = new javax.swing.JRadioButtonMenuItem();
+        align4KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
+        align8KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
+        align16KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
+        align64KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         jSeparator3 = new javax.swing.JPopupMenu.Separator();
         multiFileCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         autoRemoveCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -825,6 +843,55 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
         optionMenu.add(writeSyncCheckBoxMenuItem);
+
+        sectorAlignmentMenu.setText("Sector Alignment");
+
+        sectorAlignbuttonGroup.add(align512RbMenuItem);
+        align512RbMenuItem.setText(App.SectorAlignment.ALIGN_512.toString());
+        align512RbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                align512RbMenuItemActionPerformed(evt);
+            }
+        });
+        sectorAlignmentMenu.add(align512RbMenuItem);
+
+        sectorAlignbuttonGroup.add(align4KRbMenuItem);
+        align4KRbMenuItem.setText(App.SectorAlignment.ALIGN_4K.toString());
+        align4KRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                align4KRbMenuItemActionPerformed(evt);
+            }
+        });
+        sectorAlignmentMenu.add(align4KRbMenuItem);
+
+        sectorAlignbuttonGroup.add(align8KRbMenuItem);
+        align8KRbMenuItem.setText(App.SectorAlignment.ALIGN_8K.toString());
+        align8KRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                align8KRbMenuItemActionPerformed(evt);
+            }
+        });
+        sectorAlignmentMenu.add(align8KRbMenuItem);
+
+        sectorAlignbuttonGroup.add(align16KRbMenuItem);
+        align16KRbMenuItem.setText(App.SectorAlignment.ALIGN_16K.toString());
+        align16KRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                align16KRbMenuItemActionPerformed(evt);
+            }
+        });
+        sectorAlignmentMenu.add(align16KRbMenuItem);
+
+        sectorAlignbuttonGroup.add(align64KRbMenuItem);
+        align64KRbMenuItem.setText(App.SectorAlignment.ALIGN_64K.toString());
+        align64KRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                align64KRbMenuItemActionPerformed(evt);
+            }
+        });
+        sectorAlignmentMenu.add(align64KRbMenuItem);
+
+        optionMenu.add(sectorAlignmentMenu);
         optionMenu.add(jSeparator3);
 
         multiFileCheckBoxMenuItem.setSelected(true);
@@ -1158,25 +1225,60 @@ public final class MainFrame extends javax.swing.JFrame {
         App.writeSyncEnable = profile.isWriteSyncEnable();
         App.multiFile = profile.isMultiFile();
         
-        loadSettings();
+        loadBenchmarkConfig();
     }//GEN-LAST:event_profileComboActionPerformed
 
     private void directIoCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_directIoCbMenuItemActionPerformed
         App.directEnable = directIoCbMenuItem.isSelected();
+        App.saveConfig();
     }//GEN-LAST:event_directIoCbMenuItemActionPerformed
 
     private void engModernRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_engModernRbMenuItemActionPerformed
         App.ioEngine = App.IoEngine.MODERN;
         directIoCbMenuItem.setEnabled(true);
+        sectorAlignmentMenu.setEnabled(true);
+        App.saveConfig();
     }//GEN-LAST:event_engModernRbMenuItemActionPerformed
 
     private void engLegacyRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_engLegacyRbMenuItemActionPerformed
         App.ioEngine = App.IoEngine.LEGACY;
         directIoCbMenuItem.setEnabled(false);
+        sectorAlignmentMenu.setEnabled(false);
+        App.saveConfig();
     }//GEN-LAST:event_engLegacyRbMenuItemActionPerformed
+
+    private void align512RbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align512RbMenuItemActionPerformed
+        App.sectorAlignment = App.SectorAlignment.ALIGN_512;
+        App.saveConfig();
+    }//GEN-LAST:event_align512RbMenuItemActionPerformed
+
+    private void align4KRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align4KRbMenuItemActionPerformed
+        App.sectorAlignment = App.SectorAlignment.ALIGN_4K;
+        App.saveConfig();
+    }//GEN-LAST:event_align4KRbMenuItemActionPerformed
+
+    private void align8KRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align8KRbMenuItemActionPerformed
+        App.sectorAlignment = App.SectorAlignment.ALIGN_8K;
+        App.saveConfig();
+    }//GEN-LAST:event_align8KRbMenuItemActionPerformed
+
+    private void align16KRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align16KRbMenuItemActionPerformed
+        App.sectorAlignment = App.SectorAlignment.ALIGN_16K;
+        App.saveConfig();
+    }//GEN-LAST:event_align16KRbMenuItemActionPerformed
+
+    private void align64KRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align64KRbMenuItemActionPerformed
+        App.sectorAlignment = App.SectorAlignment.ALIGN_64K;
+        App.saveConfig();
+    }//GEN-LAST:event_align64KRbMenuItemActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
+    private javax.swing.JRadioButtonMenuItem align16KRbMenuItem;
+    private javax.swing.JRadioButtonMenuItem align4KRbMenuItem;
+    private javax.swing.JRadioButtonMenuItem align512RbMenuItem;
+    private javax.swing.JRadioButtonMenuItem align64KRbMenuItem;
+    private javax.swing.JRadioButtonMenuItem align8KRbMenuItem;
     private javax.swing.JCheckBoxMenuItem autoRemoveCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem autoResetCheckBoxMenuItem;
     private javax.swing.JRadioButtonMenuItem bardCoolPaletteMenuItem;
@@ -1251,6 +1353,8 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem resetSequenceMenuItem;
     private jdiskmark.BenchmarkPanel runPanel;
     private javax.swing.JLabel sampleSizeLabel;
+    private javax.swing.ButtonGroup sectorAlignbuttonGroup;
+    private javax.swing.JMenu sectorAlignmentMenu;
     private javax.swing.JCheckBoxMenuItem showAccessCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem showMaxMinCheckBoxMenuItem;
     private javax.swing.JButton startButton;

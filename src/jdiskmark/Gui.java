@@ -420,7 +420,7 @@ public final class Gui {
         App.blockSizeKb = operation.blockSize;
         App.blockSequence = operation.blockOrder;
         App.numOfThreads = operation.numThreads;
-        mainFrame.loadSettings();
+        mainFrame.loadBenchmarkConfig();
         switch (operation.ioMode) {
             case IOMode.READ -> {
                 App.rAvg = operation.bwAvg;
