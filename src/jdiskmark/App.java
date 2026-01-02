@@ -258,6 +258,9 @@ public class App {
         // configure settings from properties
         String value;
 
+        value = p.getProperty("activeProfile", activeProfile.name());
+        activeProfile = BenchmarkProfile.valueOf(value.toUpperCase());
+        
         value = p.getProperty("benchmarkType", String.valueOf(benchmarkType));
         benchmarkType = BenchmarkType.valueOf(value.toUpperCase());
         
@@ -308,6 +311,7 @@ public class App {
         if (p == null) { p = new Properties(); }
         
         // configure properties
+        p.setProperty("activeProfile", activeProfile.name());
         p.setProperty("benchmarkType", benchmarkType.name());
         p.setProperty("multiFile", String.valueOf(multiFile));
         p.setProperty("autoRemoveData", String.valueOf(autoRemoveData));

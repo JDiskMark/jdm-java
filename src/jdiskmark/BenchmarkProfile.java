@@ -8,7 +8,43 @@ import jdiskmark.Benchmark.BlockSequence;
  * A named, pre-defined set of configuration parameters for a benchmark run.
  * Corresponds to a "Profile" in the GUI/CLI.
  */
-public class BenchmarkProfile {
+public enum BenchmarkProfile {
+    
+    // --- 1. Max Sequential Speed (Peak Throughput) ---
+    MAX_SEQUENTIAL_SPEED(
+        "Max Sequential", BenchmarkType.READ_WRITE, 
+        BlockSequence.SEQUENTIAL, 1, 100, 200, 1024
+    ),
+
+    // --- 2. High-Load Random (Q32T1 Proxy / Max IOPS) ---
+    HIGH_LOAD_RANDOM_Q32T1(
+        "Random 4K (Q32T1)", BenchmarkType.READ_WRITE, 
+        BlockSequence.RANDOM, 32, 200, 100, 4
+    ),
+
+    // --- 3. Low-Load Random (Q1T1 / System Responsiveness) ---
+    LOW_LOAD_RANDOM_Q1T1(
+        "Random 4K (Q1T1)", BenchmarkType.READ_WRITE, 
+        BlockSequence.RANDOM, 1, 150, 50, 4
+    ),
+
+    // --- 4. Max Write Stress (Endurance/Sustained Write Test) ---
+    MAX_WRITE_STRESS(
+        "Max Write Stress", BenchmarkType.WRITE, 
+        BlockSequence.SEQUENTIAL, 4, 250, 500, 512
+    ),
+
+    // --- 5. Quick Functional Test (Fastest check) ---
+    QUICK_TEST(
+        "Quick Test", BenchmarkType.READ_WRITE, 
+        BlockSequence.SEQUENTIAL, 1, 50, 25, 64
+    ),
+    
+    // --- 6. Custom ---
+    CUSTOM_TEST(
+        "Custom Test", BenchmarkType.READ_WRITE, 
+        BlockSequence.SEQUENTIAL, 1, 1, 1, 1
+    );
     
     // basic settings
     private String name;
@@ -23,47 +59,9 @@ public class BenchmarkProfile {
     private boolean multiFile = true;      // Whether to use a single test file or multiple
     private boolean writeSyncEnable = false; // Whether to use synchronous write mode ("rwd")    
     
-    // --- Static Predefined Profiles ---
-    
-    // --- 1. Max Sequential Speed (Peak Throughput) ---
-    public static final BenchmarkProfile MAX_SEQUENTIAL_SPEED = new BenchmarkProfile(
-        "Max Sequential", BenchmarkType.READ_WRITE, 
-        BlockSequence.SEQUENTIAL, 1, 100, 200, 1024
-    );
-
-    // --- 2. High-Load Random (Q32T1 Proxy / Max IOPS) ---
-    public static final BenchmarkProfile HIGH_LOAD_RANDOM_Q32T1 = new BenchmarkProfile(
-        "Random 4K (Q32T1)", BenchmarkType.READ_WRITE, 
-        BlockSequence.RANDOM, 32, 200, 100, 4
-    );
-
-    // --- 3. Low-Load Random (Q1T1 / System Responsiveness) ---
-    public static final BenchmarkProfile LOW_LOAD_RANDOM_Q1T1 = new BenchmarkProfile(
-        "Random 4K (Q1T1)", BenchmarkType.READ_WRITE, 
-        BlockSequence.RANDOM, 1, 150, 50, 4
-    );
-
-    // --- 4. Max Write Stress (Endurance/Sustained Write Test) ---
-    public static final BenchmarkProfile MAX_WRITE_STRESS = new BenchmarkProfile(
-        "Max Write Stress", BenchmarkType.WRITE, 
-        BlockSequence.SEQUENTIAL, 4, 250, 500, 512
-    );
-
-    // --- 5. Quick Functional Test (Fastest check) ---
-    public static final BenchmarkProfile QUICK_TEST = new BenchmarkProfile(
-        "Quick Test", BenchmarkType.READ_WRITE, 
-        BlockSequence.SEQUENTIAL, 1, 50, 25, 64
-    );
-    
-    // --- 6. Custom ---
-    public static final BenchmarkProfile CUSTOM_TEST = new BenchmarkProfile(
-        "Custom Test", BenchmarkType.READ_WRITE, 
-        BlockSequence.SEQUENTIAL, 1, 1, 1, 1
-    );
-    
     // --- Constructor ---
     
-    public BenchmarkProfile(String name, BenchmarkType benchmarkType,
+    BenchmarkProfile(String name, BenchmarkType benchmarkType,
         BlockSequence blockSequence, int numberThreads, int numSamples,
         int numBlocks, int blockSizeKB) {
         
