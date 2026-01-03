@@ -186,6 +186,7 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 - TODO: #40 gui presentation issues - james
 - TODO: #78 throttle graphics render - valerio
 - TODO: #95 disk cache purging - valerio
+- TODO: #67 portal uploads - james
 - #82 drive access notification
 - #107 sector aligned / direct io
 - #16 pkg installer (MacOS)
