@@ -181,12 +181,14 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 ## Release Notes
 
 ### v1.0.0 planned
-- TODO: #16 MacOS installer - tyler
 - TODO: #70 app icon - ian
 - TODO: #33 maven build - lane
 - TODO: #40 gui presentation issues - james
 - TODO: #78 throttle graphics render - valerio
 - TODO: #95 disk cache purging - valerio
+- #82 drive access notification
+- #107 sector aligned / direct io
+- #16 pkg installer (MacOS)
 - #15 deb installer (Ubuntu)
 - #98 rpm installer (Redhat)
 - #42 default profiles
