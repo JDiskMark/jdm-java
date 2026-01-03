@@ -187,14 +187,11 @@ public class BenchmarkCallable implements Callable<Benchmark> {
                         double sec = (double) elapsedTimeNs / 1_000_000_000d;
                         double mbWritten = (double) totalBytesWrittenInSample / (double) MEGABYTE;
                         sample.bwMbSec = mbWritten / sec;
-//                        msg("s:" + s + " write IO is " + sample.getBwMbSecDisplay() + " MB/s   "
-//                                + "(" + Util.displayString(mbWritten) + "MB written in "
-//                                + Util.displayString(sec) + " sec) elapsedNs: " + elapsedTimeNs);
                         App.updateMetrics(sample);
                         if (App.verbose) {
                             switch (sample.type) {
-                                case Sample.Type.WRITE -> System.out.println("w: " + s);
-                                case Sample.Type.READ -> System.out.println("r: " + s);
+                                case WRITE -> System.out.println("w: " + s);
+                                case READ -> System.out.println("r: " + s);
                             }
                         }
                         wOperation.bwMax = sample.cumMax;
@@ -290,14 +287,11 @@ public class BenchmarkCallable implements Callable<Benchmark> {
                         double sec = (double) elapsedTimeNs / 1_000_000_000d;
                         double mbRead = (double) totalBytesReadInMark / (double) MEGABYTE;
                         sample.bwMbSec = mbRead / sec;
-//                        msg("s:" + s + " read IO is " + sample.getBwMbSecDisplay() + " MB/s   "
-//                                + "(" + Util.displayString(mbRead) + "MB read in "
-//                                + Util.displayString(sec) + " sec) elapsedNs: " + elapsedTimeNs);
                         App.updateMetrics(sample);
                         if (App.verbose) {
                             switch (sample.type) {
-                                case Sample.Type.WRITE -> System.out.println("w: " + s);
-                                case Sample.Type.READ -> System.out.println("r: " + s);
+                                case WRITE -> System.out.println("w: " + s);
+                                case READ -> System.out.println("r: " + s);
                             }
                         }
                         rOperation.bwMax = sample.cumMax;

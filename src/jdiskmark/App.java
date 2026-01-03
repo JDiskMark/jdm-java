@@ -1,6 +1,10 @@
 
 package jdiskmark;
 
+import static jdiskmark.Benchmark.BenchmarkType;
+import static jdiskmark.Benchmark.BlockSequence;
+import static jdiskmark.DriveAccessChecker.validateTargetDirectory;
+
 import picocli.CommandLine;
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,10 +26,6 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingWorker.StateValue;
-import static jdiskmark.Benchmark.BenchmarkType;
-import static jdiskmark.Benchmark.BlockSequence;
-import static jdiskmark.Benchmark.IOMode;
-import static jdiskmark.DriveAccessChecker.validateTargetDirectory;
 
 /**
  * Primary class for global variables.
@@ -53,12 +53,44 @@ public class App {
     // app is in command line or graphical mode
     public enum Mode { CLI, GUI }
     public static Mode mode = Mode.CLI;
+    // io api, modern introduced w jdk 25 lts
+    public enum IoEngine {
+        MODERN("Modern (FFM API)"),
+        LEGACY("Legacy (RandomAccessFile)");
+        private final String label;
+        IoEngine(String label) { this.label = label; }
+        @Override public String toString() { return label; }
+    }
+    public static IoEngine ioEngine = IoEngine.MODERN;
+    
+    public enum SectorAlignment {
+        ALIGN_512(512, "512 B (Legacy)"),
+        ALIGN_4K(4096, "4 KB (Standard)"),
+        ALIGN_8K(8192, "8 KB (Enterprise)"),
+        ALIGN_16K(16384, "16 KB (High-End)"),
+        ALIGN_64K(65536, "64 KB (RAID/Stripe)");
+
+        public final int bytes;
+        public final String label;
+
+        SectorAlignment(int bytes, String label) {
+            this.bytes = bytes;
+            this.label = label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+    public static SectorAlignment sectorAlignment = SectorAlignment.ALIGN_4K;
+    
     // member
     public static Properties p;
     public static File locationDir = null;
     public static File exportPath = null;
     public static File dataDir = null; // refactor to dataPath after all branches merged
-    public static File testFile = null;
+    public static File testFile = null; // still used for cli
     // system info
     public static String os;
     public static String arch;
@@ -75,11 +107,11 @@ public class App {
     public static boolean autoReset = true;
     public static boolean showMaxMin = true;
     public static boolean showDriveAccess = true;
+    public static boolean directEnable = false;
     public static boolean writeSyncEnable = false;
     // benchmark configuration
     public static BenchmarkProfile activeProfile = BenchmarkProfile.QUICK_TEST;
     public static BenchmarkType benchmarkType = BenchmarkType.WRITE;
-    public static IOMode ioMode = IOMode.WRITE;
     public static BlockSequence blockSequence = BlockSequence.SEQUENTIAL;
     public static int numOfSamples = 200;   // desired number of samples
     public static int numOfBlocks = 32;     // desired number of blocks
@@ -191,7 +223,7 @@ public class App {
             Gui.runPanel.hideFirstColumn();
             Gui.selFrame = new SelectDriveFrame();
             System.out.println(getConfigString());
-            Gui.mainFrame.loadConfig();
+            Gui.mainFrame.loadPropertiesConfig();
             Gui.mainFrame.setLocationRelativeTo(null);
             Gui.progressBar = Gui.mainFrame.getProgressBar();
         }
@@ -249,6 +281,18 @@ public class App {
         // configure settings from properties
         String value;
 
+        value = p.getProperty("activeProfile", activeProfile.name());
+        BenchmarkProfile previousActiveProfile = activeProfile;
+        try {
+            activeProfile = BenchmarkProfile.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid activeProfile value in properties file: \"{0}\". Falling back to default: {1}",
+                    new Object[]{value, previousActiveProfile.name()});
+            activeProfile = previousActiveProfile;
+        }
+        
         value = p.getProperty("benchmarkType", String.valueOf(benchmarkType));
         benchmarkType = BenchmarkType.valueOf(value.toUpperCase());
         
@@ -282,8 +326,33 @@ public class App {
         value = p.getProperty("numOfThreads", String.valueOf(numOfThreads));
         numOfThreads = Integer.parseInt(value);
 
+        value = p.getProperty("ioEngine", ioEngine.name());
+        try {
+            ioEngine = IoEngine.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid ioEngine value in properties: " + value + ", using default: " + ioEngine.name(),
+                    ex
+            );
+        }
+        
         value = p.getProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         writeSyncEnable = Boolean.parseBoolean(value);
+        
+        value = p.getProperty("directEnable", String.valueOf(directEnable));
+        directEnable = Boolean.parseBoolean(value);
+        
+        value = p.getProperty("sectorAlignment", sectorAlignment.name());
+        try {
+            sectorAlignment = SectorAlignment.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid sectorAlignment value in properties: \"{0}\", using default: {1}",
+                    new Object[] { value, sectorAlignment.name() }
+            );
+        }
 
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
@@ -293,6 +362,7 @@ public class App {
         if (p == null) { p = new Properties(); }
         
         // configure properties
+        p.setProperty("activeProfile", activeProfile.name());
         p.setProperty("benchmarkType", benchmarkType.name());
         p.setProperty("multiFile", String.valueOf(multiFile));
         p.setProperty("autoRemoveData", String.valueOf(autoRemoveData));
@@ -304,13 +374,16 @@ public class App {
         p.setProperty("numOfBlocks", String.valueOf(numOfBlocks));
         p.setProperty("blockSizeKb", String.valueOf(blockSizeKb));
         p.setProperty("numOfThreads", String.valueOf(numOfThreads));
+        p.setProperty("ioEngine", ioEngine.name());
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
+        p.setProperty("directEnable", String.valueOf(directEnable));
+        p.setProperty("sectorAlignment", sectorAlignment.name());
         p.setProperty("palette", Gui.palette.name());
 
         // write properties file
         try {
             OutputStream out = new FileOutputStream(PROPERTIES_FILE);
-            p.store(out, "JDiskMark Properties File");
+            p.store(out, "JDiskMark " + VERSION + " Properties File");
         } catch (IOException ex) {
             Logger.getLogger(SelectDriveFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -326,7 +399,7 @@ public class App {
     
     public static String getConfigString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("Config for JDiskMark ").append(App.VERSION).append('\n');
+        sb.append("Config for JDiskMark ").append(VERSION).append('\n');
         sb.append("readTest: ").append(isReadEnabled()).append('\n');
         sb.append("writeTest: ").append(isWriteEnabled()).append('\n');
         sb.append("locationDir: ").append(locationDir).append('\n');
@@ -340,7 +413,10 @@ public class App {
         sb.append("blockSizeKb: ").append(blockSizeKb).append('\n');
         sb.append("numOfThreads: ").append(numOfThreads).append('\n');
         sb.append("palette: ").append(Gui.palette).append('\n');
-        sb.append("ioMode: ").append(benchmarkType).append('\n');
+        sb.append("benchmarkType: ").append(benchmarkType).append('\n');
+        sb.append("ioEngine: ").append(ioEngine).append('\n');
+        sb.append("writeSyncEnable: ").append(writeSyncEnable).append('\n');
+        sb.append("directEnable: ").append(directEnable).append('\n');
         return sb.toString();
     }
     
@@ -387,7 +463,15 @@ public class App {
             case CLI -> System.out.println(message);
         }
     }
-    
+    public static void err(String message) {
+        switch(mode) {
+            case GUI -> {
+                Gui.mainFrame.msg(message);
+                System.err.println(message);
+            }
+            case CLI -> System.err.println(message);
+        }
+    }
     public static void cancelBenchmark() {
         if (worker == null) { 
             msg("worker is null abort..."); 
