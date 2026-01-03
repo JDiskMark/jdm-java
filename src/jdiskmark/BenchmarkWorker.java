@@ -35,6 +35,7 @@ import jdiskmark.App.IoEngine;
  */
 public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
+    // Minimum milliseconds between progress updates to avoid excessive UI refreshes
     private static final long UPDATE_INTERVAL = 25;
     private final AtomicLong lastUpdateMs = new AtomicLong(0);
 
