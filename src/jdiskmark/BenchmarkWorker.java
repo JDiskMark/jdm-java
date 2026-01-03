@@ -49,21 +49,21 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             return new int[0][0]; // Handle invalid input
         }
 
-        int numElements = endIndex - startIndex + 1; // Calculate the total number of elements
+        int numElements = endIndex - startIndex; // Calculate the total number of elements
         int[][] ranges = new int[numThreads][2];
         int rangeSize = numElements / numThreads;
         int remainder = numElements % numThreads;
         int start = startIndex;
 
         for (int i = 0; i < numThreads; i++) {
-            int end = start + rangeSize - 1;
+            int end = start + rangeSize;
             if (remainder > 0) {
                 end++; // Distribute the remainder
                 remainder--;
             }
             ranges[i][0] = start;
             ranges[i][1] = end;
-            start = end + 1;
+            start = end;
         }
         return ranges;
     }
