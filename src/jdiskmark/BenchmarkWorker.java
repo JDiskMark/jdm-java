@@ -22,6 +22,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingWorker;
@@ -33,12 +35,14 @@ import jdiskmark.App.IoEngine;
  */
 public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
+    private static final long UPDATE_INTERVAL = 25;
+    private final AtomicLong lastUpdateMs = new AtomicLong(0);
+
     Benchmark benchmark;
     
     // GH-20 final to aid w lambda usage
-    final int[] wUnitsComplete = {0};
-    final int[] rUnitsComplete = {0};
-    final int[] unitsComplete = {0};
+    private final LongAdder writeUnitsComplete = new LongAdder();
+    private final LongAdder readUnitsComplete = new LongAdder();
     
     int unitsTotal;
     int blockSize;
@@ -68,24 +72,32 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         return ranges;
     }
 
-    public synchronized void updateWriteProgress() {
-        wUnitsComplete[0]++;
-        unitsComplete[0] = rUnitsComplete[0] + wUnitsComplete[0];
-        float percentComplete = (float)unitsComplete[0] / (float) unitsTotal * 100f;
-        int newProgress = (int) percentComplete;
-        if (0 <= newProgress && newProgress <= 100) {
-            setProgress(newProgress);
+    public void throttledProgressUpdate(boolean forceUpdate) {
+        long currentTime = System.currentTimeMillis();
+        long lastTime = lastUpdateMs.get();
+        long elapsedTime = currentTime - lastTime;
+        
+        // Aggregate from LongAdders (Thread-safe, no sync needed)
+        long totalCompleted = writeUnitsComplete.sum() + readUnitsComplete.sum();
+        float percentComplete = (float)totalCompleted / (float) unitsTotal * 100f;
+        int newProgress = (int)percentComplete;
+        if (elapsedTime >= UPDATE_INTERVAL || forceUpdate) {
+            if (lastUpdateMs.compareAndSet(lastTime, currentTime) || forceUpdate) {
+                // Clamp value to Swing limits
+                int clampedProgress = Math.min(100, Math.max(0, newProgress));
+                setProgress(clampedProgress);
+            }
         }
     }
     
-    public synchronized void updateReadProgress() {
-        rUnitsComplete[0]++;
-        unitsComplete[0] = rUnitsComplete[0] + wUnitsComplete[0];
-        float percentComplete = (float)unitsComplete[0] / (float) unitsTotal * 100f;
-        int newProgress = (int) percentComplete;
-        if (0 <= newProgress && newProgress <= 100) {
-            setProgress(newProgress);
-        }
+    public void updateWriteProgress() {
+        writeUnitsComplete.increment();
+        throttledProgressUpdate(false);
+    }
+    
+    public void updateReadProgress() {
+        readUnitsComplete.increment();
+        throttledProgressUpdate(false);
     }
     
     @Override
@@ -219,13 +231,14 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
             // GH-10 file IOPS processing
             wOperation.endTime = LocalDateTime.now();
-            wOperation.setTotalOps(wUnitsComplete[0]);
+            wOperation.setTotalOps(writeUnitsComplete.longValue());
             App.wIops = wOperation.iops;
             Gui.mainFrame.refreshWriteMetrics();
         }
-
+        
         // TODO: review renaming all files to clear catch
         if (App.isReadEnabled() && App.isWriteEnabled() && !isCancelled()) {
+            throttledProgressUpdate(true); // update at the half way point
             // TODO: review refactor to App.dropCache() & Gui.dropCache()
             Gui.dropCache();
         }
@@ -292,7 +305,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
             // GH-10 file IOPS processing
             rOperation.endTime = LocalDateTime.now();
-            rOperation.setTotalOps(rUnitsComplete[0]);
+            rOperation.setTotalOps(readUnitsComplete.longValue());
             App.rIops = rOperation.iops;
             Gui.mainFrame.refreshReadMetrics();
         }
@@ -319,14 +332,15 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
     protected void process(List<Sample> sampleList) {
         sampleList.stream().forEach((Sample s) -> {
             switch (s.type) {
-                case Sample.Type.WRITE -> Gui.addWriteSample(s);
-                case Sample.Type.READ -> Gui.addReadSample(s);
+                case WRITE -> Gui.addWriteSample(s);
+                case READ -> Gui.addReadSample(s);
             }
         });
     }
 
     @Override
     protected void done() {
+        throttledProgressUpdate(true);
         if (App.autoRemoveData) {
             Util.deleteDirectory(dataDir);
         }
