@@ -77,7 +77,7 @@
     <property name="build.dir" value="build"/>
 
     <!-- dependencies -->
-    <property name="jpackage.executable" value="C:\Program Files\java\jdk-21\bin\jpackage"/>
+    <property name="jpackage.executable" value="C:\Program Files\java\jdk-25\bin\jpackage"/>
     <property name="signtool.executable" value="C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x86\signtool.exe"/>
 
     <!-- version properties -->
@@ -306,7 +306,7 @@ Version: ${deb.version}
 Section: utils
 Priority: optional
 Architecture: all
-Depends: default-jre | openjdk-21-jre | openjdk-17-jre
+Depends: openjdk-25-jre
 Maintainer: JDiskMark Team
 Description: JDiskMark - Disk Benchmark Utility
  JDiskMark is a cross-platform disk benchmark utility written in Java.
@@ -342,7 +342,7 @@ Categories=Utility;System;</echo>
     </target>
     
     <target name="create-fat-deb" depends="clean, -pre-jar, jar, -post-jar"
-            description="Create a self-contained DEB with JRE 21">
+            description="Create a self-contained DEB">
         
         <condition property="is.linux">
             <os family="unix" />
@@ -397,7 +397,7 @@ Categories=Utility;System;</echo>
     
     <!-- depends="jar, -post-jar" -->
     <target name="create-fat-rpm" depends="clean, jar, -post-jar"
-            description="Create a self-contained RPM with JRE 21">
+            description="Create a self-contained RPM">
         
         <condition property="is.linux">
             <os family="unix" />
