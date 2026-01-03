@@ -30,7 +30,7 @@ import java.util.logging.Logger;
 public class Sample {
     
     static final DecimalFormat DF = new DecimalFormat("###.###");
-    static public enum Type { READ, WRITE; }
+    enum Type { READ, WRITE; }
     
     Type type;
     int sampleNum = 0;     // x-axis
