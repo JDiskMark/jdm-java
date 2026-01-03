@@ -194,7 +194,7 @@ public class Sample {
                 // Populate segment with random data if needed
                 // segment.copyFrom(MemorySegment.ofArray(new byte[(int)bufferSize]));
                 for (int b = 0; b < numOfBlocks; b++) {
-
+                    if (worker.isCancelled()) break;
                     long blockIndex = (blockSequence == RANDOM) ?
                             Util.randInt(0, numOfBlocks - 1) : b;
                     long byteOffset = blockIndex * blockSize;
