@@ -242,7 +242,7 @@ public class Sample {
             initialFc = FileChannel.open(testFile.toPath(), options);
         } catch (UnsupportedOperationException e) {
             // Fallback: Remove ExtendedOpenOption.DIRECT and try again
-            App.err("Direct I/O not supported, falling back to buffered I/O.");
+            App.err("Direct I/O is not supported on this system. Falling back to buffered I/O; benchmark results may differ from native Direct I/O performance.");
             options.remove(ExtendedOpenOption.DIRECT);
             try {
                 initialFc = FileChannel.open(testFile.toPath(), options);
