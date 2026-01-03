@@ -335,7 +335,15 @@ public class App {
         directEnable = Boolean.parseBoolean(value);
         
         value = p.getProperty("sectorAlignment", sectorAlignment.name());
-        sectorAlignment = SectorAlignment.valueOf(value.toUpperCase());
+        try {
+            sectorAlignment = SectorAlignment.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid sectorAlignment value in properties: \"{0}\", using default: {1}",
+                    new Object[] { value, sectorAlignment.name() }
+            );
+        }
 
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
