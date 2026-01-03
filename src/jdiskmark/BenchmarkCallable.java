@@ -290,8 +290,8 @@ public class BenchmarkCallable implements Callable<Benchmark> {
                         App.updateMetrics(sample);
                         if (App.verbose) {
                             switch (sample.type) {
-                                case Sample.Type.WRITE -> System.out.println("w: " + s);
-                                case Sample.Type.READ -> System.out.println("r: " + s);
+                                case WRITE -> System.out.println("w: " + s);
+                                case READ -> System.out.println("r: " + s);
                             }
                         }
                         rOperation.bwMax = sample.cumMax;

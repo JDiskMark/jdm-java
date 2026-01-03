@@ -438,7 +438,15 @@ public class App {
             case CLI -> System.out.println(message);
         }
     }
-    
+    public static void err(String message) {
+        switch(mode) {
+            case GUI -> {
+                Gui.mainFrame.msg(message);
+                System.err.println(message);
+            }
+            case CLI -> System.err.println(message);
+        }
+    }
     public static void cancelBenchmark() {
         if (worker == null) { 
             msg("worker is null abort..."); 

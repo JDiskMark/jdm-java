@@ -30,7 +30,7 @@ import java.util.logging.Logger;
 public class Sample {
     
     static final DecimalFormat DF = new DecimalFormat("###.###");
-    enum Type { READ, WRITE; }
+    public enum Type { READ, WRITE; }
     
     Type type;
     int sampleNum = 0;     // x-axis
@@ -187,22 +187,37 @@ public class Sample {
         if (App.directEnable) {
             options.add(ExtendedOpenOption.DIRECT); // non-standard api
         }
-        try (FileChannel fc = FileChannel.open(testFile.toPath(), options)) {
+        FileChannel initialFc = null;
+        try {
+            initialFc = FileChannel.open(testFile.toPath(), options);
+        } catch (UnsupportedOperationException e) {
+            // Fallback: Remove ExtendedOpenOption.DIRECT and try again
+            App.err("Direct I/O not supported, falling back to buffered I/O.");
+            options.remove(ExtendedOpenOption.DIRECT);
+            try {
+                initialFc = FileChannel.open(testFile.toPath(), options);
+            } catch (IOException ex) {
+                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Failed to open FileChannel", ex);
+                App.err("Failed to open FileChannel, aborting measurement");
+                return;
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
+            MemorySegment segment = arena.allocate(blockSize, sectorAlignment.bytes);
+            // Populate segment with random data if needed
+            // segment.copyFrom(MemorySegment.ofArray(new byte[(int)bufferSize]));
+            for (int b = 0; b < numOfBlocks; b++) {
+                if (worker.isCancelled()) break;
+                long blockIndex = (blockSequence == RANDOM) ?
+                        Util.randInt(0, numOfBlocks - 1) : b;
+                long byteOffset = blockIndex * blockSize;
 
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment segment = arena.allocate(blockSize, sectorAlignment.bytes);
-                // Populate segment with random data if needed
-                // segment.copyFrom(MemorySegment.ofArray(new byte[(int)bufferSize]));
-                for (int b = 0; b < numOfBlocks; b++) {
-                    if (worker.isCancelled()) break;
-                    long blockIndex = (blockSequence == RANDOM) ?
-                            Util.randInt(0, numOfBlocks - 1) : b;
-                    long byteOffset = blockIndex * blockSize;
-
-                    int written = fc.write(segment.asByteBuffer(), byteOffset);
-                    totalBytesWritten += written;
-                    worker.updateWriteProgress();
-                }
+                int written = fc.write(segment.asByteBuffer(), byteOffset);
+                totalBytesWritten += written;
+                worker.updateWriteProgress();
             }
         } catch (IOException ex) {
             Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
@@ -223,18 +238,34 @@ public class Sample {
         if (App.directEnable) {
             options.add(ExtendedOpenOption.DIRECT); // non-standard api
         }
-        try (FileChannel fc = FileChannel.open(testFile.toPath(), options)) {
-
-            try (Arena arena = Arena.ofConfined()) {
-                MemorySegment segment = arena.allocate(blockSize, sectorAlignment.bytes);
-                for (int b = 0; b < numOfBlocks; b++) {
-                    if (worker.isCancelled()) break;
-                    long blockIndex = (blockSequence == RANDOM) ? Util.randInt(0, numOfBlocks - 1) : b;
-                    long byteOffset = blockIndex * blockSize;
-                    int read = fc.read(segment.asByteBuffer(), byteOffset);
-                    totalBytesRead += read;
-                    worker.updateReadProgress();
-                }
+        
+        FileChannel initialFc = null;
+        try {
+            initialFc = FileChannel.open(testFile.toPath(), options);
+        } catch (UnsupportedOperationException e) {
+            // Fallback: Remove ExtendedOpenOption.DIRECT and try again
+            App.err("Direct I/O not supported, falling back to buffered I/O.");
+            options.remove(ExtendedOpenOption.DIRECT);
+            try {
+                initialFc = FileChannel.open(testFile.toPath(), options);
+            } catch (IOException ex) {
+                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Failed to open FileChannel", ex);
+                App.err("Failed to open FileChannel, aborting measurement");
+                return;
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
+            MemorySegment segment = arena.allocate(blockSize, sectorAlignment.bytes);
+            for (int b = 0; b < numOfBlocks; b++) {
+                if (worker.isCancelled()) break;
+                long blockIndex = (blockSequence == RANDOM) ? Util.randInt(0, numOfBlocks - 1) : b;
+                long byteOffset = blockIndex * blockSize;
+                int read = fc.read(segment.asByteBuffer(), byteOffset);
+                totalBytesRead += read;
+                worker.updateReadProgress();
             }
         } catch (IOException ex) {
             Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
