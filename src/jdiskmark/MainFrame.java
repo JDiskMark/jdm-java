@@ -207,7 +207,11 @@ public final class MainFrame extends javax.swing.JFrame {
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
         switch (App.ioEngine) {
             case MODERN -> engModernRbMenuItem.setSelected(true);
-            case LEGACY -> engLegacyRbMenuItem.setSelected(true);
+            case LEGACY -> {
+                engLegacyRbMenuItem.setSelected(true);
+                directIoCbMenuItem.setEnabled(false);
+                sectorAlignmentMenu.setEnabled(false);
+            }
         }
         writeSyncCheckBoxMenuItem.setSelected(App.writeSyncEnable);
         directIoCbMenuItem.setSelected(App.directEnable);
