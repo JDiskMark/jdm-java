@@ -282,7 +282,16 @@ public class App {
         String value;
 
         value = p.getProperty("activeProfile", activeProfile.name());
-        activeProfile = BenchmarkProfile.valueOf(value.toUpperCase());
+        BenchmarkProfile previousActiveProfile = activeProfile;
+        try {
+            activeProfile = BenchmarkProfile.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid activeProfile value in properties file: \"{0}\". Falling back to default: {1}",
+                    new Object[]{value, previousActiveProfile.name()});
+            activeProfile = previousActiveProfile;
+        }
         
         value = p.getProperty("benchmarkType", String.valueOf(benchmarkType));
         benchmarkType = BenchmarkType.valueOf(value.toUpperCase());
