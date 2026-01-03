@@ -318,7 +318,15 @@ public class App {
         numOfThreads = Integer.parseInt(value);
 
         value = p.getProperty("ioEngine", ioEngine.name());
-        ioEngine = IoEngine.valueOf(value.toUpperCase());
+        try {
+            ioEngine = IoEngine.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid ioEngine value in properties: " + value + ", using default: " + ioEngine.name(),
+                    ex
+            );
+        }
         
         value = p.getProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         writeSyncEnable = Boolean.parseBoolean(value);
