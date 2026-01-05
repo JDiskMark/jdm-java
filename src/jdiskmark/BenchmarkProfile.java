@@ -23,7 +23,7 @@ public enum BenchmarkProfile {
     
     // --- 2. Max Sequential Speed (Peak Throughput) ---
     MAX_SEQUENTIAL_SPEED(
-            "Max Sequential", 
+            "Max Sequential Speed", 
             BenchmarkType.READ_WRITE, 
             BlockSequence.SEQUENTIAL, 
             1,   // threads
@@ -32,9 +32,9 @@ public enum BenchmarkProfile {
             1024 // blk size kb
     ),
 
-    // --- 3. High-Load Random (Q32T1 Proxy / Max IOPS) ---
-    HIGH_LOAD_RANDOM_Q32T1(
-            "Random 4K (Q32T1)", 
+    // --- 3. High-Load Random (T32 Proxy / Max IOPS) ---
+    HIGH_LOAD_RANDOM_T32(
+            "Random 4K (T32)", 
             BenchmarkType.READ_WRITE, 
             BlockSequence.RANDOM, 
             32,  // threads 
@@ -43,9 +43,9 @@ public enum BenchmarkProfile {
             4    // blk size kb
     ),
 
-    // --- 4. Low-Load Random (Q1T1 / System Responsiveness) ---
-    LOW_LOAD_RANDOM_Q1T1(
-            "Random 4K (Q1T1)", 
+    // --- 4. Low-Load Random (T1 / System Responsiveness) ---
+    LOW_LOAD_RANDOM_T1(
+            "Random 4K (T1)", 
             BenchmarkType.READ_WRITE, 
             BlockSequence.RANDOM, 
             1,   // thread
@@ -56,7 +56,7 @@ public enum BenchmarkProfile {
 
     // --- 5. Max Write Stress (Endurance/Sustained Write Test) ---
     MAX_WRITE_STRESS(
-            "Max Write Stress", 
+            "Max Write Stress (T4)", 
             BenchmarkType.WRITE, 
             BlockSequence.SEQUENTIAL, 
             4,   // thread 
@@ -104,11 +104,10 @@ public enum BenchmarkProfile {
     // --- Getters ---
 
     public static BenchmarkProfile[] getDefaults() {
-        return List.of(
-            QUICK_TEST,
+        return List.of(QUICK_TEST,
             MAX_SEQUENTIAL_SPEED,
-            HIGH_LOAD_RANDOM_Q32T1,
-            LOW_LOAD_RANDOM_Q1T1,
+            HIGH_LOAD_RANDOM_T32,
+            LOW_LOAD_RANDOM_T1,
             MAX_WRITE_STRESS,
             CUSTOM_TEST
         ).toArray(BenchmarkProfile[]::new);
