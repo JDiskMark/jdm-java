@@ -10,7 +10,7 @@ import java.awt.event.ActionEvent;
 public class PortalEnableDialog extends JDialog {
     private final JPasswordField passwordField;
     private boolean authenticated = false;
-    private final String REQUIRED_PASSWORD = "goHampsters!";
+    private final String REQUIRED_PASSWORD = "goHamsters!";
 
     public PortalEnableDialog(Frame parent) {
         super(parent, "Security Check", true);
