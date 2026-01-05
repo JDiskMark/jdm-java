@@ -99,7 +99,20 @@ public final class MainFrame extends javax.swing.JFrame {
         if (App.locationDir != null) { // set the location dir if not null
             setLocation(App.locationDir.getAbsolutePath());
         }
+        
+        // test portal settings
         portalUploadMenuItem.setSelected(App.sharePortal);
+        portalEndpointMenu.setEnabled(App.sharePortal);
+        if (Portal.uploadUrl.equalsIgnoreCase(Portal.LOCAL_UPLOAD_ENDPOINT)) {
+            localEndpointRbMenuItem.setSelected(true);
+        }
+        if (Portal.uploadUrl.equalsIgnoreCase(Portal.TEST_UPLOAD_ENDPOINT)) {
+            testEndpointRbMenuItem.setSelected(true);
+        }
+        if (Portal.uploadUrl.equalsIgnoreCase(Portal.PRODUCTION_UPLOAD_ENDPOINT)) {
+            prodEndpointRbMenuItem.setSelected(true);
+        }
+        
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
         autoRemoveCheckBoxMenuItem.setSelected(App.autoRemoveData);
         autoResetCheckBoxMenuItem.setSelected(App.autoReset);
@@ -238,6 +251,7 @@ public final class MainFrame extends javax.swing.JFrame {
         palettebuttonGroup = new javax.swing.ButtonGroup();
         ioEnginebuttonGroup = new javax.swing.ButtonGroup();
         sectorAlignbuttonGroup = new javax.swing.ButtonGroup();
+        portalEndpointButtonGroup = new javax.swing.ButtonGroup();
         tabbedPane = new javax.swing.JTabbedPane();
         runPanel = new jdiskmark.BenchmarkPanel();
         eventScrollPane = new javax.swing.JScrollPane();
@@ -329,6 +343,10 @@ public final class MainFrame extends javax.swing.JFrame {
         bardWarmPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
         helpMenu = new javax.swing.JMenu();
         portalUploadMenuItem = new javax.swing.JCheckBoxMenuItem();
+        portalEndpointMenu = new javax.swing.JMenu();
+        localEndpointRbMenuItem = new javax.swing.JRadioButtonMenuItem();
+        testEndpointRbMenuItem = new javax.swing.JRadioButtonMenuItem();
+        prodEndpointRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         jMenuItem2 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -1001,6 +1019,37 @@ public final class MainFrame extends javax.swing.JFrame {
         });
         helpMenu.add(portalUploadMenuItem);
 
+        portalEndpointMenu.setText("Portal Endpoint");
+
+        portalEndpointButtonGroup.add(localEndpointRbMenuItem);
+        localEndpointRbMenuItem.setText("LOCALHOST");
+        localEndpointRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                localEndpointRbMenuItemActionPerformed(evt);
+            }
+        });
+        portalEndpointMenu.add(localEndpointRbMenuItem);
+
+        portalEndpointButtonGroup.add(testEndpointRbMenuItem);
+        testEndpointRbMenuItem.setText("test.jdiskmark.net");
+        testEndpointRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                testEndpointRbMenuItemActionPerformed(evt);
+            }
+        });
+        portalEndpointMenu.add(testEndpointRbMenuItem);
+
+        portalEndpointButtonGroup.add(prodEndpointRbMenuItem);
+        prodEndpointRbMenuItem.setText("www.jdiskmark.net");
+        prodEndpointRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                prodEndpointRbMenuItemActionPerformed(evt);
+            }
+        });
+        portalEndpointMenu.add(prodEndpointRbMenuItem);
+
+        helpMenu.add(portalEndpointMenu);
+
         jMenuItem2.setText("About...");
         jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1260,6 +1309,7 @@ public final class MainFrame extends javax.swing.JFrame {
         } else {
             App.msg("portal upload disabled");
         }
+        portalEndpointMenu.setEnabled(true);
     }//GEN-LAST:event_portalUploadMenuItemActionPerformed
     private void directIoCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_directIoCbMenuItemActionPerformed
         App.directEnable = directIoCbMenuItem.isSelected();
@@ -1304,6 +1354,21 @@ public final class MainFrame extends javax.swing.JFrame {
         App.sectorAlignment = App.SectorAlignment.ALIGN_64K;
         App.saveConfig();
     }//GEN-LAST:event_align64KRbMenuItemActionPerformed
+
+    private void localEndpointRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_localEndpointRbMenuItemActionPerformed
+        Portal.uploadUrl = Portal.LOCAL_UPLOAD_ENDPOINT;
+        App.saveConfig();
+    }//GEN-LAST:event_localEndpointRbMenuItemActionPerformed
+
+    private void testEndpointRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_testEndpointRbMenuItemActionPerformed
+        Portal.uploadUrl = Portal.TEST_UPLOAD_ENDPOINT;
+        App.saveConfig();
+    }//GEN-LAST:event_testEndpointRbMenuItemActionPerformed
+
+    private void prodEndpointRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_prodEndpointRbMenuItemActionPerformed
+        Portal.uploadUrl = Portal.PRODUCTION_UPLOAD_ENDPOINT;
+        App.saveConfig();
+    }//GEN-LAST:event_prodEndpointRbMenuItemActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
@@ -1362,6 +1427,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JPopupMenu.Separator jSeparator2;
     private javax.swing.JPopupMenu.Separator jSeparator3;
+    private javax.swing.JRadioButtonMenuItem localEndpointRbMenuItem;
     private javax.swing.JPanel locationPanel;
     private javax.swing.JTextField locationText;
     private javax.swing.JMenuBar menuBar;
@@ -1375,7 +1441,10 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenu optionMenu;
     private javax.swing.JComboBox<BlockSequence> orderComboBox;
     private javax.swing.ButtonGroup palettebuttonGroup;
+    private javax.swing.ButtonGroup portalEndpointButtonGroup;
+    private javax.swing.JMenu portalEndpointMenu;
     private javax.swing.JCheckBoxMenuItem portalUploadMenuItem;
+    private javax.swing.JRadioButtonMenuItem prodEndpointRbMenuItem;
     private javax.swing.JComboBox profileCombo;
     private javax.swing.JPanel progressPanel;
     private javax.swing.JLabel rAccessLabel;
@@ -1393,6 +1462,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JCheckBoxMenuItem showMaxMinCheckBoxMenuItem;
     private javax.swing.JButton startButton;
     private javax.swing.JTabbedPane tabbedPane;
+    private javax.swing.JRadioButtonMenuItem testEndpointRbMenuItem;
     private javax.swing.JProgressBar totalTxProgBar;
     private javax.swing.JComboBox typeCombo;
     private javax.swing.JLabel wAccessLabel;

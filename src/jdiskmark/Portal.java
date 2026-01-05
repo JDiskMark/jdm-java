@@ -16,12 +16,12 @@ import java.util.logging.Logger;
 
 public class Portal {
     
-    static public final String JDM_UPLOAD_ENDPOINT = "http://www.jdiskmark.net:5000/api/benchmarks/upload";
+    static public final String PRODUCTION_UPLOAD_ENDPOINT = "http://www.jdiskmark.net:5000/api/benchmarks/upload";
+    static public final String TEST_UPLOAD_ENDPOINT = "https://test.jdiskmark.net/:5000/api/benchmarks/upload";
     static public final String LOCAL_UPLOAD_ENDPOINT = "http://localhost:5000/api/benchmarks/upload";
-    static public final String UPLOAD_URL = LOCAL_UPLOAD_ENDPOINT;
+    static public final int UPLOAD_PORT = 5000; // cur dev api port
     
-    // cur dev api port
-    static public int UPLOAD_PORT = 5000;
+    static public String uploadUrl = LOCAL_UPLOAD_ENDPOINT;
     
     // Helper method to check connectivity to the host
     private static boolean isHostReachable(String host, int port) {
@@ -36,14 +36,14 @@ public class Portal {
     
     static public void upload(Benchmark benchmark) {
         
-        App.msg("starting upload to " + UPLOAD_URL);
+        App.msg("starting upload to " + uploadUrl);
         
-        // 1. Extract host and port from your URI string
-        URI uploadUri = URI.create(UPLOAD_URL);
+        // Extract host and port from URI string
+        URI uploadUri = URI.create(uploadUrl);
         String host = uploadUri.getHost();
         int port = uploadUri.getPort() != -1 ? uploadUri.getPort() : 80;
 
-        // 2. Pre-upload checks
+        // Pre-upload checks
         try {
             if (InetAddress.getLocalHost() == null) {
                 App.err("No local network connection detected.");
@@ -77,7 +77,7 @@ public class Portal {
             
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(UPLOAD_URL))
+                .uri(URI.create(uploadUrl))
                 .header("Content-Type", "application/json") // Essential for Express to see it
                 .header("Accept", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
@@ -95,6 +95,6 @@ public class Portal {
             Logger.getLogger(Portal.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-        App.msg("done uploading to " + UPLOAD_URL);
+        App.msg("done uploading to " + uploadUrl);
     }
 }
