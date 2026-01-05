@@ -17,7 +17,7 @@ import java.util.logging.Logger;
 public class Portal {
     
     static public final String PRODUCTION_UPLOAD_ENDPOINT = "http://www.jdiskmark.net:5000/api/benchmarks/upload";
-    static public final String TEST_UPLOAD_ENDPOINT = "https://test.jdiskmark.net/:5000/api/benchmarks/upload";
+    static public final String TEST_UPLOAD_ENDPOINT = "https://test.jdiskmark.net:5000/api/benchmarks/upload";
     static public final String LOCAL_UPLOAD_ENDPOINT = "http://localhost:5000/api/benchmarks/upload";
     static public final int UPLOAD_PORT = 5000; // cur dev api port
     
