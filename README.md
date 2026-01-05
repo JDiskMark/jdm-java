@@ -187,6 +187,11 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 - TODO: #78 throttle graphics render - valerio
 - TODO: #95 disk cache purging - valerio
 - TODO: #67 portal uploads - james
+    - #111 extract cfg from benchmark
+    - #117 user portal upload acknowledgement
+    - #118 test interlock or OAuth upload
+
+### v0.6.3
 - #82 drive access notification
 - #107 sector aligned / direct io
 - #16 pkg installer (MacOS)
