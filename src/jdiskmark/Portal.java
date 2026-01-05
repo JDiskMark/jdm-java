@@ -73,7 +73,7 @@ public class Portal {
                 java.nio.file.Path.of("debug-benchmark.json"), 
                 jsonBody
             );
-            App.msg("Debug file written to: " + java.nio.file.Paths.get("debug_benchmark.json").toAbsolutePath());
+            App.msg("Debug file written to: " + java.nio.file.Paths.get("debug-benchmark.json").toAbsolutePath());
             
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
