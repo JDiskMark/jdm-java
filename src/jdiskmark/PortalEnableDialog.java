@@ -5,8 +5,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 
 /**
- * Password check for test portal uploads
- * Returns true if the password is correct, false otherwise.
+ * Password check for test portal uploads.
  */
 public class PortalEnableDialog extends JDialog {
     private final JPasswordField passwordField;
@@ -14,7 +13,7 @@ public class PortalEnableDialog extends JDialog {
     private final String REQUIRED_PASSWORD = "goHampsters!";
 
     public PortalEnableDialog(Frame parent) {
-        super(parent, "Security Check", true); // true makes it modal
+        super(parent, "Security Check", true);
 
         // UI Setup
         setLayout(new BorderLayout(10, 10));
@@ -23,17 +22,24 @@ public class PortalEnableDialog extends JDialog {
 
         panel.add(new JLabel("Enter Password:"));
         passwordField = new JPasswordField(15);
+        
+        // trigger checkPassword when Enter is pressed inside the field
+        passwordField.addActionListener((ActionEvent e) -> {
+            checkPassword();
+        });
+        
         panel.add(passwordField);
 
         JButton submitButton = new JButton("Enable");
-        
-        // Listener for the submit button
         submitButton.addActionListener((ActionEvent e) -> {
             checkPassword();
         });
 
         add(panel, BorderLayout.CENTER);
         add(submitButton, BorderLayout.SOUTH);
+
+        // Set the 'Enable' button as the default button for the Enter key
+        getRootPane().setDefaultButton(submitButton);
 
         pack();
         setLocationRelativeTo(parent);
