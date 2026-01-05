@@ -1309,7 +1309,7 @@ public final class MainFrame extends javax.swing.JFrame {
         } else {
             App.msg("portal upload disabled");
         }
-        portalEndpointMenu.setEnabled(true);
+        portalEndpointMenu.setEnabled(App.sharePortal);
     }//GEN-LAST:event_portalUploadMenuItemActionPerformed
     private void directIoCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_directIoCbMenuItemActionPerformed
         App.directEnable = directIoCbMenuItem.isSelected();
