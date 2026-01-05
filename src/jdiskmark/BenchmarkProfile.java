@@ -10,37 +10,62 @@ import jdiskmark.Benchmark.BlockSequence;
  */
 public enum BenchmarkProfile {
     
-    // --- 1. Max Sequential Speed (Peak Throughput) ---
-    MAX_SEQUENTIAL_SPEED(
-        "Max Sequential", BenchmarkType.READ_WRITE, 
-        BlockSequence.SEQUENTIAL, 1, 100, 200, 1024
-    ),
-
-    // --- 2. High-Load Random (Q32T1 Proxy / Max IOPS) ---
-    HIGH_LOAD_RANDOM_Q32T1(
-        "Random 4K (Q32T1)", BenchmarkType.READ_WRITE, 
-        BlockSequence.RANDOM, 32, 200, 100, 4
-    ),
-
-    // --- 3. Low-Load Random (Q1T1 / System Responsiveness) ---
-    LOW_LOAD_RANDOM_Q1T1(
-        "Random 4K (Q1T1)", BenchmarkType.READ_WRITE, 
-        BlockSequence.RANDOM, 1, 150, 50, 4
-    ),
-
-    // --- 4. Max Write Stress (Endurance/Sustained Write Test) ---
-    MAX_WRITE_STRESS(
-        "Max Write Stress", BenchmarkType.WRITE, 
-        BlockSequence.SEQUENTIAL, 4, 250, 500, 512
-    ),
-
-    // --- 5. Quick Functional Test (Fastest check) ---
+    // --- 1. Quick Functional Test (Fastest check) ---
     QUICK_TEST(
-        "Quick Test", BenchmarkType.READ_WRITE, 
-        BlockSequence.SEQUENTIAL, 1, 50, 25, 64
+            "Quick Test", 
+            BenchmarkType.READ_WRITE, 
+            BlockSequence.SEQUENTIAL,
+            1,  // threads
+            50, // samples
+            25, // blocks
+            64  // block size
     ),
     
-    // --- 6. Custom ---
+    // --- 2. Max Sequential Speed (Peak Throughput) ---
+    MAX_SEQUENTIAL_SPEED(
+            "Max Sequential Speed", 
+            BenchmarkType.READ_WRITE, 
+            BlockSequence.SEQUENTIAL, 
+            1,   // threads
+            100, // samples
+            200, // blocks
+            1024 // blk size kb
+    ),
+
+    // --- 3. High-Load Random (T32 Proxy / Max IOPS) ---
+    HIGH_LOAD_RANDOM_T32(
+            "Random 4K (T32)", 
+            BenchmarkType.READ_WRITE, 
+            BlockSequence.RANDOM, 
+            32,  // threads 
+            200, // samples
+            100, // blocks
+            4    // blk size kb
+    ),
+
+    // --- 4. Low-Load Random (T1 / System Responsiveness) ---
+    LOW_LOAD_RANDOM_T1(
+            "Random 4K (T1)", 
+            BenchmarkType.READ_WRITE, 
+            BlockSequence.RANDOM, 
+            1,   // thread
+            150, // samples
+            50,  // blocks
+            4    // blk size kb
+    ),
+
+    // --- 5. Max Write Stress (Endurance/Sustained Write Test) ---
+    MAX_WRITE_STRESS(
+            "Max Write Stress (T4)", 
+            BenchmarkType.WRITE, 
+            BlockSequence.SEQUENTIAL, 
+            4,   // thread 
+            250, // samples
+            500, // blocks
+            512  // blk size kb
+    ),
+
+    // --- 6. Custom (option indicator, not actual profile) ---
     CUSTOM_TEST(
         "Custom Test", BenchmarkType.READ_WRITE, 
         BlockSequence.SEQUENTIAL, 1, 1, 1, 1
@@ -79,11 +104,10 @@ public enum BenchmarkProfile {
     // --- Getters ---
 
     public static BenchmarkProfile[] getDefaults() {
-        return List.of(
-            QUICK_TEST,
+        return List.of(QUICK_TEST,
             MAX_SEQUENTIAL_SPEED,
-            HIGH_LOAD_RANDOM_Q32T1,
-            LOW_LOAD_RANDOM_Q1T1,
+            HIGH_LOAD_RANDOM_T32,
+            LOW_LOAD_RANDOM_T1,
             MAX_WRITE_STRESS,
             CUSTOM_TEST
         ).toArray(BenchmarkProfile[]::new);

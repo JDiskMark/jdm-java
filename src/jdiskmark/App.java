@@ -101,6 +101,7 @@ public class App {
     public static boolean isAdmin = false;
     // benchmark options
     public static boolean autoSave = false;
+    public static boolean sharePortal = false;
     public static boolean verbose = false; // affects cli output
     public static boolean multiFile = true;
     public static boolean autoRemoveData = false;
@@ -281,6 +282,11 @@ public class App {
         // configure settings from properties
         String value;
 
+        value = p.getProperty("sharePortal", String.valueOf(sharePortal));
+        sharePortal = Boolean.parseBoolean(value);
+        
+        Portal.uploadUrl = p.getProperty("uploadUrl", Portal.uploadUrl);
+        
         value = p.getProperty("activeProfile", activeProfile.name());
         BenchmarkProfile previousActiveProfile = activeProfile;
         try {
@@ -329,11 +335,11 @@ public class App {
         value = p.getProperty("ioEngine", ioEngine.name());
         try {
             ioEngine = IoEngine.valueOf(value.toUpperCase());
-        } catch (IllegalArgumentException ex) {
+        } catch (IllegalArgumentException e) {
             Logger.getLogger(App.class.getName()).log(
                     Level.WARNING,
                     "Invalid ioEngine value in properties: " + value + ", using default: " + ioEngine.name(),
-                    ex
+                    e
             );
         }
         
@@ -362,6 +368,8 @@ public class App {
         if (p == null) { p = new Properties(); }
         
         // configure properties
+        p.setProperty("sharePortal", String.valueOf(sharePortal));
+        p.setProperty("uploadUrl", Portal.uploadUrl);
         p.setProperty("activeProfile", activeProfile.name());
         p.setProperty("benchmarkType", benchmarkType.name());
         p.setProperty("multiFile", String.valueOf(multiFile));
@@ -379,7 +387,7 @@ public class App {
         p.setProperty("directEnable", String.valueOf(directEnable));
         p.setProperty("sectorAlignment", sectorAlignment.name());
         p.setProperty("palette", Gui.palette.name());
-
+        
         // write properties file
         try {
             OutputStream out = new FileOutputStream(PROPERTIES_FILE);
@@ -457,21 +465,23 @@ public class App {
         loadBenchmarks();
     }
     
+    public static void err(String message) {
+        switch(mode) {
+            case GUI -> { 
+                System.err.println(message);
+                Gui.mainFrame.msg(message);
+            }
+            case CLI -> System.err.println(message);
+        }
+    }
+    
     public static void msg(String message) {
         switch(mode) {
             case GUI -> Gui.mainFrame.msg(message);
             case CLI -> System.out.println(message);
         }
     }
-    public static void err(String message) {
-        switch(mode) {
-            case GUI -> {
-                Gui.mainFrame.msg(message);
-                System.err.println(message);
-            }
-            case CLI -> System.err.println(message);
-        }
-    }
+
     public static void cancelBenchmark() {
         if (worker == null) { 
             msg("worker is null abort..."); 

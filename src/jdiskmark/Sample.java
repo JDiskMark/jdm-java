@@ -32,6 +32,7 @@ public class Sample {
     static final DecimalFormat DF = new DecimalFormat("###.###");
     public enum Type { READ, WRITE; }
     
+    @JsonIgnore
     Type type;
     int sampleNum = 0;     // x-axis
     double bwMbSec = 0;    // y-axis

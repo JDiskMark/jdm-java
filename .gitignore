@@ -5,6 +5,7 @@
 /tmp
 /derbyDB/
 
+debug-benchmark.json
 *.zip
 *.patch
 .VSCodeCounter*

@@ -321,6 +321,10 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                 App.operations.put(o.getStartTimeString(), o);
             }
         }
+        // #67 upload to community portal (in progress)
+        if (App.sharePortal) {
+            Portal.upload(benchmark);
+        }
         if (App.exportPath != null) {
             JsonExporter.writeBenchmarkToJson(benchmark, App.exportPath.getAbsolutePath());
         }
