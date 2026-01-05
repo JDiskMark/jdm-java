@@ -1,0 +1,60 @@
+package jdiskmark;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+
+/**
+ * Password check for test portal uploads
+ * Returns true if the password is correct, false otherwise.
+ */
+public class PortalEnableDialog extends JDialog {
+    private final JPasswordField passwordField;
+    private boolean authenticated = false;
+    private final String REQUIRED_PASSWORD = "goHampsters!";
+
+    public PortalEnableDialog(Frame parent) {
+        super(parent, "Security Check", true); // true makes it modal
+
+        // UI Setup
+        setLayout(new BorderLayout(10, 10));
+        JPanel panel = new JPanel(new GridLayout(2, 1, 5, 5));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        panel.add(new JLabel("Enter Password:"));
+        passwordField = new JPasswordField(15);
+        panel.add(passwordField);
+
+        JButton submitButton = new JButton("Enable");
+        
+        // Listener for the submit button
+        submitButton.addActionListener((ActionEvent e) -> {
+            checkPassword();
+        });
+
+        add(panel, BorderLayout.CENTER);
+        add(submitButton, BorderLayout.SOUTH);
+
+        pack();
+        setLocationRelativeTo(parent);
+    }
+
+    private void checkPassword() {
+        String input = new String(passwordField.getPassword());
+        if (input.equals(REQUIRED_PASSWORD)) {
+            authenticated = true;
+            dispose(); // Close dialog on success
+        } else {
+            JOptionPane.showMessageDialog(this, 
+                "Incorrect password. Operation will terminate.", 
+                "Upload enable failed", 
+                JOptionPane.ERROR_MESSAGE);
+            authenticated = false;
+            dispose(); // Close dialog to trigger termination
+        }
+    }
+
+    public boolean isAuthorized() {
+        return authenticated;
+    }
+}

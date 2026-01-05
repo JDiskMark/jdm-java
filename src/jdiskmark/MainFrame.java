@@ -303,7 +303,6 @@ public final class MainFrame extends javax.swing.JFrame {
         resetSequenceMenuItem = new javax.swing.JMenuItem();
         resetBenchmarkItem = new javax.swing.JMenuItem();
         optionMenu = new javax.swing.JMenu();
-        portalUploadMenuItem = new javax.swing.JCheckBoxMenuItem();
         ioEngineMenu = new javax.swing.JMenu();
         engModernRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         engLegacyRbMenuItem = new javax.swing.JRadioButtonMenuItem();
@@ -329,6 +328,7 @@ public final class MainFrame extends javax.swing.JFrame {
         bardCoolPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
         bardWarmPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
         helpMenu = new javax.swing.JMenu();
+        portalUploadMenuItem = new javax.swing.JCheckBoxMenuItem();
         jMenuItem2 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -633,7 +633,7 @@ public final class MainFrame extends javax.swing.JFrame {
                                             .addComponent(typeCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
                                 .addGap(0, 0, Short.MAX_VALUE)))
                         .addGap(2, 2, 2)))
-                .addContainerGap(27, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         controlsPanelLayout.setVerticalGroup(
             controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -810,14 +810,6 @@ public final class MainFrame extends javax.swing.JFrame {
 
         optionMenu.setText("Options");
 
-        portalUploadMenuItem.setSelected(true);
-        portalUploadMenuItem.setText("Dev Portal Upload");
-        portalUploadMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                portalUploadMenuItemActionPerformed(evt);
-            }
-        });
-        optionMenu.add(portalUploadMenuItem);
         ioEngineMenu.setText("IO Engine");
 
         ioEnginebuttonGroup.add(engModernRbMenuItem);
@@ -999,6 +991,15 @@ public final class MainFrame extends javax.swing.JFrame {
         menuBar.add(optionMenu);
 
         helpMenu.setText("Help");
+
+        portalUploadMenuItem.setSelected(true);
+        portalUploadMenuItem.setText("Portal Upload");
+        portalUploadMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                portalUploadMenuItemActionPerformed(evt);
+            }
+        });
+        helpMenu.add(portalUploadMenuItem);
 
         jMenuItem2.setText("About...");
         jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
@@ -1243,9 +1244,22 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_profileComboActionPerformed
 
     private void portalUploadMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_portalUploadMenuItemActionPerformed
+        if (portalUploadMenuItem.getState() == true) {
+            PortalEnableDialog dialog = new PortalEnableDialog(this);
+            dialog.setVisible(true); // Execution pauses here because it's modal
+            if (!dialog.isAuthorized()) {
+                msg("test passcode requried to upload benchmarks");
+                portalUploadMenuItem.setSelected(false);
+                return;
+            }
+        }
         App.sharePortal = portalUploadMenuItem.getState();
-        App.msg("sharePortal=" + App.sharePortal);
         App.saveConfig();
+        if (App.sharePortal) {
+            App.msg("portal upload enabled");
+        } else {
+            App.msg("portal upload disabled");
+        }
     }//GEN-LAST:event_portalUploadMenuItemActionPerformed
     private void directIoCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_directIoCbMenuItemActionPerformed
         App.directEnable = directIoCbMenuItem.isSelected();
