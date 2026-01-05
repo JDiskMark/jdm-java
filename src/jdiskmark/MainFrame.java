@@ -1297,7 +1297,7 @@ public final class MainFrame extends javax.swing.JFrame {
             PortalEnableDialog dialog = new PortalEnableDialog(this);
             dialog.setVisible(true); // Execution pauses here because it's modal
             if (!dialog.isAuthorized()) {
-                msg("test passcode requried to upload benchmarks");
+                msg("test passcode required to upload benchmarks");
                 portalUploadMenuItem.setSelected(false);
                 return;
             }
