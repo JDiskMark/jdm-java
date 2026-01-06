@@ -72,7 +72,7 @@ public final class MainFrame extends javax.swing.JFrame {
         }
 
         if (App.motherBoardName != null && !App.motherBoardName.isEmpty()) {
-            titleSb.append(" | ").append(App.motherBoardName);
+            titleSb.append(" - ").append(App.motherBoardName);
         }
         
         // permission indicator

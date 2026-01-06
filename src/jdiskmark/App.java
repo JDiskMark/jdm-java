@@ -674,9 +674,9 @@ public class App {
         if (locationDir == null) {
             return LOCATION_NOT_SELECTED_ERROR;
         }
-        String interFaceType=Util.getInterfaceType();
         String driveModel = Util.getDriveModel(locationDir);
         String partitionId = Util.getPartitionId(locationDir.toPath());
+        String interFaceType=Util.getInterfaceType(partitionId);
         DiskUsageInfo usageInfo;
         try {
             usageInfo = Util.getDiskUsage(locationDir.toString());
@@ -684,7 +684,7 @@ public class App {
             usageInfo = new DiskUsageInfo();
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return interFaceType + " - " + driveModel + " - " + partitionId + ": " + usageInfo.getUsageTitleDisplay();
+        return  driveModel + " - " + interFaceType + " - " + partitionId + ": " + usageInfo.getUsageTitleDisplay();
     }
     
     static public String getDriveModel() {
