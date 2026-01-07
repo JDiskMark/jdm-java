@@ -8,65 +8,87 @@ import jdiskmark.Benchmark.BlockSequence;
  * A named, pre-defined set of configuration parameters for a benchmark run.
  * Corresponds to a "Profile" in the GUI/CLI.
  */
-public class BenchmarkProfile {
+public enum BenchmarkProfile {
     
-    // basic settings
-    private String name;
-    private BenchmarkType benchmarkType;
-    private BlockSequence blockSequence;
-    private int numThreads;       // The -T argument
-    private int numSamples;       // The -n argument
-    private int numBlocks = 1;    // The number of blocks per sample
-    private int blockSizeKb;      // The size of a block in KB
+    // --- 1. Quick Functional Test (Fastest check) ---
+    QUICK_TEST(
+            "Quick Test", 
+            BenchmarkType.READ_WRITE, 
+            BlockSequence.SEQUENTIAL,
+            1,  // threads
+            50, // samples
+            25, // blocks
+            64  // block size
+    ),
     
-    // advanced settings
-    private boolean multiFile = true;      // Whether to use a single test file or multiple
-    private boolean writeSyncEnable = false; // Whether to use synchronous write mode ("rwd")    
-    
-    // --- Static Predefined Profiles ---
-    
-    // --- 1. Max Sequential Speed (Peak Throughput) ---
-    public static final BenchmarkProfile MAX_SEQUENTIAL_SPEED = new BenchmarkProfile(
-        "Max Sequential", BenchmarkType.READ_WRITE, 
-        BlockSequence.SEQUENTIAL, 1, 100, 200, 1024
-    );
+    // --- 2. Max Sequential Speed (Peak Throughput) ---
+    MAX_SEQUENTIAL_SPEED(
+            "Max Sequential Speed", 
+            BenchmarkType.READ_WRITE, 
+            BlockSequence.SEQUENTIAL, 
+            1,   // threads
+            100, // samples
+            200, // blocks
+            1024 // blk size kb
+    ),
 
-    // --- 2. High-Load Random (Q32T1 Proxy / Max IOPS) ---
-    public static final BenchmarkProfile HIGH_LOAD_RANDOM_Q32T1 = new BenchmarkProfile(
-        "Random 4K (Q32T1)", BenchmarkType.READ_WRITE, 
-        BlockSequence.RANDOM, 32, 200, 100, 4
-    );
+    // --- 3. High-Load Random (T32 Proxy / Max IOPS) ---
+    HIGH_LOAD_RANDOM_T32(
+            "Random 4K (T32)", 
+            BenchmarkType.READ_WRITE, 
+            BlockSequence.RANDOM, 
+            32,  // threads 
+            200, // samples
+            100, // blocks
+            4    // blk size kb
+    ),
 
-    // --- 3. Low-Load Random (Q1T1 / System Responsiveness) ---
-    public static final BenchmarkProfile LOW_LOAD_RANDOM_Q1T1 = new BenchmarkProfile(
-        "Random 4K (Q1T1)", BenchmarkType.READ_WRITE, 
-        BlockSequence.RANDOM, 1, 150, 50, 4
-    );
+    // --- 4. Low-Load Random (T1 / System Responsiveness) ---
+    LOW_LOAD_RANDOM_T1(
+            "Random 4K (T1)", 
+            BenchmarkType.READ_WRITE, 
+            BlockSequence.RANDOM, 
+            1,   // thread
+            150, // samples
+            50,  // blocks
+            4    // blk size kb
+    ),
 
-    // --- 4. Max Write Stress (Endurance/Sustained Write Test) ---
-    public static final BenchmarkProfile MAX_WRITE_STRESS = new BenchmarkProfile(
-        "Max Write Stress", BenchmarkType.WRITE, 
-        BlockSequence.SEQUENTIAL, 4, 250, 500, 512
-    );
+    // --- 5. Max Write Stress (Endurance/Sustained Write Test) ---
+    MAX_WRITE_STRESS(
+            "Max Write Stress (T4)", 
+            BenchmarkType.WRITE, 
+            BlockSequence.SEQUENTIAL, 
+            4,   // thread 
+            250, // samples
+            500, // blocks
+            512  // blk size kb
+    ),
 
-    // --- 5. Quick Functional Test (Fastest check) ---
-    public static final BenchmarkProfile QUICK_TEST = new BenchmarkProfile(
-        "Quick Test", BenchmarkType.READ_WRITE, 
-        BlockSequence.SEQUENTIAL, 1, 50, 25, 64
-    );
-    
-    // --- 6. Custom ---
-    public static final BenchmarkProfile CUSTOM_TEST = new BenchmarkProfile(
+    // --- 6. Custom (option indicator, not actual profile) ---
+    CUSTOM_TEST(
         "Custom Test", BenchmarkType.READ_WRITE, 
         BlockSequence.SEQUENTIAL, 1, 1, 1, 1
     );
     
+    // basic settings
+    final private String name;
+    final private BenchmarkType benchmarkType;
+    final private BlockSequence blockSequence;
+    final private int numThreads;       // The -T argument
+    final private int numSamples;       // The -n argument
+    final private int numBlocks;        // The number of blocks per sample
+    final private int blockSizeKb;      // The size of a block in KB
+    
+    // advanced settings
+    final private boolean multiFile = true;        // Whether to use a single test file or multiple
+    final private boolean writeSyncEnable = false; // Whether to use synchronous write mode ("rwd")    
+    
     // --- Constructor ---
     
-    public BenchmarkProfile(String name, BenchmarkType benchmarkType,
-        BlockSequence blockSequence, int numberThreads, int numSamples,
-        int numBlocks, int blockSizeKB) {
-        
+    BenchmarkProfile(String name, BenchmarkType benchmarkType,
+            BlockSequence blockSequence, int numberThreads, int numSamples,
+            int numBlocks, int blockSizeKB) {
         this.name = name;
         this.benchmarkType = benchmarkType;
         this.blockSequence = blockSequence;
@@ -82,11 +104,10 @@ public class BenchmarkProfile {
     // --- Getters ---
 
     public static BenchmarkProfile[] getDefaults() {
-        return List.of(
-            QUICK_TEST,
+        return List.of(QUICK_TEST,
             MAX_SEQUENTIAL_SPEED,
-            HIGH_LOAD_RANDOM_Q32T1,
-            LOW_LOAD_RANDOM_Q1T1,
+            HIGH_LOAD_RANDOM_T32,
+            LOW_LOAD_RANDOM_T1,
             MAX_WRITE_STRESS,
             CUSTOM_TEST
         ).toArray(BenchmarkProfile[]::new);
@@ -101,69 +122,4 @@ public class BenchmarkProfile {
     public int getBlockSizeKb() { return blockSizeKb; }
     public boolean isMultiFile() { return multiFile; }
     public boolean isWriteSyncEnable() { return writeSyncEnable; }
-    
-    // --- Setters ---
-    
-    public void setName(String name) {
-        if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Profile name cannot be empty.");
-        }
-        this.name = name;
-    }
-
-    public void setBenchmarkType(BenchmarkType benchmarkType) {
-        if (benchmarkType == null) {
-            throw new IllegalArgumentException("BenchmarkType cannot be null.");
-        }
-        this.benchmarkType = benchmarkType;
-    }
-
-    public void setBlockSequence(BlockSequence blockSequence) {
-        if (blockSequence == null) {
-            throw new IllegalArgumentException("BlockSequence cannot be null.");
-        }
-        this.blockSequence = blockSequence;
-    }
-
-    public void setNumThreads(int numThreads) {
-        // Threads must be at least 1
-        if (numThreads < 1) {
-            throw new IllegalArgumentException("Number of threads must be 1 or greater.");
-        }
-        this.numThreads = numThreads;
-    }
-
-    public void setNumSamples(int numSamples) {
-        // Samples must be at least 1 to generate data points
-        if (numSamples < 1) {
-            throw new IllegalArgumentException("Number of samples must be 1 or greater.");
-        }
-        this.numSamples = numSamples;
-    }
-
-    public void setNumBlocks(int numBlocks) {
-        // Blocks per sample must be at least 1
-        if (numBlocks < 1) {
-            throw new IllegalArgumentException("Number of blocks per sample must be 1 or greater.");
-        }
-        this.numBlocks = numBlocks;
-    }
-
-    public void setBlockSizeKb(int blockSizeKb) {
-        // Block size should be a positive, reasonable value (e.g., at least 1KB)
-        if (blockSizeKb < 1) {
-            throw new IllegalArgumentException("Block size in KB must be 1 or greater.");
-        }
-        this.blockSizeKb = blockSizeKb;
-    }
-
-    // --- Advanced Settings Setters ---
-
-    public void setMultiFile(boolean multiFile) {
-        this.multiFile = multiFile;
-    }
-
-    public void setWriteSyncEnable(boolean writeSyncEnable) {
-        this.writeSyncEnable = writeSyncEnable;
-    }
 }

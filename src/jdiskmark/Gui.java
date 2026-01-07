@@ -402,7 +402,7 @@ public final class Gui {
     
     static public void loadOperation(BenchmarkOperation operation) {        
         Benchmark benchmark = operation.getBenchmark();
-        System.out.println("benchmark type: " + benchmark.benchmarkType + " o: " + operation.ioMode);
+        System.out.println("loading benchmark w type: " + benchmark.benchmarkType + " o: " + operation.ioMode);
         resetBenchmarkData();
         updateLegendAndAxis(operation);
         chart.getTitle().setText(benchmark.getDriveInfo());
@@ -420,7 +420,7 @@ public final class Gui {
         App.blockSizeKb = operation.blockSize;
         App.blockSequence = operation.blockOrder;
         App.numOfThreads = operation.numThreads;
-        mainFrame.loadSettings();
+        mainFrame.loadBenchmarkConfig();
         switch (operation.ioMode) {
             case IOMode.READ -> {
                 App.rAvg = operation.bwAvg;

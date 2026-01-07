@@ -32,7 +32,7 @@ import jdiskmark.Benchmark.IOMode;
 @Table(name="BenchmarkOperation")
 @NamedQueries({
 @NamedQuery(name="BenchmarkOperation.findAll",
-    query="SELECT d FROM BenchmarkOperation d")
+    query="SELECT o FROM BenchmarkOperation o")
 })
 public class BenchmarkOperation implements Serializable {
     
@@ -55,16 +55,22 @@ public class BenchmarkOperation implements Serializable {
     // benchmark parameters
     @Column
     IOMode ioMode;
+    public IOMode getIoMode() { return ioMode; }
     @Column
     BlockSequence blockOrder;
+    public BlockSequence getBlockOrder() { return blockOrder; }
     @Column
     int numBlocks = 0;
+    public int getNumBlocks() { return numBlocks; }
     @Column
     int blockSize = 0;
+    public int getBlockSize() { return blockSize; }
     @Column
     int numSamples = 0;
+    public int getNumSamples() { return numSamples; }
     @Column
     long txSize = 0;
+    public long getTxSize() { return txSize; }
     @Column
     int numThreads = 1;
     // NEW: whether write-sync was enabled for this run (only meaningful for WRITE; may be null for READ)

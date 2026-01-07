@@ -126,7 +126,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
     public void addRun(Benchmark run) {
         
         List<BenchmarkOperation> operations = run.getOperations();
-        DefaultTableModel model = (DefaultTableModel) this.runTable.getModel();
+        DefaultTableModel model = (DefaultTableModel) runTable.getModel();
         for (BenchmarkOperation o : operations) {
             model.addRow(
                     new Object[] {

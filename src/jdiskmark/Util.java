@@ -259,7 +259,7 @@ public class Util {
         StringBuilder sb = new StringBuilder();
         String vendor = System.getProperty("java.runtime.name");
         String version = System.getProperty("java.version");
-        sb.append(vendor + " " + version);
+        sb.append(vendor).append(" ").append(version);
         return sb.toString();
     }
     
