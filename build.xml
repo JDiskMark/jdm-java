@@ -286,15 +286,15 @@
             <arg value="JDiskMark"/>
         </exec>
 
-        <property name="jpackage.output.dmg.defaultname" value="${app.name}-${version}-${dmg.version}.pkg"/>
-        <property name="jpackage.output.dmg.targetname" value="${pkg.name}-${version}.pkg"/>
+        <property name="jpackage.output.pkg.defaultname" value="${app.name}-${version}-${dmg.version}.pkg"/>
+        <property name="jpackage.output.pkg.targetname" value="${pkg.name}-${version}.pkg"/>
         
-        <echo message="Renaming PKG from '${jpackage.output.dmg.defaultname}' to '${jpackage.output.dmg.targetname}' in ${dist.dir}"/>
-        <move file="${dist.dir}/${jpackage.output.dmg.defaultname}"
-              tofile="${dist.dir}/${jpackage.output.dmg.targetname}"
+        <echo message="Renaming PKG from '${jpackage.output.pkg.defaultname}' to '${jpackage.output.pkg.targetname}' in ${dist.dir}"/>
+        <move file="${dist.dir}/${jpackage.output.pkg.defaultname}"
+              tofile="${dist.dir}/${jpackage.output.pkg.targetname}"
               overwrite="true"/>
 
-        <echo message="PKG installer created: ${dist.dir}/${jpackage.output.dmg.targetname}"/>
+        <echo message="PKG installer created: ${dist.dir}/${jpackage.output.pkg.targetname}"/>
         
         <unzip src="libs/flatlaf-3.3.jar" dest="${temp.extract.dir}">
             <patternset>
