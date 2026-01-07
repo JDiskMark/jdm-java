@@ -302,22 +302,23 @@
         </unzip>
         <echo message="Signing extracted dylibs..."/>
 
-        <exec executable="codesign" failonerror="true">
-            <arg value="--force"/>
-            <arg value="--options"/><arg value="runtime"/>
-            <arg value="--timestamp"/>
-            <arg value="--sign"/><arg value="${signing.identity}"/>
-            <arg value="${temp.extract.dir}/com/formdev/flatlaf/natives/libflatlaf-macos-x86_64.dylib"/>
-        </exec>
+<exec executable="codesign" failonerror="true">
+    <arg value="--force"/>
+    <arg value="--options"/><arg value="runtime"/>
+    <arg value="--entitlements"/><arg value="entitlements.plist"/>
+    <arg value="--timestamp"/>
+    <arg value="--sign"/> <arg value="${signing.identity}"/>
+    <arg value="${temp.extract.dir}/com/formdev/flatlaf/natives/libflatlaf-macos-x86_64.dylib"/>
+</exec>
 
-        <exec executable="codesign" failonerror="true">
-            <arg value="--force"/>
-            <arg value="--options"/><arg value="runtime"/>
-            <arg value="--timestamp"/>
-            <arg value="--sign"/><arg value="${signing.identity}"/>
-            <arg value="${temp.extract.dir}/com/formdev/flatlaf/natives/libflatlaf-macos-arm64.dylib"/>
-        </exec>
-        
+<exec executable="codesign" failonerror="true">
+    <arg value="--force"/>
+    <arg value="--options"/><arg value="runtime"/>
+    <arg value="--entitlements"/><arg value="entitlements.plist"/>
+    <arg value="--timestamp"/>
+    <arg value="--sign"/> <arg value="${signing.identity}"/>
+    <arg value="${temp.extract.dir}/com/formdev/flatlaf/natives/libflatlaf-macos-arm64.dylib"/>
+</exec>
         <echo message="Repacking signed dylibs into JAR..."/>
 
         <jar destfile="${flatlaf.jar}" update="yes">
