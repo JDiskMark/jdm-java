@@ -295,14 +295,6 @@
               overwrite="true"/>
 
         <echo message="PKG installer created: ${dist.dir}/${jpackage.output.dmg.targetname}"/>
-
-<!--        <exec executable="jar" failonerror="true">
-            <arg line="xf libs/flatlaf-3.3.jar ${temp.extract.dir}/com/formdev/flatlaf/natives/libflatlaf-macos-x86_64.dylib"/>
-        </exec>
-        <exec executable="jar" failonerror="true">
-            <arg line="xf libs/flatlaf-3.3.jar ${temp.extract.dir}/com/formdev/flatlaf/natives/libflatlaf-macos-arm64.dylib"/>
-        </exec>
-        -->
         
         <unzip src="libs/flatlaf-3.3.jar" dest="${temp.extract.dir}">
             <patternset>
@@ -338,7 +330,32 @@
         <echo message="FlatLaf JAR successfully updated and signed."/>
         
     </target>
+    <target name="notarize-pkg" description="Submit the package for Apple notarization">
+        <!-- Populate the private.properties file with apple credentials -->
+        <property file="private.properties" /> 
 
+        <echo message="Submitting ${dist.dir}/jdiskmark-${version}.pkg for notarization..."/>
+
+        <exec executable="xcrun" failonerror="true">
+            <arg value="notarytool"/>
+            <arg value="submit"/>
+            <arg value="${dist.dir}/jdiskmark-${version}.pkg"/>
+
+            <arg value="--apple-id"/>
+            <arg value="${apple.id}"/>
+
+            <arg value="--password"/>
+            <arg value="${apple.password}"/>
+
+            <arg value="--team-id"/>
+            <arg value="${apple.team.id}"/>
+
+            <arg value="--wait"/>
+        </exec>
+    </target>
+    <target name="notarize-test">
+        <echo message="ID: ${apple.id} Password: ${apple.password} team id: ${apple.team.id}"/>
+    </target>
     <target name="sign-msi" depends="create-msi" description="Signs the MSI installer using signtool.exe (manual invocation)">
         <echo message="Signing MSI installer..."/>
         <condition property="signtool.is.available">

@@ -13,6 +13,7 @@ developer_log.json
 .VSCodeCounter*
 build.properties
 hs_err_pid*.log
+private.properties
 
 # deb packaging
 jdiskmark-deb
