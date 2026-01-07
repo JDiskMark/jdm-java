@@ -252,7 +252,7 @@
     
 
     <target name="create-pkg" depends="clean, -pre-jar, jar, -post-jar, -prepare-jpackage-input-jar" description="Creates the PKG installer using jpackage">
-        <property name="flatlaf.jar" value="lib/flatlaf-3.3.jar"/>
+        <property name="flatlaf.jar" value="libs/flatlaf-3.3.jar"/>
         <property name="temp.extract.dir" value="build.sign"/>
         <property name="signing.identity" value="Developer ID Application: Tyler Lui (232JY57U23)"/>
         <delete dir="${temp.extract.dir}"/>
