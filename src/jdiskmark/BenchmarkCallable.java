@@ -107,17 +107,17 @@ public class BenchmarkCallable implements Callable<Benchmark> {
         // configure the benchmark
         benchmark = new Benchmark(App.benchmarkType);
         // system info
-        benchmark.processorName = App.processorName;
-        benchmark.os = App.os;
-        benchmark.arch = App.arch;
-        benchmark.jdk = App.jdk;
-        benchmark.locationDir = App.locationDir.toString();
+        benchmark.systemInfo.processorName = App.processorName;
+        benchmark.systemInfo.os = App.os;
+        benchmark.systemInfo.arch = App.arch;
+        benchmark.systemInfo.jdk = App.jdk;
+        benchmark.systemInfo.locationDir = App.locationDir.toString();
         // drive information
-        benchmark.driveModel = driveModel;
-        benchmark.partitionId = partitionId;
-        benchmark.percentUsed = usageInfo.percentUsed;
-        benchmark.usedGb = usageInfo.usedGb;
-        benchmark.totalGb = usageInfo.totalGb;
+        benchmark.driveInfo.driveModel = driveModel;
+        benchmark.driveInfo.partitionId = partitionId;
+        benchmark.driveInfo.percentUsed = usageInfo.percentUsed;
+        benchmark.driveInfo.usedGb = usageInfo.usedGb;
+        benchmark.driveInfo.totalGb = usageInfo.totalGb;
         
         if (App.isWriteEnabled()) {
             BenchmarkOperation wOperation = new BenchmarkOperation();

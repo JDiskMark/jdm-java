@@ -402,10 +402,10 @@ public final class Gui {
     
     static public void loadOperation(BenchmarkOperation operation) {        
         Benchmark benchmark = operation.getBenchmark();
-        System.out.println("loading benchmark w type: " + benchmark.benchmarkType + " o: " + operation.ioMode);
+        System.out.println("loading benchmark w type: " + benchmark.config.benchmarkType + " o: " + operation.ioMode);
         resetBenchmarkData();
         updateLegendAndAxis(operation);
-        chart.getTitle().setText(benchmark.getDriveInfo());
+        chart.getTitle().setText(benchmark.getDriveInfoDisplay());
         ArrayList<Sample> samples = operation.getSamples();
         System.out.println("samples=" + samples.size());
         for (Sample s : samples) {
@@ -414,7 +414,7 @@ public final class Gui {
                 case IOMode.WRITE -> addWriteSample(s);
             }
         }
-        App.benchmarkType = benchmark.benchmarkType;
+        App.benchmarkType = benchmark.config.benchmarkType;
         App.numOfBlocks = operation.numBlocks;
         App.numOfSamples = operation.numSamples;
         App.blockSizeKb = operation.blockSize;

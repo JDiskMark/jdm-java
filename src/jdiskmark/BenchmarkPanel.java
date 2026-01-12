@@ -131,7 +131,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
             model.addRow(
                     new Object[] {
                         run.getId(),
-                        run.getDriveModel(),
+                        run.getDriveInfo().getDriveModel(),
                         run.getUsageColumnDisplay(),
                         o.getModeDisplay(),
                         o.blockOrder,

@@ -202,8 +202,8 @@ public class Sample {
                 App.err("Failed to open FileChannel, aborting measurement");
                 return;
             }
-        } catch (IOException ex) {
-            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException e) {
+            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
         }
         
         try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
@@ -218,8 +218,8 @@ public class Sample {
                 totalBytesWritten += written;
                 worker.updateWriteProgress();
             }
-        } catch (IOException ex) {
-            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException e) {
+            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
         }
         long elapsedTimeNs = System.nanoTime() - startTime;
         accessTimeMs = (elapsedTimeNs / 1_000_000f) / (float) numOfBlocks;
