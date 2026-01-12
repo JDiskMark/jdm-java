@@ -1,4 +1,4 @@
-# JDiskMark v0.6.3 beta (Windows/Mac/Linux)
+# JDiskMark v0.6.4 beta (Windows/Mac/Linux)
 
 Java Disk Benchmark Utility
 
@@ -14,7 +14,7 @@ Java Disk Benchmark Utility
 - multi threaded benchmarks
 - Default profiles
 - Command line interface
-- available in msi, deb, rpm and zip releses
+- available in msi, deb, rpm and zip releases
 
 ## Releases
 
@@ -43,23 +43,23 @@ Note: the `rpm.version` is similar to the `version` but replaces hyphens with pe
 ### Zip Archive (.zip)
 
 The zip distribution does not require admin for installing but does require 
-Java 21 to be installed seperately.
+Java 25 to be installed seperately.
 
-1. Download and install [java 21](https://www.oracle.com/java/technologies/downloads/) from Oracle.
+1. Download and install [java 25](https://www.oracle.com/java/technologies/downloads/) from Oracle.
 
-2. Verify java 21 is installed:
+2. Verify java 25 is installed:
    ```
    C:\Users\username>java --version
-   java 21.0.1 2023-10-17 LTS
-   Java(TM) SE Runtime Environment (build 21.0.1+12-LTS-29)
-   Java HotSpot(TM) 64-Bit Server VM (build 21.0.1+12-LTS-29, mixed mode, sharing)
+   java 25.0.1 2025-10-21 LTS
+   Java(TM) SE Runtime Environment (build 25.0.1+8-LTS-27)
+   Java HotSpot(TM) 64-Bit Server VM (build 25.0.1+8-LTS-27, mixed mode, sharing)
    ```
 
 3. Extract release zip archive into desired location.
    ```
    Examples:  
-   /Users/username/jdiskmark-v0.6.0
-   /opt/jdiskmark-v0.6.0
+   /Users/username/jdiskmark-v0.6.3
+   /opt/jdiskmark-v0.6.3
    ```
 
 ## Launching as normal process
@@ -172,7 +172,7 @@ IOPS: 28892857
 
 ## Development Environment
 
-jdiskmark client is developed with [NetBeans 21](https://netbeans.apache.org/front/main/download/) and [Java 21](https://www.oracle.com/java/technologies/downloads/)
+jdiskmark client is developed with [NetBeans 25](https://netbeans.apache.org/front/main/download/) and [Java 25](https://www.oracle.com/java/technologies/downloads/)
 
 ## Source
 
