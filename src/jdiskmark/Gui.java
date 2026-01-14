@@ -10,12 +10,14 @@ import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import org.jfree.chart.ChartMouseEvent;
 import org.jfree.chart.ChartMouseListener;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import static jdiskmark.App.getConfigString;
 import jdiskmark.Benchmark.IOMode;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -38,6 +40,7 @@ public final class Gui {
     
     public static ChartPanel chartPanel = null;
     public static MainFrame mainFrame = null;
+    public static BenchmarkControlPanel controlPanel = null;
     public static SelectDriveFrame selFrame = null;
     public static XYSeries wSeries, wAvgSeries, wMaxSeries, wMinSeries, wDrvAccess;
     public static XYSeries rSeries, rAvgSeries, rMaxSeries, rMinSeries, rDrvAccess;
@@ -59,20 +62,8 @@ public final class Gui {
                 // Or: UIManager.setLookAndFeel(new FlatDarkLaf()); // Dark theme
             } else if (App.os.contains("Mac OS")) {
                 UIManager.setLookAndFeel("apple.laf.AquaLookAndFeel");
-//                for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-//                    if ("Nimbus".equals(info.getName())) {
-//                        UIManager.setLookAndFeel(info.getClassName());
-//                        break;
-//                    }
-//                }
             } else if (App.os.contains("Linux")) {
                 UIManager.setLookAndFeel(new FlatLightLaf()); // Light theme
-//                for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-//                    if ("Nimbus".equals(info.getName())) {
-//                        UIManager.setLookAndFeel(info.getClassName());
-//                        break;
-//                    }
-//                }
             }
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
@@ -86,6 +77,16 @@ public final class Gui {
             }
             //</editor-fold>
         }
+    }
+    
+    public static void init() {
+        configureLaf();
+        mainFrame = new MainFrame();
+        runPanel.hideFirstColumn();
+        selFrame = new SelectDriveFrame();
+        mainFrame.loadPropertiesConfig();
+        mainFrame.setLocationRelativeTo(null);
+        progressBar = mainFrame.getProgressBar();
     }
     
     public static ChartPanel createChartPanel() {
@@ -212,6 +213,11 @@ public final class Gui {
         });
         updateLegendAndAxis();
         return chartPanel;
+    }
+    
+    public static BenchmarkControlPanel createControlPanel() {
+        controlPanel = new BenchmarkControlPanel();
+        return controlPanel;
     }
     
     public static void addWriteSample(Sample s) {

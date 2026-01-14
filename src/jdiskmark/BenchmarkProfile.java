@@ -18,7 +18,7 @@ public enum BenchmarkProfile {
             1,  // threads
             50, // samples
             25, // blocks
-            64  // block size
+            1024  // block size
     ),
     
     // --- 2. Max Sequential Speed (Peak Throughput) ---
