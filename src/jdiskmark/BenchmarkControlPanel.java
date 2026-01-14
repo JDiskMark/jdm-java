@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 
 public class BenchmarkControlPanel extends JPanel {
 
-    Font HEADER_FONT = new JLabel().getFont().deriveFont(Font.BOLD);
+    final Font HEADER_FONT = new JLabel().getFont().deriveFont(Font.BOLD);
     
     public JComboBox<BenchmarkProfile> profileCombo = new JComboBox<>(BenchmarkProfile.getDefaults());
     public JComboBox<Benchmark.BenchmarkType> typeCombo = new JComboBox<>(Benchmark.BenchmarkType.values());
