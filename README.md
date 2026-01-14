@@ -184,7 +184,7 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 - TODO: #16 pkg installer (MacOS) - tyler
 - TODO: #70 app icon - ian
 - TODO: #33 maven build - lane
-- TODO: #40 gui laf issues - james
+- #40 resolve cross platform gui laf
 - TODO: #78 throttle graphics render - val
 - TODO: #95 disk cache purging - val
 - TODO: #44 gui benchmark export
