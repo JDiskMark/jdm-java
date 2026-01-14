@@ -55,9 +55,9 @@
                 <Column editable="false" title="Thread" type="java.lang.Object"/>
                 <Column editable="false" title="Start Time" type="java.lang.Object"/>
                 <Column editable="false" title="Time (ms)" type="java.lang.Object"/>
-                <Column editable="false" title="Acc (ms)" type="java.lang.Object"/>
+                <Column editable="false" title="Lat (ms)" type="java.lang.Object"/>
                 <Column editable="false" title="Min/Max (MB/s)" type="java.lang.Object"/>
-                <Column editable="false" title="IO (MB/s)" type="java.lang.Object"/>
+                <Column editable="false" title="BW (MB/s)" type="java.lang.Object"/>
               </Table>
             </Property>
             <Property name="columnModel" type="javax.swing.table.TableColumnModel" editor="org.netbeans.modules.form.editors2.TableColumnModelEditor">

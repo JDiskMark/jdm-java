@@ -91,17 +91,17 @@ public final class Gui {
     
     public static ChartPanel createChartPanel() {
         
-        wSeries = new XYSeries("Write");
+        wSeries = new XYSeries("Write Sample");
         wAvgSeries = new XYSeries("Write Avg");
         wMaxSeries = new XYSeries("Write Max");
         wMinSeries = new XYSeries("Write Min");
-        wDrvAccess = new XYSeries("Write Access");
+        wDrvAccess = new XYSeries("Write Latency");
         
-        rSeries = new XYSeries("Read");
+        rSeries = new XYSeries("Read Sample");
         rAvgSeries = new XYSeries("Read Avg");
         rMaxSeries = new XYSeries("Read Max");
         rMinSeries = new XYSeries("Read Min");
-        rDrvAccess = new XYSeries("Read Access");
+        rDrvAccess = new XYSeries("Read Latency");
         
         // primary dataset mapped against the bw axis
         XYSeriesCollection bwDataset = new XYSeriesCollection();
@@ -149,7 +149,7 @@ public final class Gui {
         bwAxis.setAutoRangeIncludesZero(false);
         
         // y axis on the right
-        msAxis = new NumberAxis("Access Time (ms)");
+        msAxis = new NumberAxis("Latency (ms)");
         msAxis.setAutoRange(true);
         msAxis.setAutoRangeIncludesZero(false);
         

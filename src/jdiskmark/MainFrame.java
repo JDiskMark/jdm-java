@@ -612,7 +612,7 @@ public final class MainFrame extends javax.swing.JFrame {
         optionMenu.add(showMaxMinCheckBoxMenuItem);
 
         showAccessCheckBoxMenuItem.setSelected(true);
-        showAccessCheckBoxMenuItem.setText("Show Access Time");
+        showAccessCheckBoxMenuItem.setText("Show Latency");
         showAccessCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 showAccessCheckBoxMenuItemActionPerformed(evt);
