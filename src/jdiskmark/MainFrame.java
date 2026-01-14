@@ -363,7 +363,7 @@ public final class MainFrame extends javax.swing.JFrame {
                     .addComponent(dataDirLabel))
                 .addGap(18, 18, 18)
                 .addComponent(jLabel22)
-                .addContainerGap(48, Short.MAX_VALUE))
+                .addContainerGap(95, Short.MAX_VALUE))
         );
 
         tabbedPane.addTab("Drive Location", locationPanel);
@@ -379,7 +379,7 @@ public final class MainFrame extends javax.swing.JFrame {
         );
         cResultMountPanelLayout.setVerticalGroup(
             cResultMountPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 393, Short.MAX_VALUE)
+            .addGap(0, 346, Short.MAX_VALUE)
         );
 
         jLabel7.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
@@ -738,7 +738,7 @@ public final class MainFrame extends javax.swing.JFrame {
                     .addComponent(cResultMountPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(bControlMountPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(tabbedPane, javax.swing.GroupLayout.DEFAULT_SIZE, 146, Short.MAX_VALUE)
+                .addComponent(tabbedPane)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(progressPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
