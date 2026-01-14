@@ -40,12 +40,12 @@ public class BenchmarkControlPanel extends JPanel {
         // locks down the preferred size to it's initilized sized
         setPreferredSize(getPreferredSize());
         
+        // configure combo action listeners
+        
         profileCombo.addActionListener((ActionEvent evt) -> {
 
-            // inteferes with profile loading
-//            if (!typeCombo.hasFocus()) {
-//                return;
-//            }
+            // only run when interacted with
+            if (!profileCombo.hasFocus()) { return; }
             
             BenchmarkProfile profile = (BenchmarkProfile) profileCombo.getSelectedItem();
             App.activeProfile = profile;
@@ -65,6 +65,7 @@ public class BenchmarkControlPanel extends JPanel {
             App.writeSyncEnable = profile.isWriteSyncEnable();
             App.multiFile = profile.isMultiFile();
             
+            // only signal if initialized
             if (Gui.mainFrame != null) {
                 Gui.mainFrame.loadBenchmarkConfig();
             }
@@ -143,45 +144,31 @@ public class BenchmarkControlPanel extends JPanel {
         DefaultComboBoxModel<Benchmark.BenchmarkType> bTypeModel = new DefaultComboBoxModel<>(Benchmark.BenchmarkType.values());
         typeCombo.setModel(bTypeModel);
         
-        startButton.requestFocus();
-        
-        // Main Layout Change:
-        // We define 4 columns, each taking exactly 25% of the width.
-        // "wrap 4" means a new line starts after 4 "cells" are filled.
-        //setLayout(new MigLayout("fillx, wrap 4", "[25%][25%][25%][25%]", "[]10[]"));
-        setLayout(new MigLayout("fillx, wrap 3", "[30%][27%][43%]", "[]10[]"));
+        // 3 column layout framework
+        setLayout(new MigLayout("insets 0 5 0 5, fillx, wrap 3", "[30%][27%][43%]", "[]10[]"));
 
-        // --- Top Inputs Section (25% Label / 75% Input) ---
-        
         // Profile
-        add(new JLabel("Profile"), "align left"); // Takes 1 cell (25%)
-        add(profileCombo, "span 2, growx");        // Spans 3 cells (75%)
+        add(new JLabel("Profile"), "align left");
+        add(profileCombo, "span 2, growx");
 
         // Type
         add(new JLabel("Type"), "align left");
         add(typeCombo, "span 2, growx");
 
-        // --- Bottom Inputs Section (50% Label / 50% Input) ---
-        // Ideally, we add "wrap" to the inputs to force a new line, 
-        // though "wrap <num_col>" in the layout handles it if the math is perfect.
-        // Explicit "wrap" is safer.
+        // --- Bottom Inputs Section (roughly 2/3 - 1/3) ---
 
         // Number Threads
-        add(new JLabel("Number Threads"), "span 2, align left"); // Spans 2 cells (50%)
-        add(numThreadsCombo, "span 1, growx");                    // Spans 2 cells (50%)
-
+        add(new JLabel("Number Threads"), "span 2, align left");
+        add(numThreadsCombo, "span 1, growx");
         // Block Order
         add(new JLabel("Block Order"), "span 2, align left");
         add(orderCombo, "span 1, growx");
-
         // Blocks / Sample
         add(new JLabel("Blocks / Sample"), "span 2, align left");
         add(numBlocksCombo, "span 1, growx");
-
         // Block Size
         add(new JLabel("Block Size (KB)"), "span 2, align left");
         add(blockSizeCombo, "span 1, growx");
-
         // No. Samples
         add(new JLabel("Number Samples"), "span 2, align left");
         add(numSamplesCombo, "span 1, growx");
@@ -198,54 +185,30 @@ public class BenchmarkControlPanel extends JPanel {
         // "span": Spans all columns (100% width)
         add(startButton, "span, growx, gaptop 5, h 40!");
 
-        // --- Stats Section (4-Column Grid) ---
-        // This panel also spans all 4 columns of the parent
-        //JPanel statsPanel = new JPanel(new MigLayout("insets 0, fillx", "[][grow, width 0::][][grow, width 0::]", "[]5[]"));
-        //JPanel statsPanel = new JPanel(new MigLayout("insets 0, fillx", "[][60!][][60!]", "[]5[]"));
-//        JPanel statsPanel = new JPanel(new MigLayout("insets 0, fillx", "[][0:0, push, grow][][0:0, push, grow]", "[]5[]"));
-//        
-//        // Headers
-//        statsPanel.add(new JLabel("Write IO (MB/s)"), "span 2");
-//        statsPanel.add(new JLabel("Read IO (MB/s)"), "span 2, wrap");
-//        
-//        // Rows of stats
-//        addStatRow(statsPanel, "Min", wMinLabel, "Min", rMinLabel);
-//        addStatRow(statsPanel, "Max", wMaxLabel, "Max", rMaxLabel);
-//        addStatRow(statsPanel, "Avg", wAvgLabel, "Avg", rAvgLabel);
-//        addStatRow(statsPanel, "Acc (ms)", wAccessLabel, "Acc (ms)", rAccessLabel);
-//        addStatRow(statsPanel, "IOPS", wIopsLabel, "IOPS", rIopsLabel);
-//
-//        // Add the stats panel to the main panel
-//        add(statsPanel, "span, growx, gaptop 0");
-
         // --- Stats Section (3-Column Grid) ---
         // Column 1: Metric name (left aligned)
         // Column 2: Write results (grow, width 0:pref)
         // Column 3: Read results (grow, width 0:pref)
         JPanel statsPanel = new JPanel(new MigLayout("insets 5, fillx, gap 10", "[][0:pref, grow][0:pref, grow]", "[]5[]"));
         
-        // Header Row: Metric | Write | Read
+        // Header Row: blank | Write | Read
         statsPanel.add(new JLabel(""));
-        
         JLabel writeHeader = new JLabel("Write");
         JLabel readHeader = new JLabel("Read");
         writeHeader.setFont(HEADER_FONT);
         readHeader.setFont(HEADER_FONT);
-        
         statsPanel.add(writeHeader, "center");
         statsPanel.add(readHeader, "wrap, center");
-
         // Row 1: Throughput / BW
         addThreeColumnRow(statsPanel, "Bandwidth (MB/s)", wAvgLabel, rAvgLabel);
-
         // Row 2: Latency
         addThreeColumnRow(statsPanel, "Latency (ms)", wAccessLabel, rAccessLabel);
-
         // Row 3: IOPS
         addThreeColumnRow(statsPanel, "IOPS", wIopsLabel, rIopsLabel);
-
         // Add to main panel
         add(statsPanel, "span, growx, gaptop 0");
+        
+        startButton.requestFocus();
     }
 
     // Helper for the 3-column layout
@@ -255,15 +218,6 @@ public class BenchmarkControlPanel extends JPanel {
         panel.add(writeVal, "center, wmin 0, growx"); 
         panel.add(readVal, "center, wmin 0, growx, wrap");
     }
-    
-    // Helper to add a row of stats to the sub-panel (legacy four column)
-//    private void addStatRow(JPanel panel, String l1, JLabel v1, String l2, JLabel v2) {
-//        panel.add(new JLabel(l1));
-//        panel.add(v1, "sg val, wmin 0, growx"); // Or use JTextField for the grey box look
-//        panel.add(new JLabel(l2));
-//        panel.add(v2, "wrap, sg val, wmin 0, growx");
-//    }
-
     
     // Test Harness to view it immediately
     public static void main(String[] args) {
