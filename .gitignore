@@ -4,13 +4,17 @@
 /jdm.properties
 /tmp
 /derbyDB/
+/build.sign
 
+developer_log.json
+.DS_Store
 debug-benchmark.json
 *.zip
 *.patch
 .VSCodeCounter*
 build.properties
 hs_err_pid*.log
+private.properties
 
 # deb packaging
 jdiskmark-deb
