@@ -939,13 +939,9 @@ public final class MainFrame extends javax.swing.JFrame {
     }
   
     public void applyTestParams() {
-        App.benchmarkType = (BenchmarkType)Gui.controlPanel.typeCombo.getSelectedItem();
-        App.blockSequence = (BlockSequence)Gui.controlPanel.orderCombo.getSelectedItem();
-        App.numOfSamples = (Integer)Gui.controlPanel.numSamplesCombo.getSelectedItem();
-        App.numOfBlocks = (Integer)Gui.controlPanel.numBlocksCombo.getSelectedItem();
-        App.blockSizeKb = (Integer)Gui.controlPanel.blockSizeCombo.getSelectedItem();
-        App.numOfThreads = (Integer)Gui.controlPanel.numThreadsCombo.getSelectedItem();
-        //Gui.controlPanel.sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
+        if (Gui.controlPanel != null) {
+            Gui.controlPanel.applySettings();
+        }
         totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
     }
     
@@ -964,13 +960,17 @@ public final class MainFrame extends javax.swing.JFrame {
     public void adjustSensitivity() {
         switch (App.state) {
             case App.State.DISK_TEST_STATE -> {
-                Gui.controlPanel.startButton.setText("Cancel");
-                Gui.controlPanel.enableControls(false);
+                if (Gui.controlPanel != null) {
+                    Gui.controlPanel.startButton.setText("Cancel");
+                    Gui.controlPanel.enableControls(false);
+                }
                 resetBenchmarkItem.setEnabled(false);
             }
             case App.State.IDLE_STATE -> {
-                Gui.controlPanel.startButton.setText("Start");
-                Gui.controlPanel.enableControls(true);
+                if (Gui.controlPanel != null) {
+                    Gui.controlPanel.startButton.setText("Start");
+                    Gui.controlPanel.enableControls(true);
+                }
                 resetBenchmarkItem.setEnabled(true);
             }
         }

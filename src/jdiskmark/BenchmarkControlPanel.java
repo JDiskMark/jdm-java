@@ -333,6 +333,15 @@ public class BenchmarkControlPanel extends JPanel {
         numThreadsCombo.setEnabled(enable);
     }
     
+    public void applySettings() {
+        App.benchmarkType = (Benchmark.BenchmarkType)typeCombo.getSelectedItem();
+        App.blockSequence = (Benchmark.BlockSequence)orderCombo.getSelectedItem();
+        App.numOfSamples = (Integer)numSamplesCombo.getSelectedItem();
+        App.numOfBlocks = (Integer)numBlocksCombo.getSelectedItem();
+        App.blockSizeKb = (Integer)blockSizeCombo.getSelectedItem();
+        App.numOfThreads = (Integer)numThreadsCombo.getSelectedItem();
+    }
+    
     // Test Harness to view it immediately
     public static void main(String[] args) {
         try {
