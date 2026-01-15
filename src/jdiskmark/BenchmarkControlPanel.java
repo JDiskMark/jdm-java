@@ -218,12 +218,12 @@ public class BenchmarkControlPanel extends JPanel {
     
     private void setProfileToCustom() {
         // do not adjust if profile is being triggered
-        if (Gui.controlPanel.profileCombo.hasFocus()) return;
+        if (profileCombo.hasFocus()) return;
         // Check if the current profile is already CUSTOM_TEST to prevent unnecessary UI flicker
         if (App.activeProfile == BenchmarkProfile.CUSTOM_TEST) return;
         
         App.activeProfile = BenchmarkProfile.CUSTOM_TEST;
-        Gui.controlPanel.profileCombo.setSelectedItem(BenchmarkProfile.CUSTOM_TEST);
+        profileCombo.setSelectedItem(BenchmarkProfile.CUSTOM_TEST);
         System.out.println("Profile reset to CUSTOM_TEST due to configuration change.");
     }
     
