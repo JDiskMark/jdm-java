@@ -138,12 +138,6 @@ public class BenchmarkControlPanel extends JPanel {
     
     private void initComponents() {
         
-        DefaultComboBoxModel<BenchmarkProfile> profileModel = new DefaultComboBoxModel<>(BenchmarkProfile.getDefaults());
-        profileCombo.setModel(profileModel);
-        
-        DefaultComboBoxModel<Benchmark.BenchmarkType> bTypeModel = new DefaultComboBoxModel<>(Benchmark.BenchmarkType.values());
-        typeCombo.setModel(bTypeModel);
-        
         // 3 column layout framework
         setLayout(new MigLayout("insets 0 5 0 5, fillx, wrap 3", "[30%][27%][43%]", "[]10[]"));
 
