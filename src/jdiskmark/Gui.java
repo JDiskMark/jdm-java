@@ -79,7 +79,9 @@ public final class Gui {
     public static void init() {
         configureLaf();
         mainFrame = new MainFrame();
-        runPanel.hideFirstColumn();
+        if (runPanel != null) {
+            runPanel.hideFirstColumn();
+        }
         selFrame = new SelectDriveFrame();
         mainFrame.loadPropertiesConfig();
         mainFrame.setLocationRelativeTo(null);
