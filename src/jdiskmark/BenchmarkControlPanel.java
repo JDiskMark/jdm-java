@@ -45,7 +45,7 @@ public class BenchmarkControlPanel extends JPanel {
     public BenchmarkControlPanel() {
         initComponents();
         
-        // locks down the preferred size to it's initialized sized
+        // locks down the preferred size to its initialized sized
         setPreferredSize(getPreferredSize());
         
         // configure combo action listeners
