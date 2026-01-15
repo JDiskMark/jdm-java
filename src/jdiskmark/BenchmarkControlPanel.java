@@ -5,6 +5,8 @@ import java.awt.Font;
 import net.miginfocom.swing.MigLayout;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -13,10 +15,10 @@ import static jdiskmark.MainFrame.DF;
 public class BenchmarkControlPanel extends JPanel {
 
     final Font HEADER_FONT = new JLabel().getFont().deriveFont(Font.BOLD);
-    final Integer [] THREAD_OPTIONS = {1,2,4,8,16,32};
-    final Integer [] BLOCK_OPTIONS = {1,2,4,8,16,32,64,128,256,512,1024,2048};
-    final Integer [] BLOCK_SIZES = {1,2,4,8,16,32,64,128,256,512,1024,2048};
-    final Integer [] SAMPLE_OPTIONS = {25,50,100,200,300,500,1000,2000,3000,5000,10000};
+    final Integer[] THREAD_OPTIONS = {1,2,4,8,16,32};
+    final Integer[] BLOCK_OPTIONS = {1,2,4,8,16,32,64,128,256,512,1024,2048};
+    final Integer[] BLOCK_SIZES = {1,2,4,8,16,32,64,128,256,512,1024,2048};
+    final Integer[] SAMPLE_OPTIONS = {25,50,100,200,300,500,1000,2000,3000,5000,10000};
     
     public JComboBox<BenchmarkProfile> profileCombo = new JComboBox<>(BenchmarkProfile.getDefaults());
     public JComboBox<Benchmark.BenchmarkType> typeCombo = new JComboBox<>(Benchmark.BenchmarkType.values());
@@ -29,13 +31,13 @@ public class BenchmarkControlPanel extends JPanel {
     public JButton startButton = new JButton("Start");
     
     //public JLabel sampleSizeLabel = new JLabel("- -");
-    public JLabel wMinLabel = new JLabel("- -");
-    public JLabel wMaxLabel = new JLabel("- -");
+    //public JLabel wMinLabel = new JLabel("- -");
+    //public JLabel wMaxLabel = new JLabel("- -");
     public JLabel wAvgLabel = new JLabel("- -");
     public JLabel wAccessLabel = new JLabel("- -");
     public JLabel wIopsLabel = new JLabel("- -");
-    public JLabel rMinLabel = new JLabel("- -");
-    public JLabel rMaxLabel = new JLabel("- -");
+    //public JLabel rMinLabel = new JLabel("- -");
+    //public JLabel rMaxLabel = new JLabel("- -");
     public JLabel rAvgLabel = new JLabel("- -");
     public JLabel rAccessLabel = new JLabel("- -");
     public JLabel rIopsLabel = new JLabel("- -");
@@ -229,6 +231,9 @@ public class BenchmarkControlPanel extends JPanel {
         panel.add(readVal, "center, wmin 0, growx, wrap");
     }
     
+    /**
+     * Used w change detection to update profile to custom
+     */
     private void setProfileToCustom() {
         // do not adjust if profile is being triggered
         if (profileCombo.hasFocus()) return;
@@ -240,63 +245,43 @@ public class BenchmarkControlPanel extends JPanel {
         System.out.println("Profile reset to CUSTOM_TEST due to configuration change.");
     }
     
-    public void initializeComboSettings() {
+    /**
+     * Set profile to custom if a setting has been modified
+     */
+    public void configChangeDetection() {
+        ActionListener changeListener = e -> {
+            var combo = (JComboBox<?>) e.getSource();
 
-        // action listeners to detect change and update custom profile
-        final Benchmark.BenchmarkType[] previousBenchmarkType = { (Benchmark.BenchmarkType)typeCombo.getSelectedItem() };
-        typeCombo.addActionListener(e -> {
-            if (!typeCombo.hasFocus()) return;
-            Benchmark.BenchmarkType currentSelection = (Benchmark.BenchmarkType)typeCombo.getSelectedItem();
-            if (currentSelection != null && !currentSelection.equals(previousBenchmarkType[0])) {
-                //System.out.println("previous=" + previousBenchmarkType[0] + " curr=" + currentSelection);
-                previousBenchmarkType[0] = currentSelection; // update for next check
+            // Guard: Only trigger if the USER made the change
+            if (!combo.hasFocus()) return;
+
+            // Safely check if the UI value differs from the App state
+            boolean changed = false;
+            Object selected = combo.getSelectedItem();
+
+            if (combo == typeCombo)            changed = !Objects.equals(selected, App.benchmarkType);
+            else if (combo == orderCombo)      changed = !Objects.equals(selected, App.blockSequence);
+            else if (combo == numSamplesCombo) changed = !Objects.equals(selected, App.numOfSamples);
+            else if (combo == numBlocksCombo)  changed = !Objects.equals(selected, App.numOfBlocks);
+            else if (combo == blockSizeCombo)  changed = !Objects.equals(selected, App.blockSizeKb);
+            else if (combo == numThreadsCombo) changed = !Objects.equals(selected, App.numOfThreads);
+
+            // Only flip to custom if it's a real change and not null
+            if (changed && selected != null) {
                 setProfileToCustom();
             }
-        });
-        final Benchmark.BlockSequence[] previousSequence = { (Benchmark.BlockSequence)orderCombo.getSelectedItem() };
-        orderCombo.addActionListener(e -> {
-            if (!orderCombo.hasFocus()) return;
-            Benchmark.BlockSequence currentSelection = (Benchmark.BlockSequence)orderCombo.getSelectedItem();
-            if (currentSelection != null && !currentSelection.equals(previousSequence[0])) {
-                previousSequence[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-        final int[] previousNumThreads = { (Integer)numThreadsCombo.getSelectedItem() };
-        numThreadsCombo.addActionListener(e -> {
-            int currentSelection = (Integer)numThreadsCombo.getSelectedItem();
-            if (currentSelection != previousNumThreads[0]) {
-                previousNumThreads[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-        final int[] previousNumSamples = { (Integer)numSamplesCombo.getSelectedItem() };
-        numSamplesCombo.addActionListener(e -> {
-            int currentSelection = (Integer)numSamplesCombo.getSelectedItem();
-            if (currentSelection != previousNumSamples[0]) {
-                previousNumSamples[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-        final int[] previousNumBlocks = { (Integer)numBlocksCombo.getSelectedItem() };
-        numBlocksCombo.addActionListener(e -> {
-            int currentSelection = (Integer)numBlocksCombo.getSelectedItem();
-            if (currentSelection != previousNumBlocks[0]) {
-                previousNumBlocks[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-        final int[] previousBlockSize = { (Integer)blockSizeCombo.getSelectedItem() };
-        blockSizeCombo.addActionListener(e -> {
-            int currentSelection = (Integer)blockSizeCombo.getSelectedItem();
-            if (currentSelection != previousBlockSize[0]) {
-                previousBlockSize[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
+        };
+
+        // Attach to all combos
+        typeCombo.addActionListener(changeListener);
+        orderCombo.addActionListener(changeListener);
+        numSamplesCombo.addActionListener(changeListener);
+        numBlocksCombo.addActionListener(changeListener);
+        blockSizeCombo.addActionListener(changeListener);
+        numThreadsCombo.addActionListener(changeListener);
     }
     
-    public void loadActiveConfig() {
+    public void refreshSettings() {
         profileCombo.setSelectedItem(App.activeProfile);
         typeCombo.setSelectedItem(App.benchmarkType);
         numThreadsCombo.setSelectedItem(App.numOfThreads);

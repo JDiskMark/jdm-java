@@ -53,7 +53,7 @@ public final class MainFrame extends javax.swing.JFrame {
         titleSb.append(getTitle()).append(" ").append(App.VERSION);    
 
         loadActiveConfig();
-        bcPanel.initializeComboSettings();
+        bcPanel.configChangeDetection();
         
         // architecture
         if (App.arch != null && !App.arch.isEmpty()) {
@@ -131,7 +131,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
     public void loadActiveConfig() {
         // basic benchmark config
-        Gui.controlPanel.loadActiveConfig();
+        Gui.controlPanel.refreshSettings();
 
         // advanced benchmark config
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
