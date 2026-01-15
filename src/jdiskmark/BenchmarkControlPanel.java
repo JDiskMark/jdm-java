@@ -5,6 +5,7 @@ import java.awt.Font;
 import net.miginfocom.swing.MigLayout;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static jdiskmark.MainFrame.DF;
@@ -295,11 +296,6 @@ public class BenchmarkControlPanel extends JPanel {
     
     public void refreshWriteMetrics() {
         String value;
-        // not currently used
-//        value = App.wMin == -1 ? "- -" : DF.format(App.wMin);
-//        wMinLabel.setText(value);
-//        value = App.wMax == -1 ? "- -" : DF.format(App.wMax);
-//        wMaxLabel.setText(value);
         value = App.wAvg == -1 ? "- -" : DF.format(App.wAvg);
         wAvgLabel.setText(value);
         value = App.wAcc == -1 ? "- -" : DF.format(App.wAcc);
@@ -310,11 +306,6 @@ public class BenchmarkControlPanel extends JPanel {
     
     public void refreshReadMetrics() {
         String value;
-        // not currently used
-//        value = App.rMin == -1 ? "- -" : DF.format(App.rMin);
-//        rMinLabel.setText(value);
-//        value = App.rMax == -1 ? "- -" : DF.format(App.rMax);
-//        rMaxLabel.setText(value);
         value = App.rAvg == -1 ? "- -" : DF.format(App.rAvg);
         rAvgLabel.setText(value);
         value = App.rAcc == -1 ? "- -" : DF.format(App.rAcc);
@@ -334,12 +325,24 @@ public class BenchmarkControlPanel extends JPanel {
     }
     
     public void applySettings() {
-        App.benchmarkType = (Benchmark.BenchmarkType)typeCombo.getSelectedItem();
-        App.blockSequence = (Benchmark.BlockSequence)orderCombo.getSelectedItem();
-        App.numOfSamples = (Integer)numSamplesCombo.getSelectedItem();
-        App.numOfBlocks = (Integer)numBlocksCombo.getSelectedItem();
-        App.blockSizeKb = (Integer)blockSizeCombo.getSelectedItem();
-        App.numOfThreads = (Integer)numThreadsCombo.getSelectedItem();
+        App.benchmarkType = Optional.ofNullable(typeCombo.getSelectedItem())
+                .map(Benchmark.BenchmarkType.class::cast)
+                .orElse(App.benchmarkType);
+        App.blockSequence = Optional.ofNullable(orderCombo.getSelectedItem())
+                .map(Benchmark.BlockSequence.class::cast)
+                .orElse(App.blockSequence);
+        App.numOfSamples = Optional.ofNullable(numSamplesCombo.getSelectedItem())
+                .map(Integer.class::cast)
+                .orElse(App.numOfSamples);
+        App.numOfBlocks = Optional.ofNullable(numBlocksCombo.getSelectedItem())
+                .map(Integer.class::cast)
+                .orElse(App.numOfBlocks);
+        App.blockSizeKb = Optional.ofNullable(blockSizeCombo.getSelectedItem())
+                .map(Integer.class::cast)
+                .orElse(App.blockSizeKb);
+        App.numOfThreads = Optional.ofNullable(numThreadsCombo.getSelectedItem())
+                .map(Integer.class::cast)
+                .orElse(App.numOfThreads);
     }
     
     // Test Harness to view it immediately
