@@ -7,18 +7,23 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static jdiskmark.MainFrame.DF;
 
 public class BenchmarkControlPanel extends JPanel {
 
     final Font HEADER_FONT = new JLabel().getFont().deriveFont(Font.BOLD);
+    final Integer [] THREAD_OPTIONS = {1,2,4,8,16,32};
+    final Integer [] BLOCK_OPTIONS = {1,2,4,8,16,32,64,128,256,512,1024,2048};
+    final Integer [] BLOCK_SIZES = {1,2,4,8,16,32,64,128,256,512,1024,2048};
+    final Integer [] SAMPLE_OPTIONS = {25,50,100,200,300,500,1000,2000,3000,5000,10000};
     
     public JComboBox<BenchmarkProfile> profileCombo = new JComboBox<>(BenchmarkProfile.getDefaults());
     public JComboBox<Benchmark.BenchmarkType> typeCombo = new JComboBox<>(Benchmark.BenchmarkType.values());
-    public JComboBox numThreadsCombo = new JComboBox<>(new String[]{"1","2","4","8","16", "32"});
+    public JComboBox<Integer> numThreadsCombo = new JComboBox<>(THREAD_OPTIONS);
     public JComboBox<Benchmark.BlockSequence> orderCombo = new JComboBox<>(Benchmark.BlockSequence.values());
-    public JComboBox numBlocksCombo = new JComboBox<>(new String[]{"1","2","4","8","16","32","64","128","256","512","1024","2048"});
-    public JComboBox blockSizeCombo = new JComboBox<>(new String[]{"1","2","4","8","16","32","64","128","256","512","1024","2048"});
-    public JComboBox numSamplesCombo = new JComboBox<>(new String[]{"25","50","100","200","300","500","1000","2000","3000","5000","10000"});
+    public JComboBox<Integer> numBlocksCombo = new JComboBox<>(BLOCK_OPTIONS);
+    public JComboBox<Integer> blockSizeCombo = new JComboBox<>(BLOCK_SIZES);
+    public JComboBox<Integer> numSamplesCombo = new JComboBox<>(SAMPLE_OPTIONS);
     
     public JButton startButton = new JButton("Start");
     
@@ -47,7 +52,7 @@ public class BenchmarkControlPanel extends JPanel {
             // only run when interacted with
             if (!profileCombo.hasFocus()) { return; }
             
-            BenchmarkProfile profile = (BenchmarkProfile) profileCombo.getSelectedItem();
+            BenchmarkProfile profile = (BenchmarkProfile)profileCombo.getSelectedItem();
             App.activeProfile = profile;
             
             // skip adjustments if custom test was selected
@@ -67,30 +72,28 @@ public class BenchmarkControlPanel extends JPanel {
             
             // only signal if initialized
             if (Gui.mainFrame != null) {
-                Gui.mainFrame.loadBenchmarkConfig();
+                Gui.mainFrame.loadActiveConfig();
             }
         });
         
         typeCombo.addActionListener((ActionEvent evt) -> {
             if (typeCombo.hasFocus()) {
-                Benchmark.BenchmarkType mode = (Benchmark.BenchmarkType) typeCombo.getSelectedItem();
-                App.benchmarkType = mode;
+                App.benchmarkType = (Benchmark.BenchmarkType)typeCombo.getSelectedItem();
                 App.saveConfig();
-                System.out.println("emulate custom: " + evt.paramString());
             }
         });
         
         numThreadsCombo.addActionListener((ActionEvent evt) -> {
             // NOTE: selecting a value from dropdown does not trigger the below
             if (numThreadsCombo.hasFocus()) {
-                App.numOfThreads = Integer.parseInt((String) numThreadsCombo.getSelectedItem());
+                App.numOfThreads = (Integer)numThreadsCombo.getSelectedItem();
                 App.saveConfig();
             }
         });
         
         orderCombo.addActionListener((ActionEvent evt) -> {
             if (orderCombo.hasFocus()) {
-                App.blockSequence = (Benchmark.BlockSequence) orderCombo.getSelectedItem();
+                App.blockSequence = (Benchmark.BlockSequence)orderCombo.getSelectedItem();
                 App.saveConfig();
             }
         });
@@ -98,7 +101,7 @@ public class BenchmarkControlPanel extends JPanel {
         numBlocksCombo.addActionListener((ActionEvent evt) -> {
             // NOTE: selecting a value from dropdown does not trigger the below
             if (numBlocksCombo.hasFocus()) {
-                App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
+                App.numOfBlocks = (Integer)numBlocksCombo.getSelectedItem();
                 //sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
                 //totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
                 App.saveConfig();
@@ -108,7 +111,7 @@ public class BenchmarkControlPanel extends JPanel {
         blockSizeCombo.addActionListener((ActionEvent evt) -> {
             // NOTE: selecting a value from dropdown does not trigger the below
             if (blockSizeCombo.hasFocus()) {
-                App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
+                App.blockSizeKb = (Integer)blockSizeCombo.getSelectedItem();
                 //sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
                 //totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
                 App.saveConfig();
@@ -118,7 +121,7 @@ public class BenchmarkControlPanel extends JPanel {
         numSamplesCombo.addActionListener((ActionEvent evt) -> {
             // NOTE: selecting a value from dropdown does not trigger the below
             if (numSamplesCombo.hasFocus()) {
-                App.numOfSamples = Integer.parseInt((String) numSamplesCombo.getSelectedItem());
+                App.numOfSamples = (Integer)numSamplesCombo.getSelectedItem();
                 //sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
                 //totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
                 App.saveConfig();
@@ -211,6 +214,123 @@ public class BenchmarkControlPanel extends JPanel {
         // wmin 0 prevents text updates from pushing the window wider
         panel.add(writeVal, "center, wmin 0, growx"); 
         panel.add(readVal, "center, wmin 0, growx, wrap");
+    }
+    
+    private void setProfileToCustom() {
+        // do not adjust if profile is being triggered
+        if (Gui.controlPanel.profileCombo.hasFocus()) return;
+        // Check if the current profile is already CUSTOM_TEST to prevent unnecessary UI flicker
+        if (App.activeProfile == BenchmarkProfile.CUSTOM_TEST) return;
+        
+        App.activeProfile = BenchmarkProfile.CUSTOM_TEST;
+        Gui.controlPanel.profileCombo.setSelectedItem(BenchmarkProfile.CUSTOM_TEST);
+        System.out.println("Profile reset to CUSTOM_TEST due to configuration change.");
+    }
+    
+    public void initializeComboSettings() {
+
+        // action listeners to detect change and update custom profile
+        final Benchmark.BenchmarkType[] previousBenchmarkType = { (Benchmark.BenchmarkType)typeCombo.getSelectedItem() };
+        typeCombo.addActionListener(e -> {
+            if (!typeCombo.hasFocus()) return;
+            Benchmark.BenchmarkType currentSelection = (Benchmark.BenchmarkType)typeCombo.getSelectedItem();
+            if (currentSelection != null && !currentSelection.equals(previousBenchmarkType[0])) {
+                //System.out.println("previous=" + previousBenchmarkType[0] + " curr=" + currentSelection);
+                previousBenchmarkType[0] = currentSelection; // update for next check
+                setProfileToCustom();
+            }
+        });
+        final Benchmark.BlockSequence[] previousSequence = { (Benchmark.BlockSequence)orderCombo.getSelectedItem() };
+        orderCombo.addActionListener(e -> {
+            if (!orderCombo.hasFocus()) return;
+            Benchmark.BlockSequence currentSelection = (Benchmark.BlockSequence)orderCombo.getSelectedItem();
+            if (currentSelection != null && !currentSelection.equals(previousSequence[0])) {
+                previousSequence[0] = currentSelection; // update for next check
+                setProfileToCustom();
+            }
+        });
+        final int[] previousNumThreads = { (Integer)numThreadsCombo.getSelectedItem() };
+        numThreadsCombo.addActionListener(e -> {
+            int currentSelection = (Integer)numThreadsCombo.getSelectedItem();
+            if (currentSelection != previousNumThreads[0]) {
+                previousNumThreads[0] = currentSelection; // update for next check
+                setProfileToCustom();
+            }
+        });
+        final int[] previousNumSamples = { (Integer)numSamplesCombo.getSelectedItem() };
+        numSamplesCombo.addActionListener(e -> {
+            int currentSelection = (Integer)numSamplesCombo.getSelectedItem();
+            if (currentSelection != previousNumSamples[0]) {
+                previousNumSamples[0] = currentSelection; // update for next check
+                setProfileToCustom();
+            }
+        });
+        final int[] previousNumBlocks = { (Integer)numBlocksCombo.getSelectedItem() };
+        numBlocksCombo.addActionListener(e -> {
+            int currentSelection = (Integer)numBlocksCombo.getSelectedItem();
+            if (currentSelection != previousNumBlocks[0]) {
+                previousNumBlocks[0] = currentSelection; // update for next check
+                setProfileToCustom();
+            }
+        });
+        final int[] previousBlockSize = { (Integer)blockSizeCombo.getSelectedItem() };
+        blockSizeCombo.addActionListener(e -> {
+            int currentSelection = (Integer)blockSizeCombo.getSelectedItem();
+            if (currentSelection != previousBlockSize[0]) {
+                previousBlockSize[0] = currentSelection; // update for next check
+                setProfileToCustom();
+            }
+        });
+    }
+    
+    public void loadActiveConfig() {
+        profileCombo.setSelectedItem(App.activeProfile);
+        typeCombo.setSelectedItem(App.benchmarkType);
+        numThreadsCombo.setSelectedItem(App.numOfThreads);
+        orderCombo.setSelectedItem(App.blockSequence);
+        numBlocksCombo.setSelectedItem(App.numOfBlocks);
+        blockSizeCombo.setSelectedItem(App.blockSizeKb);
+        numSamplesCombo.setSelectedItem(App.numOfSamples);
+    }
+    
+    public void refreshWriteMetrics() {
+        String value;
+        // not currently used
+//        value = App.wMin == -1 ? "- -" : DF.format(App.wMin);
+//        wMinLabel.setText(value);
+//        value = App.wMax == -1 ? "- -" : DF.format(App.wMax);
+//        wMaxLabel.setText(value);
+        value = App.wAvg == -1 ? "- -" : DF.format(App.wAvg);
+        wAvgLabel.setText(value);
+        value = App.wAcc == -1 ? "- -" : DF.format(App.wAcc);
+        wAccessLabel.setText(value);
+        value = App.wIops == -1 ? "- -" : String.valueOf(App.wIops);
+        wIopsLabel.setText(value);
+    }
+    
+    public void refreshReadMetrics() {
+        String value;
+        // not currently used
+//        value = App.rMin == -1 ? "- -" : DF.format(App.rMin);
+//        rMinLabel.setText(value);
+//        value = App.rMax == -1 ? "- -" : DF.format(App.rMax);
+//        rMaxLabel.setText(value);
+        value = App.rAvg == -1 ? "- -" : DF.format(App.rAvg);
+        rAvgLabel.setText(value);
+        value = App.rAcc == -1 ? "- -" : DF.format(App.rAcc);
+        rAccessLabel.setText(value);
+        value = App.rIops == -1 ? "- -" : String.valueOf(App.rIops);
+        rIopsLabel.setText(value);
+    }
+    
+    public void enableControls(boolean enable) {
+        profileCombo.setEnabled(enable);
+        orderCombo.setEnabled(enable);
+        blockSizeCombo.setEnabled(enable);
+        numBlocksCombo.setEnabled(enable);
+        numSamplesCombo.setEnabled(enable);
+        typeCombo.setEnabled(enable);
+        numThreadsCombo.setEnabled(enable);
     }
     
     // Test Harness to view it immediately

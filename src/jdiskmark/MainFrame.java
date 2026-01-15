@@ -52,7 +52,8 @@ public final class MainFrame extends javax.swing.JFrame {
         StringBuilder titleSb = new StringBuilder();
         titleSb.append(getTitle()).append(" ").append(App.VERSION);    
 
-        initializeComboSettings();
+        loadActiveConfig();
+        bcPanel.initializeComboSettings();
         
         // architecture
         if (App.arch != null && !App.arch.isEmpty()) {
@@ -84,7 +85,7 @@ public final class MainFrame extends javax.swing.JFrame {
      * has been loaded.
      */
     public void loadPropertiesConfig() {
-        loadBenchmarkConfig();
+        loadActiveConfig();
         if (App.locationDir != null) { // set the location dir if not null
             setLocation(App.locationDir.getAbsolutePath());
         }
@@ -127,84 +128,11 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         }
     }
-    
-    private void setProfileToCustom() {
-        // do not adjust if profile is being triggered
-        if (Gui.controlPanel.profileCombo.hasFocus()) return;
-        // Check if the current profile is already CUSTOM_TEST to prevent unnecessary UI flicker
-        if (App.activeProfile == BenchmarkProfile.CUSTOM_TEST) return;
-        
-        App.activeProfile = BenchmarkProfile.CUSTOM_TEST;
-        Gui.controlPanel.profileCombo.setSelectedItem(BenchmarkProfile.CUSTOM_TEST);
-        System.out.println("Profile reset to CUSTOM_TEST due to configuration change.");
-    }
-    
-    public void initializeComboSettings() {
-        loadBenchmarkConfig();
-        
-        // action listeners to detect change and update custom profile
-        final BenchmarkType[] previousBenchmarkType = { (BenchmarkType) Gui.controlPanel.typeCombo.getSelectedItem() };
-        Gui.controlPanel.typeCombo.addActionListener(e -> {
-            if (!Gui.controlPanel.typeCombo.hasFocus()) return;
-            BenchmarkType currentSelection = (BenchmarkType)Gui.controlPanel.typeCombo.getSelectedItem();
-            if (currentSelection != null && !currentSelection.equals(previousBenchmarkType[0])) {
-                //System.out.println("previous=" + previousBenchmarkType[0] + " curr=" + currentSelection);
-                previousBenchmarkType[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-        final BlockSequence[] previousSequence = { (BlockSequence) Gui.controlPanel.orderCombo.getSelectedItem() };
-        Gui.controlPanel.orderCombo.addActionListener(e -> {
-            if (!Gui.controlPanel.orderCombo.hasFocus()) return;
-            BlockSequence currentSelection = (BlockSequence)Gui.controlPanel.orderCombo.getSelectedItem();
-            if (currentSelection != null && !currentSelection.equals(previousSequence[0])) {
-                previousSequence[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-        final int[] previousNumThreads = { Integer.parseInt((String)Gui.controlPanel.numThreadsCombo.getSelectedItem()) };
-        Gui.controlPanel.numThreadsCombo.addActionListener(e -> {
-            int currentSelection = Integer.parseInt((String)Gui.controlPanel.numThreadsCombo.getSelectedItem());
-            if (currentSelection != previousNumThreads[0]) {
-                previousNumThreads[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-        final int[] previousNumSamples = { Integer.parseInt((String)Gui.controlPanel.numSamplesCombo.getSelectedItem()) };
-        Gui.controlPanel.numSamplesCombo.addActionListener(e -> {
-            int currentSelection = Integer.parseInt((String)Gui.controlPanel.numSamplesCombo.getSelectedItem());
-            if (currentSelection != previousNumSamples[0]) {
-                previousNumSamples[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-        final int[] previousNumBlocks = { Integer.parseInt((String)Gui.controlPanel.numBlocksCombo.getSelectedItem()) };
-        Gui.controlPanel.numBlocksCombo.addActionListener(e -> {
-            int currentSelection = Integer.parseInt((String)Gui.controlPanel.numBlocksCombo.getSelectedItem());
-            if (currentSelection != previousNumBlocks[0]) {
-                previousNumBlocks[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-        final int[] previousBlockSize = { Integer.parseInt((String)Gui.controlPanel.blockSizeCombo.getSelectedItem()) };
-        Gui.controlPanel.blockSizeCombo.addActionListener(e -> {
-            int currentSelection = Integer.parseInt((String)Gui.controlPanel.blockSizeCombo.getSelectedItem());
-            if (currentSelection != previousBlockSize[0]) {
-                previousBlockSize[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-    }
 
-    public void loadBenchmarkConfig() {
-        Gui.controlPanel.profileCombo.setSelectedItem(App.activeProfile);
+    public void loadActiveConfig() {
         // basic benchmark config
-        Gui.controlPanel.typeCombo.setSelectedItem(App.benchmarkType);
-        Gui.controlPanel.numThreadsCombo.setSelectedItem(String.valueOf(App.numOfThreads));
-        Gui.controlPanel.orderCombo.setSelectedItem(App.blockSequence);
-        Gui.controlPanel.numBlocksCombo.setSelectedItem(String.valueOf(App.numOfBlocks));
-        Gui.controlPanel.blockSizeCombo.setSelectedItem(String.valueOf(App.blockSizeKb));
-        Gui.controlPanel.numSamplesCombo.setSelectedItem(String.valueOf(App.numOfSamples));
+        Gui.controlPanel.loadActiveConfig();
+
         // advanced benchmark config
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
         switch (App.ioEngine) {
@@ -1011,43 +939,14 @@ public final class MainFrame extends javax.swing.JFrame {
     }
   
     public void applyTestParams() {
-        BenchmarkType mode = (BenchmarkType) Gui.controlPanel.typeCombo.getSelectedItem();
-        App.benchmarkType = mode;
-        App.blockSequence = (BlockSequence) Gui.controlPanel.orderCombo.getSelectedItem();
-        App.numOfSamples = Integer.parseInt((String) Gui.controlPanel.numSamplesCombo.getSelectedItem());
-        App.numOfBlocks = Integer.parseInt((String) Gui.controlPanel.numBlocksCombo.getSelectedItem());
-        App.blockSizeKb = Integer.parseInt((String) Gui.controlPanel.blockSizeCombo.getSelectedItem());
-        App.numOfThreads = Integer.parseInt((String) Gui.controlPanel.numThreadsCombo.getSelectedItem());
+        App.benchmarkType = (BenchmarkType)Gui.controlPanel.typeCombo.getSelectedItem();
+        App.blockSequence = (BlockSequence)Gui.controlPanel.orderCombo.getSelectedItem();
+        App.numOfSamples = (Integer)Gui.controlPanel.numSamplesCombo.getSelectedItem();
+        App.numOfBlocks = (Integer)Gui.controlPanel.numBlocksCombo.getSelectedItem();
+        App.blockSizeKb = (Integer)Gui.controlPanel.blockSizeCombo.getSelectedItem();
+        App.numOfThreads = (Integer)Gui.controlPanel.numThreadsCombo.getSelectedItem();
         //Gui.controlPanel.sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
         totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
-    }
-    
-    public void refreshWriteMetrics() {
-        String value;
-        value = App.wMin == -1 ? "- -" : DF.format(App.wMin);
-        Gui.controlPanel.wMinLabel.setText(value);
-        value = App.wMax == -1 ? "- -" : DF.format(App.wMax);
-        Gui.controlPanel.wMaxLabel.setText(value);
-        value = App.wAvg == -1 ? "- -" : DF.format(App.wAvg);
-        Gui.controlPanel.wAvgLabel.setText(value);
-        value = App.wAcc == -1 ? "- -" : DF.format(App.wAcc);
-        Gui.controlPanel.wAccessLabel.setText(value);
-        value = App.wIops == -1 ? "- -" : String.valueOf(App.wIops);
-        Gui.controlPanel.wIopsLabel.setText(value);
-    }
-    
-    public void refreshReadMetrics() {
-        String value;
-        value = App.rMin == -1 ? "- -" : DF.format(App.rMin);
-        Gui.controlPanel.rMinLabel.setText(value);
-        value = App.rMax == -1 ? "- -" : DF.format(App.rMax);
-        Gui.controlPanel.rMaxLabel.setText(value);
-        value = App.rAvg == -1 ? "- -" : DF.format(App.rAvg);
-        Gui.controlPanel.rAvgLabel.setText(value);
-        value = App.rAcc == -1 ? "- -" : DF.format(App.rAcc);
-        Gui.controlPanel.rAccessLabel.setText(value);
-        value = App.rIops == -1 ? "- -" : String.valueOf(App.rIops);
-        Gui.controlPanel.rIopsLabel.setText(value);
     }
     
     public javax.swing.JProgressBar getProgressBar() {
@@ -1066,24 +965,12 @@ public final class MainFrame extends javax.swing.JFrame {
         switch (App.state) {
             case App.State.DISK_TEST_STATE -> {
                 Gui.controlPanel.startButton.setText("Cancel");
-                Gui.controlPanel.profileCombo.setEnabled(false);
-                Gui.controlPanel.orderCombo.setEnabled(false);
-                Gui.controlPanel.blockSizeCombo.setEnabled(false);
-                Gui.controlPanel.numBlocksCombo.setEnabled(false);
-                Gui.controlPanel.numSamplesCombo.setEnabled(false);
-                Gui.controlPanel.typeCombo.setEnabled(false);
-                Gui.controlPanel.numThreadsCombo.setEnabled(false);
+                Gui.controlPanel.enableControls(false);
                 resetBenchmarkItem.setEnabled(false);
             }
             case App.State.IDLE_STATE -> {
                 Gui.controlPanel.startButton.setText("Start");
-                Gui.controlPanel.profileCombo.setEnabled(true);
-                Gui.controlPanel.orderCombo.setEnabled(true);
-                Gui.controlPanel.blockSizeCombo.setEnabled(true);
-                Gui.controlPanel.numBlocksCombo.setEnabled(true);
-                Gui.controlPanel.numSamplesCombo.setEnabled(true);
-                Gui.controlPanel.typeCombo.setEnabled(true);
-                Gui.controlPanel.numThreadsCombo.setEnabled(true);
+                Gui.controlPanel.enableControls(true);
                 resetBenchmarkItem.setEnabled(true);
             }
         }

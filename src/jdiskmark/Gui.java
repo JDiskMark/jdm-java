@@ -1,4 +1,3 @@
-   
 package jdiskmark;
 
 import com.formdev.flatlaf.FlatLightLaf;
@@ -10,14 +9,12 @@ import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import org.jfree.chart.ChartMouseEvent;
 import org.jfree.chart.ChartMouseListener;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-import static jdiskmark.App.getConfigString;
 import jdiskmark.Benchmark.IOMode;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -230,7 +227,7 @@ public final class Gui {
         if (App.showDriveAccess) {
             wDrvAccess.add(s.sampleNum, s.accessTimeMs);
         }
-        mainFrame.refreshWriteMetrics();
+        controlPanel.refreshWriteMetrics();
     }
     public static void addReadSample(Sample s) {
         rSeries.add(s.sampleNum, s.bwMbSec);
@@ -242,7 +239,7 @@ public final class Gui {
         if (App.showDriveAccess) {
             rDrvAccess.add(s.sampleNum, s.accessTimeMs);
         }
-        mainFrame.refreshReadMetrics();
+        controlPanel.refreshReadMetrics();
     }
     
     public static void resetBenchmarkData() {
@@ -257,8 +254,8 @@ public final class Gui {
         wDrvAccess.clear();
         rDrvAccess.clear();
         progressBar.setValue(0);
-        mainFrame.refreshReadMetrics();
-        mainFrame.refreshWriteMetrics();
+        controlPanel.refreshReadMetrics();
+        controlPanel.refreshWriteMetrics();
     }
     
     public static void updateLegendAndAxis() {
@@ -426,7 +423,7 @@ public final class Gui {
         App.blockSizeKb = operation.blockSize;
         App.blockSequence = operation.blockOrder;
         App.numOfThreads = operation.numThreads;
-        mainFrame.loadBenchmarkConfig();
+        mainFrame.loadActiveConfig();
         switch (operation.ioMode) {
             case IOMode.READ -> {
                 App.rAvg = operation.bwAvg;
@@ -434,7 +431,7 @@ public final class Gui {
                 App.rMin = operation.bwMin;
                 App.rAcc = operation.accAvg;
                 App.rIops = operation.iops;
-                mainFrame.refreshReadMetrics();                
+                controlPanel.refreshReadMetrics();                
             }
             case IOMode.WRITE -> {
                 App.wAvg = operation.bwAvg;
@@ -442,7 +439,7 @@ public final class Gui {
                 App.wMin = operation.bwMin;
                 App.wAcc = operation.accAvg;
                 App.wIops = operation.iops;
-                mainFrame.refreshWriteMetrics();
+                controlPanel.refreshWriteMetrics();
             }
         }
     }
