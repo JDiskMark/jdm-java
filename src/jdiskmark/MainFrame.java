@@ -16,8 +16,6 @@ import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
 import static jdiskmark.App.IoEngine.MODERN;
 import static jdiskmark.App.SectorAlignment.ALIGN_512;
-import jdiskmark.Benchmark.BenchmarkType;
-import jdiskmark.Benchmark.BlockSequence;
 import net.miginfocom.swing.MigLayout;
 
 /**
