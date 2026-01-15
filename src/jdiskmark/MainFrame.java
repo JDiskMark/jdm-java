@@ -131,7 +131,9 @@ public final class MainFrame extends javax.swing.JFrame {
 
     public void loadActiveConfig() {
         // basic benchmark config
-        Gui.controlPanel.refreshSettings();
+        if (Gui.controlPanel != null) {
+            Gui.controlPanel.refreshSettings();
+        }
 
         // advanced benchmark config
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
