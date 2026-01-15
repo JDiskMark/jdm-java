@@ -234,7 +234,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             wOperation.endTime = LocalDateTime.now();
             wOperation.setTotalOps(writeUnitsComplete.longValue());
             App.wIops = wOperation.iops;
-            Gui.mainFrame.refreshWriteMetrics();
+            Gui.controlPanel.refreshWriteMetrics();
         }
         
         // TODO: review renaming all files to clear catch
@@ -308,7 +308,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             rOperation.endTime = LocalDateTime.now();
             rOperation.setTotalOps(readUnitsComplete.longValue());
             App.rIops = rOperation.iops;
-            Gui.mainFrame.refreshReadMetrics();
+            Gui.controlPanel.refreshReadMetrics();
         }
         benchmark.endTime = LocalDateTime.now();
         if (App.autoSave) {

@@ -219,14 +219,7 @@ public class App {
         }
         
         if (mode == Mode.GUI) {
-            Gui.configureLaf();
-            Gui.mainFrame = new MainFrame();
-            Gui.runPanel.hideFirstColumn();
-            Gui.selFrame = new SelectDriveFrame();
-            System.out.println(getConfigString());
-            Gui.mainFrame.loadPropertiesConfig();
-            Gui.mainFrame.setLocationRelativeTo(null);
-            Gui.progressBar = Gui.mainFrame.getProgressBar();
+            Gui.init();
         }
         
         if (App.autoSave) {

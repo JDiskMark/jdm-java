@@ -1,4 +1,3 @@
-   
 package jdiskmark;
 
 import com.formdev.flatlaf.FlatLightLaf;
@@ -38,6 +37,7 @@ public final class Gui {
     
     public static ChartPanel chartPanel = null;
     public static MainFrame mainFrame = null;
+    public static BenchmarkControlPanel controlPanel = null;
     public static SelectDriveFrame selFrame = null;
     public static XYSeries wSeries, wAvgSeries, wMaxSeries, wMinSeries, wDrvAccess;
     public static XYSeries rSeries, rAvgSeries, rMaxSeries, rMinSeries, rDrvAccess;
@@ -59,20 +59,8 @@ public final class Gui {
                 // Or: UIManager.setLookAndFeel(new FlatDarkLaf()); // Dark theme
             } else if (App.os.contains("Mac OS")) {
                 UIManager.setLookAndFeel("apple.laf.AquaLookAndFeel");
-//                for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-//                    if ("Nimbus".equals(info.getName())) {
-//                        UIManager.setLookAndFeel(info.getClassName());
-//                        break;
-//                    }
-//                }
             } else if (App.os.contains("Linux")) {
                 UIManager.setLookAndFeel(new FlatLightLaf()); // Light theme
-//                for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-//                    if ("Nimbus".equals(info.getName())) {
-//                        UIManager.setLookAndFeel(info.getClassName());
-//                        break;
-//                    }
-//                }
             }
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
@@ -88,19 +76,31 @@ public final class Gui {
         }
     }
     
+    public static void init() {
+        configureLaf();
+        mainFrame = new MainFrame();
+        if (runPanel != null) {
+            runPanel.hideFirstColumn();
+        }
+        selFrame = new SelectDriveFrame();
+        mainFrame.loadPropertiesConfig();
+        mainFrame.setLocationRelativeTo(null);
+        progressBar = mainFrame.getProgressBar();
+    }
+    
     public static ChartPanel createChartPanel() {
         
-        wSeries = new XYSeries("Write");
+        wSeries = new XYSeries("Write Sample");
         wAvgSeries = new XYSeries("Write Avg");
         wMaxSeries = new XYSeries("Write Max");
         wMinSeries = new XYSeries("Write Min");
-        wDrvAccess = new XYSeries("Write Access");
+        wDrvAccess = new XYSeries("Write Latency");
         
-        rSeries = new XYSeries("Read");
+        rSeries = new XYSeries("Read Sample");
         rAvgSeries = new XYSeries("Read Avg");
         rMaxSeries = new XYSeries("Read Max");
         rMinSeries = new XYSeries("Read Min");
-        rDrvAccess = new XYSeries("Read Access");
+        rDrvAccess = new XYSeries("Read Latency");
         
         // primary dataset mapped against the bw axis
         XYSeriesCollection bwDataset = new XYSeriesCollection();
@@ -148,7 +148,7 @@ public final class Gui {
         bwAxis.setAutoRangeIncludesZero(false);
         
         // y axis on the right
-        msAxis = new NumberAxis("Access Time (ms)");
+        msAxis = new NumberAxis("Latency (ms)");
         msAxis.setAutoRange(true);
         msAxis.setAutoRangeIncludesZero(false);
         
@@ -214,6 +214,11 @@ public final class Gui {
         return chartPanel;
     }
     
+    public static BenchmarkControlPanel createControlPanel() {
+        controlPanel = new BenchmarkControlPanel();
+        return controlPanel;
+    }
+    
     public static void addWriteSample(Sample s) {
         wSeries.add(s.sampleNum, s.bwMbSec);
         wAvgSeries.add(s.sampleNum, s.cumAvg);
@@ -224,7 +229,7 @@ public final class Gui {
         if (App.showDriveAccess) {
             wDrvAccess.add(s.sampleNum, s.accessTimeMs);
         }
-        mainFrame.refreshWriteMetrics();
+        controlPanel.refreshWriteMetrics();
     }
     public static void addReadSample(Sample s) {
         rSeries.add(s.sampleNum, s.bwMbSec);
@@ -236,7 +241,7 @@ public final class Gui {
         if (App.showDriveAccess) {
             rDrvAccess.add(s.sampleNum, s.accessTimeMs);
         }
-        mainFrame.refreshReadMetrics();
+        controlPanel.refreshReadMetrics();
     }
     
     public static void resetBenchmarkData() {
@@ -251,8 +256,8 @@ public final class Gui {
         wDrvAccess.clear();
         rDrvAccess.clear();
         progressBar.setValue(0);
-        mainFrame.refreshReadMetrics();
-        mainFrame.refreshWriteMetrics();
+        controlPanel.refreshReadMetrics();
+        controlPanel.refreshWriteMetrics();
     }
     
     public static void updateLegendAndAxis() {
@@ -420,7 +425,7 @@ public final class Gui {
         App.blockSizeKb = operation.blockSize;
         App.blockSequence = operation.blockOrder;
         App.numOfThreads = operation.numThreads;
-        mainFrame.loadBenchmarkConfig();
+        mainFrame.loadActiveConfig();
         switch (operation.ioMode) {
             case IOMode.READ -> {
                 App.rAvg = operation.bwAvg;
@@ -428,7 +433,7 @@ public final class Gui {
                 App.rMin = operation.bwMin;
                 App.rAcc = operation.accAvg;
                 App.rIops = operation.iops;
-                mainFrame.refreshReadMetrics();                
+                controlPanel.refreshReadMetrics();                
             }
             case IOMode.WRITE -> {
                 App.wAvg = operation.bwAvg;
@@ -436,7 +441,7 @@ public final class Gui {
                 App.wMin = operation.bwMin;
                 App.wAcc = operation.accAvg;
                 App.wIops = operation.iops;
-                mainFrame.refreshWriteMetrics();
+                controlPanel.refreshWriteMetrics();
             }
         }
     }
