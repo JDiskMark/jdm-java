@@ -94,38 +94,50 @@ public class BenchmarkControlPanel extends JPanel {
         
         orderCombo.addActionListener((ActionEvent evt) -> {
             if (orderCombo.hasFocus()) {
-                App.blockSequence = (Benchmark.BlockSequence)orderCombo.getSelectedItem();
-                App.saveConfig();
+                Object selected = orderCombo.getSelectedItem();
+                if (selected != null) {
+                    App.blockSequence = (Benchmark.BlockSequence) selected;
+                    App.saveConfig();
+                }
             }
         });
         
         numBlocksCombo.addActionListener((ActionEvent evt) -> {
             // NOTE: selecting a value from dropdown does not trigger the below
             if (numBlocksCombo.hasFocus()) {
-                App.numOfBlocks = (Integer)numBlocksCombo.getSelectedItem();
-                //sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-                //totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
-                App.saveConfig();
+                Object selected = numBlocksCombo.getSelectedItem();
+                if (selected != null) {
+                    App.numOfBlocks = (Integer) selected;
+                    //sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
+                    //totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
+                    App.saveConfig();
+                }
             }
         });
         
         blockSizeCombo.addActionListener((ActionEvent evt) -> {
             // NOTE: selecting a value from dropdown does not trigger the below
             if (blockSizeCombo.hasFocus()) {
-                App.blockSizeKb = (Integer)blockSizeCombo.getSelectedItem();
-                //sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-                //totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
-                App.saveConfig();
+                Object selected = blockSizeCombo.getSelectedItem();
+                if (selected != null) {
+                    App.blockSizeKb = (Integer) selected;
+                    //sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
+                    //totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
+                    App.saveConfig();
+                }
             }
         });
         
         numSamplesCombo.addActionListener((ActionEvent evt) -> {
             // NOTE: selecting a value from dropdown does not trigger the below
             if (numSamplesCombo.hasFocus()) {
-                App.numOfSamples = (Integer)numSamplesCombo.getSelectedItem();
-                //sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-                //totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
-                App.saveConfig();
+                Object selected = numSamplesCombo.getSelectedItem();
+                if (selected != null) {
+                    App.numOfSamples = (Integer) selected;
+                    //sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
+                    //totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
+                    App.saveConfig();
+                }
             }
         });
 
