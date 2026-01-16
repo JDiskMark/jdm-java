@@ -10,6 +10,8 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.filechooser.FileSystemView;
 
 /**
@@ -48,7 +50,7 @@ public class Util {
      * @param min Minimum value
      * @param max Maximum value.  Must be greater than min.
      * @return Integer between min and max, inclusive.
-     * @see java.util.Random#nextInt(int)
+     * @see Random#nextInt(int)
      */
     public static int randInt(int min, int max) {
 
@@ -242,16 +244,29 @@ public class Util {
     }
 
     public static String getPartitionId(Path path) {
-        if (System.getProperty("os.name").startsWith("Windows")) {
-            String driveLetter = UtilOs.getDriveLetterWindows(path);
-            return driveLetter;
-        } else {
+
+        String os=System.getProperty("os.name");
+
+        if (os.startsWith("Windows")) {
+           return UtilOs.getDriveLetterWindows(path);
+        }
+        if (os.startsWith("Mac")) {
+            String partitionPath=UtilOs.getDeviceFromPathMacOs(path);
+            if(partitionPath.startsWith("/dev/")){
+               return partitionPath.substring("/dev/".length());
+            }
+            return partitionPath;
+        }
+
+        else if (os.startsWith("Linux"))  {
             String partitionPath = UtilOs.getPartitionFromFilePathLinux(path);
             if (partitionPath.contains("/dev/")) {
                 return partitionPath.split("/dev/")[1];
             }
             return partitionPath;
         }
+
+        return "Os Not Found";
     }
     
     public static String getJvmInfo() {
@@ -272,4 +287,177 @@ public class Util {
         }
         return "processor name unknown";
     }
+
+    /**
+     * Get the motherboard / baseboard name of the current system.
+     *
+     * This method executes OS-specific system commands to retrieve
+     * motherboard identification information.
+     *
+     * Commands used:
+     *
+     * Windows:
+     *   wmic baseboard get Product
+     *
+     *   Example output:
+     *     Product
+     *     B450M PRO-VDH MAX
+     *
+     * Linux:
+     *   cat /sys/devices/virtual/dmi/id/board_name
+     *
+     *   Example output:
+     *     B450M PRO-VDH MAX
+     *
+     * macOS:
+     *   system_profiler SPHardwareDataType
+     *
+     *   Example output snippet:
+     *     Model Identifier: MacBookPro15,2
+     *
+     * Note:
+     * - macOS does not expose a direct motherboard name.
+     * - For macOS, the "Model Identifier" is returned instead.
+     *
+     * @return motherboard name as a String, or null if unavailable
+     */
+    public static String getMotherBoardName() {
+
+        Process process = null;
+
+        try {
+            if (App.os.startsWith("Windows")) {
+                process = new ProcessBuilder("wmic", "baseboard", "get", "Product").start();
+            } else if (App.os.contains("Linux")) {
+                process = new ProcessBuilder("cat", "/sys/devices/virtual/dmi/id/board_name").start();
+            } else if (App.os.startsWith("Mac OS")) {
+                process = new ProcessBuilder("system_profiler", "SPHardwareDataType").start();
+            }
+        } catch (IOException e) {
+            Logger.getLogger(Util.class.getName())
+                    .log(Level.FINE, "Unable to get Motherboard Name", e);
+            return null;
+        }
+
+        // If no command was set (unsupported OS)
+        if (process == null) { return null; }
+
+        try (BufferedReader reader =
+                     new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+
+            StringBuilder builder = new StringBuilder();
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+
+                line=line.trim();
+
+                // If OS is mac return Model Identifier as MotherBoard name is not explicitly provided
+                if (line.startsWith("Model Identifier:")) {
+
+                    return line.split(":",2)[1].trim();
+                }
+
+                if (line.equalsIgnoreCase("Product")) { continue;}
+                builder.append(line).append(" ");
+            }
+
+            return builder.toString().trim();
+
+        } catch (IOException e) {
+            Logger.getLogger(Util.class.getName())
+                    .log(Level.FINE, "Unable to read Motherboard Name", e);
+            return null;
+        }
+    }
+
+    /**
+     * Get the physical interface (bus / transport) type of a disk or partition.
+     *
+     * This method determines the underlying storage interface (e.g. SATA, NVMe,
+     * USB) by executing OS-specific system commands and parsing their output.
+     *
+     * Commands used:
+     *
+     * Windows:
+     *   powershell -Command
+     *   Get-Partition -DriveLetter <partitionId> | Get-Disk | Select -Expand BusType
+     *
+     *   Example output:
+     *     SATA
+     *     NVMe
+     *     USB
+     *
+     * Linux:
+     *   lsblk -d -o TRAN /dev/<partitionId>
+     *
+     *   Example output:
+     *     TRAN
+     *     sata
+     *
+     * macOS:
+     *   diskutil info <partitionId>
+     *
+     *   Example output snippet:
+     *     Protocol: SATA
+     *
+     * Notes:
+     * - On Windows, the BusType field is returned.
+     * - On Linux, the TRAN (transport) column is used.
+     * - On macOS, the interface type is parsed from the "Protocol" field.
+     *
+     * @param partitionId drive letter (Windows) or device identifier (Linux/macOS)
+     * @return interface type as a String, or "OS not supported" if unavailable
+     */
+    public static String getInterfaceType(String partitionId){
+        Process process = null;
+
+        try {
+            if (App.os.startsWith("Windows")) {
+                process = new ProcessBuilder( "powershell", "-Command", "Get-Partition -DriveLetter " +  partitionId + " | Get-Disk | Select -Expand BusType").start();
+            } else if (App.os.contains("Linux")) {
+                process = new ProcessBuilder("lsblk", "-d", "-o", "TRAN", "/dev/" + partitionId).start();
+            } else if (App.os.startsWith("Mac OS")) {
+                process = new ProcessBuilder("diskutil", "info", partitionId).start();
+            }
+        } catch (IOException e) {
+            Logger.getLogger(Util.class.getName())
+                    .log(Level.FINE, "Unable to get Interface Type", e);
+            return "OS not supported";
+        }
+
+        if (process == null)  { return  "OS not supported"; }
+
+        try (BufferedReader reader =
+                     new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+
+                line = line.trim();
+
+                if (line.isEmpty()) { continue;}
+
+                if (line.equalsIgnoreCase("InterfaceType") || line.equalsIgnoreCase("TRAN")|| line.equalsIgnoreCase("NAME")) { continue;}
+
+                // In case of MacOs parse the output for interface type
+                if (line.startsWith("Protocol:")) {
+
+                    return line.split(":",2)[1].trim();
+                }
+
+                return line;
+
+            }
+
+        } catch (IOException e) {
+            Logger.getLogger(Util.class.getName())
+                    .log(Level.FINE, "Unable to read Interface Type", e);
+            return  "OS not supported";
+        }
+
+        return  "OS not supported";
+    }
+
 }
