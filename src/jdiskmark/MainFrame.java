@@ -1,7 +1,5 @@
-
 package jdiskmark;
 
-import static jdiskmark.App.dataDir;
 import static jdiskmark.App.SLASH_DATADIRNAME;
 import java.awt.BorderLayout;
 import java.awt.Desktop;
@@ -14,8 +12,6 @@ import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
-import static jdiskmark.App.IoEngine.MODERN;
-import static jdiskmark.App.SectorAlignment.ALIGN_512;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -710,7 +706,7 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_autoRemoveCheckBoxMenuItemActionPerformed
 
     private void deleteDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteDataMenuItemActionPerformed
-        Util.deleteDirectory(dataDir);
+        Util.deleteDirectory(App.dataDir);
     }//GEN-LAST:event_deleteDataMenuItemActionPerformed
 
     private void autoResetCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_autoResetCheckBoxMenuItemActionPerformed

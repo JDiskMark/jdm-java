@@ -1,4 +1,3 @@
-
 package jdiskmark;
 
 import static jdiskmark.Benchmark.BenchmarkType;

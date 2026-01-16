@@ -1,4 +1,3 @@
-
 package jdiskmark;
 
 import javax.swing.JTable;

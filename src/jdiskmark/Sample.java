@@ -1,4 +1,3 @@
-
 package jdiskmark;
 // constants
 import static jdiskmark.App.MEGABYTE;

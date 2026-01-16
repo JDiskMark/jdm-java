@@ -1,4 +1,3 @@
-
 package jdiskmark;
 
 import java.awt.event.ComponentAdapter;
