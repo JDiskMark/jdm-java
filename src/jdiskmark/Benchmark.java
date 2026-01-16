@@ -45,40 +45,34 @@ public class Benchmark implements Serializable {
     static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
     public enum BenchmarkType {
-        READ {
-            @Override
-            public String toString() { return "Read"; }
-        },
-        WRITE {
-            @Override
-            public String toString() { return "Write"; }
-        },
-        READ_WRITE {    
-            @Override
-            public String toString() { return "Read & Write"; }
-        }
+        READ("Read"),
+        WRITE("Write"),
+        READ_WRITE("Read & Write");
+
+        private final String display;
+        BenchmarkType(String display) { this.display = display; }
+        @Override
+        public String toString() { return display; }
     }
-    
+
     public enum IOMode {
-        READ {
-            @Override
-            public String toString() { return "Read"; }
-        },
-        WRITE {
-            @Override
-            public String toString() { return "Write"; }
-        }
+        READ("Read"),
+        WRITE("Write");
+
+        private final String display;
+        IOMode(String display) { this.display = display; }
+        @Override
+        public String toString() { return display; }
     }
 
     public enum BlockSequence {
-        SEQUENTIAL {
-            @Override
-            public String toString() { return "Sequential"; }
-        },
-        RANDOM {
-            @Override
-            public String toString() { return "Random"; }
-        }
+        SEQUENTIAL("Sequential"),
+        RANDOM("Random");
+
+        private final String display;
+        BlockSequence(String display) { this.display = display; }
+        @Override
+        public String toString() { return display; }
     }
     
     /**
