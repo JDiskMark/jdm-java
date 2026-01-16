@@ -1,5 +1,7 @@
 package jdiskmark;
 
+import jdiskmark.Benchmark.IOMode;
+
 import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -11,11 +13,10 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
-import org.jfree.chart.ChartMouseEvent;
-import org.jfree.chart.ChartMouseListener;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-import jdiskmark.Benchmark.IOMode;
+import org.jfree.chart.ChartMouseEvent;
+import org.jfree.chart.ChartMouseListener;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.AxisLocation;
@@ -38,18 +39,18 @@ public final class Gui {
     public static Palette palette = Palette.CLASSIC;
     public static boolean showMaxMin = true;
     public static boolean showDriveAccess = true;
-    // components
+    // form components
     public static ChartPanel chartPanel = null;
     public static MainFrame mainFrame = null;
     public static BenchmarkControlPanel controlPanel = null;
     public static SelectDriveFrame selFrame = null;
+    public static BenchmarkPanel runPanel = null;
+    public static JProgressBar progressBar = null;
+    // graph component
+    public static JFreeChart chart;
+    public static NumberAxis msAxis;
     public static XYSeries wSeries, wAvgSeries, wMaxSeries, wMinSeries, wDrvAccess;
     public static XYSeries rSeries, rAvgSeries, rMaxSeries, rMinSeries, rDrvAccess;
-    public static NumberAxis msAxis;
-    public static JFreeChart chart;
-    public static JProgressBar progressBar = null;
-    public static BenchmarkPanel runPanel = null;
-    
     public static XYLineAndShapeRenderer bwRenderer;
     public static XYLineAndShapeRenderer msRenderer;
     
@@ -417,8 +418,8 @@ public final class Gui {
         ArrayList<Sample> samples = operation.getSamples();
         for (Sample s : samples) {
             switch (operation.ioMode) {
-                case IOMode.READ -> addReadSample(s);
-                case IOMode.WRITE -> addWriteSample(s);
+                case READ -> addReadSample(s);
+                case WRITE -> addWriteSample(s);
             }
         }
         App.benchmarkType = benchmark.config.benchmarkType;
@@ -429,7 +430,7 @@ public final class Gui {
         App.numOfThreads = operation.numThreads;
         mainFrame.loadActiveConfig();
         switch (operation.ioMode) {
-            case IOMode.READ -> {
+            case READ -> {
                 App.rAvg = operation.bwAvg;
                 App.rMax = operation.bwMax;
                 App.rMin = operation.bwMin;
@@ -437,7 +438,7 @@ public final class Gui {
                 App.rIops = operation.iops;
                 controlPanel.refreshReadMetrics();                
             }
-            case IOMode.WRITE -> {
+            case WRITE -> {
                 App.wAvg = operation.bwAvg;
                 App.wMax = operation.bwMax;
                 App.wMin = operation.bwMin;
