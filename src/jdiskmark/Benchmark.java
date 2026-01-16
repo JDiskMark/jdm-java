@@ -44,7 +44,7 @@ public class Benchmark implements Serializable {
     static final DecimalFormat DFT = new DecimalFormat("###");
     static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
-        public enum BenchmarkType {
+    public enum BenchmarkType {
         READ {
             @Override
             public String toString() { return "Read"; }
@@ -135,23 +135,23 @@ public class Benchmark implements Serializable {
     
     // system info
     @Embedded
-    BenchmarkSystemInfo systemInfo = new BenchmarkSystemInfo();
+    final BenchmarkSystemInfo systemInfo = new BenchmarkSystemInfo();
     public BenchmarkSystemInfo getSystemInfo() { return systemInfo; }
     
     // drive info
     @Embedded
-    BenchmarkDriveInfo driveInfo = new BenchmarkDriveInfo();
+    final BenchmarkDriveInfo driveInfo = new BenchmarkDriveInfo();
     public BenchmarkDriveInfo getDriveInfo() { return driveInfo; }
 
     // benchmark parameters
     @Embedded
-    BenchmarkConfig config = new BenchmarkConfig();
+    final BenchmarkConfig config = new BenchmarkConfig();
     public BenchmarkConfig getConfig() { return config; }
     
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column(name = "startTime", columnDefinition = "TIMESTAMP")
-    LocalDateTime startTime;
+    final LocalDateTime startTime;
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column
     LocalDateTime endTime = null;
@@ -212,23 +212,19 @@ public class Benchmark implements Serializable {
     }
     
     public Benchmark() {
-        startTime = LocalDateTime.now();
-        config.profileName = App.activeProfile.getName();
-        config.numSamples = App.numOfSamples;
-        config.numBlocks = App.numOfBlocks;
-        config.blockSize = App.blockSizeKb;
+        this(BenchmarkType.WRITE);
     }
     
     public Benchmark(BenchmarkType type) {
         startTime = LocalDateTime.now();
         config.profileName = App.activeProfile.getName();
+        config.benchmarkType = type;
         config.numSamples = App.numOfSamples;
         config.numBlocks = App.numOfBlocks;
         config.blockSize = App.blockSizeKb;
-        if (config != null) {
-            config.benchmarkType = type;
-            config.profileName = App.activeProfile.getName();
-        }
+        config.blockOrder = App.blockSequence;
+        config.writeSyncEnabled = App.writeSyncEnable;
+        config.txSize = App.targetTxSizeKb();
     }
     
     // basic getters and setters

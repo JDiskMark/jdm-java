@@ -24,7 +24,7 @@ public class JsonExporter {
         mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         // Write the object to the file
         mapper.writeValue(new File(filePath), benchmark);
-        System.out.println("\n\nBenchmark successfully written to JSON file: " + filePath);
+        App.msg("\n\nBenchmark successfully written to JSON file: " + filePath);
     }
     
     /**

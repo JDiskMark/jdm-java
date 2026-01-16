@@ -21,10 +21,6 @@ public class BenchmarkConfig {
     public Benchmark.BenchmarkType getBenchmarkType() { return benchmarkType; }
     
     @Column
-    Benchmark.IOMode ioMode;
-    public Benchmark.IOMode getIoMode() { return ioMode; }
-    
-    @Column
     Benchmark.BlockSequence blockOrder;
     public Benchmark.BlockSequence getBlockOrder() { return blockOrder; }
     

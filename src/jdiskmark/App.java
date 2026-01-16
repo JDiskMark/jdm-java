@@ -523,15 +523,16 @@ public class App {
         
         // 7. start disk worker thread
         switch (mode) {
-            case Mode.GUI -> {
+            case GUI -> {
                 worker = new BenchmarkWorker();
                 worker.addPropertyChangeListener((final var event) -> {
                     switch (event.getPropertyName()) {
                         case "progress" -> {
                             int value = (Integer)event.getNewValue();
-                            Gui.progressBar.setValue(value);
                             long kbProcessed = value * App.targetTxSizeKb() / 100;
-                            Gui.progressBar.setString(String.valueOf(kbProcessed) + " / " + String.valueOf(App.targetTxSizeKb()));
+                            String progressText = String.valueOf(kbProcessed) + " / " + String.valueOf(App.targetTxSizeKb());
+                            Gui.progressBar.setValue(value);
+                            Gui.progressBar.setString(progressText);
                         }
                         case "state" -> {
                             switch ((StateValue)event.getNewValue()) {
@@ -543,7 +544,7 @@ public class App {
                 });
                 worker.execute();
             }
-            case Mode.CLI -> {
+            case CLI -> {
                 ExecutorService executor = Executors.newFixedThreadPool(1);
                 BenchmarkCallable benchmarkCallable = new BenchmarkCallable();
                 cliResult = executor.submit(benchmarkCallable);
@@ -554,14 +555,14 @@ public class App {
     public static void waitBenchmarkDone() {
         Benchmark benchmark = null;
         switch (mode) {
-            case Mode.GUI -> {
+            case GUI -> {
                 try {
                     benchmark = worker.get();
                 } catch (InterruptedException | ExecutionException e) {
                     Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
                 }
             }
-            case Mode.CLI -> {
+            case CLI -> {
                 try {
                     benchmark = cliResult.get();
                 } catch (InterruptedException | ExecutionException e) {
@@ -570,7 +571,7 @@ public class App {
             }
         }
         if (benchmark != null) {
-            System.out.println(benchmark.toResultString());
+            msg(benchmark.toResultString());
         }
     }
     
