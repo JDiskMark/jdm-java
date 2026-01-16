@@ -411,12 +411,10 @@ public final class Gui {
     
     static public void loadOperation(BenchmarkOperation operation) {        
         Benchmark benchmark = operation.getBenchmark();
-        System.out.println("loading benchmark w type: " + benchmark.config.benchmarkType + " o: " + operation.ioMode);
         resetBenchmarkData();
         updateLegendAndAxis(operation);
         chart.getTitle().setText(benchmark.getDriveInfoDisplay());
         ArrayList<Sample> samples = operation.getSamples();
-        System.out.println("samples=" + samples.size());
         for (Sample s : samples) {
             switch (operation.ioMode) {
                 case IOMode.READ -> addReadSample(s);
