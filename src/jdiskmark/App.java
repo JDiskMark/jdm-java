@@ -46,21 +46,21 @@ public class App {
     public static final int KILOBYTE = 1024;
     public static final int IDLE_STATE = 0;
     public static final int DISK_TEST_STATE = 1;
+    
+    // command line or graphical mode
+    public enum Mode { CLI, GUI }
+    
     // benchmark state
     public static enum State { IDLE_STATE, DISK_TEST_STATE };
-    public static State state = State.IDLE_STATE;
-    // app is in command line or graphical mode
-    public enum Mode { CLI, GUI }
-    public static Mode mode = Mode.CLI;
+    
     // io api, modern introduced w jdk 25 lts
     public enum IoEngine {
         MODERN("Modern (FFM API)"),
         LEGACY("Legacy (RandomAccessFile)");
-        private final String label;
-        IoEngine(String label) { this.label = label; }
-        @Override public String toString() { return label; }
+        private final String display;
+        IoEngine(String label) { this.display = label; }
+        @Override public String toString() { return display; }
     }
-    public static IoEngine ioEngine = IoEngine.MODERN;
     
     public enum SectorAlignment {
         ALIGN_512(512, "512 B (Legacy)"),
@@ -68,47 +68,43 @@ public class App {
         ALIGN_8K(8192, "8 KB (Enterprise)"),
         ALIGN_16K(16384, "16 KB (High-End)"),
         ALIGN_64K(65536, "64 KB (RAID/Stripe)");
-
         public final int bytes;
-        public final String label;
-
+        public final String display;
         SectorAlignment(int bytes, String label) {
             this.bytes = bytes;
-            this.label = label;
+            this.display = label;
         }
-
         @Override
-        public String toString() {
-            return label;
-        }
+        public String toString() { return display; }
     }
-    public static SectorAlignment sectorAlignment = SectorAlignment.ALIGN_4K;
     
-    // member
-    public static Properties p;
-    public static File locationDir = null;
-    public static File exportPath = null;
-    public static File dataDir = null; // refactor to dataPath after all branches merged
-    public static File testFile = null; // still used for cli
+    // application mode
+    public static Mode mode = Mode.CLI;
+    // elevated priviledges
+    public static boolean isRoot = false;
+    public static boolean isAdmin = false;
     // system info
     public static String os;
     public static String arch;
     public static String processorName;
     public static String jdk;
-    // elevated priviledges
-    public static boolean isRoot = false;
-    public static boolean isAdmin = false;
     // benchmark options
+    public static Properties p;
+    public static File locationDir = null;
+    public static File exportPath = null;
+    public static File dataDir = null; // refactor to dataPath after all branches merged
+    public static File testFile = null; // still used for cli
     public static boolean autoSave = false;
     public static boolean sharePortal = false;
     public static boolean verbose = false; // affects cli output
     public static boolean multiFile = true;
     public static boolean autoRemoveData = false;
     public static boolean autoReset = true;
-    public static boolean showMaxMin = true;
-    public static boolean showDriveAccess = true;
     public static boolean directEnable = false;
     public static boolean writeSyncEnable = false;
+    // benchmark io options
+    public static IoEngine ioEngine = IoEngine.MODERN;
+    public static SectorAlignment sectorAlignment = SectorAlignment.ALIGN_4K;
     // benchmark configuration
     public static BenchmarkProfile activeProfile = BenchmarkProfile.QUICK_TEST;
     public static BenchmarkType benchmarkType = BenchmarkType.WRITE;
@@ -117,16 +113,17 @@ public class App {
     public static int numOfBlocks = 32;     // desired number of blocks
     public static int blockSizeKb = 512;    // size of a block in KBs
     public static int numOfThreads = 1;     // number of threads
-    // benchmark result containers
-    public static BenchmarkWorker worker = null;
-    public static Future<Benchmark> cliResult = null;
-    // benchmark primitives
+    // active benchmark state
+    public static State state = State.IDLE_STATE;
     public static int nextSampleNumber = 1;   // number of the next sample
     public static double wMax = -1, wMin = -1, wAvg = -1, wAcc = -1;
     public static double rMax = -1, rMin = -1, rAvg = -1, rAcc = -1;
     public static long wIops = -1;
     public static long rIops = -1;
-    // benchmarks and operations
+    // benchmark result containers
+    public static BenchmarkWorker worker = null;
+    public static Future<Benchmark> cliResult = null;
+    // completed benchmarks and operations
     public static HashMap<String, Benchmark> benchmarks = new LinkedHashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new LinkedHashMap<>();
     
@@ -306,12 +303,6 @@ public class App {
         value = p.getProperty("blockSequence", String.valueOf(blockSequence));
         blockSequence = BlockSequence.valueOf(value.toUpperCase());
 
-        value = p.getProperty("showMaxMin", String.valueOf(showMaxMin));
-        showMaxMin = Boolean.parseBoolean(value);
-
-        value = p.getProperty("showDriveAccess", String.valueOf(showDriveAccess));
-        showDriveAccess = Boolean.parseBoolean(value);
-
         value = p.getProperty("numOfSamples", String.valueOf(numOfSamples));
         numOfSamples = Integer.parseInt(value);
 
@@ -354,6 +345,12 @@ public class App {
 
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
+        
+        value = p.getProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
+        Gui.showMaxMin = Boolean.parseBoolean(value);
+
+        value = p.getProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
+        Gui.showDriveAccess = Boolean.parseBoolean(value);
     }
     
     public static void saveConfig() {
@@ -368,8 +365,6 @@ public class App {
         p.setProperty("autoRemoveData", String.valueOf(autoRemoveData));
         p.setProperty("autoReset", String.valueOf(autoReset));
         p.setProperty("blockSequence", blockSequence.name());
-        p.setProperty("showMaxMin", String.valueOf(showMaxMin));
-        p.setProperty("showDriveAccess", String.valueOf(showDriveAccess));
         p.setProperty("numOfSamples", String.valueOf(numOfSamples));
         p.setProperty("numOfBlocks", String.valueOf(numOfBlocks));
         p.setProperty("blockSizeKb", String.valueOf(blockSizeKb));
@@ -378,7 +373,10 @@ public class App {
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         p.setProperty("directEnable", String.valueOf(directEnable));
         p.setProperty("sectorAlignment", sectorAlignment.name());
+        // display properties
         p.setProperty("palette", Gui.palette.name());
+        p.setProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
+        p.setProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
         
         // write properties file
         try {
@@ -407,16 +405,16 @@ public class App {
         sb.append("autoRemoveData: ").append(autoRemoveData).append('\n');
         sb.append("autoReset: ").append(autoReset).append('\n');
         sb.append("blockSequence: ").append(blockSequence).append('\n');
-        sb.append("showMaxMin: ").append(showMaxMin).append('\n');
         sb.append("numOfFiles: ").append(numOfSamples).append('\n');
         sb.append("numOfBlocks: ").append(numOfBlocks).append('\n');
         sb.append("blockSizeKb: ").append(blockSizeKb).append('\n');
         sb.append("numOfThreads: ").append(numOfThreads).append('\n');
-        sb.append("palette: ").append(Gui.palette).append('\n');
         sb.append("benchmarkType: ").append(benchmarkType).append('\n');
         sb.append("ioEngine: ").append(ioEngine).append('\n');
         sb.append("writeSyncEnable: ").append(writeSyncEnable).append('\n');
         sb.append("directEnable: ").append(directEnable).append('\n');
+        sb.append("palette: ").append(Gui.palette).append('\n');
+        sb.append("showMaxMin: ").append(Gui.showMaxMin).append('\n');
         return sb.toString();
     }
     

@@ -101,8 +101,8 @@ public final class MainFrame extends javax.swing.JFrame {
         autoRemoveCheckBoxMenuItem.setSelected(App.autoRemoveData);
         autoResetCheckBoxMenuItem.setSelected(App.autoReset);
         // display preferences
-        showMaxMinCheckBoxMenuItem.setSelected(App.showMaxMin);
-        showAccessCheckBoxMenuItem.setSelected(App.showDriveAccess);
+        showMaxMinCheckBoxMenuItem.setSelected(Gui.showMaxMin);
+        showAccessCheckBoxMenuItem.setSelected(Gui.showDriveAccess);
         switch (Gui.palette) {
             case CLASSIC -> {
                 classicPaletteMenuItem.setSelected(true);
@@ -719,7 +719,7 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_resetSequenceMenuItemActionPerformed
 
     private void showMaxMinCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showMaxMinCheckBoxMenuItemActionPerformed
-        App.showMaxMin = showMaxMinCheckBoxMenuItem.getState();
+        Gui.showMaxMin = showMaxMinCheckBoxMenuItem.getState();
         App.saveConfig();
     }//GEN-LAST:event_showMaxMinCheckBoxMenuItemActionPerformed
 
@@ -741,7 +741,7 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_deleteAllBenchmarksItemActionPerformed
 
     private void showAccessCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showAccessCheckBoxMenuItemActionPerformed
-        App.showDriveAccess = showAccessCheckBoxMenuItem.getState();
+        Gui.showDriveAccess = showAccessCheckBoxMenuItem.getState();
         App.saveConfig();
     }//GEN-LAST:event_showAccessCheckBoxMenuItemActionPerformed
 

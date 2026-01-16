@@ -33,8 +33,12 @@ import org.jfree.ui.RectangleInsets;
 public final class Gui {
     
     public static enum Palette { CLASSIC, BLUE_GREEN, BARD_COOL, BARD_WARM };
-    public static Palette palette = Palette.CLASSIC;
     
+    // display settings
+    public static Palette palette = Palette.CLASSIC;
+    public static boolean showMaxMin = true;
+    public static boolean showDriveAccess = true;
+    // components
     public static ChartPanel chartPanel = null;
     public static MainFrame mainFrame = null;
     public static BenchmarkControlPanel controlPanel = null;
@@ -222,11 +226,11 @@ public final class Gui {
     public static void addWriteSample(Sample s) {
         wSeries.add(s.sampleNum, s.bwMbSec);
         wAvgSeries.add(s.sampleNum, s.cumAvg);
-        if (App.showMaxMin) {
+        if (showMaxMin) {
             wMaxSeries.add(s.sampleNum, s.cumMax);
             wMinSeries.add(s.sampleNum, s.cumMin);
         }
-        if (App.showDriveAccess) {
+        if (showDriveAccess) {
             wDrvAccess.add(s.sampleNum, s.accessTimeMs);
         }
         controlPanel.refreshWriteMetrics();
@@ -234,11 +238,11 @@ public final class Gui {
     public static void addReadSample(Sample s) {
         rSeries.add(s.sampleNum, s.bwMbSec);
         rAvgSeries.add(s.sampleNum, s.cumAvg);
-        if (App.showMaxMin) {
+        if (showMaxMin) {
             rMaxSeries.add(s.sampleNum, s.cumMax);
             rMinSeries.add(s.sampleNum, s.cumMin);
         }
-        if (App.showDriveAccess) {
+        if (showDriveAccess) {
             rDrvAccess.add(s.sampleNum, s.accessTimeMs);
         }
         controlPanel.refreshReadMetrics();
@@ -263,17 +267,17 @@ public final class Gui {
     public static void updateLegendAndAxis() {
         bwRenderer.setSeriesVisibleInLegend(0, App.isWriteEnabled());
         bwRenderer.setSeriesVisibleInLegend(1, App.isWriteEnabled());
-        bwRenderer.setSeriesVisibleInLegend(2, App.isWriteEnabled() && App.showMaxMin);
-        bwRenderer.setSeriesVisibleInLegend(3, App.isWriteEnabled() && App.showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(2, App.isWriteEnabled() && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(3, App.isWriteEnabled() && showMaxMin);
         bwRenderer.setSeriesVisibleInLegend(4, App.isReadEnabled());
         bwRenderer.setSeriesVisibleInLegend(5, App.isReadEnabled());
-        bwRenderer.setSeriesVisibleInLegend(6, App.isReadEnabled() && App.showMaxMin);
-        bwRenderer.setSeriesVisibleInLegend(7, App.isReadEnabled() && App.showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(6, App.isReadEnabled() && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(7, App.isReadEnabled() && showMaxMin);
 
-        msRenderer.setSeriesVisibleInLegend(0, App.isWriteEnabled() && App.showDriveAccess);
-        msRenderer.setSeriesVisibleInLegend(1, App.isReadEnabled() && App.showDriveAccess);
+        msRenderer.setSeriesVisibleInLegend(0, App.isWriteEnabled() && showDriveAccess);
+        msRenderer.setSeriesVisibleInLegend(1, App.isReadEnabled() && showDriveAccess);
         
-        msAxis.setVisible(App.showDriveAccess);
+        msAxis.setVisible(showDriveAccess);
     }
     
     public static void updateLegendAndAxis(BenchmarkOperation o) {
@@ -281,17 +285,17 @@ public final class Gui {
         boolean isReadTest = o.ioMode == IOMode.READ;
         bwRenderer.setSeriesVisibleInLegend(0, isWriteTest);
         bwRenderer.setSeriesVisibleInLegend(1, isWriteTest);
-        bwRenderer.setSeriesVisibleInLegend(2, isWriteTest && App.showMaxMin);
-        bwRenderer.setSeriesVisibleInLegend(3, isWriteTest && App.showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(2, isWriteTest && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(3, isWriteTest && showMaxMin);
         bwRenderer.setSeriesVisibleInLegend(4, isReadTest);
         bwRenderer.setSeriesVisibleInLegend(5, isReadTest);
-        bwRenderer.setSeriesVisibleInLegend(6, isReadTest && App.showMaxMin);
-        bwRenderer.setSeriesVisibleInLegend(7, isReadTest && App.showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(6, isReadTest && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(7, isReadTest && showMaxMin);
         
-        msRenderer.setSeriesVisibleInLegend(0, isWriteTest && App.showDriveAccess);
-        msRenderer.setSeriesVisibleInLegend(1, isReadTest && App.showDriveAccess);
+        msRenderer.setSeriesVisibleInLegend(0, isWriteTest && showDriveAccess);
+        msRenderer.setSeriesVisibleInLegend(1, isReadTest && showDriveAccess);
         
-        msAxis.setVisible(App.showDriveAccess);
+        msAxis.setVisible(showDriveAccess);
     }
     
     static public void updateDiskInfo() {
