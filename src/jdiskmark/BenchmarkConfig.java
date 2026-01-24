@@ -10,10 +10,9 @@ public class BenchmarkConfig {
     String appVersion;
     public String getAppVersion() { return appVersion; }
     
-    // name of the profile used
     @Column
-    String profileName;
-    public String getProfileName() { return profileName; }
+    BenchmarkProfile profile;
+    public BenchmarkProfile getProfile() { return profile; }
     
     // benchmark parameters
     @Column

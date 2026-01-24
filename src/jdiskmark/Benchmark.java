@@ -211,7 +211,7 @@ public class Benchmark implements Serializable {
     
     public Benchmark(BenchmarkType type) {
         startTime = LocalDateTime.now();
-        config.profileName = App.activeProfile.getName();
+        config.profile = App.activeProfile;
         config.benchmarkType = type;
         config.numSamples = App.numOfSamples;
         config.numBlocks = App.numOfBlocks;
