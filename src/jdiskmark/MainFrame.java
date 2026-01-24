@@ -147,7 +147,7 @@ public final class MainFrame extends javax.swing.JFrame {
         directIoCbMenuItem.setSelected(App.directEnable);
         // sector alignment
         switch (App.sectorAlignment) {
-            //case NONE -> 
+            case NONE -> alignNoneRbMenuItem.setSelected(true);
             case ALIGN_512 -> align512RbMenuItem.setSelected(true);
             case ALIGN_4K -> align4KRbMenuItem.setSelected(true);
             case ALIGN_8K -> align8KRbMenuItem.setSelected(true);
