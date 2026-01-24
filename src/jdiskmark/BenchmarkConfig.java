@@ -2,6 +2,8 @@ package jdiskmark;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 
 @Embeddable
 public class BenchmarkConfig {
@@ -11,6 +13,7 @@ public class BenchmarkConfig {
     public String getAppVersion() { return appVersion; }
     
     @Column
+    @Enumerated(EnumType.STRING)
     BenchmarkProfile profile;
     public BenchmarkProfile getProfile() { return profile; }
     
