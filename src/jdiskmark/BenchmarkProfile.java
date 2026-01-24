@@ -1,5 +1,6 @@
 package jdiskmark;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.util.List;
 import jdiskmark.Benchmark.BenchmarkType;
 import jdiskmark.Benchmark.BlockSequence;
@@ -8,6 +9,7 @@ import jdiskmark.Benchmark.BlockSequence;
  * A named, pre-defined set of configuration parameters for a benchmark run.
  * Corresponds to a "Profile" in the GUI/CLI.
  */
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum BenchmarkProfile {
     
     // --- 1. Quick Functional Test (Fastest check) ---
@@ -72,6 +74,7 @@ public enum BenchmarkProfile {
     );
     
     // basic settings
+    final private String symbol;
     final private String name;
     final private BenchmarkType benchmarkType;
     final private BlockSequence blockSequence;
@@ -89,6 +92,7 @@ public enum BenchmarkProfile {
     BenchmarkProfile(String name, BenchmarkType benchmarkType,
             BlockSequence blockSequence, int numberThreads, int numSamples,
             int numBlocks, int blockSizeKB) {
+        this.symbol = this.name();
         this.name = name;
         this.benchmarkType = benchmarkType;
         this.blockSequence = blockSequence;
@@ -113,6 +117,7 @@ public enum BenchmarkProfile {
         ).toArray(BenchmarkProfile[]::new);
     }
 
+    public String getSymbol() { return symbol; }
     public String getName() { return name; }
     public BenchmarkType getBenchmarkType() { return benchmarkType; }
     public BlockSequence getBlockSequence() { return blockSequence; }
