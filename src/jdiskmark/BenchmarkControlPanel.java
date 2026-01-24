@@ -70,12 +70,15 @@ public class BenchmarkControlPanel extends JPanel {
             App.numOfSamples = profile.getNumSamples();
             App.numOfBlocks = profile.getNumBlocks();
             App.blockSizeKb = profile.getBlockSizeKb();
+            App.ioEngine = profile.getIoEngine();
+            App.directEnable = profile.isDirectEnable();
             App.writeSyncEnable = profile.isWriteSyncEnable();
+            App.sectorAlignment = profile.getSectorAlignment();
             App.multiFile = profile.isMultiFile();
             
             // only signal if initialized
             if (Gui.mainFrame != null) {
-                Gui.mainFrame.loadActiveConfig();
+                Gui.mainFrame.refreshConfig();
             }
         });
         
