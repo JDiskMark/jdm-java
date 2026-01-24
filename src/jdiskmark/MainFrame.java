@@ -46,7 +46,7 @@ public final class MainFrame extends javax.swing.JFrame {
         StringBuilder titleSb = new StringBuilder();
         titleSb.append(getTitle()).append(" ").append(App.VERSION);    
 
-        loadActiveConfig();
+        refreshConfig();
         bcPanel.configChangeDetection();
         
         // architecture
@@ -79,7 +79,7 @@ public final class MainFrame extends javax.swing.JFrame {
      * has been loaded.
      */
     public void loadPropertiesConfig() {
-        loadActiveConfig();
+        refreshConfig();
         if (App.locationDir != null) { // set the location dir if not null
             setLocation(App.locationDir.getAbsolutePath());
         }
@@ -123,7 +123,7 @@ public final class MainFrame extends javax.swing.JFrame {
         }
     }
 
-    public void loadActiveConfig() {
+    public void refreshConfig() {
         // basic benchmark config
         if (Gui.controlPanel != null) {
             Gui.controlPanel.refreshSettings();
@@ -132,7 +132,11 @@ public final class MainFrame extends javax.swing.JFrame {
         // advanced benchmark config
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
         switch (App.ioEngine) {
-            case MODERN -> engModernRbMenuItem.setSelected(true);
+            case MODERN -> {
+                engModernRbMenuItem.setSelected(true);
+                directIoCbMenuItem.setEnabled(true);
+                sectorAlignmentMenu.setEnabled(true);
+            }
             case LEGACY -> {
                 engLegacyRbMenuItem.setSelected(true);
                 directIoCbMenuItem.setEnabled(false);
@@ -143,6 +147,7 @@ public final class MainFrame extends javax.swing.JFrame {
         directIoCbMenuItem.setSelected(App.directEnable);
         // sector alignment
         switch (App.sectorAlignment) {
+            case NONE -> alignNoneRbMenuItem.setSelected(true);
             case ALIGN_512 -> align512RbMenuItem.setSelected(true);
             case ALIGN_4K -> align4KRbMenuItem.setSelected(true);
             case ALIGN_8K -> align8KRbMenuItem.setSelected(true);
@@ -196,13 +201,14 @@ public final class MainFrame extends javax.swing.JFrame {
         directIoCbMenuItem = new javax.swing.JCheckBoxMenuItem();
         writeSyncCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         sectorAlignmentMenu = new javax.swing.JMenu();
+        alignNoneRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align512RbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align4KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align8KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align16KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align64KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
-        jSeparator3 = new javax.swing.JPopupMenu.Separator();
         multiFileCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
+        jSeparator3 = new javax.swing.JPopupMenu.Separator();
         autoRemoveCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         autoResetCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator2 = new javax.swing.JPopupMenu.Separator();
@@ -430,7 +436,6 @@ public final class MainFrame extends javax.swing.JFrame {
 
         optionMenu.add(ioEngineMenu);
 
-        directIoCbMenuItem.setSelected(true);
         directIoCbMenuItem.setText("Direct IO (unbuffered)");
         directIoCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -449,6 +454,16 @@ public final class MainFrame extends javax.swing.JFrame {
         optionMenu.add(writeSyncCheckBoxMenuItem);
 
         sectorAlignmentMenu.setText("Sector Alignment");
+
+        sectorAlignbuttonGroup.add(alignNoneRbMenuItem);
+        alignNoneRbMenuItem.setSelected(true);
+        alignNoneRbMenuItem.setText(App.SectorAlignment.NONE.toString());
+        alignNoneRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                alignNoneRbMenuItemActionPerformed(evt);
+            }
+        });
+        sectorAlignmentMenu.add(alignNoneRbMenuItem);
 
         sectorAlignbuttonGroup.add(align512RbMenuItem);
         align512RbMenuItem.setText(App.SectorAlignment.ALIGN_512.toString());
@@ -496,7 +511,6 @@ public final class MainFrame extends javax.swing.JFrame {
         sectorAlignmentMenu.add(align64KRbMenuItem);
 
         optionMenu.add(sectorAlignmentMenu);
-        optionMenu.add(jSeparator3);
 
         multiFileCheckBoxMenuItem.setSelected(true);
         multiFileCheckBoxMenuItem.setText("Multi Data File");
@@ -506,6 +520,7 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
         optionMenu.add(multiFileCheckBoxMenuItem);
+        optionMenu.add(jSeparator3);
 
         autoRemoveCheckBoxMenuItem.setSelected(true);
         autoRemoveCheckBoxMenuItem.setText("Auto Remove Data Dir");
@@ -862,6 +877,11 @@ public final class MainFrame extends javax.swing.JFrame {
         App.saveConfig();
     }//GEN-LAST:event_prodEndpointRbMenuItemActionPerformed
 
+    private void alignNoneRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alignNoneRbMenuItemActionPerformed
+        App.sectorAlignment = App.SectorAlignment.NONE;
+        App.saveConfig();
+    }//GEN-LAST:event_alignNoneRbMenuItemActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
     private javax.swing.JRadioButtonMenuItem align16KRbMenuItem;
@@ -869,6 +889,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JRadioButtonMenuItem align512RbMenuItem;
     private javax.swing.JRadioButtonMenuItem align64KRbMenuItem;
     private javax.swing.JRadioButtonMenuItem align8KRbMenuItem;
+    private javax.swing.JRadioButtonMenuItem alignNoneRbMenuItem;
     private javax.swing.JCheckBoxMenuItem autoRemoveCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem autoResetCheckBoxMenuItem;
     private javax.swing.JPanel bControlMountPanel;

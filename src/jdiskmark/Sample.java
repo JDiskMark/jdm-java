@@ -13,7 +13,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.foreign.Arena;
+import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.nio.channels.FileChannel;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
@@ -174,7 +176,12 @@ public class Sample {
     
     public void measureWrite(int blockSize, int numOfBlocks, BenchmarkWorker worker) {
         long totalBytesWritten = 0;
-        
+        long finalAlign = sectorAlignment.bytes;
+        if (sectorAlignment.bytes <= 0) {
+            // if not selected use default layout alignment
+            MemoryLayout layout = MemoryLayout.sequenceLayout(blockSize, ValueLayout.JAVA_BYTE);
+            finalAlign = layout.byteAlignment();
+        }
         File testFile = getTestFile();
         long startTime = System.nanoTime();
         
@@ -206,7 +213,7 @@ public class Sample {
         }
         
         try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
-            MemorySegment segment = arena.allocate(blockSize, sectorAlignment.bytes);
+            MemorySegment segment = arena.allocate(blockSize, finalAlign);
             for (int b = 0; b < numOfBlocks; b++) {
                 if (worker.isCancelled()) break;
                 long blockIndex = (blockSequence == RANDOM) ?
@@ -230,7 +237,13 @@ public class Sample {
         long totalBytesRead = 0;
         File testFile = getTestFile();
         long startTime = System.nanoTime();
-
+        long byteAlignment = sectorAlignment.bytes;
+        if (sectorAlignment.bytes <= 0) {
+            // if not selected use default layout alignment
+            MemoryLayout layout = MemoryLayout.sequenceLayout(blockSize, ValueLayout.JAVA_BYTE);
+            byteAlignment = layout.byteAlignment();
+        }
+        
         Set<OpenOption> options = new HashSet<>();
         options.add(StandardOpenOption.READ);
         if (App.directEnable) {
@@ -256,7 +269,7 @@ public class Sample {
         }
         
         try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
-            MemorySegment segment = arena.allocate(blockSize, sectorAlignment.bytes);
+            MemorySegment segment = arena.allocate(blockSize, byteAlignment);
             for (int b = 0; b < numOfBlocks; b++) {
                 if (worker.isCancelled()) break;
                 long blockIndex = (blockSequence == RANDOM) ? Util.randInt(0, numOfBlocks - 1) : b;

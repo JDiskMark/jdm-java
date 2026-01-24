@@ -63,6 +63,7 @@ public class App {
     }
     
     public enum SectorAlignment {
+        NONE(-1, "None (OS Default)"),
         ALIGN_512(512, "512 B (Legacy)"),
         ALIGN_4K(4096, "4 KB (Standard)"),
         ALIGN_8K(8192, "8 KB (Enterprise)"),
