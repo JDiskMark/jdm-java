@@ -8,6 +8,7 @@ import static jdiskmark.App.dataDir;
 import static jdiskmark.App.sectorAlignment;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.sun.nio.file.ExtendedOpenOption;
 import java.io.File;
@@ -63,33 +64,40 @@ public class Sample {
     public Type getType() { return type; }
     public void setType(Type type) { this.type = type; }
     
+    @JsonProperty("sn") // sample number
     public int getSampleNum() { return sampleNum; }
     public void setSampleNum(int number) { sampleNum = number; }
     
     // bandwidth statistics
     
+    @JsonProperty("bw") // bandwidth
     @JsonSerialize(using = RoundingSerializer.class)
     public double getBwMbSec() { return bwMbSec; }
     public void setBwMbSec(double bwMb) { bwMbSec = bwMb; }
     
+    @JsonProperty("bwt") // bandwidth trend
     @JsonSerialize(using = RoundingSerializer.class)
     public double getAvg() { return cumAvg; }    
     public void setAvg(double avg) { cumAvg = avg; }
 
+    @JsonProperty("mx") // bandwidth maximum
     @JsonSerialize(using = RoundingSerializer.class)
     public double getMax() { return cumMax; }
     public void setMax(double max) { cumMax = max; }
     
+    @JsonProperty("mn") // bandwidth minimum
     @JsonSerialize(using = RoundingSerializer.class)
     public double getMin() { return cumMin; }
     public void setMin(double min) { cumMin = min; }
 
     // access time statistics
     
+    @JsonProperty("la") // latency
     @JsonSerialize(using = RoundingSerializer.class)
     public double getAccessTimeMs() { return accessTimeMs; }
     public void setAccessTimeMs(double accessTime) { accessTimeMs = accessTime; }
     
+    @JsonProperty("lat") // latency trend
     @JsonSerialize(using = RoundingSerializer.class)
     public double getCumAccTimeMs() { return cumAccTimeMs; }
     public void setCumAccTimeMs(double cumAccTime) { cumAccTimeMs = cumAccTime; }
