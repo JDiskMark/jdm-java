@@ -201,7 +201,7 @@ public final class MainFrame extends javax.swing.JFrame {
         directIoCbMenuItem = new javax.swing.JCheckBoxMenuItem();
         writeSyncCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         sectorAlignmentMenu = new javax.swing.JMenu();
-        alignNoneRbMenuItem = new javax.swing.JMenuItem();
+        alignNoneRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align512RbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align4KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align8KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
@@ -455,8 +455,9 @@ public final class MainFrame extends javax.swing.JFrame {
 
         sectorAlignmentMenu.setText("Sector Alignment");
 
-        alignNoneRbMenuItem.setText(App.SectorAlignment.NONE.toString());
         sectorAlignbuttonGroup.add(alignNoneRbMenuItem);
+        alignNoneRbMenuItem.setSelected(true);
+        alignNoneRbMenuItem.setText(App.SectorAlignment.NONE.toString());
         alignNoneRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 alignNoneRbMenuItemActionPerformed(evt);
@@ -888,7 +889,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JRadioButtonMenuItem align512RbMenuItem;
     private javax.swing.JRadioButtonMenuItem align64KRbMenuItem;
     private javax.swing.JRadioButtonMenuItem align8KRbMenuItem;
-    private javax.swing.JMenuItem alignNoneRbMenuItem;
+    private javax.swing.JRadioButtonMenuItem alignNoneRbMenuItem;
     private javax.swing.JCheckBoxMenuItem autoRemoveCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem autoResetCheckBoxMenuItem;
     private javax.swing.JPanel bControlMountPanel;

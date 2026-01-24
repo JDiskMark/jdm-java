@@ -141,13 +141,14 @@
                 <Property name="text" type="java.lang.String" value="Sector Alignment"/>
               </Properties>
               <SubComponents>
-                <MenuItem class="javax.swing.JMenuItem" name="alignNoneRbMenuItem">
+                <MenuItem class="javax.swing.JRadioButtonMenuItem" name="alignNoneRbMenuItem">
                   <Properties>
-                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-                      <Connection code="App.SectorAlignment.NONE.toString()" type="code"/>
-                    </Property>
                     <Property name="buttonGroup" type="javax.swing.ButtonGroup" editor="org.netbeans.modules.form.RADComponent$ButtonGroupPropertyEditor">
                       <ComponentRef name="sectorAlignbuttonGroup"/>
+                    </Property>
+                    <Property name="selected" type="boolean" value="true"/>
+                    <Property name="text" type="java.lang.String" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+                      <Connection code="App.SectorAlignment.NONE.toString()" type="code"/>
                     </Property>
                   </Properties>
                   <Events>
