@@ -8,6 +8,7 @@ import static jdiskmark.App.dataDir;
 import static jdiskmark.App.sectorAlignment;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.sun.nio.file.ExtendedOpenOption;
 import java.io.File;
 import java.io.IOException;
@@ -67,23 +68,29 @@ public class Sample {
     
     // bandwidth statistics
     
+    @JsonSerialize(using = RoundingSerializer.class)
     public double getBwMbSec() { return bwMbSec; }
     public void setBwMbSec(double bwMb) { bwMbSec = bwMb; }
     
+    @JsonSerialize(using = RoundingSerializer.class)
     public double getAvg() { return cumAvg; }    
     public void setAvg(double avg) { cumAvg = avg; }
 
+    @JsonSerialize(using = RoundingSerializer.class)
     public double getMax() { return cumMax; }
     public void setMax(double max) { cumMax = max; }
     
+    @JsonSerialize(using = RoundingSerializer.class)
     public double getMin() { return cumMin; }
     public void setMin(double min) { cumMin = min; }
 
     // access time statistics
     
+    @JsonSerialize(using = RoundingSerializer.class)
     public double getAccessTimeMs() { return accessTimeMs; }
     public void setAccessTimeMs(double accessTime) { accessTimeMs = accessTime; }
     
+    @JsonSerialize(using = RoundingSerializer.class)
     public double getCumAccTimeMs() { return cumAccTimeMs; }
     public void setCumAccTimeMs(double cumAccTime) { cumAccTimeMs = cumAccTime; }
 

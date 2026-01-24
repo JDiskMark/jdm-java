@@ -142,31 +142,31 @@ public class BenchmarkOperation implements Serializable {
     }
     
     // display friendly methods
-    
+    @JsonIgnore
     public String getBlocksDisplay() {
         return numBlocks + " (" + blockSize + ")";
     }
-    
+    @JsonIgnore
     public String getStartTimeString() {
         return startTime.format(DATE_FORMAT);
     }
-    
+    @JsonIgnore
     public String getAccTimeDisplay() {
         return accAvg == -1? "- -" : DF.format(accAvg);
     }
-    
+    @JsonIgnore
     public String getBwMinDisplay() {
         return bwMin == -1 ? "- -" : DF.format(bwMin);
     }
-    
+    @JsonIgnore
     public String getBwMaxDisplay() {
         return bwMax == -1 ? "- -" : DF.format(bwMax);
     }
-    
+    @JsonIgnore
     public String getBwMinMaxDisplay() {
         return bwMax == -1 ? "- -" : DFT.format(bwMin) + "/" + DFT.format(bwMax);
     }
-    
+    @JsonIgnore
     public String getBwAvgDisplay() {
         return bwAvg == -1 ? "- -" : DF.format(bwAvg);
     }
