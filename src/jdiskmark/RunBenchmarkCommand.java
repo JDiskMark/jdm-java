@@ -100,11 +100,6 @@ public class RunBenchmarkCommand implements Callable<Integer> {
                 System.out.println("Benchmark initiated successfully. Need to wait for completion...");
             }
             
-            // 3. Execute the benchmark (You will need to adjust startBenchmark to run without a GUI)
-            // NOTE: The existing App.startBenchmark() relies on a SwingWorker and Gui components.
-            // You MUST refactor the core benchmarking logic out of the SwingWorker and 
-            // into a dedicated CLI execution class/method for this to work.
-            
             try {
                 System.out.print(ANSI_HIDE_CURSOR);
                 App.startBenchmark();

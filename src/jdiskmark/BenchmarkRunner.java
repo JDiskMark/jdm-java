@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import jdiskmark.Benchmark.IOMode;
 
-public class BenchmarkLogic {
+public class BenchmarkRunner {
     
     // Listener interface to decouple from Swing/CLI
     public interface BenchmarkListener {
@@ -29,7 +29,7 @@ public class BenchmarkLogic {
     // Minimum milliseconds between progress updates to avoid excessive UI refreshes
     private static final long UPDATE_INTERVAL = 25;
     
-    private static final Logger logger = Logger.getLogger(BenchmarkLogic.class.getName());
+    private static final Logger logger = Logger.getLogger(BenchmarkRunner.class.getName());
     
     final BenchmarkListener listener;
     final AtomicLong lastUpdateMs = new AtomicLong(0);
@@ -63,7 +63,7 @@ public class BenchmarkLogic {
         return ranges;
     }
     
-    public BenchmarkLogic(BenchmarkListener listener) {
+    public BenchmarkRunner(BenchmarkListener listener) {
         this.listener = listener;
     }
 
@@ -137,7 +137,7 @@ public class BenchmarkLogic {
                     try {
                         action.perform(sample);
                     } catch (Exception ex) {
-                        Logger.getLogger(BenchmarkLogic.class.getName()).log(Level.SEVERE, null, ex);
+                        Logger.getLogger(BenchmarkRunner.class.getName()).log(Level.SEVERE, null, ex);
                         throw new RuntimeException(ex);
                     }
                     

@@ -8,7 +8,7 @@ import static jdiskmark.App.msg;
 
 /**
  * CLI version of the benchmark runner.
- * Uses BenchmarkLogic to perform the disk I/O while rendering a progress bar.
+ * Uses BenchmarkRunner to perform the disk I/O while rendering a progress bar.
  */
 public class BenchmarkCallable implements Callable<Benchmark> {
     private static final Logger logger = Logger.getLogger(BenchmarkCallable.class.getName());
@@ -33,7 +33,7 @@ public class BenchmarkCallable implements Callable<Benchmark> {
     }
     
     // Implementation of the listener for CLI output
-    private final BenchmarkLogic.BenchmarkListener listener = new BenchmarkLogic.BenchmarkListener() {
+    private final BenchmarkRunner.BenchmarkListener listener = new BenchmarkRunner.BenchmarkListener() {
         @Override
         public void onSampleComplete(Sample s) {
             if (App.verbose) {
@@ -79,9 +79,9 @@ public class BenchmarkCallable implements Callable<Benchmark> {
             App.resetTestData();
         }
 
-        // Execute benchmark Logic
-        BenchmarkLogic logic = new BenchmarkLogic(listener);
-        Benchmark benchmark = logic.execute();
+        // Execute benchmark
+        BenchmarkRunner bRunner = new BenchmarkRunner(listener);
+        Benchmark benchmark = bRunner.execute();
 
         // Post-benchmark persistence and export
         if (App.autoSave) {

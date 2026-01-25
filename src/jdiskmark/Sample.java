@@ -129,7 +129,7 @@ public class Sample {
     }
     
     // pre jdk 25 io api
-    public void measureWriteLegacy(int blockSize, int numOfBlocks, byte[] blockArr, BenchmarkLogic logic) {
+    public void measureWriteLegacy(int blockSize, int numOfBlocks, byte[] blockArr, BenchmarkRunner bRunner) {
         File testFile = getTestFile();
         long startTime = System.nanoTime();
         long totalBytesWrittenInSample = 0;
@@ -145,7 +145,7 @@ public class Sample {
                     }
                     rAccFile.write(blockArr, 0, blockSize);
                     totalBytesWrittenInSample += blockSize;
-                    logic.updateWriteProgress();
+                    bRunner.updateWriteProgress();
                 }
             }
         } catch (IOException ex) {
@@ -160,7 +160,7 @@ public class Sample {
     }
     
     // pre jdk 25 io api
-    public void measureReadLegacy(int blockSize, int numOfBlocks, byte[] blockArr, BenchmarkLogic logic) {
+    public void measureReadLegacy(int blockSize, int numOfBlocks, byte[] blockArr, BenchmarkRunner bRunner) {
         File testFile = getTestFile();
         long startTime = System.nanoTime();
         long totalBytesReadInMark = 0;
@@ -175,7 +175,7 @@ public class Sample {
                     }
                     rAccFile.readFully(blockArr, 0, blockSize);
                     totalBytesReadInMark += blockSize;
-                    logic.updateReadProgress();
+                    bRunner.updateReadProgress();
                 }
             }
         } catch (IOException ex) {
@@ -189,7 +189,7 @@ public class Sample {
         bwMbSec = mbRead / sec;
     }
     
-    public void measureWrite(int blockSize, int numOfBlocks, BenchmarkLogic logic) {
+    public void measureWrite(int blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
         long totalBytesWritten = 0;
         long finalAlign = sectorAlignment.bytes;
         if (sectorAlignment.bytes <= 0) {
@@ -230,14 +230,14 @@ public class Sample {
         try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
             MemorySegment segment = arena.allocate(blockSize, finalAlign);
             for (int b = 0; b < numOfBlocks; b++) {
-                if (logic.listener.isCancelled()) break;
+                if (bRunner.listener.isCancelled()) break;
                 long blockIndex = (blockSequence == RANDOM) ?
                         Util.randInt(0, numOfBlocks - 1) : b;
                 long byteOffset = blockIndex * blockSize;
 
                 int written = fc.write(segment.asByteBuffer(), byteOffset);
                 totalBytesWritten += written;
-                logic.updateWriteProgress();
+                bRunner.updateWriteProgress();
             }
         } catch (IOException e) {
             Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
@@ -248,7 +248,7 @@ public class Sample {
         bwMbSec = (double) totalBytesWritten / (double) MEGABYTE / sec;
     }
     
-    public void measureRead(int blockSize, int numOfBlocks, BenchmarkLogic logic) {
+    public void measureRead(int blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
         long totalBytesRead = 0;
         File testFile = getTestFile();
         long startTime = System.nanoTime();
@@ -286,12 +286,12 @@ public class Sample {
         try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
             MemorySegment segment = arena.allocate(blockSize, byteAlignment);
             for (int b = 0; b < numOfBlocks; b++) {
-                if (logic.listener.isCancelled()) break;
+                if (bRunner.listener.isCancelled()) break;
                 long blockIndex = (blockSequence == RANDOM) ? Util.randInt(0, numOfBlocks - 1) : b;
                 long byteOffset = blockIndex * blockSize;
                 int read = fc.read(segment.asByteBuffer(), byteOffset);
                 totalBytesRead += read;
-                logic.updateReadProgress();
+                bRunner.updateReadProgress();
             }
         } catch (IOException ex) {
             Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);

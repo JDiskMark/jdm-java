@@ -15,7 +15,7 @@ import javax.swing.SwingWorker;
  * once.
  */
 public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
-    BenchmarkLogic.BenchmarkListener listener = new BenchmarkLogic.BenchmarkListener() {
+    BenchmarkRunner.BenchmarkListener listener = new BenchmarkRunner.BenchmarkListener() {
         @Override
         public void onSampleComplete(Sample s) { publish(s); }
 
@@ -48,8 +48,8 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             Gui.updateLegendAndAxis();
         }
 
-        BenchmarkLogic logic = new BenchmarkLogic(listener);
-        Benchmark benchmark = logic.execute();
+        BenchmarkRunner bRunner = new BenchmarkRunner(listener);
+        Benchmark benchmark = bRunner.execute();
         
         // update gui title
         Gui.chart.getTitle().setText(benchmark.getDriveInfoDisplay());
