@@ -1,6 +1,7 @@
 package jdiskmark;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -203,13 +204,18 @@ public class BenchmarkOperation implements Serializable {
         this.writeSyncEnabled = writeSyncEnabled;
     }
 
-    public long getIops() {
-        return iops;
-    }
-
-    public void setIops(long iops) {
-        this.iops = iops;
-    }
+    // primary results
+    
+    @JsonSerialize(using = RoundingSerializer.class)
+    public double getBandwidth() { return bwAvg; }
+    public void setBandwidth(double bandwidth) { this.bwAvg = bandwidth; }
+    
+    @JsonSerialize(using = RoundingSerializer.class)
+    public double getLatency() { return accAvg; }
+    public void setLatency(double latency) { this.accAvg = latency; }
+    
+    public long getIops() { return iops; }
+    public void setIops(long iops) { this.iops = iops; }
     
     // utility methods for collection
     
