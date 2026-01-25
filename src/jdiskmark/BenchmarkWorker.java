@@ -15,6 +15,19 @@ import javax.swing.SwingWorker;
  * once.
  */
 public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
+    BenchmarkLogic.BenchmarkListener listener = new BenchmarkLogic.BenchmarkListener() {
+        @Override
+        public void onSampleComplete(Sample s) { publish(s); }
+
+        @Override
+        public void onProgressUpdate(long completed, long total) { setProgress((int) completed); }
+
+        @Override
+        public boolean isCancelled() { return BenchmarkWorker.this.isCancelled(); }
+
+        @Override
+        public void requestCacheDrop() { Gui.dropCache(); }
+    };
     
     @Override
     protected Benchmark doInBackground() throws Exception {
@@ -34,20 +47,6 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             Gui.resetBenchmarkData();
             Gui.updateLegendAndAxis();
         }
-        
-        BenchmarkLogic.BenchmarkListener listener = new BenchmarkLogic.BenchmarkListener() {
-            @Override
-            public void onSampleComplete(Sample s) { publish(s); }
-
-            @Override
-            public void onProgressUpdate(long completed, long total) { setProgress((int) completed); }
-
-            @Override
-            public boolean isCancelled() { return BenchmarkWorker.this.isCancelled(); }
-
-            @Override
-            public void requestCacheDrop() { Gui.dropCache(); }
-        };
 
         BenchmarkLogic logic = new BenchmarkLogic(listener);
         Benchmark benchmark = logic.execute();
