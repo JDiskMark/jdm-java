@@ -63,8 +63,8 @@ public class BenchmarkOperation implements Serializable {
     int numBlocks = 0;
     public int getNumBlocks() { return numBlocks; }
     @Column
-    int blockSize = 0;
-    public int getBlockSize() { return blockSize; }
+    long blockSize = 0;
+    public long getBlockSize() { return blockSize; }
     @Column
     int numSamples = 0;
     public int getNumSamples() { return numSamples; }

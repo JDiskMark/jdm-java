@@ -2,7 +2,6 @@ package jdiskmark;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import static jdiskmark.App.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,9 +9,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import jdiskmark.App.IoEngine;
 import jdiskmark.Benchmark.IOMode;
 
 public class BenchmarkRunner {
@@ -36,11 +35,12 @@ public class BenchmarkRunner {
     private static final Logger logger = Logger.getLogger(BenchmarkRunner.class.getName());
     
     final BenchmarkListener listener;
+    final BenchmarkConfig config;
     final AtomicLong lastUpdateMs = new AtomicLong(0);
     final LongAdder writeUnitsComplete = new LongAdder();
     final LongAdder readUnitsComplete = new LongAdder();
-    int unitsTotal;
-    int blockSize;
+    long unitsTotal;
+    long blockSize;
     byte[] blockArr; // for legacy jdk io
 
     public static int[][] divideIntoRanges(int startIndex, int endIndex, int numThreads) {
@@ -67,65 +67,71 @@ public class BenchmarkRunner {
         return ranges;
     }
     
-    public BenchmarkRunner(BenchmarkListener listener) {
+    public BenchmarkRunner(BenchmarkListener listener, BenchmarkConfig config) {
         this.listener = listener;
+        this.config = config;
     }
 
     public Benchmark execute() throws Exception {
-        // 1. Setup metadata
-        int wUnitsTotal = isWriteEnabled() ? numOfBlocks * numOfSamples : 0;
-        int rUnitsTotal = isReadEnabled() ? numOfBlocks * numOfSamples : 0;
+        long wUnitsTotal = config.hasWriteOperation() ? config.numBlocks * config.numSamples : 0;
+        long rUnitsTotal = config.hasReadOperation() ? config.numBlocks * config.numSamples : 0;
         unitsTotal = wUnitsTotal + rUnitsTotal;
-        blockSize = blockSizeKb * KILOBYTE;
+        blockSize = config.blockSize;
         
-        if (ioEngine == IoEngine.LEGACY) {
-            blockArr = new byte[blockSize];
+        if (config.ioEngine == IoEngine.LEGACY) {
+            blockArr = new byte[(int)blockSize];
             for (int b = 0; b < blockArr.length; b++) {
                 if (b % 2 == 0) blockArr[b] = (byte) 0xFF;
             }
         }
 
-        String driveModel = Util.getDriveModel(locationDir);
-        String partitionId = Util.getPartitionId(locationDir.toPath());
-        DiskUsageInfo usageInfo = Util.getDiskUsage(locationDir.toString());
+        //TODO: use config if possible
+        String driveModel = Util.getDriveModel(App.locationDir);
+        String partitionId = Util.getPartitionId(App.locationDir.toPath());
+        DiskUsageInfo usageInfo = Util.getDiskUsage(App.locationDir.toString());
 
         // Initialize Benchmark
-        Benchmark benchmark = new Benchmark(benchmarkType);
+        
+        Benchmark benchmark = new Benchmark(config);
         mapSystemInfo(benchmark, driveModel, partitionId, usageInfo);
 
-        int[][] tRanges = divideIntoRanges(nextSampleNumber, nextSampleNumber + numOfSamples, numOfThreads);
+        int startingSample = App.nextSampleNumber;
+        int endingSample = App.nextSampleNumber + config.numSamples;
+        int[][] tRanges = divideIntoRanges(startingSample, endingSample, config.numThreads);
 
+        benchmark.recordStartTime();
+        
         // Execution Loops
-        if (isWriteEnabled()) {
-            runOperation(benchmark, IOMode.WRITE, tRanges, blockSize, blockArr);
+        if (config.hasWriteOperation()) {
+            runOperation(benchmark, IOMode.WRITE, tRanges);
         }
         
-        if (isReadEnabled() && isWriteEnabled() && !listener.isCancelled()) {
+        if (config.hasReadOperation() && config.hasWriteOperation() && !listener.isCancelled()) {
             throttledProgressUpdate(true);
             listener.requestCacheDrop();
         }
 
-        if (isReadEnabled()) {
-            runOperation(benchmark, IOMode.READ, tRanges, blockSize, blockArr);
+        if (config.hasReadOperation()) {
+            runOperation(benchmark, IOMode.READ, tRanges);
         }
 
-        benchmark.endTime = LocalDateTime.now();
+        benchmark.recordEndTime();
         return benchmark;
     }
 
-    private void runOperation(Benchmark b, IOMode mode, int[][] ranges, int blockSize, byte[] blockArr) throws Exception {
+    private void runOperation(Benchmark b, IOMode mode, int[][] ranges) throws Exception {
         BenchmarkOperation op = createOp(b, mode);
-        ExecutorService executor = Executors.newFixedThreadPool(numOfThreads);
+        ExecutorService executor = Executors.newFixedThreadPool(config.numThreads);
         List<Future<?>> futures = new ArrayList<>();
 
-        final IOAction action = switch (ioEngine) {
+        final IOAction action = switch (config.ioEngine) {
             case LEGACY -> switch (mode) {
-                case WRITE -> (s) -> s.measureWriteLegacy(blockSize, numOfBlocks, blockArr, this);
-                case READ -> (s) -> s.measureReadLegacy(blockSize, numOfBlocks, blockArr, this);
+                case WRITE -> (s) -> s.measureWriteLegacy(blockSize, config.numBlocks, blockArr, this);
+                case READ -> (s) -> s.measureReadLegacy(blockSize, config.numBlocks, blockArr, this);
             };
             case MODERN -> switch (mode) {
-                case WRITE -> (s) -> s.measureWrite(blockSize, numOfBlocks, this);
-                case READ -> (s) -> s.measureRead(blockSize, numOfBlocks, this);
+                case WRITE -> (s) -> s.measureWrite(blockSize, config.numBlocks, this);
+                case READ -> (s) -> s.measureRead(blockSize, config.numBlocks, this);
             };
         };
         
@@ -137,11 +143,12 @@ public class BenchmarkRunner {
                     try {
                         action.perform(sample);
                     } catch (Exception ex) {
-                        Logger.getLogger(BenchmarkRunner.class.getName()).log(Level.SEVERE, null, ex);
+                        logger.log(Level.SEVERE, null, ex);
                         throw new RuntimeException(ex);
                     }
                     
-                    updateMetrics(sample);
+                    //TODO: review for putting into onSampleComplete
+                    App.updateMetrics(sample);
                     // Update op-level cumulative stats
                     op.bwMax = sample.cumMax;
                     op.bwMin = sample.cumMin;
@@ -149,8 +156,10 @@ public class BenchmarkRunner {
                     op.accAvg = sample.cumAccTimeMs;
                     op.add(sample);
                     
-                    if (mode == IOMode.WRITE) writeUnitsComplete.increment();
-                    else readUnitsComplete.increment();
+                    switch (mode) {
+                        case WRITE: writeUnitsComplete.increment();
+                        case READ: readUnitsComplete.increment();
+                    }
                     
                     listener.onSampleComplete(sample);
                     throttledProgressUpdate(false);
@@ -205,25 +214,25 @@ public class BenchmarkRunner {
         BenchmarkOperation op = new BenchmarkOperation();
         op.setBenchmark(b);
         op.ioMode = mode;
-        op.blockOrder = blockSequence;
-        op.numSamples = numOfSamples;
-        op.numBlocks = numOfBlocks;
-        op.blockSize = blockSizeKb;
-        op.txSize = targetTxSizeKb();
-        op.numThreads = numOfThreads;
+        op.blockOrder = config.blockOrder;
+        op.numSamples = config.numSamples;
+        op.numBlocks = config.numBlocks;
+        op.blockSize = config.blockSize;
+        op.txSize = config.txSize;
+        op.numThreads = config.numThreads;
         if (mode == IOMode.WRITE) {
-            op.setWriteSyncEnabled(writeSyncEnable);
+            op.setWriteSyncEnabled(config.writeSyncEnabled);
         }
         b.getOperations().add(op);
         return op;
     }
     
     private void mapSystemInfo(Benchmark b, String model, String partId, DiskUsageInfo u) {
-        b.systemInfo.processorName = processorName;
-        b.systemInfo.os = os;
-        b.systemInfo.arch = arch;
-        b.systemInfo.jdk = jdk;
-        b.systemInfo.locationDir = locationDir.toString();
+        b.systemInfo.processorName = App.processorName;
+        b.systemInfo.os = App.os;
+        b.systemInfo.arch = App.arch;
+        b.systemInfo.jdk = App.jdk;
+        b.systemInfo.locationDir = App.locationDir.toString();
         
         b.driveInfo.driveModel = model;
         b.driveInfo.partitionId = partId;

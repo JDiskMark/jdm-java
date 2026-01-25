@@ -1,10 +1,12 @@
 package jdiskmark;
 
+import static jdiskmark.App.msg;
+
 import jakarta.persistence.EntityManager;
+import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import static jdiskmark.App.msg;
 
 /**
  * CLI version of the benchmark runner.
@@ -63,27 +65,42 @@ public class BenchmarkCallable implements Callable<Benchmark> {
 
     @Override
     public Benchmark call() throws Exception {
+        // 1. Profile Awareness: Apply "Quick Test" as the default CLI behavior if not specified
+        if (App.activeProfile == BenchmarkProfile.QUICK_TEST) {
+            System.out.println("Applying Quick Test Profile...");
+        }
+
         System.out.println(App.benchmarkType + " benchmark started...");
         long start = System.currentTimeMillis();
 
         if (App.verbose) {
             msg("*** starting new CLI benchmark thread");
-            msg("Running readTest " + App.isReadEnabled() + "   writeTest " + App.isWriteEnabled());
+            msg("Profile: " + App.activeProfile);
             msg("num samples: " + App.numOfSamples + ", num blks: " + App.numOfBlocks
                     + ", blk size (kb): " + App.blockSizeKb + ", blockSequence: "
                     + App.blockSequence);
         }
 
-        // Pre-benchmark cleanup
+        // Standard Pre-benchmark cleanup
         if (App.autoReset) {
             App.resetTestData();
         }
 
-        // Execute benchmark
-        BenchmarkRunner bRunner = new BenchmarkRunner(listener);
+        // Orchestration via BenchmarkRunner
+        BenchmarkRunner bRunner = new BenchmarkRunner(listener, App.getConfig());
         Benchmark benchmark = bRunner.execute();
 
-        // Post-benchmark persistence and export
+        // 4. Persistence & Export
+        handlePostBenchmark(benchmark);
+
+        long duration = System.currentTimeMillis() - start;
+        System.out.println(); 
+        System.out.println(App.benchmarkType + " benchmark finished after " + duration + "ms.");
+        
+        return benchmark;
+    }
+
+    private void handlePostBenchmark(Benchmark benchmark) {
         if (App.autoSave) {
             try {
                 EntityManager em = EM.getEntityManager();
@@ -100,13 +117,13 @@ public class BenchmarkCallable implements Callable<Benchmark> {
         }
 
         if (App.exportPath != null) {
-            JsonExporter.writeBenchmarkToJson(benchmark, App.exportPath.getAbsolutePath());
+            try {
+                JsonExporter.writeBenchmarkToJson(benchmark, App.exportPath.getAbsolutePath());
+            } catch (IOException ex) {
+                logger.log(Level.SEVERE, "export error", ex);
+            }
         }
-
+        
         App.nextSampleNumber += App.numOfSamples;
-        long duration = System.currentTimeMillis() - start;
-        System.out.println(); // Move to new line after progress bar
-        System.out.println(App.benchmarkType + " benchmark finished after " + duration + "ms.");
-        return benchmark;
     }
 }

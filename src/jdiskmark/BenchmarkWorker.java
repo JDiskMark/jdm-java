@@ -34,7 +34,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
         if (App.verbose) {
             msg("*** starting new worker thread");
-            msg("Running readTest " + App.isReadEnabled() + "   writeTest " + App.isWriteEnabled());
+            msg("Running readTest " + App.hasReadOperation() + "   writeTest " + App.hasWriteOperation());
             msg("num samples: " + App.numOfSamples + ", num blks: " + App.numOfBlocks
                     + ", blk size (kb): " + App.blockSizeKb + ", blockSequence: "
                     + App.blockSequence);
@@ -48,7 +48,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             Gui.updateLegendAndAxis();
         }
 
-        BenchmarkRunner bRunner = new BenchmarkRunner(listener);
+        BenchmarkRunner bRunner = new BenchmarkRunner(listener, App.getConfig());
         Benchmark benchmark = bRunner.execute();
         
         // update gui title

@@ -75,8 +75,9 @@ public class BenchmarkControlPanel extends JPanel {
             App.writeSyncEnable = profile.isWriteSyncEnable();
             App.sectorAlignment = profile.getSectorAlignment();
             App.multiFile = profile.isMultiFile();
+            App.saveConfig();
             
-            // only signal if initialized
+            // only if initialized, calls our refresh
             if (Gui.mainFrame != null) {
                 Gui.mainFrame.refreshConfig();
             }

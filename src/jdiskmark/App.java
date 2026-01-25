@@ -41,9 +41,11 @@ public class App {
     public static final String ESBL_EXE = "EmptyStandbyList.exe";
     // error messages
     public static final String LOCATION_NOT_SELECTED_ERROR = "Location has not been selected";
+    // Standard Binary Units (Power of 2), longs to avoid overflow
+    public static final long KILOBYTE = 1_024L;
+    public static final long MEGABYTE = 1_024L * KILOBYTE;
+    public static final long GIGABYTE = 1_024L * MEGABYTE;
     // numeric constants
-    public static final int MEGABYTE = 1024 * 1024;
-    public static final int KILOBYTE = 1024;
     public static final int IDLE_STATE = 0;
     public static final int DISK_TEST_STATE = 1;
     
@@ -388,19 +390,43 @@ public class App {
         }
     }
     
-    public static boolean isReadEnabled() {
+    /**
+     * Creates a point-in-time snapshot of the current settings.
+     * @return the configuration for benchmarking
+     */
+    public static BenchmarkConfig getConfig() {
+        BenchmarkConfig config = new BenchmarkConfig();
+        config.appVersion = VERSION;
+        config.profile = activeProfile;
+        config.benchmarkType = benchmarkType;
+        config.blockOrder = blockSequence;
+        config.numBlocks = numOfBlocks;
+        config.blockSize = (long) blockSizeKb * KILOBYTE;
+        config.numSamples = numOfSamples;
+        config.numThreads = numOfThreads;
+        config.txSize = targetTxSizeKb();
+        config.ioEngine = ioEngine;
+        config.directIoEnabled = directEnable;
+        config.writeSyncEnabled = writeSyncEnable;
+        config.sectorAlignment = sectorAlignment;
+        config.multiFileEnabled = multiFile;
+        config.testDir = locationDir.getAbsolutePath();
+        return config;
+    }
+    
+    public static boolean hasReadOperation() {
         return benchmarkType == BenchmarkType.READ || benchmarkType == BenchmarkType.READ_WRITE;
     }
 
-    public static boolean isWriteEnabled() {
+    public static boolean hasWriteOperation() {
         return benchmarkType == BenchmarkType.WRITE || benchmarkType == BenchmarkType.READ_WRITE;
     }
     
     public static String getConfigString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Config for JDiskMark ").append(VERSION).append('\n');
-        sb.append("readTest: ").append(isReadEnabled()).append('\n');
-        sb.append("writeTest: ").append(isWriteEnabled()).append('\n');
+        sb.append("readTest: ").append(hasReadOperation()).append('\n');
+        sb.append("writeTest: ").append(hasWriteOperation()).append('\n');
         sb.append("locationDir: ").append(locationDir).append('\n');
         sb.append("multiFile: ").append(multiFile).append('\n');
         sb.append("autoRemoveData: ").append(autoRemoveData).append('\n');
@@ -420,7 +446,7 @@ public class App {
     }
     
     public static void loadBenchmarks() {
-        if (App.verbose) {
+        if (verbose) {
             System.out.println("loading benchmarks");
         }
 
@@ -594,14 +620,14 @@ public class App {
             if (wAvg == -1) {
                 wAvg = s.bwMbSec;
             } else {
-                int n = s.sampleNum;
+                long n = s.sampleNum;
                 wAvg = (((double)(n - 1) * wAvg) + s.bwMbSec) / (double)n;
             }
             // cumulative access time
             if (wAcc == -1) {
                 wAcc = s.accessTimeMs;
             } else {
-                int n = s.sampleNum;
+                long n = s.sampleNum;
                 wAcc = (((double)(n - 1) * wAcc) + s.accessTimeMs) / (double)n;
             }
             // update sample
@@ -620,14 +646,14 @@ public class App {
             if (rAvg == -1) {
                 rAvg = s.bwMbSec;
             } else {
-                int n = s.sampleNum;
+                long n = s.sampleNum;
                 rAvg = (((double)(n-1) * rAvg) + s.bwMbSec) / (double)n;
             }
             // cumulative access time
             if (rAcc == -1) {
                 rAcc = s.accessTimeMs;
             } else {
-                int n = s.sampleNum;
+                long n = s.sampleNum;
                 rAcc = (((double)(n - 1) * rAcc) + s.accessTimeMs) / (double)n;
             }
             // update sample
