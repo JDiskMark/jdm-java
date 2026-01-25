@@ -25,7 +25,7 @@ import static jdiskmark.App.numOfSamples;
 import static jdiskmark.App.testFile;
 import static jdiskmark.Benchmark.BlockSequence;
 import static jdiskmark.Benchmark.IOMode;
-import static jdiskmark.BenchmarkWorker.divideIntoRanges;
+import static jdiskmark.BenchmarkLogic.divideIntoRanges;
 import static jdiskmark.Sample.Type.READ;
 import static jdiskmark.Sample.Type.WRITE;
 
