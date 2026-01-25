@@ -8,15 +8,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import jdiskmark.Benchmark.BenchmarkType;
 import jdiskmark.Benchmark.BlockSequence;
+import jdiskmark.App.IoEngine;
 
 @Command(name = "run", description = "Starts a disk benchmark test with specified parameters.")
 public class RunBenchmarkCommand implements Callable<Integer> {
 
-    // for hiding and showing the cursor during a cli benchmark
     public static final String ANSI_HIDE_CURSOR = "\u001b[?25l";
     public static final String ANSI_SHOW_CURSOR = "\u001b[?25h";
     
-    // --- OPTIONAL PARAMETERS ---
+    // --- EXISTING PARAMETERS ---
     @Option(names = {"-l", "--location"},
             description = "The directory path where test files will be created.",
             defaultValue = "${user.home}")
@@ -56,12 +56,36 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             defaultValue = "200")
     int numOfSamples;
 
+    // --- IO PARAMETERS ---
+
+    @Option(names = {"-i", "--io-engine"},
+            description = "I/O Engine: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
+            defaultValue = "MODERN")
+    IoEngine ioEngine;
+
+    @Option(names = {"-d", "--direct"},
+            description = "Enable Direct I/O (bypass OS cache). Only works with MODERN engine.")
+    boolean directEnable = false;
+
+    @Option(names = {"-s", "--write-sync"},
+            description = "Enable Write Sync (flush to disk).")
+    boolean writeSyncEnable = false;
+
+    @Option(names = {"-a", "--alignment"},
+            description = "Sector alignment: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
+            defaultValue = "NONE")
+    App.SectorAlignment sectorAlignment;
+
+    @Option(names = {"-m", "--multi-file"},
+            description = "Create a new file for every sample instead of using one large file.")
+    boolean multiFile = false;
+
     // --- FLAGS / UTILITY OPTIONS ---
     
     @Option(names = {"--verbose", "-v"}, description = "Enable detailed logging.")
     boolean verbose = false;
 
-    @Option(names = {"--save", "-s"}, description = "Enable saving the benchmark.")
+    @Option(names = {"--save", "-s"}, description = "Enable saving the benchmark results to the database.")
     boolean save = false;
     
     @Option(names = {"--clean", "-c"}, description = "Remove existing JDiskMark data directory before starting.")
@@ -76,7 +100,7 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             return 0; // Return 0 (Success) immediately after help is printed
         }
         try {
-            // 1. Apply CLI parameters to the global App state
+            // Map CLI parameters to App state
             App.setLocationDir(locationDir);
             App.benchmarkType = benchmarkType;
             App.numOfThreads = numOfThreads;
@@ -84,20 +108,28 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             App.numOfBlocks = numOfBlocks;
             App.blockSizeKb = blockSizeKb;
             App.numOfSamples = numOfSamples;
-            App.autoRemoveData = autoRemoveData; // Apply the --clean flag
+            App.autoRemoveData = autoRemoveData;
             App.verbose = verbose;
             App.autoSave = save;
             App.exportPath = exportPath;
 
-            // 2. Output final configuration before starting
+            // Mapping New Options
+            App.ioEngine = ioEngine;
+            App.directEnable = directEnable;
+            App.writeSyncEnable = writeSyncEnable;
+            App.sectorAlignment = sectorAlignment;
+            App.multiFile = multiFile;
+
+            // 2. Initialization and Start
             if (App.verbose) {
                 System.out.println("--- Starting JDiskMark Benchmark (CLI) ---");
             }
+            
             App.init();
+            
             if (App.verbose) {
-                String configString = App.getConfigString();
-                System.out.println(configString);
-                System.out.println("Benchmark initiated successfully. Need to wait for completion...");
+                System.out.println(App.getConfigString());
+                System.out.println("Benchmark initiated successfully. Starting execution...");
             }
             
             try {
@@ -110,9 +142,8 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             return 0; // Success exit code
             
         } catch (RuntimeException e) {
-            // Handle any exceptions during setup or execution
             System.err.println("Error running benchmark: " + e.getMessage());
-            Logger.getLogger(RunBenchmarkCommand.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(RunBenchmarkCommand.class.getName()).log(Level.SEVERE, "Trace:", e);
             return 1; // Failure exit code
         }
     }

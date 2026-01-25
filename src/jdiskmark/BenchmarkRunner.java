@@ -6,7 +6,11 @@ import static jdiskmark.App.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import jdiskmark.Benchmark.IOMode;
@@ -85,15 +89,15 @@ public class BenchmarkRunner {
         String partitionId = Util.getPartitionId(locationDir.toPath());
         DiskUsageInfo usageInfo = Util.getDiskUsage(locationDir.toString());
 
-        // 2. Initialize Benchmark Object
+        // Initialize Benchmark
         Benchmark benchmark = new Benchmark(benchmarkType);
         mapSystemInfo(benchmark, driveModel, partitionId, usageInfo);
 
         int[][] tRanges = divideIntoRanges(nextSampleNumber, nextSampleNumber + numOfSamples, numOfThreads);
 
-        // 3. Execution Loops
+        // Execution Loops
         if (isWriteEnabled()) {
-            runOperation(benchmark, Benchmark.IOMode.WRITE, tRanges, blockSize, blockArr, unitsTotal);
+            runOperation(benchmark, IOMode.WRITE, tRanges, blockSize, blockArr);
         }
         
         if (isReadEnabled() && isWriteEnabled() && !listener.isCancelled()) {
@@ -102,32 +106,28 @@ public class BenchmarkRunner {
         }
 
         if (isReadEnabled()) {
-            runOperation(benchmark, IOMode.READ, tRanges, blockSize, blockArr, unitsTotal);
+            runOperation(benchmark, IOMode.READ, tRanges, blockSize, blockArr);
         }
 
         benchmark.endTime = LocalDateTime.now();
         return benchmark;
     }
 
-    private void runOperation(Benchmark b, IOMode mode, int[][] ranges, int blockSize, byte[] blockArr, int total) throws Exception {
+    private void runOperation(Benchmark b, IOMode mode, int[][] ranges, int blockSize, byte[] blockArr) throws Exception {
         BenchmarkOperation op = createOp(b, mode);
         ExecutorService executor = Executors.newFixedThreadPool(numOfThreads);
         List<Future<?>> futures = new ArrayList<>();
 
-        final IOAction action;
-        if (ioEngine == IoEngine.LEGACY) {
-            if (mode == IOMode.WRITE) {
-                action = (s) -> s.measureWriteLegacy(blockSize, numOfBlocks, blockArr, this);
-            } else {
-                action = (s) -> s.measureReadLegacy(blockSize, numOfBlocks, blockArr, this);
-            }
-        } else {
-            if (mode == IOMode.WRITE) {
-                action = (s) -> s.measureWrite(blockSize, numOfBlocks, this);
-            } else {
-                action = (s) -> s.measureRead(blockSize, numOfBlocks, this);
-            }
-        }
+        final IOAction action = switch (ioEngine) {
+            case LEGACY -> switch (mode) {
+                case WRITE -> (s) -> s.measureWriteLegacy(blockSize, numOfBlocks, blockArr, this);
+                case READ -> (s) -> s.measureReadLegacy(blockSize, numOfBlocks, blockArr, this);
+            };
+            case MODERN -> switch (mode) {
+                case WRITE -> (s) -> s.measureWrite(blockSize, numOfBlocks, this);
+                case READ -> (s) -> s.measureRead(blockSize, numOfBlocks, this);
+            };
+        };
         
         for (int[] range : ranges) {
             futures.add(executor.submit(() -> {
