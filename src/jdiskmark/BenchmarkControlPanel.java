@@ -56,6 +56,9 @@ public class BenchmarkControlPanel extends JPanel {
             if (!profileCombo.hasFocus()) { return; }
             
             BenchmarkProfile profile = (BenchmarkProfile)profileCombo.getSelectedItem();
+            
+            if (profile == null) return;
+            
             App.activeProfile = profile;
             
             // skip adjustments if custom test was selected
@@ -159,6 +162,13 @@ public class BenchmarkControlPanel extends JPanel {
     }
     
     private void initComponents() {
+        
+        // Make numeric combos editable
+        //todo add input guard against non numerics
+        numThreadsCombo.setEditable(true);
+        numBlocksCombo.setEditable(true);
+        blockSizeCombo.setEditable(true);
+        numSamplesCombo.setEditable(true);
         
         // 3 column layout framework
         setLayout(new MigLayout("insets 0 5 0 5, fillx, wrap 3", "[30%][27%][43%]", "[]10[]"));
