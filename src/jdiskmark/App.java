@@ -88,6 +88,7 @@ public class App {
     public static String os;
     public static String arch;
     public static String processorName;
+    public static String motherBoardName;
     public static String jdk;
     // benchmark options
     public static Properties p;
@@ -197,6 +198,7 @@ public class App {
         os = System.getProperty("os.name");
         arch = System.getProperty("os.arch");
         processorName = Util.getProcessorName();
+        motherBoardName=Util.getMotherBoardName();
         jdk = Util.getJvmInfo();
         
         checkPermission();
@@ -666,6 +668,7 @@ public class App {
         }
         String driveModel = Util.getDriveModel(locationDir);
         String partitionId = Util.getPartitionId(locationDir.toPath());
+        String interFaceType=Util.getInterfaceType(partitionId);
         DiskUsageInfo usageInfo;
         try {
             usageInfo = Util.getDiskUsage(locationDir.toString());
@@ -673,7 +676,7 @@ public class App {
             usageInfo = new DiskUsageInfo();
             Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return driveModel + " - " + partitionId + ": " + usageInfo.getUsageTitleDisplay();
+        return  driveModel + " - " + interFaceType + " - " + partitionId + ": " + usageInfo.getUsageTitleDisplay();
     }
     
     static public String getDriveModel() {
