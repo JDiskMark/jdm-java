@@ -620,14 +620,14 @@ public class App {
             if (wAvg == -1) {
                 wAvg = s.bwMbSec;
             } else {
-                long n = s.sampleNum;
+                int n = s.sampleNum;
                 wAvg = (((double)(n - 1) * wAvg) + s.bwMbSec) / (double)n;
             }
             // cumulative access time
             if (wAcc == -1) {
                 wAcc = s.accessTimeMs;
             } else {
-                long n = s.sampleNum;
+                int n = s.sampleNum;
                 wAcc = (((double)(n - 1) * wAcc) + s.accessTimeMs) / (double)n;
             }
             // update sample
