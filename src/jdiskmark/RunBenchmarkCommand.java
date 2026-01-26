@@ -67,7 +67,7 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             description = "Enable Direct I/O (bypass OS cache). Only works with MODERN engine.")
     boolean directEnable = false;
 
-    @Option(names = {"-s", "--write-sync"},
+    @Option(names = {"-y", "--write-sync"},
             description = "Enable Write Sync (flush to disk).")
     boolean writeSyncEnable = false;
 
@@ -82,13 +82,13 @@ public class RunBenchmarkCommand implements Callable<Integer> {
 
     // --- FLAGS / UTILITY OPTIONS ---
     
-    @Option(names = {"--verbose", "-v"}, description = "Enable detailed logging.")
+    @Option(names = {"-v", "--verbose"}, description = "Enable detailed logging.")
     boolean verbose = false;
 
-    @Option(names = {"--save", "-s"}, description = "Enable saving the benchmark results to the database.")
+    @Option(names = {"-s", "--save"}, description = "Enable saving the benchmark results to the database.")
     boolean save = false;
     
-    @Option(names = {"--clean", "-c"}, description = "Remove existing JDiskMark data directory before starting.")
+    @Option(names = {"-c", "--clean"}, description = "Remove existing JDiskMark data directory before starting.")
     boolean autoRemoveData = false;
 
     @Option(names = {"-h", "--help"}, usageHelp = true, description = "Display this help and exit.")
