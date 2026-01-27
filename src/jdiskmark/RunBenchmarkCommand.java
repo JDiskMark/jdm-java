@@ -110,7 +110,7 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     @Option(names = {"-v", "--verbose"}, description = "Enable detailed logging.")
     boolean verbose = false;
 
-    // overides to profiles controled parameters
+    // overrides to profile-controlled parameters
     private void applyOverrides(CommandLine.ParseResult pr) {
         // Workload Definition
         if (pr.hasMatchedOption("--type"))         App.benchmarkType = benchmarkType;
