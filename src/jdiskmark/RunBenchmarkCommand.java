@@ -9,6 +9,8 @@ import java.util.logging.Logger;
 import jdiskmark.Benchmark.BenchmarkType;
 import jdiskmark.Benchmark.BlockSequence;
 import jdiskmark.App.IoEngine;
+import picocli.CommandLine;
+import picocli.CommandLine.Spec;
 
 @Command(name = "run", description = "Starts a disk benchmark test with specified parameters.")
 public class RunBenchmarkCommand implements Callable<Integer> {
@@ -16,50 +18,53 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     public static final String ANSI_HIDE_CURSOR = "\u001b[?25l";
     public static final String ANSI_SHOW_CURSOR = "\u001b[?25h";
     
-    // --- EXISTING PARAMETERS ---
-    @Option(names = {"-l", "--location"},
-            description = "The directory path where test files will be created.",
-            defaultValue = "${user.home}")
-    File locationDir;
+    // --- PICOCLI INJECTION ---
+    @Spec 
+    CommandLine.Model.CommandSpec spec;
     
-    @Option(names = {"-e", "--export"},
-            description = "The output file to export benchmark results in json format.")
-    File exportPath;
-
+    // --- Profile selction ---
+    
+    @Option(names = {"-p", "--profile"},
+            description = "Profile: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
+            defaultValue = "QUICK_TEST")
+    BenchmarkProfile profile;
+    
+    // --- Profile Workload Definition ---
+    
     @Option(names = {"-t", "--type"},
-            description = "Benchmark type: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
+            description = "Benchmark type: ${COMPLETION-CANDIDATES}. (Profile default used if not specified)",
             defaultValue = "WRITE")
     BenchmarkType benchmarkType;
 
     @Option(names = {"-T", "--threads"}, 
-            description = "Number of threads to use for testing. (Default: ${DEFAULT-VALUE})",
+            description = "Number of threads to use for testing. (Profile default used if not specified)",
             defaultValue = "1")
     int numOfThreads;
 
     @Option(names = {"-o", "--order"}, 
-            description = "Block order: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
+            description = "Block order: ${COMPLETION-CANDIDATES}. (Profile default used if not specified)",
             defaultValue = "SEQUENTIAL")
     BlockSequence blockSequence;
 
     @Option(names = {"-b", "--blocks"},
-            description = "Number of blocks/chunks per sample. (Default: ${DEFAULT-VALUE})",
+            description = "Number of blocks/chunks per sample. (Profile default used if not specified)",
             defaultValue = "32")
     int numOfBlocks;
 
     @Option(names = {"-z", "--block-size"},
-            description = "Size of a block/chunk in Kilobytes (KB). (Default: ${DEFAULT-VALUE})",
+            description = "Size of a block/chunk in Kilobytes (KB). (Profile default used if not specified)",
             defaultValue = "512")
     int blockSizeKb;
 
     @Option(names = {"-n", "--samples"},
-            description = "Total number of samples/files to write/read. (Default: ${DEFAULT-VALUE})",
+            description = "Total number of samples/files to write/read. (Profile default used if not specified)",
             defaultValue = "200")
     int numOfSamples;
 
-    // --- IO PARAMETERS ---
+    // --- Profile IO Strategy ---
 
     @Option(names = {"-i", "--io-engine"},
-            description = "I/O Engine: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
+            description = "I/O Engine: ${COMPLETION-CANDIDATES}. (Profile default used if not specified)",
             defaultValue = "MODERN")
     IoEngine ioEngine;
 
@@ -72,18 +77,24 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     boolean writeSyncEnable = false;
 
     @Option(names = {"-a", "--alignment"},
-            description = "Sector alignment: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
+            description = "Sector alignment: ${COMPLETION-CANDIDATES}. (Profile default used if not specified)",
             defaultValue = "NONE")
     App.SectorAlignment sectorAlignment;
 
     @Option(names = {"-m", "--multi-file"},
             description = "Create a new file for every sample instead of using one large file.")
     boolean multiFile = false;
-
-    // --- FLAGS / UTILITY OPTIONS ---
     
-    @Option(names = {"-v", "--verbose"}, description = "Enable detailed logging.")
-    boolean verbose = false;
+    // --- Environmental and Persistance ---
+    
+    @Option(names = {"-l", "--location"},
+            description = "The directory path where test files will be created.",
+            defaultValue = "${user.home}")
+    File locationDir;
+    
+    @Option(names = {"-e", "--export"},
+            description = "The output file to export benchmark results in json format.")
+    File exportPath;
 
     @Option(names = {"-s", "--save"}, description = "Enable saving the benchmark results to the database.")
     boolean save = false;
@@ -91,36 +102,49 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     @Option(names = {"-c", "--clean"}, description = "Remove existing JDiskMark data directory before starting.")
     boolean autoRemoveData = false;
 
+    // --- Utility and Diagnostics ---
+    
     @Option(names = {"-h", "--help"}, usageHelp = true, description = "Display this help and exit.")
     boolean helpRequested;
+    
+    @Option(names = {"-v", "--verbose"}, description = "Enable detailed logging.")
+    boolean verbose = false;
 
+    // overides to profiles controled parameters
+    private void applyOverrides(CommandLine.ParseResult pr) {
+        // Workload Definition
+        if (pr.hasMatchedOption("--type"))         App.benchmarkType = benchmarkType;
+        if (pr.hasMatchedOption("--threads"))      App.numOfThreads = numOfThreads;
+        if (pr.hasMatchedOption("--order"))        App.blockSequence = blockSequence;
+        if (pr.hasMatchedOption("--blocks"))       App.numOfBlocks = numOfBlocks;
+        if (pr.hasMatchedOption("--block-size"))   App.blockSizeKb = blockSizeKb;
+        if (pr.hasMatchedOption("--samples"))      App.numOfSamples = numOfSamples;
+        // IO Strategy
+        if (pr.hasMatchedOption("--io-engine"))    App.ioEngine = ioEngine;
+        if (pr.hasMatchedOption("--direct"))       App.directEnable = directEnable;
+        if (pr.hasMatchedOption("--write-sync"))   App.writeSyncEnable = writeSyncEnable;
+        if (pr.hasMatchedOption("--alignment"))    App.sectorAlignment = sectorAlignment;
+        if (pr.hasMatchedOption("--multi-file"))   App.multiFile = multiFile;
+    }
+    
     @Override
     public Integer call() {
         if (helpRequested) {
             return 0; // Return 0 (Success) immediately after help is printed
         }
         try {
-            // Map CLI parameters to App state
+            // configure the profile
+            App.loadProfile(profile);
+            // apply profile parameter overrides
+            applyOverrides(spec.commandLine().getParseResult());
+            // environment and persistance
             App.setLocationDir(locationDir);
-            App.benchmarkType = benchmarkType;
-            App.numOfThreads = numOfThreads;
-            App.blockSequence = blockSequence;
-            App.numOfBlocks = numOfBlocks;
-            App.blockSizeKb = blockSizeKb;
-            App.numOfSamples = numOfSamples;
             App.autoRemoveData = autoRemoveData;
             App.verbose = verbose;
             App.autoSave = save;
             App.exportPath = exportPath;
 
-            // Mapping New Options
-            App.ioEngine = ioEngine;
-            App.directEnable = directEnable;
-            App.writeSyncEnable = writeSyncEnable;
-            App.sectorAlignment = sectorAlignment;
-            App.multiFile = multiFile;
-
-            // 2. Initialization and Start
+            // Initialization and Start
             if (App.verbose) {
                 System.out.println("--- Starting JDiskMark Benchmark (CLI) ---");
             }

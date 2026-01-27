@@ -253,6 +253,32 @@ public class App {
         }
     }
     
+    public static void loadProfile(BenchmarkProfile profile) {
+        try {
+            activeProfile = profile;
+
+            // skip adjustments if custom test was selected
+            if (profile.equals(BenchmarkProfile.CUSTOM_TEST)) {
+                return;
+            }
+
+            // TODO: later relocate into a BenchmarkConfiguration.java
+            benchmarkType = profile.getBenchmarkType();
+            blockSequence = profile.getBlockSequence();
+            numOfThreads = profile.getNumThreads();
+            numOfSamples = profile.getNumSamples();
+            numOfBlocks = profile.getNumBlocks();
+            blockSizeKb = profile.getBlockSizeKb();
+            ioEngine = profile.getIoEngine();
+            directEnable = profile.isDirectEnable();
+            writeSyncEnable = profile.isWriteSyncEnable();
+            sectorAlignment = profile.getSectorAlignment();
+            multiFile = profile.isMultiFile();
+        } finally {
+            saveConfig();
+        }
+    }
+    
     public static void loadConfig() {
         if (PROPERTIES_FILE.exists()) {
             System.out.println("loading: " + PROPERTIES_FILE.getAbsolutePath());

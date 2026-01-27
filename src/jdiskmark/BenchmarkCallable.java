@@ -66,9 +66,8 @@ public class BenchmarkCallable implements Callable<Benchmark> {
     @Override
     public Benchmark call() throws Exception {
         // 1. Profile Awareness: Apply "Quick Test" as the default CLI behavior if not specified
-        if (App.activeProfile == BenchmarkProfile.QUICK_TEST) {
-            System.out.println("Applying Quick Test Profile...");
-        }
+        
+        App.loadProfile(BenchmarkProfile.QUICK_TEST);
 
         System.out.println(App.benchmarkType + " benchmark started...");
         long start = System.currentTimeMillis();

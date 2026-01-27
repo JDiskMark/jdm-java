@@ -179,6 +179,7 @@ public class Benchmark implements Serializable {
         sb.append("-------------------------------------------\n");
         sb.append("JDiskMark Benchmark Results (v").append(App.VERSION).append(")\n");
         sb.append("-------------------------------------------\n");
+        sb.append("Profile: ").append(config.profile.name).append("\n");
         sb.append("Benchmark: ").append(config.benchmarkType).append("\n");
         sb.append("Drive: ").append(App.getDriveModel()).append("\n");
         sb.append("Capacity: ").append(App.getDriveCapacity()).append("\n");
