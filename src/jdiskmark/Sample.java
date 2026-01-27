@@ -1,11 +1,8 @@
 package jdiskmark;
+
 // constants
 import static jdiskmark.App.MEGABYTE;
 import static jdiskmark.Benchmark.BlockSequence.RANDOM;
-// global app settings
-import static jdiskmark.App.blockSequence;
-import static jdiskmark.App.dataDir;
-import static jdiskmark.App.sectorAlignment;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -121,16 +118,16 @@ public class Sample {
     }
     
     @JsonIgnore
-    public File getTestFile() {
+    public File getTestFile(BenchmarkRunner bRunner) {
         if (App.multiFile) {
-            return new File(dataDir.getAbsolutePath() + File.separator + "testdata" + sampleNum + ".jdm");
+            return new File(bRunner.config.testDir + File.separator + "testdata" + sampleNum + ".jdm");
         }
-        return new File(dataDir.getAbsolutePath() + File.separator + "testdata.jdm");
+        return new File(bRunner.config.testDir + File.separator + "testdata.jdm");
     }
     
     // pre jdk 25 io api
-    public void measureWriteLegacy(int blockSize, int numOfBlocks, byte[] blockArr, BenchmarkWorker worker) {
-        File testFile = getTestFile();
+    public void measureWriteLegacy(long blockSize, int numOfBlocks, byte[] blockArr, BenchmarkRunner bRunner) {
+        File testFile = getTestFile(bRunner);
         long startTime = System.nanoTime();
         long totalBytesWrittenInSample = 0;
         String mode = (App.writeSyncEnable) ? "rwd" : "rw";
@@ -143,9 +140,9 @@ public class Sample {
                     } else {
                         rAccFile.seek(b * blockSize);
                     }
-                    rAccFile.write(blockArr, 0, blockSize);
+                    rAccFile.write(blockArr, 0, (int)blockSize);
                     totalBytesWrittenInSample += blockSize;
-                    worker.updateWriteProgress();
+                    bRunner.updateWriteProgress();
                 }
             }
         } catch (IOException ex) {
@@ -160,8 +157,8 @@ public class Sample {
     }
     
     // pre jdk 25 io api
-    public void measureReadLegacy(int blockSize, int numOfBlocks, byte[] blockArr, BenchmarkWorker worker) {
-        File testFile = getTestFile();
+    public void measureReadLegacy(long blockSize, int numOfBlocks, byte[] blockArr, BenchmarkRunner bRunner) {
+        File testFile = getTestFile(bRunner);
         long startTime = System.nanoTime();
         long totalBytesReadInMark = 0;
         try {
@@ -173,9 +170,9 @@ public class Sample {
                     } else {
                         rAccFile.seek(b * blockSize);
                     }
-                    rAccFile.readFully(blockArr, 0, blockSize);
+                    rAccFile.readFully(blockArr, 0, (int)blockSize);
                     totalBytesReadInMark += blockSize;
-                    worker.updateReadProgress();
+                    bRunner.updateReadProgress();
                 }
             }
         } catch (IOException ex) {
@@ -189,15 +186,15 @@ public class Sample {
         bwMbSec = mbRead / sec;
     }
     
-    public void measureWrite(int blockSize, int numOfBlocks, BenchmarkWorker worker) {
+    public void measureWrite(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
         long totalBytesWritten = 0;
-        long finalAlign = sectorAlignment.bytes;
-        if (sectorAlignment.bytes <= 0) {
+        long byteAlignment = bRunner.config.sectorAlignment.bytes;
+        if (byteAlignment <= 0) {
             // if not selected use default layout alignment
             MemoryLayout layout = MemoryLayout.sequenceLayout(blockSize, ValueLayout.JAVA_BYTE);
-            finalAlign = layout.byteAlignment();
+            byteAlignment = layout.byteAlignment();
         }
-        File testFile = getTestFile();
+        File testFile = getTestFile(bRunner);
         long startTime = System.nanoTime();
         
         Set<OpenOption> options = new HashSet<>();
@@ -228,16 +225,16 @@ public class Sample {
         }
         
         try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
-            MemorySegment segment = arena.allocate(blockSize, finalAlign);
+            MemorySegment segment = arena.allocate(blockSize, byteAlignment);
             for (int b = 0; b < numOfBlocks; b++) {
-                if (worker.isCancelled()) break;
-                long blockIndex = (blockSequence == RANDOM) ?
+                if (bRunner.listener.isCancelled()) break;
+                long blockIndex = (bRunner.config.blockOrder == RANDOM) ?
                         Util.randInt(0, numOfBlocks - 1) : b;
                 long byteOffset = blockIndex * blockSize;
 
                 int written = fc.write(segment.asByteBuffer(), byteOffset);
                 totalBytesWritten += written;
-                worker.updateWriteProgress();
+                bRunner.updateWriteProgress();
             }
         } catch (IOException e) {
             Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
@@ -248,12 +245,12 @@ public class Sample {
         bwMbSec = (double) totalBytesWritten / (double) MEGABYTE / sec;
     }
     
-    public void measureRead(int blockSize, int numOfBlocks, BenchmarkWorker worker) {
+    public void measureRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
         long totalBytesRead = 0;
-        File testFile = getTestFile();
+        File testFile = getTestFile(bRunner);
         long startTime = System.nanoTime();
-        long byteAlignment = sectorAlignment.bytes;
-        if (sectorAlignment.bytes <= 0) {
+        long byteAlignment = bRunner.config.sectorAlignment.bytes;
+        if (byteAlignment <= 0) {
             // if not selected use default layout alignment
             MemoryLayout layout = MemoryLayout.sequenceLayout(blockSize, ValueLayout.JAVA_BYTE);
             byteAlignment = layout.byteAlignment();
@@ -286,12 +283,12 @@ public class Sample {
         try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
             MemorySegment segment = arena.allocate(blockSize, byteAlignment);
             for (int b = 0; b < numOfBlocks; b++) {
-                if (worker.isCancelled()) break;
-                long blockIndex = (blockSequence == RANDOM) ? Util.randInt(0, numOfBlocks - 1) : b;
+                if (bRunner.listener.isCancelled()) break;
+                long blockIndex = (bRunner.config.blockOrder == RANDOM) ? Util.randInt(0, (int)(numOfBlocks - 1)) : b;
                 long byteOffset = blockIndex * blockSize;
                 int read = fc.read(segment.asByteBuffer(), byteOffset);
                 totalBytesRead += read;
-                worker.updateReadProgress();
+                bRunner.updateReadProgress();
             }
         } catch (IOException ex) {
             Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
