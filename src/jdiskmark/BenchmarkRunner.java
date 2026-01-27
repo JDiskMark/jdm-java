@@ -157,8 +157,8 @@ public class BenchmarkRunner {
                     op.add(sample);
                     
                     switch (mode) {
-                        case WRITE: writeUnitsComplete.increment();
-                        case READ: readUnitsComplete.increment();
+                        case WRITE -> writeUnitsComplete.increment();
+                        case READ -> readUnitsComplete.increment();
                     }
                     
                     listener.onSampleComplete(sample);
