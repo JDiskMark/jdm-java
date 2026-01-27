@@ -73,8 +73,8 @@ public class BenchmarkRunner {
     }
 
     public Benchmark execute() throws Exception {
-        long wUnitsTotal = config.hasWriteOperation() ? config.numBlocks * config.numSamples : 0;
-        long rUnitsTotal = config.hasReadOperation() ? config.numBlocks * config.numSamples : 0;
+        long wUnitsTotal = config.hasWriteOperation() ? (long) config.numBlocks * config.numSamples : 0L;
+        long rUnitsTotal = config.hasReadOperation() ? (long) config.numBlocks * config.numSamples : 0L;
         unitsTotal = wUnitsTotal + rUnitsTotal;
         blockSize = config.blockSize;
         
