@@ -3,9 +3,12 @@ package jdiskmark;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import jdiskmark.Benchmark.BenchmarkType;
 import jdiskmark.Benchmark.BlockSequence;
 import jdiskmark.App.IoEngine;
@@ -25,9 +28,20 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     // --- Profile selection ---
     
     @Option(names = {"-p", "--profile"},
-            description = "Profile: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
-            defaultValue = "QUICK_TEST")
+        // This forces the help menu to show the actual Enum constants
+        completionCandidates = ProfileCandidates.class, 
+        description = "Profile: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
+        defaultValue = "QUICK_TEST")
     BenchmarkProfile profile;
+
+    // Helper class to provide the symbols to the help menu
+    static class ProfileCandidates extends ArrayList<String> {
+        ProfileCandidates() { 
+            super(Arrays.stream(BenchmarkProfile.values())
+                        .map(Enum::name)
+                        .collect(Collectors.toList())); 
+        }
+    }
     
     // --- Profile Workload Definition ---
     
@@ -134,6 +148,7 @@ public class RunBenchmarkCommand implements Callable<Integer> {
         }
         try {
             // configure the profile
+            System.out.println("loading profile: " + profile.name);
             App.loadProfile(profile);
             // apply profile parameter overrides
             applyOverrides(spec.commandLine().getParseResult());
