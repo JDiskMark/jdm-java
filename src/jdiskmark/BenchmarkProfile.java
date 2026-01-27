@@ -126,6 +126,22 @@ public enum BenchmarkProfile {
             false // Exporting to a single container file
     ),
     
+    // --- 8. Photo Library (Small-to-Medium Random Read) ---
+    PHOTO_LIBRARY(
+            "Photo Library", 
+            BenchmarkType.READ, 
+            BlockSequence.RANDOM, 
+            8,    // High threading for thumbnail generation
+            1000, // Large sample size (from your list)
+            8,    // Low block count per file (from your list)
+            128,  // 128KB typical preview size
+            IoEngine.MODERN, 
+            true, // Direct IO
+            false,
+            SectorAlignment.ALIGN_4K,
+            true  // Multi-file is vital for this use case
+    ),
+    
     // --- Custom (option indicator, not actual profile) ---
     CUSTOM_TEST(
         "Custom Test", BenchmarkType.READ_WRITE, 
@@ -187,6 +203,7 @@ public enum BenchmarkProfile {
             MAX_WRITE_STRESS,
             MEDIA_PLAYBACK,
             VIDEO_EXPORTING,
+            PHOTO_LIBRARY,
             CUSTOM_TEST
         ).toArray(BenchmarkProfile[]::new);
     }
