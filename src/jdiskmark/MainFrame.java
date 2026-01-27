@@ -992,10 +992,12 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_exitMenuItemActionPerformed
 
     private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
+        URL iconPath = getClass().getResource("/images/jdmturtleV1.2.png");
+        ImageIcon icon = new ImageIcon(iconPath);
         JOptionPane.showMessageDialog(Gui.mainFrame, 
-                "JDiskMark " + App.VERSION, "About...", JOptionPane.PLAIN_MESSAGE);
+                "JDiskMark " + App.VERSION, "About...", JOptionPane.PLAIN_MESSAGE, icon);
     }//GEN-LAST:event_aboutMenuItemActionPerformed
-
+ 
     private void openLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openLocButtonActionPerformed
         try {
             Desktop.getDesktop().open(App.locationDir);
