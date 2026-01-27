@@ -436,7 +436,7 @@ public class App {
         config.writeSyncEnabled = writeSyncEnable;
         config.sectorAlignment = sectorAlignment;
         config.multiFileEnabled = multiFile;
-        config.testDir = locationDir.getAbsolutePath();
+        config.testDir = dataDir.getAbsolutePath();
         return config;
     }
     
