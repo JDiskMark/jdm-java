@@ -22,7 +22,7 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     @Spec 
     CommandLine.Model.CommandSpec spec;
     
-    // --- Profile selction ---
+    // --- Profile selection ---
     
     @Option(names = {"-p", "--profile"},
             description = "Profile: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
