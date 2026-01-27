@@ -47,10 +47,17 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     
     // --- Profile Workload Definition ---
     
-    @Option(names = {"-t", "--type"},
+@Option(names = {"-t", "--type"},
+            completionCandidates = TypeCandidates.class,
             description = "Benchmark type: ${COMPLETION-CANDIDATES}. (Profile default used if not specified)",
             defaultValue = "WRITE")
     BenchmarkType benchmarkType;
+
+    static class TypeCandidates extends ArrayList<String> {
+        TypeCandidates() {
+            super(Arrays.stream(BenchmarkType.values()).map(Enum::name).collect(Collectors.toList()));
+        }
+    }
 
     @Option(names = {"-T", "--threads"}, 
             description = "Number of threads to use for testing. (Profile default used if not specified)",
@@ -58,9 +65,16 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     int numOfThreads;
 
     @Option(names = {"-o", "--order"}, 
+            completionCandidates = OrderCandidates.class,
             description = "Block order: ${COMPLETION-CANDIDATES}. (Profile default used if not specified)",
             defaultValue = "SEQUENTIAL")
     BlockSequence blockSequence;
+
+    static class OrderCandidates extends ArrayList<String> {
+        OrderCandidates() {
+            super(Arrays.stream(BlockSequence.values()).map(Enum::name).collect(Collectors.toList()));
+        }
+    }
 
     @Option(names = {"-b", "--blocks"},
             description = "Number of blocks/chunks per sample. (Profile default used if not specified)",
@@ -80,9 +94,16 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     // --- Profile IO Strategy ---
 
     @Option(names = {"-i", "--io-engine"},
+            completionCandidates = EngineCandidates.class,
             description = "I/O Engine: ${COMPLETION-CANDIDATES}. (Profile default used if not specified)",
             defaultValue = "MODERN")
     IoEngine ioEngine;
+
+    static class EngineCandidates extends ArrayList<String> {
+        EngineCandidates() {
+            super(Arrays.stream(IoEngine.values()).map(Enum::name).collect(Collectors.toList()));
+        }
+    }
 
     @Option(names = {"-d", "--direct"},
             description = "Enable Direct I/O (bypass OS cache). Only works with MODERN engine.")
@@ -93,9 +114,16 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     boolean writeSyncEnable = false;
 
     @Option(names = {"-a", "--alignment"},
+            completionCandidates = AlignmentCandidates.class,
             description = "Sector alignment: ${COMPLETION-CANDIDATES}. (Profile default used if not specified)",
             defaultValue = "NONE")
     App.SectorAlignment sectorAlignment;
+
+    static class AlignmentCandidates extends ArrayList<String> {
+        AlignmentCandidates() {
+            super(Arrays.stream(App.SectorAlignment.values()).map(Enum::name).collect(Collectors.toList()));
+        }
+    }
 
     @Option(names = {"-m", "--multi-file"},
             description = "Create a new file for every sample instead of using one large file.")

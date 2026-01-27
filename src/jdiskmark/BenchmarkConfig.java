@@ -4,7 +4,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import java.nio.file.Path;
 import jdiskmark.App.IoEngine;
 import jdiskmark.App.SectorAlignment;
 
