@@ -107,30 +107,46 @@ java -jar jdiskmark.jar -h
 display benchmark options
 
 ```
-java -jar jdiskmark.jar run -h
-Usage: jdm run [-chsv] [-b=<numOfBlocks>] [-e=<exportPath>] [-l=<locationDir>] [-n=<numOfSamples>]
-               [-o=<blockSequence>] [-t=<benchmarkType>] [-T=<numOfThreads>] [-z=<blockSizeKb>]
+java -jar .\jdiskmark.jar run -h
+Usage: jdiskmark run [-cdhmsvy] [-a=<sectorAlignment>] [-b=<numOfBlocks>] [-e=<exportPath>]
+                     [-i=<ioEngine>] [-l=<locationDir>] [-n=<numOfSamples>] [-o=<blockSequence>]
+                     [-p=<profile>] [-t=<benchmarkType>] [-T=<numOfThreads>] [-z=<blockSizeKb>]
 Starts a disk benchmark test with specified parameters.
+  -a, --alignment=<sectorAlignment>
+                            Sector alignment: NONE, ALIGN_512, ALIGN_4K, ALIGN_8K, ALIGN_16K,
+                              ALIGN_64K. (Profile default used if not specified)
   -b, --blocks=<numOfBlocks>
-                  Number of blocks/chunks per sample. (Default: 32)
-  -c, --clean     Remove existing JDiskMark data directory before starting.
-  -e, --export=<exportPath>
-                  The output file to export benchmark results in json format.
-  -h, --help      Display this help and exit.
+                            Number of blocks/chunks per sample. (Profile default used if not
+                              specified)
+  -c, --clean               Remove existing JDiskMark data directory before starting.
+  -d, --direct              Enable Direct I/O (bypass OS cache). Only works with MODERN engine.
+  -e, --export=<exportPath> The output file to export benchmark results in json format.
+  -h, --help                Display this help and exit.
+  -i, --io-engine=<ioEngine>
+                            I/O Engine: MODERN, LEGACY. (Profile default used if not specified)
   -l, --location=<locationDir>
-                  The directory path where test files will be created.
+                            The directory path where test files will be created.
+  -m, --multi-file          Create a new file for every sample instead of using one large file.
   -n, --samples=<numOfSamples>
-                  Total number of samples/files to write/read. (Default: 200)
+                            Total number of samples/files to write/read. (Profile default used if
+                              not specified)
   -o, --order=<blockSequence>
-                  Block order: Sequential, Random. (Default: SEQUENTIAL)
-  -s, --save      Enable saving the benchmark.
+                            Block order: SEQUENTIAL, RANDOM. (Profile default used if not specified)
+  -p, --profile=<profile>   Profile: QUICK_TEST, MAX_THROUGHPUT, HIGH_LOAD_RANDOM_T32,
+                              LOW_LOAD_RANDOM_T1, MAX_WRITE_STRESS, MEDIA_PLAYBACK,
+                              VIDEO_EXPORTING, PHOTO_LIBRARY. (Default: QUICK_TEST)
+  -s, --save                Enable saving the benchmark results to the database.
   -t, --type=<benchmarkType>
-                  Benchmark type: Read, Write, Read & Write. (Default: WRITE)
+                            Benchmark type: READ, WRITE, READ_WRITE. (Profile default used if not
+                              specified)
   -T, --threads=<numOfThreads>
-                  Number of threads to use for testing. (Default: 1)
-  -v, --verbose   Enable detailed logging.
+                            Number of threads to use for testing. (Profile default used if not
+                              specified)
+  -v, --verbose             Enable detailed logging.
+  -y, --write-sync          Enable Write Sync (flush to disk).
   -z, --block-size=<blockSizeKb>
-                  Size of a block/chunk in Kilobytes (KB). (Default: 512)
+                            Size of a block/chunk in Kilobytes (KB). (Profile default used if not
+                              specified)
 ```
 
 run benchmarks example syntax
@@ -139,6 +155,7 @@ run benchmarks example syntax
 java -jar jdiskmark.jar run -n 25 -t "Write"
 java -jar jdiskmark.jar run -l D:\ -n 25 -t "Read"
 java -jar jdiskmark.jar run -n 25 -t "Read & Write"
+java -jar jdiskmark.jar run -p MAX_WRITE_STRESS
 ```
 run example benchmark
 ```
@@ -184,11 +201,13 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 - TODO: #16 pkg installer (MacOS) - tyler
 - TODO: #70 app icon - ian
 - TODO: #33 maven build - lane
-- #40 resolve cross platform gui laf
 - TODO: #78 throttle graphics render - val
 - TODO: #95 disk cache purging - val
 - TODO: #44 gui benchmark export
-- TODO: #121 common benchmark impl for cli and gui
+- #40 resolve cross platform gui laf
+- #121 common benchmark runner for cli and gui
+    - cli options for: profile, direct io, alignment
+    - new profiles: media playback, video export, photo library
 - #67 portal uploads
     - TODO: #117 user portal upload acknowledgement
     - TODO: #118 test interlock or OAuth upload

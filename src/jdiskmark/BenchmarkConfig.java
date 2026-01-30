@@ -4,6 +4,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jdiskmark.App.IoEngine;
+import jdiskmark.App.SectorAlignment;
 
 @Embeddable
 public class BenchmarkConfig {
@@ -31,8 +33,8 @@ public class BenchmarkConfig {
     public int getNumBlocks() { return numBlocks; }
     
     @Column
-    int blockSize = 0;
-    public int getBlockSize() { return blockSize; }
+    long blockSize = 0;
+    public long getBlockSize() { return blockSize; }
     
     @Column
     int numSamples = 0;
@@ -46,12 +48,47 @@ public class BenchmarkConfig {
     int numThreads = 1;
     public int getNumThreads() { return numThreads; }
     
-    // NEW: whether write-sync was enabled for this run (only meaningful for WRITE; may be null for READ)
+    // --- I/O Engine Settings ---
+
+    @Column
+    @Enumerated(EnumType.STRING)
+    IoEngine ioEngine;
+    public IoEngine getIoEngine() { return ioEngine; }
+    public void setIoEngine(IoEngine engine) { ioEngine = engine; }
+
+    @Column
+    Boolean directIoEnabled;
+    public Boolean getDirectIoEnabled() { return directIoEnabled; }
+    public void setDirectIoEnabled(Boolean enable) { directIoEnabled = enable; }
+
     @Column
     Boolean writeSyncEnabled;
     public Boolean getWriteSyncEnabled() { return writeSyncEnabled; }
+    public void setWriteSyncEnabled(Boolean enable) { writeSyncEnabled = enable; }
+
+    @Column
+    @Enumerated(EnumType.STRING)
+    SectorAlignment sectorAlignment;
+    public SectorAlignment getSectorAlignment() { return sectorAlignment; }
+    public void setSectorAlignment(SectorAlignment bytes) { sectorAlignment = bytes; }
+
+    @Column
+    Boolean multiFileEnabled;
+    public Boolean getMultiFileEnabled() { return multiFileEnabled; }
+    public void setMultiFileEnabled(Boolean enable) { multiFileEnabled = enable; }
     
-    public BenchmarkConfig() {
-        appVersion = App.VERSION;
+    @Column
+    String testDir;
+    public String getTestDir() { return testDir; }
+    public void setTestDir(String testDir) { this.testDir = testDir; }
+    
+    public BenchmarkConfig() {}
+    
+    public boolean hasReadOperation() {
+        return benchmarkType == Benchmark.BenchmarkType.READ || benchmarkType == Benchmark.BenchmarkType.READ_WRITE;
+    }
+
+    public boolean hasWriteOperation() {
+        return benchmarkType == Benchmark.BenchmarkType.WRITE || benchmarkType == Benchmark.BenchmarkType.READ_WRITE;
     }
 }

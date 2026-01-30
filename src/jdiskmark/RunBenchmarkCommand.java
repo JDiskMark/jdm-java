@@ -3,20 +3,134 @@ package jdiskmark;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import jdiskmark.Benchmark.BenchmarkType;
 import jdiskmark.Benchmark.BlockSequence;
+import jdiskmark.App.IoEngine;
+import static jdiskmark.BenchmarkProfile.CUSTOM_TEST;
+import picocli.CommandLine;
+import picocli.CommandLine.Spec;
 
 @Command(name = "run", description = "Starts a disk benchmark test with specified parameters.")
 public class RunBenchmarkCommand implements Callable<Integer> {
 
-    // for hiding and showing the cursor during a cli benchmark
     public static final String ANSI_HIDE_CURSOR = "\u001b[?25l";
     public static final String ANSI_SHOW_CURSOR = "\u001b[?25h";
     
-    // --- OPTIONAL PARAMETERS ---
+    // --- PICOCLI INJECTION ---
+    @Spec 
+    CommandLine.Model.CommandSpec spec;
+    
+    // --- Profile selection ---
+    
+    @Option(names = {"-p", "--profile"},
+        // This forces the help menu to show the actual Enum constants
+        completionCandidates = ProfileCandidates.class, 
+        description = "Profile: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
+        defaultValue = "QUICK_TEST")
+    BenchmarkProfile profile;
+
+    // Helper class to provide the symbols to the help menu
+    static class ProfileCandidates extends ArrayList<String> {
+        ProfileCandidates() {
+            super(Arrays.stream(BenchmarkProfile.values())
+                        .map(Enum::name)
+                        .filter(name -> !name.equals(CUSTOM_TEST.name()))
+                        .collect(Collectors.toList())); 
+        }
+    }
+    
+    // --- Profile Workload Definition ---
+    
+@Option(names = {"-t", "--type"},
+            completionCandidates = TypeCandidates.class,
+            description = "Benchmark type: ${COMPLETION-CANDIDATES}. (Profile default used if not specified)",
+            defaultValue = "WRITE")
+    BenchmarkType benchmarkType;
+
+    static class TypeCandidates extends ArrayList<String> {
+        TypeCandidates() {
+            super(Arrays.stream(BenchmarkType.values()).map(Enum::name).collect(Collectors.toList()));
+        }
+    }
+
+    @Option(names = {"-T", "--threads"}, 
+            description = "Number of threads to use for testing. (Profile default used if not specified)",
+            defaultValue = "1")
+    int numOfThreads;
+
+    @Option(names = {"-o", "--order"}, 
+            completionCandidates = OrderCandidates.class,
+            description = "Block order: ${COMPLETION-CANDIDATES}. (Profile default used if not specified)",
+            defaultValue = "SEQUENTIAL")
+    BlockSequence blockSequence;
+
+    static class OrderCandidates extends ArrayList<String> {
+        OrderCandidates() {
+            super(Arrays.stream(BlockSequence.values()).map(Enum::name).collect(Collectors.toList()));
+        }
+    }
+
+    @Option(names = {"-b", "--blocks"},
+            description = "Number of blocks/chunks per sample. (Profile default used if not specified)",
+            defaultValue = "32")
+    int numOfBlocks;
+
+    @Option(names = {"-z", "--block-size"},
+            description = "Size of a block/chunk in Kilobytes (KB). (Profile default used if not specified)",
+            defaultValue = "512")
+    int blockSizeKb;
+
+    @Option(names = {"-n", "--samples"},
+            description = "Total number of samples/files to write/read. (Profile default used if not specified)",
+            defaultValue = "200")
+    int numOfSamples;
+
+    // --- Profile IO Strategy ---
+
+    @Option(names = {"-i", "--io-engine"},
+            completionCandidates = EngineCandidates.class,
+            description = "I/O Engine: ${COMPLETION-CANDIDATES}. (Profile default used if not specified)",
+            defaultValue = "MODERN")
+    IoEngine ioEngine;
+
+    static class EngineCandidates extends ArrayList<String> {
+        EngineCandidates() {
+            super(Arrays.stream(IoEngine.values()).map(Enum::name).collect(Collectors.toList()));
+        }
+    }
+
+    @Option(names = {"-d", "--direct"},
+            description = "Enable Direct I/O (bypass OS cache). Only works with MODERN engine.")
+    boolean directEnable = false;
+
+    @Option(names = {"-y", "--write-sync"},
+            description = "Enable Write Sync (flush to disk).")
+    boolean writeSyncEnable = false;
+
+    @Option(names = {"-a", "--alignment"},
+            completionCandidates = AlignmentCandidates.class,
+            description = "Sector alignment: ${COMPLETION-CANDIDATES}. (Profile default used if not specified)",
+            defaultValue = "NONE")
+    App.SectorAlignment sectorAlignment;
+
+    static class AlignmentCandidates extends ArrayList<String> {
+        AlignmentCandidates() {
+            super(Arrays.stream(App.SectorAlignment.values()).map(Enum::name).collect(Collectors.toList()));
+        }
+    }
+
+    @Option(names = {"-m", "--multi-file"},
+            description = "Create a new file for every sample instead of using one large file.")
+    boolean multiFile = false;
+    
+    // --- Environmental and Persistance ---
+    
     @Option(names = {"-l", "--location"},
             description = "The directory path where test files will be created.",
             defaultValue = "${user.home}")
@@ -26,84 +140,66 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             description = "The output file to export benchmark results in json format.")
     File exportPath;
 
-    @Option(names = {"-t", "--type"},
-            description = "Benchmark type: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
-            defaultValue = "WRITE")
-    BenchmarkType benchmarkType;
-
-    @Option(names = {"-T", "--threads"}, 
-            description = "Number of threads to use for testing. (Default: ${DEFAULT-VALUE})",
-            defaultValue = "1")
-    int numOfThreads;
-
-    @Option(names = {"-o", "--order"}, 
-            description = "Block order: ${COMPLETION-CANDIDATES}. (Default: ${DEFAULT-VALUE})",
-            defaultValue = "SEQUENTIAL")
-    BlockSequence blockSequence;
-
-    @Option(names = {"-b", "--blocks"},
-            description = "Number of blocks/chunks per sample. (Default: ${DEFAULT-VALUE})",
-            defaultValue = "32")
-    int numOfBlocks;
-
-    @Option(names = {"-z", "--block-size"},
-            description = "Size of a block/chunk in Kilobytes (KB). (Default: ${DEFAULT-VALUE})",
-            defaultValue = "512")
-    int blockSizeKb;
-
-    @Option(names = {"-n", "--samples"},
-            description = "Total number of samples/files to write/read. (Default: ${DEFAULT-VALUE})",
-            defaultValue = "200")
-    int numOfSamples;
-
-    // --- FLAGS / UTILITY OPTIONS ---
-    
-    @Option(names = {"--verbose", "-v"}, description = "Enable detailed logging.")
-    boolean verbose = false;
-
-    @Option(names = {"--save", "-s"}, description = "Enable saving the benchmark.")
+    @Option(names = {"-s", "--save"}, description = "Enable saving the benchmark results to the database.")
     boolean save = false;
     
-    @Option(names = {"--clean", "-c"}, description = "Remove existing JDiskMark data directory before starting.")
+    @Option(names = {"-c", "--clean"}, description = "Remove existing JDiskMark data directory before starting.")
     boolean autoRemoveData = false;
 
+    // --- Utility and Diagnostics ---
+    
     @Option(names = {"-h", "--help"}, usageHelp = true, description = "Display this help and exit.")
     boolean helpRequested;
+    
+    @Option(names = {"-v", "--verbose"}, description = "Enable detailed logging.")
+    boolean verbose = false;
 
+    // overrides to profile-controlled parameters
+    private void applyOverrides(CommandLine.ParseResult pr) {
+        // Workload Definition
+        if (pr.hasMatchedOption("--type"))         App.benchmarkType = benchmarkType;
+        if (pr.hasMatchedOption("--threads"))      App.numOfThreads = numOfThreads;
+        if (pr.hasMatchedOption("--order"))        App.blockSequence = blockSequence;
+        if (pr.hasMatchedOption("--blocks"))       App.numOfBlocks = numOfBlocks;
+        if (pr.hasMatchedOption("--block-size"))   App.blockSizeKb = blockSizeKb;
+        if (pr.hasMatchedOption("--samples"))      App.numOfSamples = numOfSamples;
+        // IO Strategy
+        if (pr.hasMatchedOption("--io-engine"))    App.ioEngine = ioEngine;
+        if (pr.hasMatchedOption("--direct"))       App.directEnable = directEnable;
+        if (pr.hasMatchedOption("--write-sync"))   App.writeSyncEnable = writeSyncEnable;
+        if (pr.hasMatchedOption("--alignment"))    App.sectorAlignment = sectorAlignment;
+        if (pr.hasMatchedOption("--multi-file"))   App.multiFile = multiFile;
+    }
+    
     @Override
     public Integer call() {
         if (helpRequested) {
             return 0; // Return 0 (Success) immediately after help is printed
         }
         try {
-            // 1. Apply CLI parameters to the global App state
+            // configure the profile
+            System.out.println("loading profile: " + profile.name);
+            App.loadProfile(profile);
+            // apply profile parameter overrides
+            applyOverrides(spec.commandLine().getParseResult());
+            // environment and persistance
             App.setLocationDir(locationDir);
-            App.benchmarkType = benchmarkType;
-            App.numOfThreads = numOfThreads;
-            App.blockSequence = blockSequence;
-            App.numOfBlocks = numOfBlocks;
-            App.blockSizeKb = blockSizeKb;
-            App.numOfSamples = numOfSamples;
-            App.autoRemoveData = autoRemoveData; // Apply the --clean flag
+            App.autoRemoveData = autoRemoveData;
             App.verbose = verbose;
             App.autoSave = save;
             App.exportPath = exportPath;
 
-            // 2. Output final configuration before starting
+            // Initialization and Start
             if (App.verbose) {
                 System.out.println("--- Starting JDiskMark Benchmark (CLI) ---");
             }
-            App.init();
-            if (App.verbose) {
-                String configString = App.getConfigString();
-                System.out.println(configString);
-                System.out.println("Benchmark initiated successfully. Need to wait for completion...");
-            }
             
-            // 3. Execute the benchmark (You will need to adjust startBenchmark to run without a GUI)
-            // NOTE: The existing App.startBenchmark() relies on a SwingWorker and Gui components.
-            // You MUST refactor the core benchmarking logic out of the SwingWorker and 
-            // into a dedicated CLI execution class/method for this to work.
+            App.init();
+            
+            if (App.verbose) {
+                System.out.println(App.getConfigString());
+                System.out.println("Benchmark initiated successfully. Starting execution...");
+            }
             
             try {
                 System.out.print(ANSI_HIDE_CURSOR);
@@ -115,9 +211,8 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             return 0; // Success exit code
             
         } catch (RuntimeException e) {
-            // Handle any exceptions during setup or execution
             System.err.println("Error running benchmark: " + e.getMessage());
-            Logger.getLogger(RunBenchmarkCommand.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(RunBenchmarkCommand.class.getName()).log(Level.SEVERE, "Trace:", e);
             return 1; // Failure exit code
         }
     }

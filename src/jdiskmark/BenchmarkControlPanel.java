@@ -16,17 +16,17 @@ public class BenchmarkControlPanel extends JPanel {
 
     final Font HEADER_FONT = new JLabel().getFont().deriveFont(Font.BOLD);
     final Integer[] THREAD_OPTIONS = {1,2,4,8,16,32};
-    final Integer[] BLOCK_OPTIONS = {1,2,4,8,16,32,64,128,256,512,1024,2048};
+    final Integer[] NUM_BLOCK_OPTIONS = {1,2,4,8,16,32,64,128,256,512,1024,2048};
     final Integer[] BLOCK_SIZES = {1,2,4,8,16,32,64,128,256,512,1024,2048};
-    final Integer[] SAMPLE_OPTIONS = {25,50,100,200,300,500,1000,2000,3000,5000,10000};
+    final Integer[] NUM_SAMPLE_OPTIONS = {25,50,100,200,300,500,1000,2000,3000,5000,10000};
     
     public JComboBox<BenchmarkProfile> profileCombo = new JComboBox<>(BenchmarkProfile.getDefaults());
     public JComboBox<Benchmark.BenchmarkType> typeCombo = new JComboBox<>(Benchmark.BenchmarkType.values());
     public JComboBox<Integer> numThreadsCombo = new JComboBox<>(THREAD_OPTIONS);
     public JComboBox<Benchmark.BlockSequence> orderCombo = new JComboBox<>(Benchmark.BlockSequence.values());
-    public JComboBox<Integer> numBlocksCombo = new JComboBox<>(BLOCK_OPTIONS);
+    public JComboBox<Integer> numBlocksCombo = new JComboBox<>(NUM_BLOCK_OPTIONS);
     public JComboBox<Integer> blockSizeCombo = new JComboBox<>(BLOCK_SIZES);
-    public JComboBox<Integer> numSamplesCombo = new JComboBox<>(SAMPLE_OPTIONS);
+    public JComboBox<Integer> numSamplesCombo = new JComboBox<>(NUM_SAMPLE_OPTIONS);
     
     public JButton startButton = new JButton("Start");
     
@@ -56,27 +56,12 @@ public class BenchmarkControlPanel extends JPanel {
             if (!profileCombo.hasFocus()) { return; }
             
             BenchmarkProfile profile = (BenchmarkProfile)profileCombo.getSelectedItem();
-            App.activeProfile = profile;
             
-            // skip adjustments if custom test was selected
-            if (profile.equals(BenchmarkProfile.CUSTOM_TEST)) {
-                return;
-            }
+            if (profile == null) return;
             
-            // TODO: later relocate into a BenchmarkConfiguration.java
-            App.benchmarkType = profile.getBenchmarkType();
-            App.blockSequence = profile.getBlockSequence();
-            App.numOfThreads = profile.getNumThreads();
-            App.numOfSamples = profile.getNumSamples();
-            App.numOfBlocks = profile.getNumBlocks();
-            App.blockSizeKb = profile.getBlockSizeKb();
-            App.ioEngine = profile.getIoEngine();
-            App.directEnable = profile.isDirectEnable();
-            App.writeSyncEnable = profile.isWriteSyncEnable();
-            App.sectorAlignment = profile.getSectorAlignment();
-            App.multiFile = profile.isMultiFile();
+            App.loadProfile(profile);
             
-            // only signal if initialized
+            // only if initialized, calls our refresh
             if (Gui.mainFrame != null) {
                 Gui.mainFrame.refreshConfig();
             }
@@ -158,6 +143,13 @@ public class BenchmarkControlPanel extends JPanel {
     }
     
     private void initComponents() {
+        
+        // editable combos are a workaround to loading non selectable values
+        // to use this need to add input guard against non numerics
+//        numThreadsCombo.setEditable(true);
+//        numBlocksCombo.setEditable(true);
+//        blockSizeCombo.setEditable(true);
+//        numSamplesCombo.setEditable(true);
         
         // 3 column layout framework
         setLayout(new MigLayout("insets 0 5 0 5, fillx, wrap 3", "[30%][27%][43%]", "[]10[]"));

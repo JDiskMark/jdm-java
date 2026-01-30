@@ -41,9 +41,11 @@ public class App {
     public static final String ESBL_EXE = "EmptyStandbyList.exe";
     // error messages
     public static final String LOCATION_NOT_SELECTED_ERROR = "Location has not been selected";
+    // Standard Binary Units (Power of 2), longs to avoid overflow
+    public static final long KILOBYTE = 1_024L;
+    public static final long MEGABYTE = 1_024L * KILOBYTE;
+    public static final long GIGABYTE = 1_024L * MEGABYTE;
     // numeric constants
-    public static final int MEGABYTE = 1024 * 1024;
-    public static final int KILOBYTE = 1024;
     public static final int IDLE_STATE = 0;
     public static final int DISK_TEST_STATE = 1;
     
@@ -251,6 +253,32 @@ public class App {
         }
     }
     
+    public static void loadProfile(BenchmarkProfile profile) {
+        try {
+            activeProfile = profile;
+
+            // skip adjustments if custom test was selected
+            if (profile.equals(BenchmarkProfile.CUSTOM_TEST)) {
+                return;
+            }
+
+            // TODO: later relocate into a BenchmarkConfiguration.java
+            benchmarkType = profile.getBenchmarkType();
+            blockSequence = profile.getBlockSequence();
+            numOfThreads = profile.getNumThreads();
+            numOfSamples = profile.getNumSamples();
+            numOfBlocks = profile.getNumBlocks();
+            blockSizeKb = profile.getBlockSizeKb();
+            ioEngine = profile.getIoEngine();
+            directEnable = profile.isDirectEnable();
+            writeSyncEnable = profile.isWriteSyncEnable();
+            sectorAlignment = profile.getSectorAlignment();
+            multiFile = profile.isMultiFile();
+        } finally {
+            saveConfig();
+        }
+    }
+    
     public static void loadConfig() {
         if (PROPERTIES_FILE.exists()) {
             System.out.println("loading: " + PROPERTIES_FILE.getAbsolutePath());
@@ -388,19 +416,43 @@ public class App {
         }
     }
     
-    public static boolean isReadEnabled() {
+    /**
+     * Creates a point-in-time snapshot of the current settings.
+     * @return the configuration for benchmarking
+     */
+    public static BenchmarkConfig getConfig() {
+        BenchmarkConfig config = new BenchmarkConfig();
+        config.appVersion = VERSION;
+        config.profile = activeProfile;
+        config.benchmarkType = benchmarkType;
+        config.blockOrder = blockSequence;
+        config.numBlocks = numOfBlocks;
+        config.blockSize = (long) blockSizeKb * KILOBYTE;
+        config.numSamples = numOfSamples;
+        config.numThreads = numOfThreads;
+        config.txSize = targetTxSizeKb();
+        config.ioEngine = ioEngine;
+        config.directIoEnabled = directEnable;
+        config.writeSyncEnabled = writeSyncEnable;
+        config.sectorAlignment = sectorAlignment;
+        config.multiFileEnabled = multiFile;
+        config.testDir = dataDir.getAbsolutePath();
+        return config;
+    }
+    
+    public static boolean hasReadOperation() {
         return benchmarkType == BenchmarkType.READ || benchmarkType == BenchmarkType.READ_WRITE;
     }
 
-    public static boolean isWriteEnabled() {
+    public static boolean hasWriteOperation() {
         return benchmarkType == BenchmarkType.WRITE || benchmarkType == BenchmarkType.READ_WRITE;
     }
     
     public static String getConfigString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Config for JDiskMark ").append(VERSION).append('\n');
-        sb.append("readTest: ").append(isReadEnabled()).append('\n');
-        sb.append("writeTest: ").append(isWriteEnabled()).append('\n');
+        sb.append("readTest: ").append(hasReadOperation()).append('\n');
+        sb.append("writeTest: ").append(hasWriteOperation()).append('\n');
         sb.append("locationDir: ").append(locationDir).append('\n');
         sb.append("multiFile: ").append(multiFile).append('\n');
         sb.append("autoRemoveData: ").append(autoRemoveData).append('\n');
@@ -420,7 +472,7 @@ public class App {
     }
     
     public static void loadBenchmarks() {
-        if (App.verbose) {
+        if (verbose) {
             System.out.println("loading benchmarks");
         }
 

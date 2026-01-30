@@ -139,13 +139,13 @@ public class Benchmark implements Serializable {
 
     // benchmark parameters
     @Embedded
-    final BenchmarkConfig config = new BenchmarkConfig();
+    BenchmarkConfig config = new BenchmarkConfig();
     public BenchmarkConfig getConfig() { return config; }
     
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column(name = "startTime", columnDefinition = "TIMESTAMP")
-    final LocalDateTime startTime;
+    LocalDateTime startTime;
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column
     LocalDateTime endTime = null;
@@ -179,6 +179,7 @@ public class Benchmark implements Serializable {
         sb.append("-------------------------------------------\n");
         sb.append("JDiskMark Benchmark Results (v").append(App.VERSION).append(")\n");
         sb.append("-------------------------------------------\n");
+        sb.append("Profile: ").append(config.profile.name).append("\n");
         sb.append("Benchmark: ").append(config.benchmarkType).append("\n");
         sb.append("Drive: ").append(App.getDriveModel()).append("\n");
         sb.append("Capacity: ").append(App.getDriveCapacity()).append("\n");
@@ -205,20 +206,18 @@ public class Benchmark implements Serializable {
         return sb.toString();
     }
     
-    public Benchmark() {
-        this(BenchmarkType.WRITE);
+    public Benchmark() {}
+    
+    public Benchmark(BenchmarkConfig config) {
+        this.config = config;
     }
     
-    public Benchmark(BenchmarkType type) {
+    public void recordStartTime() {
         startTime = LocalDateTime.now();
-        config.profile = App.activeProfile;
-        config.benchmarkType = type;
-        config.numSamples = App.numOfSamples;
-        config.numBlocks = App.numOfBlocks;
-        config.blockSize = App.blockSizeKb;
-        config.blockOrder = App.blockSequence;
-        config.writeSyncEnabled = App.writeSyncEnable;
-        config.txSize = App.targetTxSizeKb();
+    }
+    
+    public void recordEndTime() {
+        endTime = LocalDateTime.now();
     }
     
     // basic getters and setters

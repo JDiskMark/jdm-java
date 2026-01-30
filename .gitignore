@@ -11,6 +11,7 @@ debug-benchmark.json
 .VSCodeCounter*
 build.properties
 hs_err_pid*.log
+.DS_Store
 
 # deb packaging
 jdiskmark-deb

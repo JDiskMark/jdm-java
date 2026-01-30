@@ -266,17 +266,17 @@ public final class Gui {
     }
     
     public static void updateLegendAndAxis() {
-        bwRenderer.setSeriesVisibleInLegend(0, App.isWriteEnabled());
-        bwRenderer.setSeriesVisibleInLegend(1, App.isWriteEnabled());
-        bwRenderer.setSeriesVisibleInLegend(2, App.isWriteEnabled() && showMaxMin);
-        bwRenderer.setSeriesVisibleInLegend(3, App.isWriteEnabled() && showMaxMin);
-        bwRenderer.setSeriesVisibleInLegend(4, App.isReadEnabled());
-        bwRenderer.setSeriesVisibleInLegend(5, App.isReadEnabled());
-        bwRenderer.setSeriesVisibleInLegend(6, App.isReadEnabled() && showMaxMin);
-        bwRenderer.setSeriesVisibleInLegend(7, App.isReadEnabled() && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(0, App.hasWriteOperation());
+        bwRenderer.setSeriesVisibleInLegend(1, App.hasWriteOperation());
+        bwRenderer.setSeriesVisibleInLegend(2, App.hasWriteOperation() && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(3, App.hasWriteOperation() && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(4, App.hasReadOperation());
+        bwRenderer.setSeriesVisibleInLegend(5, App.hasReadOperation());
+        bwRenderer.setSeriesVisibleInLegend(6, App.hasReadOperation() && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(7, App.hasReadOperation() && showMaxMin);
 
-        msRenderer.setSeriesVisibleInLegend(0, App.isWriteEnabled() && showDriveAccess);
-        msRenderer.setSeriesVisibleInLegend(1, App.isReadEnabled() && showDriveAccess);
+        msRenderer.setSeriesVisibleInLegend(0, App.hasWriteOperation() && showDriveAccess);
+        msRenderer.setSeriesVisibleInLegend(1, App.hasReadOperation() && showDriveAccess);
         
         msAxis.setVisible(showDriveAccess);
     }
@@ -425,7 +425,7 @@ public final class Gui {
         App.benchmarkType = benchmark.config.benchmarkType;
         App.numOfBlocks = operation.numBlocks;
         App.numOfSamples = operation.numSamples;
-        App.blockSizeKb = operation.blockSize;
+        App.blockSizeKb = (int)(operation.blockSize / App.KILOBYTE);
         App.blockSequence = operation.blockOrder;
         App.numOfThreads = operation.numThreads;
         mainFrame.refreshConfig();
