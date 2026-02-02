@@ -21,7 +21,7 @@ public class BenchmarkRunner {
         void onSampleComplete(Sample sample);
         void onProgressUpdate(long completed, long total);
         boolean isCancelled();
-        void requestCacheDrop();
+        void attemptCacheDrop();
     }
     
     @FunctionalInterface
@@ -106,12 +106,13 @@ public class BenchmarkRunner {
             runOperation(benchmark, IOMode.WRITE, tRanges);
         }
         
-        if (config.hasReadOperation() && config.hasWriteOperation() && !listener.isCancelled()) {
+        if (!config.getDirectIoEnabled() && !listener.isCancelled() &&
+                config.hasReadOperation() && config.hasWriteOperation()) {
             throttledProgressUpdate(true);
-            listener.requestCacheDrop();
+            listener.attemptCacheDrop();
         }
-
-        if (config.hasReadOperation()) {
+        
+        if (config.hasReadOperation() && !listener.isCancelled()) {
             runOperation(benchmark, IOMode.READ, tRanges);
         }
 
