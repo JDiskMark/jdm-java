@@ -245,6 +245,39 @@ public class Sample {
         bwMbSec = (double) totalBytesWritten / (double) MEGABYTE / sec;
     }
     
+    // when doing a read wo a write this is used to prepare the data file
+    public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
+        long totalBytesWritten = 0;
+        long byteAlignment = bRunner.config.sectorAlignment.bytes;
+        if (byteAlignment <= 0) {
+            // if not selected use default layout alignment
+            MemoryLayout layout = MemoryLayout.sequenceLayout(blockSize, ValueLayout.JAVA_BYTE);
+            byteAlignment = layout.byteAlignment();
+        }
+        File testFile = getTestFile(bRunner);
+        Set<OpenOption> options = new HashSet<>();
+        options.add(StandardOpenOption.WRITE);
+        options.add(StandardOpenOption.CREATE);
+        FileChannel initialFc = null;
+        try {
+            initialFc = FileChannel.open(testFile.toPath(), options);
+        } catch (IOException e) {
+            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
+        }
+        try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
+            MemorySegment segment = arena.allocate(blockSize, byteAlignment);
+            for (int b = 0; b < numOfBlocks; b++) {
+                long byteOffset = b * blockSize;
+                int written = fc.write(segment.asByteBuffer(), byteOffset);
+                totalBytesWritten += written;
+                bRunner.updateWriteProgress();
+            }
+        } catch (IOException e) {
+            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
+        }
+        App.msg("bytesGenerated=" + totalBytesWritten);
+    }
+    
     public void measureRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
         long totalBytesRead = 0;
         File testFile = getTestFile(bRunner);

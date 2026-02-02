@@ -12,7 +12,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import jdiskmark.App.IoEngine;
+import static jdiskmark.App.IoEngine.LEGACY;
+import static jdiskmark.App.IoEngine.MODERN;
 import jdiskmark.Benchmark.IOMode;
+import static jdiskmark.Benchmark.IOMode.READ;
+import static jdiskmark.Benchmark.IOMode.WRITE;
 
 public class BenchmarkRunner {
     
@@ -75,6 +79,12 @@ public class BenchmarkRunner {
     public Benchmark execute() throws Exception {
         long wUnitsTotal = config.hasWriteOperation() ? (long) config.numBlocks * config.numSamples : 0L;
         long rUnitsTotal = config.hasReadOperation() ? (long) config.numBlocks * config.numSamples : 0L;
+        
+        // #132 if read only adjust total for read prep
+        if (config.benchmarkType == Benchmark.BenchmarkType.READ) {
+            wUnitsTotal = rUnitsTotal;
+        }
+        
         unitsTotal = wUnitsTotal + rUnitsTotal;
         blockSize = config.blockSize;
         
@@ -104,6 +114,9 @@ public class BenchmarkRunner {
         // Execution Loops
         if (config.hasWriteOperation()) {
             runOperation(benchmark, IOMode.WRITE, tRanges);
+        } else if (config.hasReadOperation()) {
+            // #132 this is a read without a write so we need to generate files
+            runReadPreparation(tRanges);
         }
         
         if (!config.getDirectIoEnabled() && !listener.isCancelled() &&
@@ -177,6 +190,25 @@ public class BenchmarkRunner {
             op.setTotalOps(mode == IOMode.WRITE ? writeUnitsComplete.sum() : readUnitsComplete.sum());
             if (op.ioMode == IOMode.WRITE) App.wIops = op.iops;
             else App.rIops = op.iops;
+        }
+    }
+    
+    private void runReadPreparation(int[][] ranges) throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(config.numThreads);
+        List<Future<?>> futures = new ArrayList<>();
+        for (int[] range : ranges) {
+            futures.add(executor.submit(() -> {
+                for (int s = range[0]; s < range[1] && !listener.isCancelled(); s++) {
+                    Sample sample = new Sample(Sample.Type.READ, s);
+                    sample.prepareRead(blockSize, config.numBlocks, this);
+                }
+            }));
+        }
+        executor.shutdown();
+        try {
+            for (Future<?> f : futures) f.get(); // Wait and propagate exceptions
+        } catch (ExecutionException e) {
+            throw new Exception("read prep failed", e.getCause());
         }
     }
     
