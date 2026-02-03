@@ -245,7 +245,7 @@ public class Sample {
         bwMbSec = (double) totalBytesWritten / (double) MEGABYTE / sec;
     }
     
-    // when doing a read wo a write this is used to prepare the data file
+    // #132 when doing a read wo a write this is used to prepare the data file
     public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
         long totalBytesWritten = 0;
         long byteAlignment = bRunner.config.sectorAlignment.bytes;

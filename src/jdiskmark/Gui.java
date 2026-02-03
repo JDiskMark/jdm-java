@@ -1,8 +1,10 @@
 package jdiskmark;
 
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.themes.FlatMacDarkLaf;
+
 import jdiskmark.Benchmark.IOMode;
 
-import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -21,6 +23,7 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.AxisLocation;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.block.BlockBorder;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
@@ -53,6 +56,7 @@ public final class Gui {
     public static XYSeries rSeries, rAvgSeries, rMaxSeries, rMinSeries, rDrvAccess;
     public static XYLineAndShapeRenderer bwRenderer;
     public static XYLineAndShapeRenderer msRenderer;
+    static Color foregroundColor;
     
     /**
      * Setup the look and feel
@@ -60,14 +64,15 @@ public final class Gui {
     public static void configureLaf() {
         try {
             if (App.os.contains("Windows")) {
-                UIManager.setLookAndFeel(new FlatLightLaf()); // Light theme
-                // Or: UIManager.setLookAndFeel(new FlatDarkLaf()); // Dark theme
+                //UIManager.setLookAndFeel(new FlatLightLaf()); // Light theme
+                UIManager.setLookAndFeel(new FlatDarkLaf()); // Dark theme
             } else if (App.os.contains("Mac OS")) {
-                UIManager.setLookAndFeel("apple.laf.AquaLookAndFeel");
+                //UIManager.setLookAndFeel(new FlatLightLaf());
+                UIManager.setLookAndFeel(new FlatMacDarkLaf());
             } else if (App.os.contains("Linux")) {
-                UIManager.setLookAndFeel(new FlatLightLaf()); // Light theme
+                UIManager.setLookAndFeel(new FlatDarkLaf()); // Light theme
             }
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+        } catch (UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
             /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
              * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
@@ -183,6 +188,39 @@ public final class Gui {
         
         // correct the parenthesis from being below vertical centering
         chart.getTitle().setFont(new Font("Verdana", Font.BOLD, 17));
+        
+        foregroundColor = UIManager.getColor("Label.foreground");
+        if (foregroundColor == null) foregroundColor = Color.LIGHT_GRAY;
+        
+        chart.getTitle().setPaint(foregroundColor);
+        
+        // Style the Axis (Labels and Tick Marks)
+        
+        // Bandwidth Axis (Left)
+        bwAxis.setLabelPaint(foregroundColor);
+        bwAxis.setTickLabelPaint(foregroundColor);
+        bwAxis.setTickMarkPaint(foregroundColor);
+        // Latency Axis (Right)
+        msAxis.setLabelPaint(foregroundColor);
+        msAxis.setTickLabelPaint(foregroundColor);
+        msAxis.setTickMarkPaint(foregroundColor);
+        // Sample Axis (Bottom)
+        sampleAxis.setLabelPaint(foregroundColor);
+        sampleAxis.setTickLabelPaint(foregroundColor);
+        sampleAxis.setTickMarkPaint(foregroundColor);
+
+        // Style the Legend
+        if (chart.getLegend() != null) {
+            chart.getLegend().setItemPaint(foregroundColor);
+            // Set legend background with slight transparency (macos like look)
+            Color panelBg = UIManager.getColor("Panel.background");
+            if (panelBg != null) {
+                Color legendBg = new Color(panelBg.getRed(), panelBg.getGreen(), panelBg.getBlue(), 200);
+                chart.getLegend().setBackgroundPaint(legendBg);
+            }
+            // Remove the border or set it to a subtle gray
+            chart.getLegend().setFrame(new BlockBorder(new Color(80, 80, 80)));
+        }
         
         chartPanel = new ChartPanel(chart) {
             // Only way to set the size of chart panel
