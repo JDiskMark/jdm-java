@@ -264,6 +264,9 @@ public class Sample {
         } catch (IOException e) {
             Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
         }
+        if (initialFc == null) {
+            return;
+        }
         try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
             MemorySegment segment = arena.allocate(blockSize, byteAlignment);
             for (int b = 0; b < numOfBlocks; b++) {
