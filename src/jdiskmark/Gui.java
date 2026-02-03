@@ -70,7 +70,7 @@ public final class Gui {
                 //UIManager.setLookAndFeel(new FlatLightLaf());
                 UIManager.setLookAndFeel(new FlatMacDarkLaf());
             } else if (App.os.contains("Linux")) {
-                UIManager.setLookAndFeel(new FlatDarkLaf()); // Light theme
+                UIManager.setLookAndFeel(new FlatDarkLaf()); // Dark theme
             }
         } catch (UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
