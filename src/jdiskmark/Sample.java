@@ -245,48 +245,50 @@ public class Sample {
         bwMbSec = (double) totalBytesWritten / (double) MEGABYTE / sec;
     }
     
-    // #132 when doing a read wo a write this is used to prepare the data file
-    public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
-        long totalBytesWritten = 0;
-        long byteAlignment = bRunner.config.sectorAlignment.bytes;
-        if (byteAlignment <= 0) {
-            // if not selected use default layout alignment
-            MemoryLayout layout = MemoryLayout.sequenceLayout(blockSize, ValueLayout.JAVA_BYTE);
-            byteAlignment = layout.byteAlignment();
-        }
-        File testFile = getTestFile(bRunner);
-        Set<OpenOption> options = new HashSet<>();
-        options.add(StandardOpenOption.WRITE);
-        options.add(StandardOpenOption.CREATE);
-        FileChannel initialFc = null;
-        try {
-            initialFc = FileChannel.open(testFile.toPath(), options);
-        } catch (IOException e) {
-            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
-            throw new RuntimeException("Failed to open file channel for read preparation: " + testFile.getAbsolutePath(), e);
-        }
-        if (initialFc == null) {
-            throw new IllegalStateException("FileChannel.open returned null for read preparation: " + testFile.getAbsolutePath());
-        }
-        try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
-            MemorySegment segment = arena.allocate(blockSize, byteAlignment);
-            for (int b = 0; b < numOfBlocks; b++) {
-                if (bRunner.listener.isCancelled()) break;
-                long byteOffset = b * blockSize;
-                int written = fc.write(segment.asByteBuffer(), byteOffset);
-                totalBytesWritten += written;
-                // For read-only benchmarks, we reuse the "write" progress counters to
-                // track preparation of data to be read. In execute(), wUnitsTotal is
-                // set from rUnitsTotal so this correctly reflects read preparation.
-                bRunner.updateWriteProgress();
-            }
-        } catch (IOException e) {
-            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
-        }
-        if (App.verbose) {
-            App.msg("bytesGenerated=" + totalBytesWritten);
-        }
+public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
+    long byteAlignment = bRunner.config.sectorAlignment.bytes;
+    if (byteAlignment <= 0) {
+        MemoryLayout layout = MemoryLayout.sequenceLayout(blockSize, ValueLayout.JAVA_BYTE);
+        byteAlignment = layout.byteAlignment();
     }
+    
+    File testFile = getTestFile(bRunner);
+    Set<OpenOption> options = new HashSet<>();
+    options.add(StandardOpenOption.WRITE);
+    options.add(StandardOpenOption.CREATE);
+    options.add(StandardOpenOption.TRUNCATE_EXISTING);
+
+    // Use a single try-with-resources and let the Exception bubble up
+    // to the BenchmarkRunner's try-catch block.
+    try (FileChannel fc = FileChannel.open(testFile.toPath(), options); 
+         Arena arena = Arena.ofConfined()) {
+        
+        MemorySegment segment = arena.allocate(blockSize, byteAlignment);
+        long totalBytesWritten = 0;
+        
+        for (int b = 0; b < numOfBlocks; b++) {
+            if (bRunner.listener.isCancelled()) break;
+            
+            long byteOffset = (long) b * blockSize;
+            int written = fc.write(segment.asByteBuffer(), byteOffset);
+            totalBytesWritten += written;
+            // For read-only benchmarks, we reuse the "write" progress counters to
+            // track preparation of data to be read. In execute(), wUnitsTotal is
+            // set from rUnitsTotal so this correctly reflects read preparation.
+            bRunner.updateWriteProgress();
+        }
+
+        if (App.verbose) {
+            App.msg("bytesGenerated=" + totalBytesWritten + " for " + testFile.getName());
+        }
+        
+    } catch (IOException e) {
+        // Log it, but CRITICALLY: throw a RuntimeException so the 
+        // ExecutorService's Future.get() catches the failure.
+        Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Prep failed", e);
+        throw new RuntimeException("Read preparation failed for: " + testFile.getName(), e);
+    }
+}
     
     public void measureRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
         long totalBytesRead = 0;
