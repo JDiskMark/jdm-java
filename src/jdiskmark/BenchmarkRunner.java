@@ -73,15 +73,21 @@ public class BenchmarkRunner {
     }
 
     public Benchmark execute() throws Exception {
-        long wUnitsTotal = config.hasWriteOperation() ? (long) config.numBlocks * config.numSamples : 0L;
-        long rUnitsTotal = config.hasReadOperation() ? (long) config.numBlocks * config.numSamples : 0L;
-        
-        // #132 if read only adjust total for read prep
+        long blocksPerPhase = (long) config.numBlocks * config.numSamples;
+
+        long wUnitsTotal = config.hasWriteOperation() ? blocksPerPhase : 0L;
+        long rUnitsTotal = config.hasReadOperation() ? blocksPerPhase : 0L;
+
+        // #132 Handle the Read-Preparation phase for Read-Only benchmarks
         if (config.benchmarkType == Benchmark.BenchmarkType.READ) {
-            wUnitsTotal = rUnitsTotal;
+            // We set wUnitsTotal to blocksPerPhase because prepareRead() 
+            // calls updateWriteProgress()
+            wUnitsTotal = blocksPerPhase;
         }
-        
+
+        // Final total units for the progress bar denominator
         unitsTotal = wUnitsTotal + rUnitsTotal;
+        
         blockSize = config.blockSize;
         
         if (config.ioEngine == IoEngine.LEGACY) {
