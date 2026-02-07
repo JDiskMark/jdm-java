@@ -282,7 +282,9 @@ public class Sample {
         } catch (IOException e) {
             Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
         }
-        App.msg("bytesGenerated=" + totalBytesWritten);
+        if (App.verbose) {
+            App.msg("bytesGenerated=" + totalBytesWritten);
+        }
     }
     
     public void measureRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
