@@ -221,15 +221,15 @@ public final class MainFrame extends javax.swing.JFrame {
         showMaxMinCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         showAccessCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator1 = new javax.swing.JPopupMenu.Separator();
+        themeMenu = new javax.swing.JMenu();
+        lightThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
+        darkThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
+        darculaThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         colorPaletteMenu = new javax.swing.JMenu();
         classicPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
         blueGreenPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
         bardCoolPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
         bardWarmPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
-        themeMenu = new javax.swing.JMenu();
-        lightThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
-        darkThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
-        darculaThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         helpMenu = new javax.swing.JMenu();
         portalUploadMenuItem = new javax.swing.JCheckBoxMenuItem();
         portalEndpointMenu = new javax.swing.JMenu();
@@ -570,7 +570,39 @@ public final class MainFrame extends javax.swing.JFrame {
         optionMenu.add(showAccessCheckBoxMenuItem);
         optionMenu.add(jSeparator1);
 
-        colorPaletteMenu.setText("Color Palette");
+        themeMenu.setText("Window Theme");
+
+        themeButtonGroup.add(lightThemeRbMenuItem);
+        lightThemeRbMenuItem.setText("Light");
+        lightThemeRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                lightThemeRbMenuItemActionPerformed(evt);
+            }
+        });
+        themeMenu.add(lightThemeRbMenuItem);
+
+        themeButtonGroup.add(darkThemeRbMenuItem);
+        darkThemeRbMenuItem.setSelected(true);
+        darkThemeRbMenuItem.setText("Dark");
+        darkThemeRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                darkThemeRbMenuItemActionPerformed(evt);
+            }
+        });
+        themeMenu.add(darkThemeRbMenuItem);
+
+        themeButtonGroup.add(darculaThemeRbMenuItem);
+        darculaThemeRbMenuItem.setText("Darcula");
+        darculaThemeRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                darculaThemeRbMenuItemActionPerformed(evt);
+            }
+        });
+        themeMenu.add(darculaThemeRbMenuItem);
+
+        optionMenu.add(themeMenu);
+
+        colorPaletteMenu.setText("Graph Palette");
         palettebuttonGroup.add(colorPaletteMenu);
 
         palettebuttonGroup.add(classicPaletteMenuItem);
@@ -610,38 +642,6 @@ public final class MainFrame extends javax.swing.JFrame {
         colorPaletteMenu.add(bardWarmPaletteMenuItem);
 
         optionMenu.add(colorPaletteMenu);
-
-        themeMenu.setText("Theme");
-
-        themeButtonGroup.add(lightThemeRbMenuItem);
-        lightThemeRbMenuItem.setText("Light");
-        lightThemeRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                lightThemeRbMenuItemActionPerformed(evt);
-            }
-        });
-        themeMenu.add(lightThemeRbMenuItem);
-
-        themeButtonGroup.add(darkThemeRbMenuItem);
-        darkThemeRbMenuItem.setSelected(true);
-        darkThemeRbMenuItem.setText("Dark");
-        darkThemeRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                darkThemeRbMenuItemActionPerformed(evt);
-            }
-        });
-        themeMenu.add(darkThemeRbMenuItem);
-
-        themeButtonGroup.add(darculaThemeRbMenuItem);
-        darculaThemeRbMenuItem.setText("Darcula");
-        darculaThemeRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                darculaThemeRbMenuItemActionPerformed(evt);
-            }
-        });
-        themeMenu.add(darculaThemeRbMenuItem);
-
-        optionMenu.add(themeMenu);
 
         menuBar.add(optionMenu);
 

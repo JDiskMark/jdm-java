@@ -588,6 +588,12 @@ public class App {
         switch (mode) {
             case GUI -> {
                 worker = new BenchmarkWorker();
+                // TODO: GH-#135 - progress bar cleanup
+                // 1. look at relocating this into the gui class
+                // 2. we are using the progress bar to track units
+                // instead of transfer io (for read prep)
+                // 3. the number of units or tx bytes should be twice for read
+                // and write operations or read prep and read operations
                 worker.addPropertyChangeListener((final var event) -> {
                     switch (event.getPropertyName()) {
                         case "progress" -> {
