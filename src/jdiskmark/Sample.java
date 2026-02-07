@@ -273,6 +273,9 @@ public class Sample {
                 long byteOffset = b * blockSize;
                 int written = fc.write(segment.asByteBuffer(), byteOffset);
                 totalBytesWritten += written;
+                // For read-only benchmarks, we reuse the "write" progress counters to
+                // track preparation of data to be read. In execute(), wUnitsTotal is
+                // set from rUnitsTotal so this correctly reflects read preparation.
                 bRunner.updateWriteProgress();
             }
         } catch (IOException e) {
