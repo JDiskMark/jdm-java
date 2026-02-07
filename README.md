@@ -204,6 +204,7 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 - TODO: #78 throttle graphics render - val
 - TODO: #95 disk cache purging - val
 - TODO: #44 gui benchmark export
+- TODO: #134 gc optimization
 - #67 portal uploads
     - TODO: #117 user portal upload acknowledgement
     - TODO: #118 test interlock or OAuth upload
