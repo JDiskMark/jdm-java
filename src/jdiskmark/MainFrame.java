@@ -103,6 +103,11 @@ public final class MainFrame extends javax.swing.JFrame {
         // display preferences
         showMaxMinCheckBoxMenuItem.setSelected(Gui.showMaxMin);
         showAccessCheckBoxMenuItem.setSelected(Gui.showDriveAccess);
+        switch (Gui.theme) {
+            case DARK -> darkThemeRbMenuItem.setSelected(true);
+            case LIGHT -> lightThemeRbMenuItem.setSelected(true);
+            case DARCULA -> darculaThemeRbMenuItem.setSelected(true);
+        }
         switch (Gui.palette) {
             case CLASSIC -> {
                 classicPaletteMenuItem.setSelected(true);
@@ -169,6 +174,7 @@ public final class MainFrame extends javax.swing.JFrame {
         ioEnginebuttonGroup = new javax.swing.ButtonGroup();
         sectorAlignbuttonGroup = new javax.swing.ButtonGroup();
         portalEndpointButtonGroup = new javax.swing.ButtonGroup();
+        themeButtonGroup = new javax.swing.ButtonGroup();
         tabbedPane = new javax.swing.JTabbedPane();
         runPanel = new jdiskmark.BenchmarkPanel();
         eventScrollPane = new javax.swing.JScrollPane();
@@ -220,6 +226,10 @@ public final class MainFrame extends javax.swing.JFrame {
         blueGreenPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
         bardCoolPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
         bardWarmPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
+        themeMenu = new javax.swing.JMenu();
+        lightThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
+        darkThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
+        darculaThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         helpMenu = new javax.swing.JMenu();
         portalUploadMenuItem = new javax.swing.JCheckBoxMenuItem();
         portalEndpointMenu = new javax.swing.JMenu();
@@ -601,6 +611,38 @@ public final class MainFrame extends javax.swing.JFrame {
 
         optionMenu.add(colorPaletteMenu);
 
+        themeMenu.setText("Theme");
+
+        themeButtonGroup.add(lightThemeRbMenuItem);
+        lightThemeRbMenuItem.setText("Light");
+        lightThemeRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                lightThemeRbMenuItemActionPerformed(evt);
+            }
+        });
+        themeMenu.add(lightThemeRbMenuItem);
+
+        themeButtonGroup.add(darkThemeRbMenuItem);
+        darkThemeRbMenuItem.setSelected(true);
+        darkThemeRbMenuItem.setText("Dark");
+        darkThemeRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                darkThemeRbMenuItemActionPerformed(evt);
+            }
+        });
+        themeMenu.add(darkThemeRbMenuItem);
+
+        themeButtonGroup.add(darculaThemeRbMenuItem);
+        darculaThemeRbMenuItem.setText("Darcula");
+        darculaThemeRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                darculaThemeRbMenuItemActionPerformed(evt);
+            }
+        });
+        themeMenu.add(darculaThemeRbMenuItem);
+
+        optionMenu.add(themeMenu);
+
         menuBar.add(optionMenu);
 
         helpMenu.setText("Help");
@@ -882,6 +924,24 @@ public final class MainFrame extends javax.swing.JFrame {
         App.saveConfig();
     }//GEN-LAST:event_alignNoneRbMenuItemActionPerformed
 
+    private void darkThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_darkThemeRbMenuItemActionPerformed
+        Gui.theme = Gui.Theme.DARK;
+        Gui.goDarkTheme();
+        App.saveConfig();
+    }//GEN-LAST:event_darkThemeRbMenuItemActionPerformed
+
+    private void lightThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_lightThemeRbMenuItemActionPerformed
+        Gui.theme = Gui.Theme.LIGHT;
+        Gui.goLightTheme();
+        App.saveConfig();
+    }//GEN-LAST:event_lightThemeRbMenuItemActionPerformed
+
+    private void darculaThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_darculaThemeRbMenuItemActionPerformed
+        Gui.theme = Gui.Theme.DARCULA;
+        Gui.goDarculaTheme();
+        App.saveConfig();
+    }//GEN-LAST:event_darculaThemeRbMenuItemActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
     private javax.swing.JRadioButtonMenuItem align16KRbMenuItem;
@@ -901,6 +961,8 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JRadioButtonMenuItem classicPaletteMenuItem;
     private javax.swing.JMenuItem clearLogsItem;
     private javax.swing.JMenu colorPaletteMenu;
+    private javax.swing.JRadioButtonMenuItem darculaThemeRbMenuItem;
+    private javax.swing.JRadioButtonMenuItem darkThemeRbMenuItem;
     private javax.swing.JLabel dataDirLabel;
     private javax.swing.JMenuItem deleteAllBenchmarksItem;
     private javax.swing.JMenuItem deleteDataMenuItem;
@@ -920,6 +982,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JPopupMenu.Separator jSeparator2;
     private javax.swing.JPopupMenu.Separator jSeparator3;
+    private javax.swing.JRadioButtonMenuItem lightThemeRbMenuItem;
     private javax.swing.JRadioButtonMenuItem localEndpointRbMenuItem;
     private javax.swing.JPanel locationPanel;
     private javax.swing.JTextField locationText;
@@ -943,6 +1006,8 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JCheckBoxMenuItem showMaxMinCheckBoxMenuItem;
     private javax.swing.JTabbedPane tabbedPane;
     private javax.swing.JRadioButtonMenuItem testEndpointRbMenuItem;
+    private javax.swing.ButtonGroup themeButtonGroup;
+    private javax.swing.JMenu themeMenu;
     private javax.swing.JProgressBar totalTxProgBar;
     private javax.swing.JCheckBoxMenuItem writeSyncCheckBoxMenuItem;
     // End of variables declaration//GEN-END:variables

@@ -372,6 +372,9 @@ public class App {
             );
         }
 
+        value = p.getProperty("theme", String.valueOf(Gui.theme));
+        Gui.theme = Gui.Theme.valueOf(value);
+        
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
         
@@ -403,6 +406,7 @@ public class App {
         p.setProperty("directEnable", String.valueOf(directEnable));
         p.setProperty("sectorAlignment", sectorAlignment.name());
         // display properties
+        p.setProperty("theme", Gui.theme.name());
         p.setProperty("palette", Gui.palette.name());
         p.setProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
         p.setProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));

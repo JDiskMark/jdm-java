@@ -1,7 +1,11 @@
 package jdiskmark;
 
+import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLaf;
+import com.formdev.flatlaf.FlatLightLaf;
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 import jdiskmark.Benchmark.IOMode;
 
@@ -13,6 +17,9 @@ import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import javax.swing.UIManager;
@@ -36,9 +43,46 @@ import org.jfree.ui.RectangleInsets;
  */
 public final class Gui {
     
-    public static enum Palette { CLASSIC, BLUE_GREEN, BARD_COOL, BARD_WARM };
+    public enum Palette { CLASSIC, BLUE_GREEN, BARD_COOL, BARD_WARM };
+    
+    /** 
+     * The theme has ability to allow selection of mac os but right now
+     * keeping it to Dark, Light and Darcula where we will use mac dark 
+     * and mac light on mac platforms.
+     */
+    public enum Theme {
+        // macOS Specific
+        MAC_DARK("Mac Dark", "com.formdev.flatlaf.themes.FlatMacDarkLaf", true),
+        MAC_LIGHT("Mac Light", "com.formdev.flatlaf.themes.FlatMacLightLaf", true),
+
+        // Cross-Platform (Windows / Linux / MacOS)
+        DARK("Dark", "com.formdev.flatlaf.FlatDarkLaf", false),
+        LIGHT("Light", "com.formdev.flatlaf.FlatLightLaf", false),
+        DARCULA("Darcula", "com.formdev.flatlaf.FlatDarculaLaf", false);
+
+        private final String displayName;
+        private final String className;
+        private final boolean isMacOnly;
+
+        Theme(String displayName, String className, boolean isMacOnly) {
+            this.displayName = displayName;
+            this.className = className;
+            this.isMacOnly = isMacOnly;
+        }
+
+        public static List<Theme> getAvailableThemes() {
+            boolean isMac = System.getProperty("os.name").toLowerCase().contains("mac");
+            return Arrays.stream(values())
+                         .filter(t -> isMac || !t.isMacOnly)
+                         .collect(Collectors.toList());
+        }
+
+        public String getClassName() { return className; }
+        @Override public String toString() { return displayName; }
+    }
     
     // display settings
+    public static Theme theme = Theme.DARK;
     public static Palette palette = Palette.CLASSIC;
     public static boolean showMaxMin = true;
     public static boolean showDriveAccess = true;
@@ -51,7 +95,7 @@ public final class Gui {
     public static JProgressBar progressBar = null;
     // graph component
     public static JFreeChart chart;
-    public static NumberAxis msAxis;
+    public static NumberAxis msAxis, bwAxis, sampleAxis;
     public static XYSeries wSeries, wAvgSeries, wMaxSeries, wMinSeries, wDrvAccess;
     public static XYSeries rSeries, rAvgSeries, rMaxSeries, rMinSeries, rDrvAccess;
     public static XYLineAndShapeRenderer bwRenderer;
@@ -61,16 +105,14 @@ public final class Gui {
     /**
      * Setup the look and feel
      */
-    public static void configureLaf() {
+    public static void configureDarkLaf() {
         try {
             if (App.os.contains("Windows")) {
-                //UIManager.setLookAndFeel(new FlatLightLaf()); // Light theme
-                UIManager.setLookAndFeel(new FlatDarkLaf()); // Dark theme
+                UIManager.setLookAndFeel(new FlatDarkLaf());
             } else if (App.os.contains("Mac OS")) {
-                //UIManager.setLookAndFeel(new FlatLightLaf());
                 UIManager.setLookAndFeel(new FlatMacDarkLaf());
             } else if (App.os.contains("Linux")) {
-                UIManager.setLookAndFeel(new FlatDarkLaf()); // Dark theme
+                UIManager.setLookAndFeel(new FlatDarkLaf());
             }
         } catch (UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
@@ -86,8 +128,71 @@ public final class Gui {
         }
     }
     
+    public static void configureDarculaLaf() {
+        try {
+            UIManager.setLookAndFeel(new FlatDarculaLaf());
+        } catch (UnsupportedLookAndFeelException e) {
+            //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+            /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+             * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+             */
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
+                java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            }
+            //</editor-fold>
+        }
+    }
+    
+    public static void configureLightLaf() {
+        try {
+            if (App.os.contains("Windows")) {
+                UIManager.setLookAndFeel(new FlatLightLaf());
+            } else if (App.os.contains("Mac OS")) {
+                UIManager.setLookAndFeel(new FlatMacLightLaf());
+            } else if (App.os.contains("Linux")) {
+                UIManager.setLookAndFeel(new FlatLightLaf());
+            }
+        } catch (UnsupportedLookAndFeelException e) {
+            //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+            /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+             * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+             */
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
+                java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            }
+            //</editor-fold>
+        }
+    }
+    
+    public static void goDarkTheme() {
+        configureDarkLaf();
+        FlatLaf.updateUI();
+        updateChartPanelStyle();
+    }
+    
+    public static void goDarculaTheme() {
+        configureDarculaLaf();
+        FlatLaf.updateUI();
+        updateChartPanelStyle();
+    }
+    
+    public static void goLightTheme() {
+        configureLightLaf();
+        FlatLaf.updateUI();
+        updateChartPanelStyle();
+    }
+    
     public static void init() {
-        configureLaf();
+        switch (Gui.theme) {
+            case DARK -> configureDarkLaf();
+            case LIGHT -> configureLightLaf();
+            case DARCULA -> configureDarculaLaf();
+        }
+        
         mainFrame = new MainFrame();
         if (runPanel != null) {
             runPanel.hideFirstColumn();
@@ -96,6 +201,46 @@ public final class Gui {
         mainFrame.loadPropertiesConfig();
         mainFrame.setLocationRelativeTo(null);
         progressBar = mainFrame.getProgressBar();
+    }
+    
+    public static void updateChartPanelStyle() {
+        // correct the parenthesis from being below vertical centering
+        chart.getTitle().setFont(new Font("Verdana", Font.BOLD, 17));
+        
+        foregroundColor = UIManager.getColor("Label.foreground");
+        if (foregroundColor == null) foregroundColor = Color.LIGHT_GRAY;
+        
+        chart.getTitle().setPaint(foregroundColor);
+        Color bgColor = UIManager.getColor("Panel.background");
+        chart.setBackgroundPaint(bgColor);
+        
+        // Style the Axis (Labels and Tick Marks)
+        
+        // Bandwidth Axis (Left)
+        bwAxis.setLabelPaint(foregroundColor);
+        bwAxis.setTickLabelPaint(foregroundColor);
+        bwAxis.setTickMarkPaint(foregroundColor);
+        // Latency Axis (Right)
+        msAxis.setLabelPaint(foregroundColor);
+        msAxis.setTickLabelPaint(foregroundColor);
+        msAxis.setTickMarkPaint(foregroundColor);
+        // Sample Axis (Bottom)
+        sampleAxis.setLabelPaint(foregroundColor);
+        sampleAxis.setTickLabelPaint(foregroundColor);
+        sampleAxis.setTickMarkPaint(foregroundColor);
+
+        // Style the Legend
+        if (chart.getLegend() != null) {
+            chart.getLegend().setItemPaint(foregroundColor);
+            // Set legend background with slight transparency (macos like look)
+            Color panelBg = UIManager.getColor("Panel.background");
+            if (panelBg != null) {
+                Color legendBg = new Color(panelBg.getRed(), panelBg.getGreen(), panelBg.getBlue(), 200);
+                chart.getLegend().setBackgroundPaint(legendBg);
+            }
+            // Remove the border or set it to a subtle gray
+            chart.getLegend().setFrame(new BlockBorder(new Color(80, 80, 80)));
+        }
     }
     
     public static ChartPanel createChartPanel() {
@@ -154,7 +299,7 @@ public final class Gui {
         plot.setRenderer(1, msRenderer);
         
         // y axis on the left
-        NumberAxis bwAxis = new NumberAxis("Bandwidth (MB/s)");
+        bwAxis = new NumberAxis("Bandwidth (MB/s)");
         bwAxis.setAutoRangeIncludesZero(false);
         
         // y axis on the right
@@ -163,7 +308,7 @@ public final class Gui {
         msAxis.setAutoRangeIncludesZero(false);
         
         // x axis on the bottom
-        NumberAxis sampleAxis = new NumberAxis();
+        sampleAxis = new NumberAxis();
         sampleAxis.setNumberFormatOverride(NumberFormat.getNumberInstance());
         sampleAxis.setAutoRangeIncludesZero(false);
         
@@ -186,41 +331,7 @@ public final class Gui {
         
         chart = new JFreeChart("", null , plot, true);
         
-        // correct the parenthesis from being below vertical centering
-        chart.getTitle().setFont(new Font("Verdana", Font.BOLD, 17));
-        
-        foregroundColor = UIManager.getColor("Label.foreground");
-        if (foregroundColor == null) foregroundColor = Color.LIGHT_GRAY;
-        
-        chart.getTitle().setPaint(foregroundColor);
-        
-        // Style the Axis (Labels and Tick Marks)
-        
-        // Bandwidth Axis (Left)
-        bwAxis.setLabelPaint(foregroundColor);
-        bwAxis.setTickLabelPaint(foregroundColor);
-        bwAxis.setTickMarkPaint(foregroundColor);
-        // Latency Axis (Right)
-        msAxis.setLabelPaint(foregroundColor);
-        msAxis.setTickLabelPaint(foregroundColor);
-        msAxis.setTickMarkPaint(foregroundColor);
-        // Sample Axis (Bottom)
-        sampleAxis.setLabelPaint(foregroundColor);
-        sampleAxis.setTickLabelPaint(foregroundColor);
-        sampleAxis.setTickMarkPaint(foregroundColor);
-
-        // Style the Legend
-        if (chart.getLegend() != null) {
-            chart.getLegend().setItemPaint(foregroundColor);
-            // Set legend background with slight transparency (macos like look)
-            Color panelBg = UIManager.getColor("Panel.background");
-            if (panelBg != null) {
-                Color legendBg = new Color(panelBg.getRed(), panelBg.getGreen(), panelBg.getBlue(), 200);
-                chart.getLegend().setBackgroundPaint(legendBg);
-            }
-            // Remove the border or set it to a subtle gray
-            chart.getLegend().setFrame(new BlockBorder(new Color(80, 80, 80)));
-        }
+        updateChartPanelStyle();
         
         chartPanel = new ChartPanel(chart) {
             // Only way to set the size of chart panel
@@ -274,6 +385,7 @@ public final class Gui {
         }
         controlPanel.refreshWriteMetrics();
     }
+    
     public static void addReadSample(Sample s) {
         rSeries.add(s.sampleNum, s.bwMbSec);
         rAvgSeries.add(s.sampleNum, s.cumAvg);
