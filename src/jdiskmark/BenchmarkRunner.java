@@ -12,11 +12,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import jdiskmark.App.IoEngine;
-import static jdiskmark.App.IoEngine.LEGACY;
-import static jdiskmark.App.IoEngine.MODERN;
 import jdiskmark.Benchmark.IOMode;
-import static jdiskmark.Benchmark.IOMode.READ;
-import static jdiskmark.Benchmark.IOMode.WRITE;
 
 public class BenchmarkRunner {
     
