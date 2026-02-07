@@ -45,40 +45,33 @@ public final class Gui {
     
     public enum Palette { CLASSIC, BLUE_GREEN, BARD_COOL, BARD_WARM };
     
-    /** 
-     * The theme has ability to allow selection of mac os but right now
-     * keeping it to Dark, Light and Darcula where we will use mac dark 
-     * and mac light on mac platforms.
-     */
     public enum Theme {
-        // macOS Specific
-        MAC_DARK("Mac Dark", "com.formdev.flatlaf.themes.FlatMacDarkLaf", true),
-        MAC_LIGHT("Mac Light", "com.formdev.flatlaf.themes.FlatMacLightLaf", true),
-
-        // Cross-Platform (Windows / Linux / MacOS)
-        DARK("Dark", "com.formdev.flatlaf.FlatDarkLaf", false),
-        LIGHT("Light", "com.formdev.flatlaf.FlatLightLaf", false),
-        DARCULA("Darcula", "com.formdev.flatlaf.FlatDarculaLaf", false);
+        DARK("Dark"),
+        LIGHT("Light"),
+        DARCULA("Darcula");
 
         private final String displayName;
-        private final String className;
-        private final boolean isMacOnly;
 
-        Theme(String displayName, String className, boolean isMacOnly) {
+        Theme(String displayName) {
             this.displayName = displayName;
-            this.className = className;
-            this.isMacOnly = isMacOnly;
         }
 
-        public static List<Theme> getAvailableThemes() {
+        public String getLafClassName() {
             boolean isMac = System.getProperty("os.name").toLowerCase().contains("mac");
-            return Arrays.stream(values())
-                         .filter(t -> isMac || !t.isMacOnly)
-                         .collect(Collectors.toList());
+
+            return switch (this) {
+                case DARK -> isMac ? "com.formdev.flatlaf.themes.FlatMacDarkLaf" 
+                                   : "com.formdev.flatlaf.FlatDarkLaf";
+                case LIGHT -> isMac ? "com.formdev.flatlaf.themes.FlatMacLightLaf" 
+                                    : "com.formdev.flatlaf.FlatLightLaf";
+                case DARCULA -> "com.formdev.flatlaf.FlatDarculaLaf";
+            };
         }
 
-        public String getClassName() { return className; }
-        @Override public String toString() { return displayName; }
+        @Override
+        public String toString() {
+            return displayName;
+        }
     }
     
     // display settings
