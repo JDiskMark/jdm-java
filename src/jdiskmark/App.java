@@ -372,8 +372,16 @@ public class App {
             );
         }
 
-        value = p.getProperty("theme", String.valueOf(Gui.theme));
-        Gui.theme = Gui.Theme.valueOf(value);
+        value = p.getProperty("theme", Gui.theme.name());
+        try {
+            Gui.theme = Gui.Theme.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid theme value in properties: \"{0}\", using default: {1}",
+                    new Object[] { value, Gui.theme.name() }
+            );
+        }
         
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
