@@ -263,9 +263,10 @@ public class Sample {
             initialFc = FileChannel.open(testFile.toPath(), options);
         } catch (IOException e) {
             Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
+            throw new RuntimeException("Failed to open file channel for read preparation: " + testFile.getAbsolutePath(), e);
         }
         if (initialFc == null) {
-            return;
+            throw new IllegalStateException("FileChannel.open returned null for read preparation: " + testFile.getAbsolutePath());
         }
         try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
             MemorySegment segment = arena.allocate(blockSize, byteAlignment);
