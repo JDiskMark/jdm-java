@@ -197,21 +197,27 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 
 ## Release Notes
 
-### v1.0.0 planned
+### v1.0.0 proposed
 - TODO: #16 pkg installer (MacOS) - tyler
 - TODO: #70 app icon - ian
 - TODO: #33 maven build - lane
 - TODO: #78 throttle graphics render - val
 - TODO: #95 disk cache purging - val
 - TODO: #44 gui benchmark export
+- TODO: #134 gc optimization
+- #67 portal uploads
+    - TODO: #117 user portal upload acknowledgement
+    - TODO: #118 test interlock or OAuth upload
+
+### v0.7.0 proposed
+- #130 dark flatlaf
+- #131 default direct io
+- #132 fix read only benchmarks
 - #40 resolve cross platform gui laf
 - #121 common benchmark runner for cli and gui
     - cli options for: profile, direct io, alignment
     - new profiles: media playback, video export, photo library
-- #67 portal uploads
-    - TODO: #117 user portal upload acknowledgement
-    - TODO: #118 test interlock or OAuth upload
-    - #111 extract cfg model from benchmark
+- #111 extract cfg model from benchmark
 
 ### v0.6.3
 - #82 drive access notification

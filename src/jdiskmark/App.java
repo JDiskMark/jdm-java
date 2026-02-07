@@ -372,6 +372,17 @@ public class App {
             );
         }
 
+        value = p.getProperty("theme", Gui.theme.name());
+        try {
+            Gui.theme = Gui.Theme.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid theme value in properties: \"{0}\", using default: {1}",
+                    new Object[] { value, Gui.theme.name() }
+            );
+        }
+        
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
         
@@ -403,6 +414,7 @@ public class App {
         p.setProperty("directEnable", String.valueOf(directEnable));
         p.setProperty("sectorAlignment", sectorAlignment.name());
         // display properties
+        p.setProperty("theme", Gui.theme.name());
         p.setProperty("palette", Gui.palette.name());
         p.setProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
         p.setProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
@@ -576,6 +588,12 @@ public class App {
         switch (mode) {
             case GUI -> {
                 worker = new BenchmarkWorker();
+                // TODO: GH-#135 - progress bar cleanup
+                // 1. look at relocating this into the gui class
+                // 2. we are using the progress bar to track units
+                // instead of transfer io (for read prep)
+                // 3. the number of units or tx bytes should be twice for read
+                // and write operations or read prep and read operations
                 worker.addPropertyChangeListener((final var event) -> {
                     switch (event.getPropertyName()) {
                         case "progress" -> {

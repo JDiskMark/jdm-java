@@ -23,10 +23,10 @@ public enum BenchmarkProfile {
             50, // samples
             32, // blocks
             1024, // blk size kb
-            IoEngine.LEGACY, // jdk io
-            false, // direct io
+            IoEngine.MODERN, // jdk io
+            true, // direct io
             false, // writeSync
-            SectorAlignment.NONE,
+            SectorAlignment.ALIGN_4K,
             false // multiFile
     ),
     
@@ -71,10 +71,10 @@ public enum BenchmarkProfile {
             150, // samples
             64,  // blocks
             4, // blk size kb
-            IoEngine.LEGACY, // jdk io
-            false, // direct io
+            IoEngine.MODERN, // jdk io
+            true, // direct io
             false, // writeSync
-            SectorAlignment.NONE,
+            SectorAlignment.ALIGN_4K,
             false // multiFile
     ),
 

@@ -21,7 +21,7 @@ public class BenchmarkRunner {
         void onSampleComplete(Sample sample);
         void onProgressUpdate(long completed, long total);
         boolean isCancelled();
-        void requestCacheDrop();
+        void attemptCacheDrop();
     }
     
     @FunctionalInterface
@@ -73,9 +73,21 @@ public class BenchmarkRunner {
     }
 
     public Benchmark execute() throws Exception {
-        long wUnitsTotal = config.hasWriteOperation() ? (long) config.numBlocks * config.numSamples : 0L;
-        long rUnitsTotal = config.hasReadOperation() ? (long) config.numBlocks * config.numSamples : 0L;
+        long blocksPerPhase = (long) config.numBlocks * config.numSamples;
+
+        long wUnitsTotal = config.hasWriteOperation() ? blocksPerPhase : 0L;
+        long rUnitsTotal = config.hasReadOperation() ? blocksPerPhase : 0L;
+
+        // #132 Handle the Read-Preparation phase for Read-Only benchmarks
+        if (config.benchmarkType == Benchmark.BenchmarkType.READ) {
+            // We set wUnitsTotal to blocksPerPhase because prepareRead() 
+            // calls updateWriteProgress()
+            wUnitsTotal = blocksPerPhase;
+        }
+
+        // Final total units for the progress bar denominator
         unitsTotal = wUnitsTotal + rUnitsTotal;
+        
         blockSize = config.blockSize;
         
         if (config.ioEngine == IoEngine.LEGACY) {
@@ -104,14 +116,18 @@ public class BenchmarkRunner {
         // Execution Loops
         if (config.hasWriteOperation()) {
             runOperation(benchmark, IOMode.WRITE, tRanges);
+        } else if (config.hasReadOperation()) {
+            // #132 this is a read without a write so we need to generate files
+            runReadPreparation(tRanges);
         }
         
-        if (config.hasReadOperation() && config.hasWriteOperation() && !listener.isCancelled()) {
+        if (!config.getDirectIoEnabled() && !listener.isCancelled() &&
+                config.hasReadOperation() && config.hasWriteOperation()) {
             throttledProgressUpdate(true);
-            listener.requestCacheDrop();
+            listener.attemptCacheDrop();
         }
-
-        if (config.hasReadOperation()) {
+        
+        if (config.hasReadOperation() && !listener.isCancelled()) {
             runOperation(benchmark, IOMode.READ, tRanges);
         }
 
@@ -176,6 +192,25 @@ public class BenchmarkRunner {
             op.setTotalOps(mode == IOMode.WRITE ? writeUnitsComplete.sum() : readUnitsComplete.sum());
             if (op.ioMode == IOMode.WRITE) App.wIops = op.iops;
             else App.rIops = op.iops;
+        }
+    }
+    
+    private void runReadPreparation(int[][] ranges) throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(config.numThreads);
+        List<Future<?>> futures = new ArrayList<>();
+        for (int[] range : ranges) {
+            futures.add(executor.submit(() -> {
+                for (int s = range[0]; s < range[1] && !listener.isCancelled(); s++) {
+                    Sample sample = new Sample(Sample.Type.READ, s);
+                    sample.prepareRead(blockSize, config.numBlocks, this);
+                }
+            }));
+        }
+        executor.shutdown();
+        try {
+            for (Future<?> f : futures) f.get(); // Wait and propagate exceptions
+        } catch (ExecutionException e) {
+            throw new Exception("read prep failed", e.getCause());
         }
     }
     
