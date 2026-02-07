@@ -270,6 +270,7 @@ public class Sample {
         try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
             MemorySegment segment = arena.allocate(blockSize, byteAlignment);
             for (int b = 0; b < numOfBlocks; b++) {
+                if (bRunner.listener.isCancelled()) break;
                 long byteOffset = b * blockSize;
                 int written = fc.write(segment.asByteBuffer(), byteOffset);
                 totalBytesWritten += written;
