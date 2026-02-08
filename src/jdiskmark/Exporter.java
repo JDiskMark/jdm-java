@@ -191,7 +191,7 @@ public class Exporter {
         fileChooser.setAcceptAllFileFilterUsed(false); // Force format
 
         // 5. Show Dialog
-        int userSelection = fileChooser.showSaveDialog(null);
+        int userSelection = fileChooser.showSaveDialog(Gui.mainFrame);
 
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
