@@ -101,11 +101,8 @@ public class BenchmarkCallable implements Callable<Benchmark> {
     }
 
     private void handlePostBenchmark(Benchmark benchmark) {
-        // not sure it's necessary to save past benchmarks in cmd line mode
-//        App.benchmarks.put(benchmark.getStartTimeString(), benchmark);
-//        for (BenchmarkOperation o : benchmark.getOperations()) {
-//            App.operations.put(o.getStartTimeString(), o);
-//        }
+        // In CLI mode we intentionally do not retain benchmarks/operations in App.*
+        // In-memory history is managed by other modes; persistence here is via DB/JSON only.
 
         if (App.autoSave) {
             try {
