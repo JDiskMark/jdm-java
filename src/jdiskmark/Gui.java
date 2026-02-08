@@ -589,6 +589,8 @@ public final class Gui {
         App.blockSizeKb = (int)(benchmark.config.blockSize / App.KILOBYTE);
         App.blockSequence = benchmark.config.blockOrder;
         App.numOfThreads = benchmark.config.numThreads;
+        App.activeProfile = benchmark.config.activeProfile;
+        App.profileModified = benchmark.config.profileModified;
         mainFrame.refreshConfig();
         
         // operation data
