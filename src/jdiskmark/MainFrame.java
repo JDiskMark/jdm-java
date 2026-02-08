@@ -998,6 +998,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private void showSingleOpMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showSingleOpMenuItemActionPerformed
         Gui.showSingleOp = showSingleOpMenuItem.isSelected();
         App.saveConfig();
+        Gui.singleOpTrigReloadGraph();
     }//GEN-LAST:event_showSingleOpMenuItemActionPerformed
 
     private void exportYmlMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportYmlMenuItemActionPerformed

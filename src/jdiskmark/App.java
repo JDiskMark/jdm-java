@@ -130,6 +130,7 @@ public class App {
     public static Future<Benchmark> cliResult = null;
     // completed benchmarks and operations
     public static Benchmark benchmark; // last or loaded benchmark
+    public static BenchmarkOperation operation; // last loaded operation
     public static HashMap<String, Benchmark> benchmarks = new LinkedHashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new LinkedHashMap<>();
     
@@ -553,6 +554,10 @@ public class App {
     
     public static void startBenchmark() {
 
+        // clear the selected benchmark and operation
+        App.benchmark = null;
+        App.operation = null;
+        
         if (!validateTargetDirectory(locationDir, false))  { return; }
         
         // 1. check that there isn't already a worker in progress

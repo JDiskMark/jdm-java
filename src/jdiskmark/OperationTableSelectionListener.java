@@ -26,6 +26,7 @@ public class OperationTableSelectionListener implements ListSelectionListener {
             // right now the table uses operation start time stamps
             BenchmarkOperation operation = App.operations.get(timeString);
             if (operation != null) {
+                App.operation = operation;
                 Benchmark benchmark = operation.getBenchmark();
                 App.benchmark = benchmark;
                 

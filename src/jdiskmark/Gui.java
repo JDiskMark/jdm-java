@@ -17,7 +17,6 @@ import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import javax.swing.UIManager;
@@ -73,9 +72,7 @@ public final class Gui {
             return displayName;
         }
     }
-    
-    private static final Logger logger = Logger.getLogger(Gui.class.getName());
-    
+        
     // display settings
     public static Theme theme = Theme.DARK;
     public static Palette palette = Palette.CLASSIC;
@@ -767,5 +764,16 @@ public final class Gui {
         }
         selFrame.setLocationRelativeTo(mainFrame);
         selFrame.setVisible(true);
+    }
+    
+    // reload the graph
+    public static void singleOpTrigReloadGraph() {
+        if (Gui.showSingleOp && App.operation != null) {
+            Gui.loadOperation(App.operation);
+        } else {
+            if (App.benchmark != null) {
+                Gui.loadBenchmark(App.benchmark);
+            }
+        }
     }
 }
