@@ -111,6 +111,7 @@ public class App {
     public static SectorAlignment sectorAlignment = SectorAlignment.ALIGN_4K;
     // benchmark configuration
     public static BenchmarkProfile activeProfile = BenchmarkProfile.QUICK_TEST;
+    public static boolean profileModified = false;
     public static BenchmarkType benchmarkType = BenchmarkType.WRITE;
     public static BlockSequence blockSequence = BlockSequence.SEQUENTIAL;
     public static int numOfSamples = 200;   // desired number of samples
@@ -260,11 +261,7 @@ public class App {
     public static void loadProfile(BenchmarkProfile profile) {
         try {
             activeProfile = profile;
-
-            // skip adjustments if custom test was selected
-            if (profile.equals(BenchmarkProfile.CUSTOM_TEST)) {
-                return;
-            }
+            profileModified = false;
 
             // TODO: later relocate into a BenchmarkConfiguration.java
             benchmarkType = profile.getBenchmarkType();
@@ -444,6 +441,7 @@ public class App {
         BenchmarkConfig config = new BenchmarkConfig();
         config.appVersion = VERSION;
         config.profile = activeProfile;
+        config.profileModified = profileModified;
         config.benchmarkType = benchmarkType;
         config.blockOrder = blockSequence;
         config.numBlocks = numOfBlocks;
@@ -629,21 +627,19 @@ public class App {
         }
     }
     
+    // currently only used by cli implementation, assess if gui switch should
+    // be removed or a common blocking pattern is recommended
     public static void waitBenchmarkDone() {
         switch (mode) {
             case GUI -> {
                 try {
-                    msg("Setting benchmark");
                     benchmark = worker.get();
                 } catch (InterruptedException | ExecutionException e) {
                     Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
                 }
             }
-            // TODO: review and remove if not used, switch, waitBenchmarkDone() 
-            // might be extra also as it is only used by the gui
             case CLI -> {
                 try {
-                    msg("Setting benchmark");
                     benchmark = cliResult.get();
                 } catch (InterruptedException | ExecutionException e) {
                     Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);

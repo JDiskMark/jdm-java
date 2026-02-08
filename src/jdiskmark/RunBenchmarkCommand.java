@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 import jdiskmark.Benchmark.BenchmarkType;
 import jdiskmark.Benchmark.BlockSequence;
 import jdiskmark.App.IoEngine;
-import static jdiskmark.BenchmarkProfile.CUSTOM_TEST;
 import picocli.CommandLine;
 import picocli.CommandLine.Spec;
 
@@ -40,7 +39,6 @@ public class RunBenchmarkCommand implements Callable<Integer> {
         ProfileCandidates() {
             super(Arrays.stream(BenchmarkProfile.values())
                         .map(Enum::name)
-                        .filter(name -> !name.equals(CUSTOM_TEST.name()))
                         .collect(Collectors.toList())); 
         }
     }
