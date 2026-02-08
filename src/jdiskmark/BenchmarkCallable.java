@@ -101,16 +101,18 @@ public class BenchmarkCallable implements Callable<Benchmark> {
     }
 
     private void handlePostBenchmark(Benchmark benchmark) {
+        // not sure it's necessary to save past benchmarks in cmd line mode
+//        App.benchmarks.put(benchmark.getStartTimeString(), benchmark);
+//        for (BenchmarkOperation o : benchmark.getOperations()) {
+//            App.operations.put(o.getStartTimeString(), o);
+//        }
+
         if (App.autoSave) {
             try {
                 EntityManager em = EM.getEntityManager();
                 em.getTransaction().begin();
                 em.persist(benchmark);
                 em.getTransaction().commit();
-                App.benchmarks.put(benchmark.getStartTimeString(), benchmark);
-                for (BenchmarkOperation o : benchmark.getOperations()) {
-                    App.operations.put(o.getStartTimeString(), o);
-                }
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Failed to save benchmark to DB", e);
             }

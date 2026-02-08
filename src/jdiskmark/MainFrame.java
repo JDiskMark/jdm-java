@@ -101,6 +101,7 @@ public final class MainFrame extends javax.swing.JFrame {
         autoRemoveCheckBoxMenuItem.setSelected(App.autoRemoveData);
         autoResetCheckBoxMenuItem.setSelected(App.autoReset);
         // display preferences
+        showSingleOpMenuItem.setSelected(Gui.showSingleOp);
         showMaxMinCheckBoxMenuItem.setSelected(Gui.showMaxMin);
         showAccessCheckBoxMenuItem.setSelected(Gui.showDriveAccess);
         switch (Gui.theme) {
@@ -159,6 +160,7 @@ public final class MainFrame extends javax.swing.JFrame {
             case ALIGN_16K -> align16KRbMenuItem.setSelected(true);
             case ALIGN_64K -> align64KRbMenuItem.setSelected(true);
         }
+        exportMenu.setEnabled(App.benchmark != null);
     }
     
     /**
@@ -192,7 +194,9 @@ public final class MainFrame extends javax.swing.JFrame {
         bControlMountPanel = new javax.swing.JPanel();
         menuBar = new javax.swing.JMenuBar();
         fileMenu = new javax.swing.JMenu();
-        jMenuItem1 = new javax.swing.JMenuItem();
+        exportMenu = new javax.swing.JMenu();
+        exportJsonMenuItem = new javax.swing.JMenuItem();
+        exitMenuItem = new javax.swing.JMenuItem();
         actionMenu = new javax.swing.JMenu();
         clearLogsItem = new javax.swing.JMenuItem();
         deleteDataMenuItem = new javax.swing.JMenuItem();
@@ -218,6 +222,7 @@ public final class MainFrame extends javax.swing.JFrame {
         autoRemoveCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         autoResetCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator2 = new javax.swing.JPopupMenu.Separator();
+        showSingleOpMenuItem = new javax.swing.JCheckBoxMenuItem();
         showMaxMinCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         showAccessCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator1 = new javax.swing.JPopupMenu.Separator();
@@ -359,14 +364,27 @@ public final class MainFrame extends javax.swing.JFrame {
 
         fileMenu.setText("File");
 
-        jMenuItem1.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F4, java.awt.event.InputEvent.ALT_DOWN_MASK));
-        jMenuItem1.setText("Exit");
-        jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
+        exportMenu.setText("Export");
+        exportMenu.setEnabled(false);
+
+        exportJsonMenuItem.setText("JSON (.json)");
+        exportJsonMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                exportJsonMenuItemActionPerformed(evt);
+            }
+        });
+        exportMenu.add(exportJsonMenuItem);
+
+        fileMenu.add(exportMenu);
+
+        exitMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F4, java.awt.event.InputEvent.ALT_DOWN_MASK));
+        exitMenuItem.setText("Exit");
+        exitMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 exitMenuItemActionPerformed(evt);
             }
         });
-        fileMenu.add(jMenuItem1);
+        fileMenu.add(exitMenuItem);
 
         menuBar.add(fileMenu);
 
@@ -550,6 +568,15 @@ public final class MainFrame extends javax.swing.JFrame {
         });
         optionMenu.add(autoResetCheckBoxMenuItem);
         optionMenu.add(jSeparator2);
+
+        showSingleOpMenuItem.setSelected(true);
+        showSingleOpMenuItem.setText("Show Single Operation");
+        showSingleOpMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                showSingleOpMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(showSingleOpMenuItem);
 
         showMaxMinCheckBoxMenuItem.setSelected(true);
         showMaxMinCheckBoxMenuItem.setText("Show Max Min");
@@ -942,6 +969,19 @@ public final class MainFrame extends javax.swing.JFrame {
         App.saveConfig();
     }//GEN-LAST:event_darculaThemeRbMenuItemActionPerformed
 
+    private void exportJsonMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportJsonMenuItemActionPerformed
+        if (App.benchmark == null) {
+            App.msg("no benchmark loaded to export");
+            return;
+        }
+        Gui.exportBenchmarkAction();
+    }//GEN-LAST:event_exportJsonMenuItemActionPerformed
+
+    private void showSingleOpMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showSingleOpMenuItemActionPerformed
+        Gui.showSingleOp = showSingleOpMenuItem.isSelected();
+        App.saveConfig();
+    }//GEN-LAST:event_showSingleOpMenuItemActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
     private javax.swing.JRadioButtonMenuItem align16KRbMenuItem;
@@ -971,13 +1011,15 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JRadioButtonMenuItem engLegacyRbMenuItem;
     private javax.swing.JRadioButtonMenuItem engModernRbMenuItem;
     private javax.swing.JScrollPane eventScrollPane;
+    private javax.swing.JMenuItem exitMenuItem;
+    private javax.swing.JMenuItem exportJsonMenuItem;
+    private javax.swing.JMenu exportMenu;
     private javax.swing.JMenu fileMenu;
     private javax.swing.JMenu helpMenu;
     private javax.swing.JMenu ioEngineMenu;
     private javax.swing.ButtonGroup ioEnginebuttonGroup;
     private javax.swing.JLabel jLabel22;
     private javax.swing.JLabel jLabel7;
-    private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JPopupMenu.Separator jSeparator2;
@@ -1004,6 +1046,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenu sectorAlignmentMenu;
     private javax.swing.JCheckBoxMenuItem showAccessCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem showMaxMinCheckBoxMenuItem;
+    private javax.swing.JCheckBoxMenuItem showSingleOpMenuItem;
     private javax.swing.JTabbedPane tabbedPane;
     private javax.swing.JRadioButtonMenuItem testEndpointRbMenuItem;
     private javax.swing.ButtonGroup themeButtonGroup;
@@ -1047,6 +1090,7 @@ public final class MainFrame extends javax.swing.JFrame {
                     Gui.controlPanel.enableControls(false);
                 }
                 resetBenchmarkItem.setEnabled(false);
+                exportMenu.setEnabled(false);
             }
             case App.State.IDLE_STATE -> {
                 if (Gui.controlPanel != null) {
@@ -1054,6 +1098,9 @@ public final class MainFrame extends javax.swing.JFrame {
                     Gui.controlPanel.enableControls(true);
                 }
                 resetBenchmarkItem.setEnabled(true);
+                //if (App.benchmark != null) {
+                    exportMenu.setEnabled(true);
+                //}
             }
         }
     }

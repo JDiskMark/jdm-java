@@ -91,6 +91,7 @@ public class App {
     public static String arch;
     public static String processorName;
     public static String jdk;
+    public static String username;
     // benchmark options
     public static Properties p;
     public static File locationDir = null;
@@ -127,6 +128,7 @@ public class App {
     public static BenchmarkWorker worker = null;
     public static Future<Benchmark> cliResult = null;
     // completed benchmarks and operations
+    public static Benchmark benchmark; // last or loaded benchmark
     public static HashMap<String, Benchmark> benchmarks = new LinkedHashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new LinkedHashMap<>();
     
@@ -195,6 +197,8 @@ public class App {
      * Initialize the GUI Application.
      */
     public static void init() {
+
+        username = System.getProperty("user.name");
         
         os = System.getProperty("os.name");
         arch = System.getProperty("os.arch");
@@ -391,6 +395,9 @@ public class App {
 
         value = p.getProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
         Gui.showDriveAccess = Boolean.parseBoolean(value);
+
+        value = p.getProperty("showSingleOp", String.valueOf(Gui.showSingleOp));
+        Gui.showSingleOp = Boolean.parseBoolean(value);        
     }
     
     public static void saveConfig() {
@@ -418,6 +425,7 @@ public class App {
         p.setProperty("palette", Gui.palette.name());
         p.setProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
         p.setProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
+        p.setProperty("showSingleOp", String.valueOf(Gui.showSingleOp));
         
         // write properties file
         try {
@@ -622,17 +630,20 @@ public class App {
     }
     
     public static void waitBenchmarkDone() {
-        Benchmark benchmark = null;
         switch (mode) {
             case GUI -> {
                 try {
+                    msg("Setting benchmark");
                     benchmark = worker.get();
                 } catch (InterruptedException | ExecutionException e) {
                     Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
                 }
             }
+            // TODO: review and remove if not used, switch, waitBenchmarkDone() 
+            // might be extra also as it is only used by the gui
             case CLI -> {
                 try {
+                    msg("Setting benchmark");
                     benchmark = cliResult.get();
                 } catch (InterruptedException | ExecutionException e) {
                     Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);

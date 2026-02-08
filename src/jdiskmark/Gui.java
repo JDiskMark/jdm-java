@@ -15,15 +15,21 @@ import java.awt.Font;
 import java.awt.Shape;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
+import java.io.IOException;
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import static jdiskmark.Benchmark.IOMode.READ;
+import static jdiskmark.Benchmark.IOMode.WRITE;
 import org.jfree.chart.ChartMouseEvent;
 import org.jfree.chart.ChartMouseListener;
 import org.jfree.chart.ChartPanel;
@@ -74,11 +80,14 @@ public final class Gui {
         }
     }
     
+    private static final Logger logger = Logger.getLogger(Gui.class.getName());
+    
     // display settings
     public static Theme theme = Theme.DARK;
     public static Palette palette = Palette.CLASSIC;
     public static boolean showMaxMin = true;
     public static boolean showDriveAccess = true;
+    public static boolean showSingleOp = false;
     // form components
     public static ChartPanel chartPanel = null;
     public static MainFrame mainFrame = null;
@@ -95,9 +104,6 @@ public final class Gui {
     public static XYLineAndShapeRenderer msRenderer;
     static Color foregroundColor;
     
-    /**
-     * Setup the look and feel
-     */
     public static void configureDarkLaf() {
         try {
             if (App.os.contains("Windows")) {
@@ -161,18 +167,21 @@ public final class Gui {
         }
     }
     
+    // swtich to dark theme
     public static void goDarkTheme() {
         configureDarkLaf();
         FlatLaf.updateUI();
         updateChartPanelStyle();
     }
     
+    // switch to darcula theme
     public static void goDarculaTheme() {
         configureDarculaLaf();
         FlatLaf.updateUI();
         updateChartPanelStyle();
     }
     
+    // switch to light theme
     public static void goLightTheme() {
         configureLightLaf();
         FlatLaf.updateUI();
@@ -423,7 +432,27 @@ public final class Gui {
         
         msAxis.setVisible(showDriveAccess);
     }
+
+    // update for a specific benchmark
+    public static void updateLegendAndAxis(Benchmark b) {
+        boolean hasWrite = b.config.hasWriteOperation();
+        boolean hasRead = b.config.hasReadOperation();
+        bwRenderer.setSeriesVisibleInLegend(0, hasWrite);
+        bwRenderer.setSeriesVisibleInLegend(1, hasWrite);
+        bwRenderer.setSeriesVisibleInLegend(2, hasWrite && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(3, hasWrite && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(4, hasRead);
+        bwRenderer.setSeriesVisibleInLegend(5, hasRead);
+        bwRenderer.setSeriesVisibleInLegend(6, hasRead && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(7, hasRead && showMaxMin);
+        
+        msRenderer.setSeriesVisibleInLegend(0, hasWrite && showDriveAccess);
+        msRenderer.setSeriesVisibleInLegend(1, hasRead && showDriveAccess);
+        
+        msAxis.setVisible(showDriveAccess);
+    }
     
+    // update for a specific operation
     public static void updateLegendAndAxis(BenchmarkOperation o) {
         boolean isWriteTest = o.ioMode == IOMode.WRITE;
         boolean isReadTest = o.ioMode == IOMode.READ;
@@ -550,6 +579,52 @@ public final class Gui {
             JOptionPane.showMessageDialog(mainFrame,
                     message, "Clear Disk Cache Now",
                     JOptionPane.PLAIN_MESSAGE);
+        }
+    }
+    
+    static public void loadBenchmark(Benchmark benchmark) {
+        resetBenchmarkData();
+        chart.getTitle().setText(benchmark.getDriveInfoDisplay());
+
+        updateLegendAndAxis(benchmark);
+        
+        // benchmark data
+        App.benchmarkType = benchmark.config.benchmarkType;
+        App.numOfBlocks = benchmark.config.numBlocks;
+        App.numOfSamples = benchmark.config.numSamples;
+        App.blockSizeKb = (int)(benchmark.config.blockSize / App.KILOBYTE);
+        App.blockSequence = benchmark.config.blockOrder;
+        App.numOfThreads = benchmark.config.numThreads;
+        mainFrame.refreshConfig();
+        
+        // operation data
+        for (BenchmarkOperation operation : benchmark.operations) {
+            
+            ArrayList<Sample> samples = operation.getSamples();
+            for (Sample s : samples) {
+                switch (operation.ioMode) {
+                    case READ -> addReadSample(s);
+                    case WRITE -> addWriteSample(s);
+                }
+            }
+            switch (operation.ioMode) {
+                case READ -> {
+                    App.rAvg = operation.bwAvg;
+                    App.rMax = operation.bwMax;
+                    App.rMin = operation.bwMin;
+                    App.rAcc = operation.accAvg;
+                    App.rIops = operation.iops;
+                    controlPanel.refreshReadMetrics();                
+                }
+                case WRITE -> {
+                    App.wAvg = operation.bwAvg;
+                    App.wMax = operation.bwMax;
+                    App.wMin = operation.bwMin;
+                    App.wAcc = operation.accAvg;
+                    App.wIops = operation.iops;
+                    controlPanel.refreshWriteMetrics();
+                }
+            }
         }
     }
     
@@ -696,5 +771,51 @@ public final class Gui {
         }
         selFrame.setLocationRelativeTo(mainFrame);
         selFrame.setVisible(true);
+    }
+    
+    public static void exportBenchmarkAction() {
+        // 1. Prepare the default directory (~/Documents/JDiskMark)
+        String userHome = System.getProperty("user.home");
+        File exportDir = new File(userHome + File.separator + "Documents" + File.separator + "JDiskMark");
+
+        if (!exportDir.exists()) {
+            exportDir.mkdirs();
+        }
+
+        // 2. Generate the timestamped filename
+        String timeStamp = new SimpleDateFormat("yyyy-MM-dd_HHmm").format(new Date());
+        String defaultFileName = "jdm_" + timeStamp + ".json";
+
+        // 3. Initialize the JFileChooser
+        JFileChooser fileChooser = new JFileChooser(exportDir);
+        fileChooser.setDialogTitle("Export Benchmark");
+        fileChooser.setSelectedFile(new File(defaultFileName));
+
+        // 4. Set the File Filter
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("JSON Benchmark Files (*.json)", "json");
+        fileChooser.setFileFilter(filter);
+        fileChooser.setAcceptAllFileFilterUsed(false); // Force JSON
+
+        // 5. Show Dialog
+        int userSelection = fileChooser.showSaveDialog(null);
+
+        if (userSelection == JFileChooser.APPROVE_OPTION) {
+            File fileToSave = fileChooser.getSelectedFile();
+            String filePath = fileToSave.getAbsolutePath();
+
+            // Ensure the .json extension is present
+            if (!filePath.toLowerCase().endsWith(".json")) {
+                fileToSave = new File(filePath + ".json");
+            }
+
+            App.exportPath = fileToSave;
+            if (App.exportPath != null) {
+                try {
+                    JsonExporter.writeBenchmarkToJson(App.benchmark, App.exportPath.getAbsolutePath());
+                } catch (IOException ex) {
+                    logger.log(Level.SEVERE, "export error", ex);
+                }
+            }
+        }
     }
 }
