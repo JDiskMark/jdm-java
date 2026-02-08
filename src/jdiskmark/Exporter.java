@@ -116,7 +116,7 @@ public class Exporter {
             // Benchmark Parameter Summary
             writer.write("# JDiskMark " + App.VERSION + " Benchmark Summary\n");
             writer.write("# ---------------------------\n");
-            writer.write("# Date: " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + "\n");
+            writer.write("# Date: " + benchmark.getStartTimeString() + "\n");
             writer.write("# Model: " + benchmark.driveInfo.driveModel + "\n");
             writer.write("# Profile: " + benchmark.config.profile + "\n");
             writer.write("# Type: " + benchmark.config.benchmarkType + "\n");
