@@ -9,6 +9,7 @@ import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.Level;
@@ -111,9 +112,9 @@ public class Exporter {
                 .build().withHeader();
 
         // 3. Write metadata header followed by the CSV data
-        try (java.io.BufferedWriter writer = new java.io.BufferedWriter(new java.io.FileWriter(filePath))) {
+        try (java.io.BufferedWriter writer = new java.io.BufferedWriter(new java.io.FileWriter(filePath, StandardCharsets.UTF_8))) {
             // Benchmark Parameter Summary
-            writer.write("# JDiskMark " + App.VERSION + "Benchmark Summary\n");
+            writer.write("# JDiskMark " + App.VERSION + " Benchmark Summary\n");
             writer.write("# ---------------------------\n");
             writer.write("# Date: " + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + "\n");
             writer.write("# Model: " + benchmark.driveInfo.driveModel + "\n");
