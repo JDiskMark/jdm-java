@@ -127,7 +127,7 @@ public class Exporter {
             
             // Operation Results Summary
             for (var op : benchmark.getOperations()) {
-                writer.write(String.format("# %s Result: Avg %.2f MB/s, Max %.2f ms, IOPS %s\n", 
+                writer.write(String.format("# %s Result: bw %.2f MB/s, lat %.2f ms, iops %s\n", 
                         op.getIoMode(), op.getBandwidth(), op.getLatency(), op.getIops()));
             }
             writer.write("# ---------------------------\n\n");
@@ -153,11 +153,13 @@ public class Exporter {
         return mapper.writeValueAsString(benchmark);
     }
     
+    // used by gui to perform an export of a specified format
     public static void exportBenchmarkAction(Benchmark benchmark, ExportFormat format) {
         
         if (benchmark == null) {
-            JOptionPane.showMessageDialog(Gui.mainFrame, "No benchmark data available to export.", 
-                                          "Export Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(Gui.mainFrame, 
+                    "No benchmark data available to export.", 
+                    "Export Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
         
@@ -186,7 +188,7 @@ public class Exporter {
 
         // 4. Set the File Filter
         FileNameExtensionFilter filter = 
-                new FileNameExtensionFilter(format.name() + " Benchmark Files (*." + ext +")", ext);
+                new FileNameExtensionFilter(format.name() + " Benchmark Files (*." + ext + ")", ext);
         fileChooser.setFileFilter(filter);
         fileChooser.setAcceptAllFileFilterUsed(false); // Force format
 
@@ -205,7 +207,10 @@ public class Exporter {
             try {
                 Exporter.writeBenchmark(benchmark, fileToSave.getAbsolutePath(), format);
             } catch (IOException e) {
-                logger.log(Level.SEVERE, "export error", e);
+                logger.log(Level.SEVERE, "error while writing export file", e);
+                JOptionPane.showMessageDialog(Gui.mainFrame, 
+                        "error while writing " + fileToSave.getAbsolutePath() + ". " + e.getMessage(), 
+                        "Export IO Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
