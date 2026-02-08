@@ -6,7 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.File;
 import java.io.IOException;
 
-public class JsonExporter {
+public class Exporter {
 
     /**
      * Serializes a Benchmark object to a JSON file.

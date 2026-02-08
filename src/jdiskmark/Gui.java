@@ -782,9 +782,15 @@ public final class Gui {
             exportDir.mkdirs();
         }
 
-        // 2. Generate the timestamped filename
+        // 2. Generate default filename w timestamped sanitized model number
+        String sanitizedModel = App.benchmark.driveInfo.driveModel.trim()
+                                .replaceAll("\\s+", ".")
+                                .replaceAll("[^a-zA-Z0-9.]", "");
+        int maxModelLength = 20;
+        String truncatedModel = sanitizedModel.substring(0, Math.min(sanitizedModel.length(), maxModelLength));
+        truncatedModel = truncatedModel.replaceAll("^\\.+|\\.+$", "");
         String timeStamp = new SimpleDateFormat("yyyy-MM-dd_HHmm").format(new Date());
-        String defaultFileName = "jdm_" + timeStamp + ".json";
+        String defaultFileName = "jdm_" + truncatedModel + "_" + timeStamp + ".json";
 
         // 3. Initialize the JFileChooser
         JFileChooser fileChooser = new JFileChooser(exportDir);
@@ -811,7 +817,7 @@ public final class Gui {
             App.exportPath = fileToSave;
             if (App.exportPath != null) {
                 try {
-                    JsonExporter.writeBenchmarkToJson(App.benchmark, App.exportPath.getAbsolutePath());
+                    Exporter.writeBenchmarkToJson(App.benchmark, App.exportPath.getAbsolutePath());
                 } catch (IOException ex) {
                     logger.log(Level.SEVERE, "export error", ex);
                 }

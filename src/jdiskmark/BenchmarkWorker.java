@@ -73,7 +73,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             Portal.upload(benchmark);
         }
         if (App.exportPath != null) {
-            JsonExporter.writeBenchmarkToJson(benchmark, App.exportPath.getAbsolutePath());
+            Exporter.writeBenchmarkToJson(benchmark, App.exportPath.getAbsolutePath());
         }
         Gui.runPanel.addRun(benchmark);
         App.nextSampleNumber += App.numOfSamples;

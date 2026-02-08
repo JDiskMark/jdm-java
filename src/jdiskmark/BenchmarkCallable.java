@@ -120,7 +120,7 @@ public class BenchmarkCallable implements Callable<Benchmark> {
 
         if (App.exportPath != null) {
             try {
-                JsonExporter.writeBenchmarkToJson(benchmark, App.exportPath.getAbsolutePath());
+                Exporter.writeBenchmarkToJson(benchmark, App.exportPath.getAbsolutePath());
             } catch (IOException ex) {
                 logger.log(Level.SEVERE, "export error", ex);
             }
