@@ -168,7 +168,7 @@ public final class Gui {
         }
     }
     
-    // swtich to dark theme
+    // switch to dark theme
     public static void goDarkTheme() {
         configureDarkLaf();
         FlatLaf.updateUI();
