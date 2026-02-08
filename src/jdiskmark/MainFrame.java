@@ -1126,9 +1126,7 @@ public final class MainFrame extends javax.swing.JFrame {
                     Gui.controlPanel.enableControls(true);
                 }
                 resetBenchmarkItem.setEnabled(true);
-                //if (App.benchmark != null) {
-                    exportMenu.setEnabled(true);
-                //}
+                exportMenu.setEnabled(App.benchmark != null);
             }
         }
     }
