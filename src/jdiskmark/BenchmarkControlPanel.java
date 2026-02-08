@@ -1,6 +1,7 @@
 package jdiskmark;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import java.awt.Color;
 import java.awt.Font;
 import net.miginfocom.swing.MigLayout;
 import javax.swing.*;
@@ -19,6 +20,8 @@ public class BenchmarkControlPanel extends JPanel {
     final Integer[] NUM_BLOCK_OPTIONS = {1,2,4,8,16,32,64,128,256,512,1024,2048};
     final Integer[] BLOCK_SIZES = {1,2,4,8,16,32,64,128,256,512,1024,2048};
     final Integer[] NUM_SAMPLE_OPTIONS = {25,50,100,200,300,500,1000,2000,3000,5000,10000};
+    
+    JLabel profileLabel = new JLabel("Profile");
     
     public JComboBox<BenchmarkProfile> profileCombo = new JComboBox<>(BenchmarkProfile.getDefaults());
     public JComboBox<Benchmark.BenchmarkType> typeCombo = new JComboBox<>(Benchmark.BenchmarkType.values());
@@ -155,7 +158,7 @@ public class BenchmarkControlPanel extends JPanel {
         setLayout(new MigLayout("insets 0 5 0 5, fillx, wrap 3", "[30%][27%][43%]", "[]10[]"));
 
         // Profile
-        add(new JLabel("Profile"), "align left");
+        add(profileLabel, "align left");
         add(profileCombo, "span 2, growx");
 
         // Type
@@ -227,20 +230,6 @@ public class BenchmarkControlPanel extends JPanel {
     }
     
     /**
-     * Used w change detection to update profile to custom
-     */
-    private void setProfileToCustom() {
-        // do not adjust if profile is being triggered
-        if (profileCombo.hasFocus()) return;
-        // Check if the current profile is already CUSTOM_TEST to prevent unnecessary UI flicker
-        if (App.activeProfile == BenchmarkProfile.CUSTOM_TEST) return;
-        
-        App.activeProfile = BenchmarkProfile.CUSTOM_TEST;
-        profileCombo.setSelectedItem(BenchmarkProfile.CUSTOM_TEST);
-        System.out.println("Profile reset to CUSTOM_TEST due to configuration change.");
-    }
-    
-    /**
      * Set profile to custom if a setting has been modified
      */
     public void configChangeDetection() {
@@ -263,7 +252,8 @@ public class BenchmarkControlPanel extends JPanel {
 
             // Only flip to custom if it's a real change and not null
             if (changed && selected != null) {
-                setProfileToCustom();
+                App.profileModified = true;
+                this.refreshSettings();
             }
         };
 
@@ -277,13 +267,26 @@ public class BenchmarkControlPanel extends JPanel {
     }
     
     public void refreshSettings() {
-        profileCombo.setSelectedItem(App.activeProfile);
-        typeCombo.setSelectedItem(App.benchmarkType);
-        numThreadsCombo.setSelectedItem(App.numOfThreads);
-        orderCombo.setSelectedItem(App.blockSequence);
-        numBlocksCombo.setSelectedItem(App.numOfBlocks);
-        blockSizeCombo.setSelectedItem(App.blockSizeKb);
-        numSamplesCombo.setSelectedItem(App.numOfSamples);
+        if (App.profileModified) {
+            Color accent = UIManager.getColor("Component.accentColor");
+            if (accent == null) {
+                // Fallback to custom colors if accent isn't defined
+                accent = (Gui.theme == Gui.Theme.LIGHT) 
+                         ? new Color(0, 51, 153) 
+                         : new Color(102, 178, 255);
+            }
+            profileLabel.setForeground(accent);
+        } else {
+            profileLabel.setForeground(UIManager.getColor("Label.foreground"));
+        }
+        
+        if (!profileCombo.hasFocus())    profileCombo.setSelectedItem(App.activeProfile);
+        if (!typeCombo.hasFocus())       typeCombo.setSelectedItem(App.benchmarkType);
+        if (!numThreadsCombo.hasFocus()) numThreadsCombo.setSelectedItem(App.numOfThreads);
+        if (!orderCombo.hasFocus())      orderCombo.setSelectedItem(App.blockSequence);
+        if (!numBlocksCombo.hasFocus())  numBlocksCombo.setSelectedItem(App.numOfBlocks);
+        if (!blockSizeCombo.hasFocus())  blockSizeCombo.setSelectedItem(App.blockSizeKb);
+        if (!numSamplesCombo.hasFocus()) numSamplesCombo.setSelectedItem(App.numOfSamples);
     }
     
     public void refreshWriteMetrics() {

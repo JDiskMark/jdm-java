@@ -91,6 +91,7 @@ public class App {
     public static String arch;
     public static String processorName;
     public static String jdk;
+    public static String username;
     // benchmark options
     public static Properties p;
     public static File locationDir = null;
@@ -110,6 +111,7 @@ public class App {
     public static SectorAlignment sectorAlignment = SectorAlignment.ALIGN_4K;
     // benchmark configuration
     public static BenchmarkProfile activeProfile = BenchmarkProfile.QUICK_TEST;
+    public static boolean profileModified = false;
     public static BenchmarkType benchmarkType = BenchmarkType.WRITE;
     public static BlockSequence blockSequence = BlockSequence.SEQUENTIAL;
     public static int numOfSamples = 200;   // desired number of samples
@@ -127,6 +129,8 @@ public class App {
     public static BenchmarkWorker worker = null;
     public static Future<Benchmark> cliResult = null;
     // completed benchmarks and operations
+    public static Benchmark benchmark; // last or loaded benchmark
+    public static BenchmarkOperation operation; // last loaded operation
     public static HashMap<String, Benchmark> benchmarks = new LinkedHashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new LinkedHashMap<>();
     
@@ -195,6 +199,8 @@ public class App {
      * Initialize the GUI Application.
      */
     public static void init() {
+
+        username = System.getProperty("user.name");
         
         os = System.getProperty("os.name");
         arch = System.getProperty("os.arch");
@@ -256,11 +262,7 @@ public class App {
     public static void loadProfile(BenchmarkProfile profile) {
         try {
             activeProfile = profile;
-
-            // skip adjustments if custom test was selected
-            if (profile.equals(BenchmarkProfile.CUSTOM_TEST)) {
-                return;
-            }
+            profileModified = false;
 
             // TODO: later relocate into a BenchmarkConfiguration.java
             benchmarkType = profile.getBenchmarkType();
@@ -391,6 +393,9 @@ public class App {
 
         value = p.getProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
         Gui.showDriveAccess = Boolean.parseBoolean(value);
+
+        value = p.getProperty("showSingleOp", String.valueOf(Gui.showSingleOp));
+        Gui.showSingleOp = Boolean.parseBoolean(value);        
     }
     
     public static void saveConfig() {
@@ -418,6 +423,7 @@ public class App {
         p.setProperty("palette", Gui.palette.name());
         p.setProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
         p.setProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
+        p.setProperty("showSingleOp", String.valueOf(Gui.showSingleOp));
         
         // write properties file
         try {
@@ -436,6 +442,7 @@ public class App {
         BenchmarkConfig config = new BenchmarkConfig();
         config.appVersion = VERSION;
         config.profile = activeProfile;
+        config.profileModified = profileModified;
         config.benchmarkType = benchmarkType;
         config.blockOrder = blockSequence;
         config.numBlocks = numOfBlocks;
@@ -547,6 +554,10 @@ public class App {
     
     public static void startBenchmark() {
 
+        // clear the selected benchmark and operation
+        App.benchmark = null;
+        App.operation = null;
+        
         if (!validateTargetDirectory(locationDir, false))  { return; }
         
         // 1. check that there isn't already a worker in progress
@@ -621,8 +632,9 @@ public class App {
         }
     }
     
+    // currently only used by cli implementation, assess if gui switch should
+    // be removed or a common blocking pattern is recommended
     public static void waitBenchmarkDone() {
-        Benchmark benchmark = null;
         switch (mode) {
             case GUI -> {
                 try {

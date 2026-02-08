@@ -101,16 +101,15 @@ public class BenchmarkCallable implements Callable<Benchmark> {
     }
 
     private void handlePostBenchmark(Benchmark benchmark) {
+        // In CLI mode we intentionally do not retain benchmarks/operations in App.*
+        // In-memory history is managed by other modes; persistence here is via DB/JSON only.
+
         if (App.autoSave) {
             try {
                 EntityManager em = EM.getEntityManager();
                 em.getTransaction().begin();
                 em.persist(benchmark);
                 em.getTransaction().commit();
-                App.benchmarks.put(benchmark.getStartTimeString(), benchmark);
-                for (BenchmarkOperation o : benchmark.getOperations()) {
-                    App.operations.put(o.getStartTimeString(), o);
-                }
             } catch (Exception e) {
                 logger.log(Level.SEVERE, "Failed to save benchmark to DB", e);
             }
@@ -118,7 +117,7 @@ public class BenchmarkCallable implements Callable<Benchmark> {
 
         if (App.exportPath != null) {
             try {
-                JsonExporter.writeBenchmarkToJson(benchmark, App.exportPath.getAbsolutePath());
+                Exporter.writeBenchmarkToJson(benchmark, App.exportPath.getAbsolutePath());
             } catch (IOException ex) {
                 logger.log(Level.SEVERE, "export error", ex);
             }

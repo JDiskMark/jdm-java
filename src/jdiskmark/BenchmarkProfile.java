@@ -140,13 +140,6 @@ public enum BenchmarkProfile {
             false,
             SectorAlignment.ALIGN_4K,
             true  // Multi-file is vital for this use case
-    ),
-    
-    // --- Custom (option indicator, not actual profile) ---
-    CUSTOM_TEST(
-        "Custom Test", BenchmarkType.READ_WRITE, 
-        BlockSequence.SEQUENTIAL, 1, 1, 1, 1,
-        IoEngine.LEGACY, false, false, SectorAlignment.NONE, false
     );
     
     // identifiers
@@ -203,8 +196,7 @@ public enum BenchmarkProfile {
             MAX_WRITE_STRESS,
             MEDIA_PLAYBACK,
             VIDEO_EXPORTING,
-            PHOTO_LIBRARY,
-            CUSTOM_TEST
+            PHOTO_LIBRARY
         ).toArray(BenchmarkProfile[]::new);
     }
 

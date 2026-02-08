@@ -105,7 +105,7 @@ public class BenchmarkRunner {
         // Initialize Benchmark
         
         Benchmark benchmark = new Benchmark(config);
-        mapSystemInfo(benchmark, driveModel, partitionId, usageInfo);
+        mapEnvironment(benchmark, driveModel, partitionId, usageInfo);
 
         int startingSample = App.nextSampleNumber;
         int endingSample = App.nextSampleNumber + config.numSamples;
@@ -262,7 +262,9 @@ public class BenchmarkRunner {
         return op;
     }
     
-    private void mapSystemInfo(Benchmark b, String model, String partId, DiskUsageInfo u) {
+    private void mapEnvironment(Benchmark b, String model, String partId, DiskUsageInfo u) {
+        b.username = App.username;
+        
         b.systemInfo.processorName = App.processorName;
         b.systemInfo.os = App.os;
         b.systemInfo.arch = App.arch;

@@ -55,22 +55,22 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         Gui.chart.getTitle().setText(benchmark.getDriveInfoDisplay());
         Gui.chart.getTitle().setVisible(true);
 
+        // store local app state
+        App.benchmark = benchmark;
+        App.benchmarks.put(benchmark.getStartTimeString(), benchmark);
+        for (BenchmarkOperation o : benchmark.getOperations()) {
+            App.operations.put(o.getStartTimeString(), o);
+        }
+        
         if (App.autoSave) {
             EntityManager em = EM.getEntityManager();
             em.getTransaction().begin();
             em.persist(benchmark);
             em.getTransaction().commit();
-            App.benchmarks.put(benchmark.getStartTimeString(), benchmark);
-            for (BenchmarkOperation o : benchmark.getOperations()) {
-                App.operations.put(o.getStartTimeString(), o);
-            }
         }
         // #67 upload to community portal (in progress)
         if (App.sharePortal) {
             Portal.upload(benchmark);
-        }
-        if (App.exportPath != null) {
-            JsonExporter.writeBenchmarkToJson(benchmark, App.exportPath.getAbsolutePath());
         }
         Gui.runPanel.addRun(benchmark);
         App.nextSampleNumber += App.numOfSamples;

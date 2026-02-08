@@ -19,6 +19,10 @@ public class BenchmarkConfig {
     BenchmarkProfile profile;
     public BenchmarkProfile getProfile() { return profile; }
     
+    @Column
+    boolean profileModified = false;
+    public boolean getProfileModified() { return profileModified; }
+    
     // benchmark parameters
     @Column
     Benchmark.BenchmarkType benchmarkType;

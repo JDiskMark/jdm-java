@@ -26,15 +26,15 @@ public class SelectDriveFrame extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jFileChooser1 = new javax.swing.JFileChooser();
+        driveFileChooser = new javax.swing.JFileChooser();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Choose Location");
 
-        jFileChooser1.setFileSelectionMode(javax.swing.JFileChooser.DIRECTORIES_ONLY);
-        jFileChooser1.addActionListener(new java.awt.event.ActionListener() {
+        driveFileChooser.setFileSelectionMode(javax.swing.JFileChooser.DIRECTORIES_ONLY);
+        driveFileChooser.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jFileChooser1ActionPerformed(evt);
+                driveFileChooserActionPerformed(evt);
             }
         });
 
@@ -42,24 +42,24 @@ public class SelectDriveFrame extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jFileChooser1, javax.swing.GroupLayout.PREFERRED_SIZE, 520, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addComponent(driveFileChooser, javax.swing.GroupLayout.PREFERRED_SIZE, 520, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jFileChooser1, javax.swing.GroupLayout.PREFERRED_SIZE, 335, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addComponent(driveFileChooser, javax.swing.GroupLayout.PREFERRED_SIZE, 335, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jFileChooser1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jFileChooser1ActionPerformed
+    private void driveFileChooserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_driveFileChooserActionPerformed
         System.out.println(evt);
         switch (evt.getActionCommand()) {
             case "ApproveSelection" -> {
 
-                if (!validateTargetDirectory(jFileChooser1.getSelectedFile(), true)) { return; }
+                if (!validateTargetDirectory(driveFileChooser.getSelectedFile(), true)) { return; }
 
-                App.setLocationDir(jFileChooser1.getSelectedFile());
+                App.setLocationDir(driveFileChooser.getSelectedFile());
                 App.saveConfig();
                 Gui.updateDiskInfo();
                 Gui.resetBenchmarkData();
@@ -70,14 +70,14 @@ public class SelectDriveFrame extends javax.swing.JFrame {
         }
         Gui.selFrame.setVisible(false);
         Gui.selFrame.dispose();
-    }//GEN-LAST:event_jFileChooser1ActionPerformed
+    }//GEN-LAST:event_driveFileChooserActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JFileChooser jFileChooser1;
+    private javax.swing.JFileChooser driveFileChooser;
     // End of variables declaration//GEN-END:variables
 
     void setInitDir(File file) {
-        jFileChooser1.setSelectedFile(file);
+        driveFileChooser.setSelectedFile(file);
     }
     
 }
