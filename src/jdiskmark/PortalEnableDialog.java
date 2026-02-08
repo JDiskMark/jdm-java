@@ -13,7 +13,7 @@ public class PortalEnableDialog extends JDialog {
     private final String REQUIRED_PASSWORD = "goHamsters!";
 
     public PortalEnableDialog(Frame parent) {
-        super(parent, "Security Check", true);
+        super(parent, "Enable Test Mode", true);
 
         // UI Setup
         setLayout(new BorderLayout(10, 10));

@@ -72,9 +72,6 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         if (App.sharePortal) {
             Portal.upload(benchmark);
         }
-        if (App.exportPath != null) {
-            Exporter.writeBenchmarkToJson(benchmark, App.exportPath.getAbsolutePath());
-        }
         Gui.runPanel.addRun(benchmark);
         App.nextSampleNumber += App.numOfSamples;
         return benchmark;

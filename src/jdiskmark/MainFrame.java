@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
+import jdiskmark.Exporter.ExportFormat;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -196,6 +197,8 @@ public final class MainFrame extends javax.swing.JFrame {
         fileMenu = new javax.swing.JMenu();
         exportMenu = new javax.swing.JMenu();
         exportJsonMenuItem = new javax.swing.JMenuItem();
+        exportYmlMenuItem = new javax.swing.JMenuItem();
+        exportCsvMenuItem = new javax.swing.JMenuItem();
         exitMenuItem = new javax.swing.JMenuItem();
         actionMenu = new javax.swing.JMenu();
         clearLogsItem = new javax.swing.JMenuItem();
@@ -367,6 +370,7 @@ public final class MainFrame extends javax.swing.JFrame {
         exportMenu.setText("Export");
         exportMenu.setEnabled(false);
 
+        exportJsonMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_J, java.awt.event.InputEvent.ALT_DOWN_MASK));
         exportJsonMenuItem.setText("JSON (.json)");
         exportJsonMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -374,6 +378,24 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
         exportMenu.add(exportJsonMenuItem);
+
+        exportYmlMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_Y, java.awt.event.InputEvent.ALT_DOWN_MASK));
+        exportYmlMenuItem.setText("YAML (.yml)");
+        exportYmlMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                exportYmlMenuItemActionPerformed(evt);
+            }
+        });
+        exportMenu.add(exportYmlMenuItem);
+
+        exportCsvMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_C, java.awt.event.InputEvent.ALT_DOWN_MASK));
+        exportCsvMenuItem.setText("CSV (.csv)");
+        exportCsvMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                exportCsvMenuItemActionPerformed(evt);
+            }
+        });
+        exportMenu.add(exportCsvMenuItem);
 
         fileMenu.add(exportMenu);
 
@@ -970,17 +992,21 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_darculaThemeRbMenuItemActionPerformed
 
     private void exportJsonMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportJsonMenuItemActionPerformed
-        if (App.benchmark == null) {
-            App.msg("no benchmark loaded to export");
-            return;
-        }
-        Gui.exportBenchmarkAction();
+        Exporter.exportBenchmarkAction(App.benchmark, ExportFormat.JSON);
     }//GEN-LAST:event_exportJsonMenuItemActionPerformed
 
     private void showSingleOpMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showSingleOpMenuItemActionPerformed
         Gui.showSingleOp = showSingleOpMenuItem.isSelected();
         App.saveConfig();
     }//GEN-LAST:event_showSingleOpMenuItemActionPerformed
+
+    private void exportYmlMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportYmlMenuItemActionPerformed
+        Exporter.exportBenchmarkAction(App.benchmark, ExportFormat.YAML);
+    }//GEN-LAST:event_exportYmlMenuItemActionPerformed
+
+    private void exportCsvMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportCsvMenuItemActionPerformed
+        Exporter.exportBenchmarkAction(App.benchmark, ExportFormat.CSV);
+    }//GEN-LAST:event_exportCsvMenuItemActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
@@ -1012,8 +1038,10 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JRadioButtonMenuItem engModernRbMenuItem;
     private javax.swing.JScrollPane eventScrollPane;
     private javax.swing.JMenuItem exitMenuItem;
+    private javax.swing.JMenuItem exportCsvMenuItem;
     private javax.swing.JMenuItem exportJsonMenuItem;
     private javax.swing.JMenu exportMenu;
+    private javax.swing.JMenuItem exportYmlMenuItem;
     private javax.swing.JMenu fileMenu;
     private javax.swing.JMenu helpMenu;
     private javax.swing.JMenu ioEngineMenu;

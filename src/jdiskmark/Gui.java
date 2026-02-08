@@ -30,6 +30,7 @@ import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import static jdiskmark.Benchmark.IOMode.READ;
 import static jdiskmark.Benchmark.IOMode.WRITE;
+import jdiskmark.Exporter.ExportFormat;
 import org.jfree.chart.ChartMouseEvent;
 import org.jfree.chart.ChartMouseListener;
 import org.jfree.chart.ChartPanel;
@@ -771,57 +772,5 @@ public final class Gui {
         }
         selFrame.setLocationRelativeTo(mainFrame);
         selFrame.setVisible(true);
-    }
-    
-    public static void exportBenchmarkAction() {
-        // 1. Prepare the default directory (~/Documents/JDiskMark)
-        String userHome = System.getProperty("user.home");
-        File exportDir = new File(userHome + File.separator + "Documents" + File.separator + "JDiskMark");
-
-        if (!exportDir.exists()) {
-            exportDir.mkdirs();
-        }
-
-        // 2. Generate default filename w timestamped sanitized model number
-        String sanitizedModel = App.benchmark.driveInfo.driveModel.trim()
-                                .replaceAll("\\s+", ".")
-                                .replaceAll("[^a-zA-Z0-9.]", "");
-        int maxModelLength = 20;
-        String truncatedModel = sanitizedModel.substring(0, Math.min(sanitizedModel.length(), maxModelLength));
-        truncatedModel = truncatedModel.replaceAll("^\\.+|\\.+$", "");
-        String timeStamp = new SimpleDateFormat("yyyy-MM-dd_HHmm").format(new Date());
-        String defaultFileName = "jdm_" + truncatedModel + "_" + timeStamp + ".json";
-
-        // 3. Initialize the JFileChooser
-        JFileChooser fileChooser = new JFileChooser(exportDir);
-        fileChooser.setDialogTitle("Export Benchmark");
-        fileChooser.setSelectedFile(new File(defaultFileName));
-
-        // 4. Set the File Filter
-        FileNameExtensionFilter filter = new FileNameExtensionFilter("JSON Benchmark Files (*.json)", "json");
-        fileChooser.setFileFilter(filter);
-        fileChooser.setAcceptAllFileFilterUsed(false); // Force JSON
-
-        // 5. Show Dialog
-        int userSelection = fileChooser.showSaveDialog(null);
-
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
-            File fileToSave = fileChooser.getSelectedFile();
-            String filePath = fileToSave.getAbsolutePath();
-
-            // Ensure the .json extension is present
-            if (!filePath.toLowerCase().endsWith(".json")) {
-                fileToSave = new File(filePath + ".json");
-            }
-
-            App.exportPath = fileToSave;
-            if (App.exportPath != null) {
-                try {
-                    Exporter.writeBenchmarkToJson(App.benchmark, App.exportPath.getAbsolutePath());
-                } catch (IOException ex) {
-                    logger.log(Level.SEVERE, "export error", ex);
-                }
-            }
-        }
     }
 }

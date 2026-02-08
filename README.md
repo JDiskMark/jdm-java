@@ -203,14 +203,13 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 - TODO: #33 maven build - lane
 - TODO: #78 throttle graphics render - val
 - TODO: #95 disk cache purging - val
-- TODO: #44 gui benchmark csv export
 - TODO: #134 gc optimization
 - #67 portal uploads
     - TODO: #117 user portal upload acknowledgement
     - TODO: #118 test interlock or OAuth upload
 
 ### v0.7.0 proposed
-- #44 gui benchmark json export
+- #44 gui benchmark export for json, yml, csv
 - #130 dark flatlaf
 - #131 default direct io
 - #132 fix read only benchmarks
@@ -219,6 +218,7 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
     - cli options for: profile, direct io, alignment
     - new profiles: media playback, video export, photo library
 - #111 extract cfg model from benchmark
+- TODO: remove custom profile option
 
 ### v0.6.3
 - #82 drive access notification
