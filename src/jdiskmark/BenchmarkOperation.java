@@ -187,7 +187,7 @@ public class BenchmarkOperation implements Serializable {
             System.err.println("endTime=" + endTime);
         }
         long diffNanos = Duration.between(startTime, endTime).toNanos();
-        if (diffNanos != 0) {
+        if (diffNanos > 0) {
             double seconds = diffNanos / 1_000_000_000.0;
             double iopsDouble = totalOps / seconds;
             iops = Math.round(iopsDouble);
