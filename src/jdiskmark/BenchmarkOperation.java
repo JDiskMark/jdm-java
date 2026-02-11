@@ -182,14 +182,14 @@ public class BenchmarkOperation implements Serializable {
     
     public void setTotalOps(long totalOps) {
         // iops = operations / sec = ops / (elapsed ms / 1,000ms)
-        // Multiply by 1_000_000 to convert milliseconds to seconds
         if (App.verbose) {
             System.err.println("startTime=" + startTime);
             System.err.println("endTime=" + endTime);
         }
-        long diffMs = Duration.between(startTime, endTime).toMillis();
-        if (diffMs != 0) {
-            double iopsDouble = (double) (totalOps * 1_000_000) / (double) diffMs;
+        long diffNanos = Duration.between(startTime, endTime).toNanos();
+        if (diffNanos > 0) {
+            double seconds = diffNanos / 1_000_000_000.0;
+            double iopsDouble = totalOps / seconds;
             iops = Math.round(iopsDouble);
         }
     }
