@@ -156,7 +156,7 @@ public class Exporter {
     
     /**
      * Used to help the user open the dir of the file that was saved 
-     * and sel the specified file
+     * and select the specified file
      * @param fileSaved the file to select
      */
     public static void openFolderDialog(File fileSaved) {
