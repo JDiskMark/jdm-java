@@ -60,6 +60,18 @@ public class Exporter {
         App.msg("Benchmark successfully exported to JSON file: " + filePath);
     }
     
+    /**
+     * Exports the given {@link Benchmark} to the specified file in the chosen format.
+     * <p>
+     * For {@link ExportFormat#JSON} and {@link ExportFormat#YAML}, this method uses a Jackson
+     * {@link ObjectMapper} (or {@link YAMLMapper}) configured for Java time types and pretty
+     * printing. For {@link ExportFormat#CSV}, it delegates to the CSV-specific export logic.
+     *
+     * @param benchmark  the benchmark data to export
+     * @param fileToSave the target file where the benchmark will be written
+     * @param format     the export format to use (JSON, YAML, or CSV)
+     * @throws IOException if an error occurs while writing the benchmark to the file
+     */
     public static void writeBenchmark(Benchmark benchmark, File fileToSave, ExportFormat format) throws IOException {
 
         // 1. Initialize mapper
