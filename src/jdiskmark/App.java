@@ -318,6 +318,9 @@ public class App {
             activeProfile = previousActiveProfile;
         }
         
+        value = p.getProperty("profileModified", String.valueOf(profileModified));
+        profileModified = Boolean.parseBoolean(value);
+        
         value = p.getProperty("benchmarkType", String.valueOf(benchmarkType));
         benchmarkType = BenchmarkType.valueOf(value.toUpperCase());
         
@@ -404,6 +407,7 @@ public class App {
         p.setProperty("sharePortal", String.valueOf(sharePortal));
         p.setProperty("uploadUrl", Portal.uploadUrl);
         p.setProperty("activeProfile", activeProfile.name());
+        p.setProperty("profileModified", String.valueOf(profileModified));
         p.setProperty("benchmarkType", benchmarkType.name());
         p.setProperty("multiFile", String.valueOf(multiFile));
         p.setProperty("autoRemoveData", String.valueOf(autoRemoveData));

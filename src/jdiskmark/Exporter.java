@@ -60,24 +60,34 @@ public class Exporter {
         App.msg("Benchmark successfully exported to JSON file: " + filePath);
     }
     
-    public static void writeBenchmark(Benchmark benchmark, String path, ExportFormat format) throws IOException {
+    /**
+     * Exports the given {@link Benchmark} to the specified file in the chosen format.
+     * <p>
+     * For {@link ExportFormat#JSON} and {@link ExportFormat#YAML}, this method uses a Jackson
+     * {@link ObjectMapper} (or {@link YAMLMapper}) configured for Java time types and pretty
+     * printing. For {@link ExportFormat#CSV}, it delegates to the CSV-specific export logic.
+     *
+     * @param benchmark  the benchmark data to export
+     * @param fileToSave the target file where the benchmark will be written
+     * @param format     the export format to use (JSON, YAML, or CSV)
+     * @throws IOException if an error occurs while writing the benchmark to the file
+     */
+    public static void writeBenchmark(Benchmark benchmark, File fileToSave, ExportFormat format) throws IOException {
 
         // 1. Initialize mapper
         ObjectMapper mapper;
         switch(format) {
             case YAML -> {
                 mapper = new YAMLMapper();
-                    // Optional: remove the "---" document start for a cleaner look
-                    ((YAMLMapper) mapper).disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER);
+                // remove the "---" document start for a cleaner look
+                ((YAMLMapper) mapper).disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER);
             }
-            case CSV -> {
-                mapper = new CsvMapper();
-            }
+            case CSV -> mapper = new CsvMapper();
             default -> mapper = new ObjectMapper(); // JSON mapper
         }
         
         // 2. Write the file
-        File fileToSave = new File(path);
+        String path = fileToSave.getAbsolutePath();
         if (format == ExportFormat.JSON || format == ExportFormat.YAML) {
             mapper.registerModule(new JavaTimeModule());
             mapper.enable(SerializationFeature.INDENT_OUTPUT);
@@ -86,43 +96,7 @@ public class Exporter {
         } else if (format == ExportFormat.CSV) {
             writeBenchmarkToCsv(mapper, benchmark, path);
         }
-        
-        // 3. After successful write:
-        Object[] options = {"Open Folder", "Done"};
-        int selection = JOptionPane.showOptionDialog(
-            Gui.mainFrame,
-            "Benchmark exported successfully to:\n" + fileToSave.getName(),
-            "Export Complete",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.INFORMATION_MESSAGE,
-            null,
-            options,
-            options[1]
-        );
-
-        // 4. open native os explorer (Windows, macOS, or Linux) if indicated
-        if (selection == JOptionPane.YES_OPTION) {
-            String os = System.getProperty("os.name").toLowerCase();
-            try {
-                if (os.contains("win")) {
-                    // Windows: explorer.exe /select,"path"
-                    new ProcessBuilder("explorer.exe", "/select,", path).start();
-                } else if (os.contains("mac")) {
-                    // macOS: open -R "path"
-                    new ProcessBuilder("open", "-R", path).start();
-                } else if (os.contains("nix") || os.contains("nux")) {
-                    // Linux: dbus is the most reliable way to talk to file managers
-                    new ProcessBuilder("dbus-send", "--session", "--print-reply", "--dest=org.freedesktop.FileManager1",
-                                       "/org/freedesktop/FileManager1", "org.freedesktop.FileManager1.ShowItems",
-                                       "array:string:file://" + path, "string:").start();
-                } else {
-                    // Fallback to just opening the parent folder if OS is unknown
-                    java.awt.Desktop.getDesktop().open(fileToSave.getParentFile());
-                }
-            } catch (IOException ex) {
-                logger.log(Level.SEVERE, "Could not open folder", ex);
-            }
-        }
+        App.msg("Benchmark successfully exported to " + format.name() + ": " + path);
     }
     
     // Keep the CSV logic separate since it requires flattening the nested arrays
@@ -176,8 +150,6 @@ public class Exporter {
             // 4. Write the actual CSV data rows
             mapper.writer(schema).writeValue(writer, data);
         }
-        
-        App.msg("Benchmark samples exported to CSV: " + filePath);
     }
     
     /**
@@ -192,6 +164,50 @@ public class Exporter {
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
         mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         return mapper.writeValueAsString(benchmark);
+    }
+    
+    /**
+     * Used to help the user open the dir of the file that was saved 
+     * and select the specified file
+     * @param fileSaved the file to select
+     */
+    public static void openFolderDialog(File fileSaved) {
+        String path = fileSaved.getAbsolutePath();
+        Object[] options = {"Open Folder", "Done"};
+        int selection = JOptionPane.showOptionDialog(
+            Gui.mainFrame,
+            "Benchmark exported successfully to:\n" + fileSaved.getName(),
+            "Export Complete",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.INFORMATION_MESSAGE,
+            null,
+            options,
+            options[1]
+        );
+
+        // open native os explorer (Windows, macOS, or Linux) if indicated
+        if (selection == JOptionPane.YES_OPTION) {
+            String os = System.getProperty("os.name").toLowerCase();
+            try {
+                if (os.contains("win")) {
+                    // Windows: explorer.exe /select,"path"
+                    new ProcessBuilder("explorer.exe", "/select,", path).start();
+                } else if (os.contains("mac")) {
+                    // macOS: open -R "path"
+                    new ProcessBuilder("open", "-R", path).start();
+                } else if (os.contains("nix") || os.contains("nux")) {
+                    // Linux: dbus is the most reliable way to talk to file managers
+                    new ProcessBuilder("dbus-send", "--session", "--print-reply", "--dest=org.freedesktop.FileManager1",
+                                       "/org/freedesktop/FileManager1", "org.freedesktop.FileManager1.ShowItems",
+                                       "array:string:file://" + path, "string:").start();
+                } else {
+                    // Fallback to just opening the parent folder if OS is unknown
+                    java.awt.Desktop.getDesktop().open(fileSaved.getParentFile());
+                }
+            } catch (IOException ex) {
+                logger.log(Level.SEVERE, "Could not open folder", ex);
+            }
+        }
     }
     
     // used by gui to perform an export of a specified format
@@ -235,18 +251,21 @@ public class Exporter {
 
         // 5. Show Dialog
         int userSelection = fileChooser.showSaveDialog(Gui.mainFrame);
-
+        
+        // 6. process export if selected
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
-            String filePath = fileToSave.getAbsolutePath();
+            String path = fileToSave.getAbsolutePath();
 
             // Ensure the extension is present
-            if (!filePath.toLowerCase().endsWith("." + ext)) {
-                fileToSave = new File(filePath + "." + ext);
+            if (!path.toLowerCase().endsWith("." + ext)) {
+                fileToSave = new File(path + "." + ext);
             }
 
             try {
-                writeBenchmark(benchmark, fileToSave.getAbsolutePath(), format);
+                writeBenchmark(benchmark, fileToSave, format);
+                // if successful offer to open export folder
+                openFolderDialog(fileToSave);
             } catch (IOException e) {
                 logger.log(Level.SEVERE, "error while writing export file", e);
                 JOptionPane.showMessageDialog(Gui.mainFrame, 

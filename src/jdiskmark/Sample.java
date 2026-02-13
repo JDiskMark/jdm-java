@@ -1,6 +1,7 @@
 package jdiskmark;
 
 // constants
+import com.fasterxml.jackson.annotation.JsonAlias;
 import static jdiskmark.App.MEGABYTE;
 import static jdiskmark.Benchmark.BlockSequence.RANDOM;
 
@@ -72,7 +73,8 @@ public class Sample {
     public double getBwMbSec() { return bwMbSec; }
     public void setBwMbSec(double bwMb) { bwMbSec = bwMb; }
     
-    @JsonProperty("bwt") // bandwidth trend
+    @JsonProperty("bt") // bandwidth trend
+    @JsonAlias({"bwt", "bt"})
     @JsonSerialize(using = RoundingSerializer.class)
     public double getAvg() { return cumAvg; }    
     public void setAvg(double avg) { cumAvg = avg; }
@@ -94,7 +96,8 @@ public class Sample {
     public double getAccessTimeMs() { return accessTimeMs; }
     public void setAccessTimeMs(double accessTime) { accessTimeMs = accessTime; }
     
-    @JsonProperty("lat") // latency trend
+    @JsonProperty("lt") // latency trend
+    @JsonAlias({"lat", "lt"})
     @JsonSerialize(using = RoundingSerializer.class)
     public double getCumAccTimeMs() { return cumAccTimeMs; }
     public void setCumAccTimeMs(double cumAccTime) { cumAccTimeMs = cumAccTime; }
