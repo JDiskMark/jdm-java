@@ -639,7 +639,7 @@ public class App {
     }
     
     public static long targetTxSizeKb() {
-        long operationTxSize = blockSizeKb * numOfBlocks * numOfSamples;
+        long operationTxSize = (long)blockSizeKb * numOfBlocks * numOfSamples;
         if (benchmarkType == BenchmarkType.READ_WRITE
                 || benchmarkType == BenchmarkType.READ) {
             return 2L * operationTxSize;
