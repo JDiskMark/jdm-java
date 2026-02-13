@@ -60,7 +60,7 @@ public class Exporter {
         App.msg("Benchmark successfully exported to JSON file: " + filePath);
     }
     
-    public static void writeBenchmark(Benchmark benchmark, String filePath, ExportFormat format) throws IOException {
+    public static void writeBenchmark(Benchmark benchmark, String path, ExportFormat format) throws IOException {
 
         // 1. Initialize mapper
         ObjectMapper mapper;
@@ -77,14 +77,14 @@ public class Exporter {
         }
         
         // 2. Write the file
-        File fileToSave = new File(filePath);
+        File fileToSave = new File(path);
         if (format == ExportFormat.JSON || format == ExportFormat.YAML) {
             mapper.registerModule(new JavaTimeModule());
             mapper.enable(SerializationFeature.INDENT_OUTPUT);
             mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
             mapper.writeValue(fileToSave, benchmark);
         } else if (format == ExportFormat.CSV) {
-            writeBenchmarkToCsv(mapper, benchmark, filePath);
+            writeBenchmarkToCsv(mapper, benchmark, path);
         }
         
         // 3. After successful write:
@@ -102,8 +102,23 @@ public class Exporter {
 
         // 4. open native os explorer (Windows, macOS, or Linux) if indicated
         if (selection == JOptionPane.YES_OPTION) {
+            String os = System.getProperty("os.name").toLowerCase();
             try {
-                java.awt.Desktop.getDesktop().open(fileToSave.getParentFile());
+                if (os.contains("win")) {
+                    // Windows: explorer.exe /select,"path"
+                    new ProcessBuilder("explorer.exe", "/select,", path).start();
+                } else if (os.contains("mac")) {
+                    // macOS: open -R "path"
+                    new ProcessBuilder("open", "-R", path).start();
+                } else if (os.contains("nix") || os.contains("nux")) {
+                    // Linux: dbus is the most reliable way to talk to file managers
+                    new ProcessBuilder("dbus-send", "--session", "--print-reply", "--dest=org.freedesktop.FileManager1",
+                                       "/org/freedesktop/FileManager1", "org.freedesktop.FileManager1.ShowItems",
+                                       "array:string:file://" + path, "string:").start();
+                } else {
+                    // Fallback to just opening the parent folder if OS is unknown
+                    java.awt.Desktop.getDesktop().open(fileToSave.getParentFile());
+                }
             } catch (IOException ex) {
                 logger.log(Level.SEVERE, "Could not open folder", ex);
             }
