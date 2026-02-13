@@ -595,33 +595,11 @@ public class App {
         // 6. create data dir if not already present
         if (dataDir.exists() == false) { dataDir.mkdirs(); }
         
-        // 7. start disk worker thread
+        // 7. start benchmark job thread
         switch (mode) {
             case GUI -> {
                 worker = new BenchmarkWorker();
-                // TODO: GH-#135 - progress bar cleanup
-                // 1. look at relocating this into the gui class
-                // 2. we are using the progress bar to track units
-                // instead of transfer io (for read prep)
-                // 3. the number of units or tx bytes should be twice for read
-                // and write operations or read prep and read operations
-                worker.addPropertyChangeListener((final var event) -> {
-                    switch (event.getPropertyName()) {
-                        case "progress" -> {
-                            int value = (Integer)event.getNewValue();
-                            long kbProcessed = value * App.targetTxSizeKb() / 100;
-                            String progressText = String.valueOf(kbProcessed) + " / " + String.valueOf(App.targetTxSizeKb());
-                            Gui.progressBar.setValue(value);
-                            Gui.progressBar.setString(progressText);
-                        }
-                        case "state" -> {
-                            switch ((StateValue)event.getNewValue()) {
-                                case STARTED -> Gui.progressBar.setString("0 / " + String.valueOf(App.targetTxSizeKb()));
-                                case DONE -> {}
-                            } // end inner switch
-                        }
-                    }
-                });
+                worker.addPropertyChangeListener(new Gui.WorkerProgressListener());
                 worker.execute();
             }
             case CLI -> {
@@ -661,7 +639,12 @@ public class App {
     }
     
     public static long targetTxSizeKb() {
-        return blockSizeKb * numOfBlocks * numOfSamples;
+        long operationTxSize = (long)blockSizeKb * numOfBlocks * numOfSamples;
+        if (benchmarkType == BenchmarkType.READ_WRITE
+                || benchmarkType == BenchmarkType.READ) {
+            return 2L * operationTxSize;
+        }
+        return operationTxSize;
     }
     
     public static void updateMetrics(Sample s) {

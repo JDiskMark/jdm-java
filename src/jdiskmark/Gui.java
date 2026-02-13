@@ -14,11 +14,16 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Shape;
 import java.awt.geom.Rectangle2D;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
+import javax.swing.SwingWorker.StateValue;
+import static javax.swing.SwingWorker.StateValue.DONE;
+import static javax.swing.SwingWorker.StateValue.STARTED;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import static jdiskmark.Benchmark.IOMode.READ;
@@ -177,6 +182,37 @@ public final class Gui {
         configureLightLaf();
         FlatLaf.updateUI();
         updateChartPanelStyle();
+    }
+    
+    /**
+     * Handles progress and state updates from the SwingWorker 
+     * and updates the progress bar accordingly.
+     */
+    public static class WorkerProgressListener implements PropertyChangeListener {
+        @Override
+        public void propertyChange(PropertyChangeEvent event) {
+            long targetSize = App.targetTxSizeKb();
+            
+            switch (event.getPropertyName()) {
+                case "progress" -> {
+                    int value = (Integer) event.getNewValue();
+                    long kbProcessed = value * targetSize / 100;
+                    String progressText = String.format("%d / %d", kbProcessed, targetSize);
+                    progressBar.setValue(value);
+                    progressBar.setString(progressText);
+                }
+                case "state" -> {
+                    String targetTxSize = String.valueOf(App.targetTxSizeKb());
+                    switch ((StateValue)event.getNewValue()) {
+                        case STARTED -> Gui.progressBar.setString("0 / " + targetTxSize);
+                        case DONE -> { 
+                            progressBar.setString(targetTxSize);
+                            progressBar.setValue(100);
+                        }
+                    } // end inner switch
+                }
+            }
+        }
     }
     
     public static void init() {
@@ -573,6 +609,11 @@ public final class Gui {
         }
     }
     
+    public static void resetProgressBar() {
+        progressBar.setString(String.valueOf(App.targetTxSizeKb()));
+        progressBar.setValue(0);
+    }
+    
     static public void loadBenchmark(Benchmark benchmark) {
         resetBenchmarkData();
         chart.getTitle().setText(benchmark.getDriveInfoDisplay());
@@ -619,6 +660,7 @@ public final class Gui {
                 }
             }
         }
+        resetProgressBar();
     }
     
     static public void loadOperation(BenchmarkOperation operation) {        
@@ -658,13 +700,13 @@ public final class Gui {
                 controlPanel.refreshWriteMetrics();
             }
         }
+        resetProgressBar();
     }
 
     /**
      * The original color scheme.
      */
     static void setClassicColorScheme() {
-        System.out.println("setting classic palette");
         palette = Palette.CLASSIC;
         
         // configure the bw series colors

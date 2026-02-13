@@ -1,5 +1,6 @@
 package jdiskmark;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JFileChooser;
@@ -32,6 +34,9 @@ public class Exporter {
             return extension;
         }
     }
+    
+    private static final TypeReference<Map<String, Object>> MAP_TYPE = 
+            new TypeReference<Map<String, Object>>() {};
 
     private static final Logger logger = Logger.getLogger(Exporter.class.getName());
     
@@ -90,10 +95,10 @@ public class Exporter {
         mapper.registerModule(new JavaTimeModule());
 
         // 1. Flatten samples and inject the ioMode from the parent operation
-        // We convert the Sample object to a Map so we can dynamically add the "ioMode" column
+        // Convert Sample object to a Map so we can dynamically add the "ioMode" column
         var data = benchmark.getOperations().stream()
                 .flatMap(op -> op.getSamples().stream().map(s -> {
-                    java.util.Map<String, Object> row = mapper.convertValue(s, java.util.Map.class);
+                    java.util.Map<String, Object> row = mapper.convertValue(s, MAP_TYPE);
                     row.put("ioMode", op.getIoMode()); // Injects "READ" or "WRITE"
                     return row;
                 }))
