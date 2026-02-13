@@ -61,37 +61,57 @@ public class Exporter {
     }
     
     public static void writeBenchmark(Benchmark benchmark, String filePath, ExportFormat format) throws IOException {
-        ObjectMapper mapper;
 
-        // 1. Initialize the correct mapper based on format
-        switch (format) {
+        // 1. Initialize mapper
+        ObjectMapper mapper;
+        switch(format) {
             case YAML -> {
                 mapper = new YAMLMapper();
-                // Optional: remove the "---" document start for a cleaner look
-                ((YAMLMapper) mapper).disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER);
+                    // Optional: remove the "---" document start for a cleaner look
+                    ((YAMLMapper) mapper).disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER);
             }
             case CSV -> {
-                // Special handling: CSV usually needs a flat list of samples
-                writeSamplesToCsv(benchmark, filePath);
-                return; // Exit early as CSV uses a different flow
+                mapper = new CsvMapper();
             }
-            default -> mapper = new ObjectMapper(); // Default to JSON
+            default -> mapper = new ObjectMapper(); // JSON mapper
         }
-
-        // 2. Apply shared configurations
-        mapper.registerModule(new JavaTimeModule());
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-
-        // 3. Write the file
-        mapper.writeValue(new File(filePath), benchmark);
         
-        App.msg("Benchmark successfully exported to " + format.name() + ": " + filePath);
+        // 2. Write the file
+        File fileToSave = new File(filePath);
+        if (format == ExportFormat.JSON || format == ExportFormat.YAML) {
+            mapper.registerModule(new JavaTimeModule());
+            mapper.enable(SerializationFeature.INDENT_OUTPUT);
+            mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+            mapper.writeValue(fileToSave, benchmark);
+        } else if (format == ExportFormat.CSV) {
+            writeBenchmarkToCsv(mapper, benchmark, filePath);
+        }
+        
+        // 3. After successful write:
+        Object[] options = {"Open Folder", "Done"};
+        int selection = JOptionPane.showOptionDialog(
+            Gui.mainFrame,
+            "Benchmark exported successfully to:\n" + fileToSave.getName(),
+            "Export Complete",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.INFORMATION_MESSAGE,
+            null,
+            options,
+            options[1]
+        );
+
+        // 4. open native os explorer (Windows, macOS, or Linux) if indicated
+        if (selection == JOptionPane.YES_OPTION) {
+            try {
+                java.awt.Desktop.getDesktop().open(fileToSave.getParentFile());
+            } catch (IOException ex) {
+                logger.log(Level.SEVERE, "Could not open folder", ex);
+            }
+        }
     }
     
     // Keep the CSV logic separate since it requires flattening the nested arrays
-    private static void writeSamplesToCsv(Benchmark benchmark, String filePath) throws IOException {
-        CsvMapper mapper = new CsvMapper();
+    private static void writeBenchmarkToCsv(ObjectMapper mapper, Benchmark benchmark, String filePath) throws IOException {
         mapper.registerModule(new JavaTimeModule());
 
         // 1. Flatten samples and inject the ioMode from the parent operation
@@ -109,9 +129,9 @@ public class Exporter {
                 .addColumn("sn")      // Sample Number
                 .addColumn("ioMode")  // IO Type
                 .addColumn("bw")      // Bandwidth
-                .addColumn("bwt")     // Bandwidth Trend
+                .addColumn("bt")      // Bandwidth Trend
                 .addColumn("la")      // Latency
-                .addColumn("lat")     // Latency Trend
+                .addColumn("lt")      // Latency Trend
                 .addColumn("mn")      // Bandwidth Min
                 .addColumn("mx")      // Bandwidth Max
                 .build().withHeader();
@@ -211,7 +231,7 @@ public class Exporter {
             }
 
             try {
-                Exporter.writeBenchmark(benchmark, fileToSave.getAbsolutePath(), format);
+                writeBenchmark(benchmark, fileToSave.getAbsolutePath(), format);
             } catch (IOException e) {
                 logger.log(Level.SEVERE, "error while writing export file", e);
                 JOptionPane.showMessageDialog(Gui.mainFrame, 
