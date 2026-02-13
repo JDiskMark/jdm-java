@@ -206,7 +206,7 @@ public final class Gui {
                     switch ((StateValue)event.getNewValue()) {
                         case STARTED -> Gui.progressBar.setString("0 / " + targetTxSize);
                         case DONE -> { 
-                            progressBar.setString("Completed [" + App.targetTxSizeKb() + "]");
+                            progressBar.setString(targetTxSize);
                             progressBar.setValue(100);
                         }
                     } // end inner switch
@@ -609,6 +609,11 @@ public final class Gui {
         }
     }
     
+    public static void resetProgressBar() {
+        progressBar.setString(String.valueOf(App.targetTxSizeKb()));
+        progressBar.setValue(0);
+    }
+    
     static public void loadBenchmark(Benchmark benchmark) {
         resetBenchmarkData();
         chart.getTitle().setText(benchmark.getDriveInfoDisplay());
@@ -655,6 +660,7 @@ public final class Gui {
                 }
             }
         }
+        resetProgressBar();
     }
     
     static public void loadOperation(BenchmarkOperation operation) {        
@@ -694,6 +700,7 @@ public final class Gui {
                 controlPanel.refreshWriteMetrics();
             }
         }
+        resetProgressBar();
     }
 
     /**
