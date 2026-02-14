@@ -452,7 +452,7 @@ public class App {
         config.blockSize = (long) blockSizeKb * KILOBYTE;
         config.numSamples = numOfSamples;
         config.numThreads = numOfThreads;
-        config.txSize = targetTxSizeKb();
+        config.txSize = targetOperationTxSizeKb();
         config.ioEngine = ioEngine;
         config.directIoEnabled = directEnable;
         config.writeSyncEnabled = writeSyncEnable;
@@ -637,17 +637,21 @@ public class App {
         }
     }
     
-    public static long targetMarkSizeKb() {
-        return blockSizeKb * numOfBlocks;
+    public static long targetSampleSizeKb() {
+        return (long)blockSizeKb * numOfBlocks;
+    }
+
+    public static long targetOperationTxSizeKb() {
+        return (long)blockSizeKb * numOfBlocks * numOfSamples;
     }
     
-    public static long targetTxSizeKb() {
-        long operationTxSize = (long)blockSizeKb * numOfBlocks * numOfSamples;
-        if (benchmarkType == BenchmarkType.READ_WRITE
-                || benchmarkType == BenchmarkType.READ) {
-            return 2L * operationTxSize;
+    public static long targetBenchmarkTxSizeKb() {
+        long operationTxSize = targetOperationTxSizeKb();
+        switch (benchmarkType) {
+            case WRITE -> { return operationTxSize; }
+            case READ, READ_WRITE -> { return 2L * operationTxSize; }
+            default -> throw new IllegalStateException("Unexpected value: " + benchmarkType);
         }
-        return operationTxSize;
     }
     
     public static void updateMetrics(Sample s) {
