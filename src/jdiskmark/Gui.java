@@ -542,8 +542,7 @@ public final class Gui {
 
                         Removable drives can be disconnected and reconnected.
 
-                        For system drives perform a WRITE benchmark, restart 
-                        the OS and then perform a READ benchmark.
+                        sudo purge
 
                         Press OK to continue when disk cache has been cleared.""";
                 JOptionPane.showMessageDialog(mainFrame, 
@@ -573,9 +572,6 @@ public final class Gui {
                         For valid READ benchmarks please clear the disk cache by
                         using EmptyStandbyList.exe or RAMMap.exe utilities.
 
-                        For system drives perform a WRITE benchmark, restart 
-                        the OS and then perform a READ benchmark.
-
                         Press OK to continue when disk cache has been cleared.
                         """;
                 JOptionPane.showMessageDialog(mainFrame, 
@@ -589,9 +585,6 @@ public final class Gui {
                         For valid READ benchmarks please clear the disk cache by
                         using EmptyStandbyList.exe or RAMMap.exe utilities.
 
-                        For system drives perform a WRITE benchmark, restart 
-                        the OS and then perform a READ benchmark.
-
                         Press OK to continue when disk cache has been cleared.""";
                 JOptionPane.showMessageDialog(mainFrame, 
                         message, "Clear Disk Cache Now",
@@ -603,9 +596,6 @@ public final class Gui {
                     For valid READ benchmarks please clear the disk cache now.
 
                     Removable drives can be disconnected and reconnected.
-
-                    For system drives perform a WRITE benchmark, restart 
-                    the OS and then perform a READ benchmarks benchmark.
 
                     Press OK to continue when disk cache has been cleared.""";
             JOptionPane.showMessageDialog(mainFrame,
