@@ -121,9 +121,16 @@ public class BenchmarkRunner {
             runReadPreparation(tRanges);
         }
         
-        if (!config.getDirectIoEnabled() && !listener.isCancelled() &&
-                config.hasReadOperation() && config.hasWriteOperation()) {
-            throttledProgressUpdate(true);
+        throttledProgressUpdate(true);
+        
+        // cache reset if
+        // 1. not cancelled
+        // 2. read operation
+        // 3. !directIo || (directIo & macOs)
+        boolean isMacOs = App.os.toLowerCase().contains("mac");
+        if (!listener.isCancelled() && config.hasReadOperation() &&
+                (!config.getDirectIoEnabled() || 
+                (config.getDirectIoEnabled() && isMacOs))) {    
             listener.attemptCacheDrop();
         }
         

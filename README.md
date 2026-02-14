@@ -208,8 +208,9 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
     - TODO: #117 user portal upload acknowledgement
     - TODO: #118 test interlock or OAuth upload
 
-### v0.7.0 proposed
+### v0.7.0
 - #44 gui benchmark export for json, yml, csv
+- #67 rename sample fields `bwt` > `bt`, `lat` > `lt`
 - #130 dark flatlaf
 - #131 default direct io
 - #132 fix read only benchmarks
@@ -218,7 +219,7 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
     - cli options for: profile, direct io, alignment
     - new profiles: media playback, video export, photo library
 - #111 extract cfg model from benchmark
-- TODO: remove custom profile option
+- #42 replace `Custom Test` option w profileModified flag
 
 ### v0.6.3
 - #82 drive access notification
