@@ -1096,7 +1096,7 @@ public final class MainFrame extends javax.swing.JFrame {
         if (Gui.controlPanel != null) {
             Gui.controlPanel.applySettings();
         }
-        totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
+        totalTxProgBar.setString(String.valueOf(App.targetBenchmarkTxSizeKb()));
     }
     
     public javax.swing.JProgressBar getProgressBar() {

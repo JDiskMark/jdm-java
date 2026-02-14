@@ -102,7 +102,7 @@ public class BenchmarkControlPanel extends JPanel {
                 if (selected != null) {
                     App.numOfBlocks = (Integer) selected;
                     //sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-                    Gui.progressBar.setString(String.valueOf(App.targetTxSizeKb()));
+                    Gui.progressBar.setString(String.valueOf(App.targetBenchmarkTxSizeKb()));
                     App.saveConfig();
                 }
             }
@@ -115,7 +115,7 @@ public class BenchmarkControlPanel extends JPanel {
                 if (selected != null) {
                     App.blockSizeKb = (Integer) selected;
                     //sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-                    Gui.progressBar.setString(String.valueOf(App.targetTxSizeKb()));
+                    Gui.progressBar.setString(String.valueOf(App.targetBenchmarkTxSizeKb()));
                     App.saveConfig();
                 }
             }
@@ -128,7 +128,7 @@ public class BenchmarkControlPanel extends JPanel {
                 if (selected != null) {
                     App.numOfSamples = (Integer) selected;
                     //sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-                    Gui.progressBar.setString(String.valueOf(App.targetTxSizeKb()));
+                    Gui.progressBar.setString(String.valueOf(App.targetBenchmarkTxSizeKb()));
                     App.saveConfig();
                 }
             }

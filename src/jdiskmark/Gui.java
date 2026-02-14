@@ -191,7 +191,7 @@ public final class Gui {
     public static class WorkerProgressListener implements PropertyChangeListener {
         @Override
         public void propertyChange(PropertyChangeEvent event) {
-            long targetSize = App.targetTxSizeKb();
+            long targetSize = App.targetBenchmarkTxSizeKb();
             
             switch (event.getPropertyName()) {
                 case "progress" -> {
@@ -202,7 +202,7 @@ public final class Gui {
                     progressBar.setString(progressText);
                 }
                 case "state" -> {
-                    String targetTxSize = String.valueOf(App.targetTxSizeKb());
+                    String targetTxSize = String.valueOf(App.targetBenchmarkTxSizeKb());
                     switch ((StateValue)event.getNewValue()) {
                         case STARTED -> Gui.progressBar.setString("0 / " + targetTxSize);
                         case DONE -> { 
@@ -213,6 +213,11 @@ public final class Gui {
                 }
             }
         }
+    }
+    
+    public static void resetProgressBar() {
+        progressBar.setString(String.valueOf(App.targetBenchmarkTxSizeKb()));
+        progressBar.setValue(0);
     }
     
     public static void init() {
@@ -607,11 +612,6 @@ public final class Gui {
                     message, "Clear Disk Cache Now",
                     JOptionPane.PLAIN_MESSAGE);
         }
-    }
-    
-    public static void resetProgressBar() {
-        progressBar.setString(String.valueOf(App.targetTxSizeKb()));
-        progressBar.setValue(0);
     }
     
     static public void loadBenchmark(Benchmark benchmark) {
