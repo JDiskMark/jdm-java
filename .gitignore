@@ -13,7 +13,9 @@ build.properties
 hs_err_pid*.log
 .DS_Store
 
-# deb packaging
+# compiled class files
+*.class
+
 jdiskmark-deb
 
 # rpm packaging
