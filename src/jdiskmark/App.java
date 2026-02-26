@@ -105,6 +105,7 @@ public class App {
     public static boolean autoReset = true;
     public static boolean directEnable = false;
     public static boolean writeSyncEnable = false;
+    public static boolean gcRetryEnabled = false;
     // benchmark io options
     public static IoEngine ioEngine = IoEngine.MODERN;
     public static SectorAlignment sectorAlignment = SectorAlignment.ALIGN_4K;
@@ -365,6 +366,9 @@ public class App {
         value = p.getProperty("directEnable", String.valueOf(directEnable));
         directEnable = Boolean.parseBoolean(value);
         
+        value = p.getProperty("gcRetryEnabled", String.valueOf(gcRetryEnabled));
+        gcRetryEnabled = Boolean.parseBoolean(value);
+        
         value = p.getProperty("sectorAlignment", sectorAlignment.name());
         try {
             sectorAlignment = SectorAlignment.valueOf(value.toUpperCase());
@@ -420,6 +424,7 @@ public class App {
         p.setProperty("ioEngine", ioEngine.name());
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         p.setProperty("directEnable", String.valueOf(directEnable));
+        p.setProperty("gcRetryEnabled", String.valueOf(gcRetryEnabled));
         p.setProperty("sectorAlignment", sectorAlignment.name());
         // display properties
         p.setProperty("theme", Gui.theme.name());
@@ -456,6 +461,7 @@ public class App {
         config.ioEngine = ioEngine;
         config.directIoEnabled = directEnable;
         config.writeSyncEnabled = writeSyncEnable;
+        config.gcRetryEnabled = gcRetryEnabled;
         config.sectorAlignment = sectorAlignment;
         config.multiFileEnabled = multiFile;
         config.testDir = dataDir.getAbsolutePath();

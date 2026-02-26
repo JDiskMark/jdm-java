@@ -31,6 +31,7 @@ public class BenchmarkRunner {
 
     // Minimum milliseconds between progress updates to avoid excessive UI refreshes
     private static final long UPDATE_INTERVAL = 25;
+    private static final int MAX_GC_RETRIES = 3;
     
     private static final Logger logger = Logger.getLogger(BenchmarkRunner.class.getName());
     
@@ -160,32 +161,49 @@ public class BenchmarkRunner {
         
         for (int[] range : ranges) {
             futures.add(executor.submit(() -> {
-                for (int s = range[0]; s < range[1] && !listener.isCancelled(); s++) {
-                    Sample.Type type = mode == IOMode.WRITE ? Sample.Type.WRITE : Sample.Type.READ;
-                    Sample sample = new Sample(type, s);
-                    try {
-                        action.perform(sample);
-                    } catch (Exception ex) {
-                        logger.log(Level.SEVERE, null, ex);
-                        throw new RuntimeException(ex);
+                GcDetector gcDetector = config.gcRetryEnabled ? new GcDetector() : null;
+                if (gcDetector != null) gcDetector.start();
+                try {
+                    for (int s = range[0]; s < range[1] && !listener.isCancelled(); s++) {
+                        Sample.Type type = mode == IOMode.WRITE ? Sample.Type.WRITE : Sample.Type.READ;
+                        Sample sample = new Sample(type, s);
+                        int retries = 0;
+                        do {
+                            if (gcDetector != null) gcDetector.reset();
+                            try {
+                                action.perform(sample);
+                            } catch (Exception ex) {
+                                logger.log(Level.SEVERE, null, ex);
+                                throw new RuntimeException(ex);
+                            }
+                            if (gcDetector != null && gcDetector.isGcDetected() && retries < MAX_GC_RETRIES) {
+                                retries++;
+                                logger.info("GC detected during " + mode + " sample " + s
+                                        + ", retrying (" + retries + "/" + MAX_GC_RETRIES + ")");
+                            } else {
+                                break;
+                            }
+                        } while (true);
+                        
+                        //TODO: review for putting into onSampleComplete
+                        App.updateMetrics(sample);
+                        // Update op-level cumulative stats
+                        op.bwMax = sample.cumMax;
+                        op.bwMin = sample.cumMin;
+                        op.bwAvg = sample.cumAvg;
+                        op.accAvg = sample.cumAccTimeMs;
+                        op.add(sample);
+                        
+                        switch (mode) {
+                            case WRITE -> writeUnitsComplete.increment();
+                            case READ -> readUnitsComplete.increment();
+                        }
+                        
+                        listener.onSampleComplete(sample);
+                        throttledProgressUpdate(false);
                     }
-                    
-                    //TODO: review for putting into onSampleComplete
-                    App.updateMetrics(sample);
-                    // Update op-level cumulative stats
-                    op.bwMax = sample.cumMax;
-                    op.bwMin = sample.cumMin;
-                    op.bwAvg = sample.cumAvg;
-                    op.accAvg = sample.cumAccTimeMs;
-                    op.add(sample);
-                    
-                    switch (mode) {
-                        case WRITE -> writeUnitsComplete.increment();
-                        case READ -> readUnitsComplete.increment();
-                    }
-                    
-                    listener.onSampleComplete(sample);
-                    throttledProgressUpdate(false);
+                } finally {
+                    if (gcDetector != null) gcDetector.stop();
                 }
             }));
         }

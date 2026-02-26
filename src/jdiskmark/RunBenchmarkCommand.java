@@ -152,6 +152,10 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     @Option(names = {"-v", "--verbose"}, description = "Enable detailed logging.")
     boolean verbose = false;
 
+    @Option(names = {"-g", "--gc-retry"},
+            description = "Retry a sample if a GC event is detected during measurement (up to 3 retries).")
+    boolean gcRetryEnabled = false;
+
     // overrides to profile-controlled parameters
     private void applyOverrides(CommandLine.ParseResult pr) {
         // Workload Definition
@@ -186,6 +190,7 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             App.verbose = verbose;
             App.autoSave = save;
             App.exportPath = exportPath;
+            App.gcRetryEnabled = gcRetryEnabled;
 
             // Initialization and Start
             if (App.verbose) {

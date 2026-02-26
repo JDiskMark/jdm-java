@@ -85,6 +85,11 @@ public class BenchmarkConfig {
     String testDir;
     public String getTestDir() { return testDir; }
     public void setTestDir(String testDir) { this.testDir = testDir; }
+
+    @Column
+    boolean gcRetryEnabled = false;
+    public boolean getGcRetryEnabled() { return gcRetryEnabled; }
+    public void setGcRetryEnabled(boolean enable) { gcRetryEnabled = enable; }
     
     public BenchmarkConfig() {}
     
