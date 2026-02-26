@@ -112,6 +112,9 @@ public class BenchmarkRunner {
         int[][] tRanges = divideIntoRanges(startingSample, endingSample, config.numThreads);
 
         benchmark.recordStartTime();
+
+        // #134 Trigger GC before benchmark to reduce GC interference during measurements
+        GcManager.triggerPreBenchmarkGc();
         
         // Execution Loops
         if (config.hasWriteOperation()) {
@@ -163,12 +166,31 @@ public class BenchmarkRunner {
                 for (int s = range[0]; s < range[1] && !listener.isCancelled(); s++) {
                     Sample.Type type = mode == IOMode.WRITE ? Sample.Type.WRITE : Sample.Type.READ;
                     Sample sample = new Sample(type, s);
-                    try {
-                        action.perform(sample);
-                    } catch (Exception ex) {
-                        logger.log(Level.SEVERE, null, ex);
-                        throw new RuntimeException(ex);
-                    }
+                    
+                    // #134 Detect GC during measurement and retake sample if needed
+                    int attempts = 0;
+                    boolean gcDetected;
+                    do {
+                        if (attempts > 0) {
+                            // Undo progress increments from the GC-affected attempt before retrying
+                            switch (mode) {
+                                case WRITE -> writeUnitsComplete.add(-config.numBlocks);
+                                case READ -> readUnitsComplete.add(-config.numBlocks);
+                            }
+                            logger.warning("GC detected during sample " + s
+                                    + ", retaking measurement (retry " + attempts
+                                    + " of " + GcManager.MAX_GC_RETRIES + ")");
+                        }
+                        long gcCountBefore = GcManager.getTotalGcCount();
+                        try {
+                            action.perform(sample);
+                        } catch (Exception ex) {
+                            logger.log(Level.SEVERE, null, ex);
+                            throw new RuntimeException(ex);
+                        }
+                        gcDetected = GcManager.gcOccurredSince(gcCountBefore);
+                        attempts++;
+                    } while (gcDetected && attempts <= GcManager.MAX_GC_RETRIES);
                     
                     //TODO: review for putting into onSampleComplete
                     App.updateMetrics(sample);
