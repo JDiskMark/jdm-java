@@ -20,8 +20,13 @@ import javax.management.NotificationListener;
  */
 public class GcDetector {
 
+    static final int MAX_GC_RETRIES = 3;
+    
     private static final Logger logger = Logger.getLogger(GcDetector.class.getName());
 
+    public static boolean gcRetryEnabled = false;
+    public static boolean gcHintsEnabled = false;
+    
     private final AtomicBoolean gcDetected = new AtomicBoolean(false);
     private final List<NotificationEmitter> emitters = new ArrayList<>();
     private final NotificationListener listener = (Notification notification, Object handback) -> {

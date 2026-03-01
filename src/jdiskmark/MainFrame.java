@@ -161,8 +161,8 @@ public final class MainFrame extends javax.swing.JFrame {
             case ALIGN_16K -> align16KRbMenuItem.setSelected(true);
             case ALIGN_64K -> align64KRbMenuItem.setSelected(true);
         }
-        gcHintsCbMenuItem.setSelected(App.gcHintsEnabled);
-        gcRetryCbMenuItem.setSelected(App.gcRetryEnabled);
+        gcHintsCbMenuItem.setSelected(GcDetector.gcHintsEnabled);
+        gcRetryCbMenuItem.setSelected(GcDetector.gcRetryEnabled);
         exportMenu.setEnabled(App.benchmark != null);
     }
     
@@ -1032,12 +1032,12 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_exportCsvMenuItemActionPerformed
 
     private void gcHintsCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gcHintsCbMenuItemActionPerformed
-        App.gcHintsEnabled = gcHintsCbMenuItem.isSelected();
+        GcDetector.gcHintsEnabled = gcHintsCbMenuItem.isSelected();
         App.saveConfig();
     }//GEN-LAST:event_gcHintsCbMenuItemActionPerformed
 
     private void gcRetryCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gcRetryCbMenuItemActionPerformed
-        App.gcRetryEnabled = gcRetryCbMenuItem.isSelected();
+        GcDetector.gcRetryEnabled = gcRetryCbMenuItem.isSelected();
         App.saveConfig();
     }//GEN-LAST:event_gcRetryCbMenuItemActionPerformed
 

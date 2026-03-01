@@ -105,8 +105,7 @@ public class App {
     public static boolean autoReset = true;
     public static boolean directEnable = false;
     public static boolean writeSyncEnable = false;
-    public static boolean gcRetryEnabled = false;
-    public static boolean gcHintsEnabled = false;
+
     // benchmark io options
     public static IoEngine ioEngine = IoEngine.MODERN;
     public static SectorAlignment sectorAlignment = SectorAlignment.ALIGN_4K;
@@ -380,11 +379,11 @@ public class App {
             );
         }
         
-        value = p.getProperty("gcRetryEnabled", String.valueOf(gcRetryEnabled));
-        gcRetryEnabled = Boolean.parseBoolean(value);
+        value = p.getProperty("gcRetryEnabled", String.valueOf(GcDetector.gcRetryEnabled));
+        GcDetector.gcRetryEnabled = Boolean.parseBoolean(value);
 
-        value = p.getProperty("gcHintsEnabled", String.valueOf(gcHintsEnabled));
-        gcHintsEnabled = Boolean.parseBoolean(value);
+        value = p.getProperty("gcHintsEnabled", String.valueOf(GcDetector.gcHintsEnabled));
+        GcDetector.gcHintsEnabled = Boolean.parseBoolean(value);
         
         value = p.getProperty("theme", Gui.theme.name());
         try {
@@ -431,8 +430,8 @@ public class App {
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         p.setProperty("directEnable", String.valueOf(directEnable));
         p.setProperty("sectorAlignment", sectorAlignment.name());
-        p.setProperty("gcRetryEnabled", String.valueOf(gcRetryEnabled));
-        p.setProperty("gcHintsEnabled", String.valueOf(gcHintsEnabled));
+        p.setProperty("gcRetryEnabled", String.valueOf(GcDetector.gcRetryEnabled));
+        p.setProperty("gcHintsEnabled", String.valueOf(GcDetector.gcHintsEnabled));
         // display properties
         p.setProperty("theme", Gui.theme.name());
         p.setProperty("palette", Gui.palette.name());
@@ -469,8 +468,8 @@ public class App {
         config.directIoEnabled = directEnable;
         config.writeSyncEnabled = writeSyncEnable;
         config.sectorAlignment = sectorAlignment;
-        config.gcRetryEnabled = gcRetryEnabled;
-        config.gcHintsEnabled = gcHintsEnabled;
+        config.gcRetryEnabled = GcDetector.gcRetryEnabled;
+        config.gcHintsEnabled = GcDetector.gcHintsEnabled;
         config.multiFileEnabled = multiFile;
         config.testDir = dataDir.getAbsolutePath();
         return config;

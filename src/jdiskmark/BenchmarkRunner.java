@@ -1,5 +1,7 @@
 package jdiskmark;
 
+import static jdiskmark.GcDetector.MAX_GC_RETRIES;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.time.LocalDateTime;
@@ -31,7 +33,6 @@ public class BenchmarkRunner {
 
     // Minimum milliseconds between progress updates to avoid excessive UI refreshes
     private static final long UPDATE_INTERVAL = 25;
-    private static final int MAX_GC_RETRIES = 3;
     
     private static final Logger logger = Logger.getLogger(BenchmarkRunner.class.getName());
     
@@ -161,7 +162,8 @@ public class BenchmarkRunner {
         ExecutorService executor = Executors.newFixedThreadPool(config.numThreads);
         List<Future<?>> futures = new ArrayList<>();
 
-        final IOAction action = switch (config.ioEngine) {
+        // use action to avoid adding a field in sample object
+        final IOAction ioAction = switch (config.ioEngine) {
             case LEGACY -> switch (mode) {
                 case WRITE -> (s) -> s.measureWriteLegacy(blockSize, config.numBlocks, blockArr, this);
                 case READ -> (s) -> s.measureReadLegacy(blockSize, config.numBlocks, blockArr, this);
@@ -184,26 +186,24 @@ public class BenchmarkRunner {
                         do {
                             if (gcDetector != null) gcDetector.reset();
                             try {
-                                action.perform(sample);
-                            } catch (Exception ex) {
-                                logger.log(Level.SEVERE, null, ex);
-                                throw new RuntimeException(ex);
+                                ioAction.perform(sample);
+                            } catch (Exception e) {
+                                logger.log(Level.SEVERE, null, e);
+                                throw new RuntimeException(e);
                             }
                             if (gcDetector != null && gcDetector.isGcDetected() && retries < MAX_GC_RETRIES) {
                                 retries++;
-                                logger.log(Level.INFO, 
-                                        "GC detected during {0} sample {1}, retrying ({2}/{3})", 
+                                op.gcRetriedSamples.add(s);
+                                logger.log(Level.INFO,
+                                        "GC detected during {0} sample {1}, retrying ({2}/{3})",
                                         new Object[]{mode, s, retries, MAX_GC_RETRIES});
-                                // Compensate for block-level progress increments from the failed attempt
-                                switch (mode) {
-                                    case WRITE -> writeUnitsComplete.add(-config.numBlocks);
-                                    case READ -> readUnitsComplete.add(-config.numBlocks);
-                                }
+                                App.msg("gc detected on sample " + s + " retrying...");
                             } else {
+                                // no gc retry enabled || no detection || max retries exceeded
                                 break;
                             }
                         } while (true);
-                        
+
                         //TODO: review for putting into onSampleComplete
                         App.updateMetrics(sample);
                         // Update op-level cumulative stats
@@ -212,12 +212,12 @@ public class BenchmarkRunner {
                         op.bwAvg = sample.cumAvg;
                         op.accAvg = sample.cumAccTimeMs;
                         op.add(sample);
-                        
+
                         switch (mode) {
                             case WRITE -> writeUnitsComplete.increment();
                             case READ -> readUnitsComplete.increment();
                         }
-                        
+
                         listener.onSampleComplete(sample);
                         throttledProgressUpdate(false);
                     }

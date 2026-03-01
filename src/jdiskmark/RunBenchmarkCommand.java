@@ -190,7 +190,7 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             App.verbose = verbose;
             App.autoSave = save;
             App.exportPath = exportPath;
-            App.gcRetryEnabled = gcRetryEnabled;
+            GcDetector.gcRetryEnabled = gcRetryEnabled;
 
             // Initialization and Start
             if (App.verbose) {

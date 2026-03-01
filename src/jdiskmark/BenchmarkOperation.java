@@ -101,6 +101,8 @@ public class BenchmarkOperation implements Serializable {
     double accAvg = 0;
     @Column
     long iops = 0;
+    @Column
+    ArrayList<Integer> gcRetriedSamples = new ArrayList<>();
     
     @Override
     public String toString() {
