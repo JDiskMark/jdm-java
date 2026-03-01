@@ -6,7 +6,9 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.management.ListenerNotFoundException;
 import javax.management.Notification;
 import javax.management.NotificationEmitter;
 import javax.management.NotificationListener;
@@ -39,7 +41,9 @@ public class GcDetector {
         }
     }
 
-    /** Returns true if a GC event was detected since the last {@code start()} or {@code reset()}. */
+    /**
+     * @return  true if a GC event was detected since the last {@code start()} or {@code reset()}.
+     */
     public boolean isGcDetected() {
         return gcDetected.get();
     }
@@ -54,10 +58,37 @@ public class GcDetector {
         for (NotificationEmitter emitter : emitters) {
             try {
                 emitter.removeNotificationListener(listener);
-            } catch (Exception e) {
-                logger.fine("Failed to remove GC listener: " + e.getMessage());
+            } catch (ListenerNotFoundException e) {
+                logger.log(Level.FINE, "Failed to remove GC listener: {0}", e.getMessage());
+            } catch (RuntimeException re) {
+                logger.log(Level.FINE, "Unexpected error: {0}", re.getMessage());
             }
         }
         emitters.clear();
+    }
+    
+    public static void triggerAndWait() {
+        long countBefore = getGlobalGcCount();
+        System.gc();
+
+        long startTime = System.currentTimeMillis();
+        // Wait for the GC count to increment OR timeout after 2 seconds
+        while (getGlobalGcCount() <= countBefore && (System.currentTimeMillis() - startTime) < 2000) {
+            try {
+                Thread.sleep(50); 
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        // Final brief settle time for background cleanup
+        try { Thread.sleep(100); } catch (InterruptedException ignored) {}
+    }
+
+    private static long getGlobalGcCount() {
+        return ManagementFactory.getGarbageCollectorMXBeans().stream()
+                .mapToLong(GarbageCollectorMXBean::getCollectionCount)
+                .filter(count -> count > 0)
+                .sum();
     }
 }

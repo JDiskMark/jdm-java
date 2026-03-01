@@ -112,6 +112,10 @@ public class BenchmarkRunner {
         int endingSample = App.nextSampleNumber + config.numSamples;
         int[][] tRanges = divideIntoRanges(startingSample, endingSample, config.numThreads);
 
+        if (config.gcRetryEnabled) {
+            GcDetector.triggerAndWait(); // Initial cleanup
+        }
+        
         benchmark.recordStartTime();
         
         // Execution Loops
@@ -135,11 +139,19 @@ public class BenchmarkRunner {
             listener.attemptCacheDrop();
         }
         
+        // If we are doing both, clear the heap between them
+        if (config.hasWriteOperation() && config.hasReadOperation() && 
+                config.gcRetryEnabled && !listener.isCancelled()) {
+            GcDetector.triggerAndWait(); 
+        }
+        
         if (config.hasReadOperation() && !listener.isCancelled()) {
             runOperation(benchmark, IOMode.READ, tRanges);
         }
 
         benchmark.recordEndTime();
+        System.gc();  // clear heap no wait
+        
         return benchmark;
     }
 
@@ -178,8 +190,9 @@ public class BenchmarkRunner {
                             }
                             if (gcDetector != null && gcDetector.isGcDetected() && retries < MAX_GC_RETRIES) {
                                 retries++;
-                                logger.info("GC detected during " + mode + " sample " + s
-                                        + ", retrying (" + retries + "/" + MAX_GC_RETRIES + ")");
+                                logger.log(Level.INFO, 
+                                        "GC detected during {0} sample {1}, retrying ({2}/{3})", 
+                                        new Object[]{mode, s, retries, MAX_GC_RETRIES});
                             } else {
                                 break;
                             }
