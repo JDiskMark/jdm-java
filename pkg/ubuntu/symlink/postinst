@@ -1,4 +1,21 @@
 #!/bin/bash
-# Create a symlink so 'jdiskmark' works in the terminal
+# Create the symlink for terminal access
 ln -sf /opt/jdiskmark/bin/jdiskmark /usr/bin/jdiskmark
 chmod +x /usr/bin/jdiskmark
+
+# Generate the Desktop Entry for the app launcher
+cat <<EOF > /usr/share/applications/jdiskmark.desktop
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=JDiskMark
+Comment=Disk Benchmark Utility
+Exec=/usr/bin/jdiskmark
+Terminal=false
+Categories=Utility;System;
+EOF
+
+# Update the desktop database so Ubuntu "sees" it immediately
+if [ -x "$(command -v update-desktop-database)" ]; then
+    update-desktop-database -q /usr/share/applications
+fi
