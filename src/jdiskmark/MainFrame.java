@@ -161,6 +161,8 @@ public final class MainFrame extends javax.swing.JFrame {
             case ALIGN_16K -> align16KRbMenuItem.setSelected(true);
             case ALIGN_64K -> align64KRbMenuItem.setSelected(true);
         }
+        gcHintsCbMenuItem.setSelected(App.gcHintsEnabled);
+        gcRetryCbMenuItem.setSelected(App.gcRetryEnabled);
         exportMenu.setEnabled(App.benchmark != null);
     }
     
@@ -221,6 +223,9 @@ public final class MainFrame extends javax.swing.JFrame {
         align16KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align64KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         multiFileCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
+        jSeparator4 = new javax.swing.JPopupMenu.Separator();
+        gcHintsCbMenuItem = new javax.swing.JCheckBoxMenuItem();
+        gcRetryCbMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator3 = new javax.swing.JPopupMenu.Separator();
         autoRemoveCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         autoResetCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -570,6 +575,23 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
         optionMenu.add(multiFileCheckBoxMenuItem);
+        optionMenu.add(jSeparator4);
+
+        gcHintsCbMenuItem.setText("GC Hint Optimizing");
+        gcHintsCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                gcHintsCbMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(gcHintsCbMenuItem);
+
+        gcRetryCbMenuItem.setText("GC Sample Retries");
+        gcRetryCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                gcRetryCbMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(gcRetryCbMenuItem);
         optionMenu.add(jSeparator3);
 
         autoRemoveCheckBoxMenuItem.setSelected(true);
@@ -1009,6 +1031,16 @@ public final class MainFrame extends javax.swing.JFrame {
         Exporter.exportBenchmarkAction(App.benchmark, ExportFormat.CSV);
     }//GEN-LAST:event_exportCsvMenuItemActionPerformed
 
+    private void gcHintsCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gcHintsCbMenuItemActionPerformed
+        App.gcHintsEnabled = gcHintsCbMenuItem.isSelected();
+        App.saveConfig();
+    }//GEN-LAST:event_gcHintsCbMenuItemActionPerformed
+
+    private void gcRetryCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gcRetryCbMenuItemActionPerformed
+        App.gcRetryEnabled = gcRetryCbMenuItem.isSelected();
+        App.saveConfig();
+    }//GEN-LAST:event_gcRetryCbMenuItemActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
     private javax.swing.JRadioButtonMenuItem align16KRbMenuItem;
@@ -1044,15 +1076,18 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenu exportMenu;
     private javax.swing.JMenuItem exportYmlMenuItem;
     private javax.swing.JMenu fileMenu;
+    private javax.swing.JCheckBoxMenuItem gcHintsCbMenuItem;
+    private javax.swing.JCheckBoxMenuItem gcRetryCbMenuItem;
     private javax.swing.JMenu helpMenu;
     private javax.swing.JMenu ioEngineMenu;
     private javax.swing.ButtonGroup ioEnginebuttonGroup;
-    private javax.swing.JLabel jLabel22;
+        private javax.swing.JLabel jLabel22;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JPopupMenu.Separator jSeparator2;
     private javax.swing.JPopupMenu.Separator jSeparator3;
+    private javax.swing.JPopupMenu.Separator jSeparator4;
     private javax.swing.JRadioButtonMenuItem lightThemeRbMenuItem;
     private javax.swing.JRadioButtonMenuItem localEndpointRbMenuItem;
     private javax.swing.JPanel locationPanel;

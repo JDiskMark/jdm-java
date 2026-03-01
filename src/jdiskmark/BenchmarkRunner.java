@@ -112,7 +112,7 @@ public class BenchmarkRunner {
         int endingSample = App.nextSampleNumber + config.numSamples;
         int[][] tRanges = divideIntoRanges(startingSample, endingSample, config.numThreads);
 
-        if (config.gcRetryEnabled) {
+        if (config.gcHintsEnabled && !listener.isCancelled()) {
             GcDetector.triggerAndWait(); // Initial cleanup
         }
         
@@ -140,9 +140,9 @@ public class BenchmarkRunner {
         }
         
         // If we are doing both, clear the heap between them
-        if (config.hasWriteOperation() && config.hasReadOperation() && 
-                config.gcRetryEnabled && !listener.isCancelled()) {
-            GcDetector.triggerAndWait(); 
+        if (config.gcHintsEnabled && !listener.isCancelled() && 
+                config.hasWriteOperation() && config.hasReadOperation()) {
+            GcDetector.triggerAndWait();
         }
         
         if (config.hasReadOperation() && !listener.isCancelled()) {
@@ -150,7 +150,8 @@ public class BenchmarkRunner {
         }
 
         benchmark.recordEndTime();
-        System.gc();  // clear heap no wait
+        
+        if (config.gcHintsEnabled) { System.gc(); } // clear heap no wait
         
         return benchmark;
     }

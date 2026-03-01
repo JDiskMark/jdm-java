@@ -91,6 +91,11 @@ public class BenchmarkConfig {
     public boolean getGcRetryEnabled() { return gcRetryEnabled; }
     public void setGcRetryEnabled(boolean enable) { gcRetryEnabled = enable; }
     
+    @Column
+    boolean gcHintsEnabled = false;
+    public boolean getGcHintsEnabled() { return gcHintsEnabled; }
+    public void setGcHintsEnabled(boolean enable) { gcHintsEnabled = enable; }
+    
     public BenchmarkConfig() {}
     
     public boolean hasReadOperation() {

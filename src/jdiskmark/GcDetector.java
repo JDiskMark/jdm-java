@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import javax.management.ListenerNotFoundException;
 import javax.management.Notification;
 import javax.management.NotificationEmitter;
@@ -28,6 +29,14 @@ public class GcDetector {
             gcDetected.set(true);
         }
     };
+    
+    public static void printActive() {
+        String gcNames = ManagementFactory.getGarbageCollectorMXBeans().stream()
+            .map(bean -> bean.getName().split(" ")[0]) // Get the first word (e.g., "ZGC", "G1", "PS")
+            .distinct()
+            .collect(Collectors.joining(", "));
+        App.msg("Active GC: " + gcNames);
+    }
 
     /** Start listening for GC events and reset the detected flag. */
     public void start() {
@@ -68,6 +77,8 @@ public class GcDetector {
     }
     
     public static void triggerAndWait() {
+        
+        App.msg("triggering gc w 2s timeout");
         long countBefore = getGlobalGcCount();
         System.gc();
 
@@ -87,8 +98,9 @@ public class GcDetector {
 
     private static long getGlobalGcCount() {
         return ManagementFactory.getGarbageCollectorMXBeans().stream()
+                // Only count "Cycles", ignore "Pauses"
+                .filter(bean -> bean.getName().contains("Cycles")) 
                 .mapToLong(GarbageCollectorMXBean::getCollectionCount)
-                .filter(count -> count > 0)
                 .sum();
     }
 }

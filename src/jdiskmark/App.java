@@ -105,7 +105,8 @@ public class App {
     public static boolean autoReset = true;
     public static boolean directEnable = false;
     public static boolean writeSyncEnable = false;
-    public static boolean gcRetryEnabled = false;
+    public static boolean gcRetryEnabled = true;
+    public static boolean gcHintsEnabled = false;
     // benchmark io options
     public static IoEngine ioEngine = IoEngine.MODERN;
     public static SectorAlignment sectorAlignment = SectorAlignment.ALIGN_4K;
@@ -200,6 +201,8 @@ public class App {
      */
     public static void init() {
 
+        GcDetector.printActive();
+        
         username = System.getProperty("user.name");
         
         os = System.getProperty("os.name");
@@ -366,9 +369,6 @@ public class App {
         value = p.getProperty("directEnable", String.valueOf(directEnable));
         directEnable = Boolean.parseBoolean(value);
         
-        value = p.getProperty("gcRetryEnabled", String.valueOf(gcRetryEnabled));
-        gcRetryEnabled = Boolean.parseBoolean(value);
-        
         value = p.getProperty("sectorAlignment", sectorAlignment.name());
         try {
             sectorAlignment = SectorAlignment.valueOf(value.toUpperCase());
@@ -379,7 +379,13 @@ public class App {
                     new Object[] { value, sectorAlignment.name() }
             );
         }
+        
+        value = p.getProperty("gcRetryEnabled", String.valueOf(gcRetryEnabled));
+        gcRetryEnabled = Boolean.parseBoolean(value);
 
+        value = p.getProperty("gcHintsEnabled", String.valueOf(gcHintsEnabled));
+        gcHintsEnabled = Boolean.parseBoolean(value);
+        
         value = p.getProperty("theme", Gui.theme.name());
         try {
             Gui.theme = Gui.Theme.valueOf(value);
@@ -424,8 +430,9 @@ public class App {
         p.setProperty("ioEngine", ioEngine.name());
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         p.setProperty("directEnable", String.valueOf(directEnable));
-        p.setProperty("gcRetryEnabled", String.valueOf(gcRetryEnabled));
         p.setProperty("sectorAlignment", sectorAlignment.name());
+        p.setProperty("gcRetryEnabled", String.valueOf(gcRetryEnabled));
+        p.setProperty("gcHintsEnabled", String.valueOf(gcHintsEnabled));
         // display properties
         p.setProperty("theme", Gui.theme.name());
         p.setProperty("palette", Gui.palette.name());
@@ -461,8 +468,9 @@ public class App {
         config.ioEngine = ioEngine;
         config.directIoEnabled = directEnable;
         config.writeSyncEnabled = writeSyncEnable;
-        config.gcRetryEnabled = gcRetryEnabled;
         config.sectorAlignment = sectorAlignment;
+        config.gcRetryEnabled = gcRetryEnabled;
+        config.gcHintsEnabled = gcHintsEnabled;
         config.multiFileEnabled = multiFile;
         config.testDir = dataDir.getAbsolutePath();
         return config;
@@ -548,7 +556,13 @@ public class App {
     
     public static void msg(String message) {
         switch(mode) {
-            case GUI -> Gui.mainFrame.msg(message);
+            case GUI -> {
+                if (Gui.mainFrame != null) {
+                    Gui.mainFrame.msg(message);
+                } else {
+                    System.out.println(message);
+                }
+            }
             case CLI -> System.out.println(message);
         }
     }
