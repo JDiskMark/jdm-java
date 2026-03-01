@@ -194,6 +194,11 @@ public class BenchmarkRunner {
                                 logger.log(Level.INFO, 
                                         "GC detected during {0} sample {1}, retrying ({2}/{3})", 
                                         new Object[]{mode, s, retries, MAX_GC_RETRIES});
+                                // Compensate for block-level progress increments from the failed attempt
+                                switch (mode) {
+                                    case WRITE -> writeUnitsComplete.add(-config.numBlocks);
+                                    case READ -> readUnitsComplete.add(-config.numBlocks);
+                                }
                             } else {
                                 break;
                             }

@@ -105,7 +105,7 @@ public class App {
     public static boolean autoReset = true;
     public static boolean directEnable = false;
     public static boolean writeSyncEnable = false;
-    public static boolean gcRetryEnabled = true;
+    public static boolean gcRetryEnabled = false;
     public static boolean gcHintsEnabled = false;
     // benchmark io options
     public static IoEngine ioEngine = IoEngine.MODERN;
