@@ -97,9 +97,14 @@ public class GcDetector {
     }
 
     private static long getGlobalGcCount() {
-        return ManagementFactory.getGarbageCollectorMXBeans().stream()
-                // Only count "Cycles", ignore "Pauses"
-                .filter(bean -> bean.getName().contains("Cycles")) 
+        List<GarbageCollectorMXBean> beans = ManagementFactory.getGarbageCollectorMXBeans();
+
+        // Prefer ZGC-style "Cycles" beans when present; otherwise count all collectors
+        boolean hasCyclesBeans = beans.stream()
+                .anyMatch(bean -> bean.getName().contains("Cycles"));
+
+        return beans.stream()
+                .filter(bean -> !hasCyclesBeans || bean.getName().contains("Cycles"))
                 .mapToLong(GarbageCollectorMXBean::getCollectionCount)
                 .sum();
     }
