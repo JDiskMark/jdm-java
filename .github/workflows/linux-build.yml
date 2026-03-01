@@ -19,30 +19,29 @@ jobs:
       uses: actions/setup-java@v4
       with:
         java-version: '25'
-        distribution: 'oracle' # Oracle provides the earliest access to 25
-        cache: 'ant'
+        distribution: 'oracle'
+
+    - name: Cache Ant Dependencies
+      uses: actions/cache@v4
+      with:
+        path: libs
+        key: ${{ runner.os }}-ant-${{ hashFiles('build.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-ant-
 
     - name: Install Build Dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y ant ant-optional fakeroot dpkg-dev
 
-    - name: Build with Ant
-      # This runs the standard clean and jar targets before building the DEB
+    - name: Build Standard DEB
       run: ant create-deb
 
-    - name: Build Fat DEB (Self-Contained)
-      # This uses jpackage to bundle the runtime
+    - name: Build Fat DEB
       run: ant create-fat-deb
 
-    - name: Upload Standard DEB
+    - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: jdiskmark-standard-deb
-        path: dist/jdiskmark_*_all.deb
-
-    - name: Upload Fat DEB
-      uses: actions/upload-artifact@v4
-      with:
-        name: jdiskmark-fat-deb
+        name: jdiskmark-debs
         path: dist/*.deb
