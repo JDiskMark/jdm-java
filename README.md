@@ -203,12 +203,12 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 - TODO: #33 maven build - lane
 - TODO: #78 throttle graphics render - val
 - TODO: #95 disk cache purging - val
-- TODO: #134 gc optimization
 - #67 portal uploads
     - TODO: #117 user portal upload acknowledgement
     - TODO: #118 test interlock or OAuth upload
 
 ### v0.7.0
+- #134 zgc optimization
 - #44 gui benchmark export for json, yml, csv
 - #67 rename sample fields `bwt` > `bt`, `lat` > `lt`
 - #130 dark flatlaf
