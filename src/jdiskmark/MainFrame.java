@@ -835,6 +835,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
     private void deleteDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteDataMenuItemActionPerformed
         Util.deleteDirectory(App.dataDir);
+        App.msg("Data dir " + App.dataDir + " has been deleted.");
     }//GEN-LAST:event_deleteDataMenuItemActionPerformed
 
     private void autoResetCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_autoResetCheckBoxMenuItemActionPerformed
@@ -863,8 +864,9 @@ public final class MainFrame extends javax.swing.JFrame {
             JOptionPane.YES_NO_OPTION);
 
         if (result == JOptionPane.YES_OPTION) {
-            App.msg("Deleting all benchmarks.");
+            App.msg("Deleting all benchmarks...");
             App.deleteAllBenchmarks();
+            App.msg("All benchmarks have been deleted.");
         }
     }//GEN-LAST:event_deleteAllBenchmarksItemActionPerformed
 
@@ -903,6 +905,7 @@ public final class MainFrame extends javax.swing.JFrame {
             App.msg("Deleting selected benchmarks.");
             List<UUID> benchmarkIds = Gui.runPanel.getSelectedIds();
             App.deleteBenchmarks(benchmarkIds);
+            App.msg("Deleted " + benchmarkIds.size() + " benchmark(s).");
         }
     }//GEN-LAST:event_deleteSelBenchmarksItemActionPerformed
 

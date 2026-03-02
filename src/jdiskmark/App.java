@@ -13,6 +13,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -133,6 +135,13 @@ public class App {
     public static BenchmarkOperation operation; // last loaded operation
     public static HashMap<String, Benchmark> benchmarks = new LinkedHashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new LinkedHashMap<>();
+    
+    private static final DateTimeFormatter DATE_FORMATTER = 
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+
+    private static String formatWithTimestamp(String message) {
+        return DATE_FORMATTER.format(LocalDateTime.now()) + ": " + message;
+    }
     
     /**
      * @param args the command line arguments
@@ -544,25 +553,29 @@ public class App {
     }
     
     public static void err(String message) {
+        String formattedMsg = formatWithTimestamp(message);
         switch(mode) {
-            case GUI -> { 
-                System.err.println(message);
-                Gui.mainFrame.msg(message);
+            case GUI -> {
+                System.err.println(formattedMsg);
+                if (Gui.mainFrame != null) {
+                    Gui.mainFrame.msg(formattedMsg);
+                }
             }
-            case CLI -> System.err.println(message);
+            case CLI -> System.err.println(formattedMsg);
         }
     }
-    
+
     public static void msg(String message) {
+        String formattedMsg = formatWithTimestamp(message);
         switch(mode) {
             case GUI -> {
                 if (Gui.mainFrame != null) {
-                    Gui.mainFrame.msg(message);
+                    Gui.mainFrame.msg(formattedMsg);
                 } else {
-                    System.out.println(message);
+                    System.out.println(formattedMsg);
                 }
             }
-            case CLI -> System.out.println(message);
+            case CLI -> System.out.println(formattedMsg);
         }
     }
 
