@@ -15,6 +15,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import jdiskmark.App.IoEngine;
 import jdiskmark.Benchmark.IOMode;
+import static jdiskmark.Benchmark.IOMode.READ;
+import static jdiskmark.Benchmark.IOMode.WRITE;
 
 public class BenchmarkRunner {
     
@@ -198,6 +200,12 @@ public class BenchmarkRunner {
                                         "GC detected during {0} sample {1}, retrying ({2}/{3})",
                                         new Object[]{mode, s, retries, MAX_GC_RETRIES});
                                 App.msg("gc detected on sample " + s + " retrying...");
+                                // reset progress by num blocks per sample
+                                long resetUnits = (long)(config.numBlocks);
+                                switch (mode) {
+                                    case WRITE -> writeUnitsComplete.add(-resetUnits);
+                                    case READ -> readUnitsComplete.add(-resetUnits);
+                                }
                             } else {
                                 // no gc retry enabled || no detection || max retries exceeded
                                 break;
