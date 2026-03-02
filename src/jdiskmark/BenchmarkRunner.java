@@ -195,7 +195,9 @@ public class BenchmarkRunner {
                             }
                             if (gcDetector != null && gcDetector.isGcDetected() && retries < MAX_GC_RETRIES) {
                                 retries++;
-                                op.gcRetriedSamples.add(s);
+                                synchronized (op) {
+                                    op.gcRetriedSamples.add(s);
+                                }
                                 logger.log(Level.INFO,
                                         "GC detected during {0} sample {1}, retrying ({2}/{3})",
                                         new Object[]{mode, s, retries, MAX_GC_RETRIES});
