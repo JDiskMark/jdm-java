@@ -110,7 +110,10 @@ public class GcDetector {
 
         return beans.stream()
                 .filter(bean -> !hasCyclesBeans || bean.getName().contains("Cycles"))
-                .mapToLong(GarbageCollectorMXBean::getCollectionCount)
+                .mapToLong(bean -> {
+                    long count = bean.getCollectionCount();
+                    return count < 0 ? 0 : count;
+                })
                 .sum();
     }
 }
