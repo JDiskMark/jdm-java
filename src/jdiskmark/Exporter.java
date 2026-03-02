@@ -57,7 +57,7 @@ public class Exporter {
         // Write the object to the file
         mapper.writeValue(new File(filePath), benchmark);
         
-        App.msg("Benchmark successfully exported to JSON file: " + filePath);
+        App.msg("Successfully exported: " + filePath);
     }
     
     /**
@@ -96,7 +96,7 @@ public class Exporter {
         } else if (format == ExportFormat.CSV) {
             writeBenchmarkToCsv(mapper, benchmark, path);
         }
-        App.msg("Benchmark successfully exported to " + format.name() + ": " + path);
+        App.msg("Successfully exported to: " + path);
     }
     
     // Keep the CSV logic separate since it requires flattening the nested arrays

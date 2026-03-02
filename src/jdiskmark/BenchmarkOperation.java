@@ -102,6 +102,12 @@ public class BenchmarkOperation implements Serializable {
     @Column
     long iops = 0;
     
+    // samples affected by background gc
+    @Convert(converter = GcRetriedSamplesConverter.class)
+    @Column(name = "gc_retried_samples", columnDefinition = "CLOB")
+    ArrayList<Integer> gcRetriedSamples = new ArrayList<>();
+    public List<Integer> getGcRetriedSamples() { return gcRetriedSamples; }
+    
     @Override
     public String toString() {
         return "BenchmarkOp(" + ioMode + "," + blockOrder + "): " + numSamples + " bw avg: " + bwAvg;

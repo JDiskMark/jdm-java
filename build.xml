@@ -80,10 +80,13 @@
     <property name="jpackage.executable" value="C:\Program Files\java\jdk-25\bin\jpackage"/>
     <property name="signtool.executable" value="C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x86\signtool.exe"/>
 
+    <!-- default gc for packaging -->
+    <property name="jvm.run.options" value="-XX:+UseZGC"/>
+    
     <!-- version properties -->
     <property name="pkg.name" value="jdiskmark"/>
     <property name="app.name" value="JDiskMark"/>
-    <property name="version" value="0.7.0-dev"/>
+    <property name="version" value="0.7.0-rc1"/>
     <!-- full semver does not work for msi product versions -->
     <property name="msi.version" value="0.7.0"/>
     <property name="msi.app.title" value="${app.name} ${version}"/>
@@ -192,6 +195,10 @@
             <arg line="--type msi"/>
             <arg line="--input ${jpackage.input.dir.relative}"/>
             <arg line="--main-jar ${pkg.name}.jar"/>
+            
+            <arg value="--java-options"/>
+            <arg value="${jvm.run.options}"/>
+            
             <!-- intentionally adding version to the name for concurrent installs -->
             <arg line="--name '${msi.app.title}'"/>
             <arg line="--app-version ${msi.version}"/>
@@ -225,6 +232,8 @@
             <arg line="--type dmg"/>
             <arg line="--input ${dist.dir}/${release.dir}"/>
             <arg line="--main-jar ${pkg.name}.jar"/>
+            <arg value="--java-options"/>
+            <arg value="${jvm.run.options}"/>
             <arg line="--main-class ${pkg.name}.App"/>
             <arg line="--name ${pkg.name}-${version}"/>
             <arg line="--app-version ${dmg.version}"/>
@@ -276,7 +285,6 @@
     <property name="deb.install.dir" value="/usr/share/jdiskmark"/>
 
     <target name="create-deb" depends="clean, jar, -post-jar" description="Build Debian Package">
-
         <condition property="is.linux">
             <os family="unix" />
         </condition>
@@ -310,14 +318,14 @@ Depends: openjdk-25-jre
 Maintainer: JDiskMark Team
 Description: JDiskMark - Disk Benchmark Utility
  JDiskMark is a cross-platform disk benchmark utility written in Java.
- </echo>
+</echo>
 
         <echo file="${deb.dir}/usr/bin/jdiskmark"><![CDATA[#!/bin/sh
-CLASSPATH="/usr/share/jdiskmark/jdiskmark.jar"
-for jar in /usr/share/jdiskmark/libs/*.jar; do
-    CLASSPATH="$CLASSPATH:$jar"
-done
-exec java -cp "$CLASSPATH" jdiskmark.App "$@"
+CLASSPATH="/usr/share/jdiskmark/jdiskmark.jar:/usr/share/jdiskmark/libs/*"
+#for jar in /usr/share/jdiskmark/libs/*.jar; do
+#    CLASSPATH="$CLASSPATH:$jar"
+#done
+exec java ${jvm.run.options} -cp "$CLASSPATH" jdiskmark.App "$@"
 ]]></echo>
         <chmod file="${deb.dir}/usr/bin/jdiskmark" perm="755"/>
 
@@ -369,6 +377,9 @@ Categories=Utility;System;</echo>
 
             <arg value="--main-jar" />
             <arg value="${pkg.name}.jar" />
+            
+            <arg value="--java-options"/>
+            <arg value="${jvm.run.options}"/>
 
             <arg value="--main-class" />
             <arg value="jdiskmark.App" />
@@ -445,6 +456,9 @@ Categories=Utility;System;</echo>
             <arg value="--main-jar" />
             <arg value="${pkg.name}.jar" />
 
+            <arg value="--java-options"/>
+            <arg value="${jvm.run.options}"/>
+            
             <arg value="--main-class" />
             <arg value="jdiskmark.App" />
 

@@ -13,6 +13,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -105,6 +107,7 @@ public class App {
     public static boolean autoReset = true;
     public static boolean directEnable = false;
     public static boolean writeSyncEnable = false;
+
     // benchmark io options
     public static IoEngine ioEngine = IoEngine.MODERN;
     public static SectorAlignment sectorAlignment = SectorAlignment.ALIGN_4K;
@@ -132,6 +135,13 @@ public class App {
     public static BenchmarkOperation operation; // last loaded operation
     public static HashMap<String, Benchmark> benchmarks = new LinkedHashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new LinkedHashMap<>();
+    
+    private static final DateTimeFormatter DATE_FORMATTER = 
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+
+    private static String formatWithTimestamp(String message) {
+        return DATE_FORMATTER.format(LocalDateTime.now()) + ": " + message;
+    }
     
     /**
      * @param args the command line arguments
@@ -199,6 +209,8 @@ public class App {
      */
     public static void init() {
 
+        GcDetector.printActive();
+        
         username = System.getProperty("user.name");
         
         os = System.getProperty("os.name");
@@ -375,7 +387,13 @@ public class App {
                     new Object[] { value, sectorAlignment.name() }
             );
         }
+        
+        value = p.getProperty("gcRetryEnabled", String.valueOf(GcDetector.gcRetryEnabled));
+        GcDetector.gcRetryEnabled = Boolean.parseBoolean(value);
 
+        value = p.getProperty("gcHintsEnabled", String.valueOf(GcDetector.gcHintsEnabled));
+        GcDetector.gcHintsEnabled = Boolean.parseBoolean(value);
+        
         value = p.getProperty("theme", Gui.theme.name());
         try {
             Gui.theme = Gui.Theme.valueOf(value);
@@ -421,6 +439,8 @@ public class App {
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         p.setProperty("directEnable", String.valueOf(directEnable));
         p.setProperty("sectorAlignment", sectorAlignment.name());
+        p.setProperty("gcRetryEnabled", String.valueOf(GcDetector.gcRetryEnabled));
+        p.setProperty("gcHintsEnabled", String.valueOf(GcDetector.gcHintsEnabled));
         // display properties
         p.setProperty("theme", Gui.theme.name());
         p.setProperty("palette", Gui.palette.name());
@@ -457,6 +477,8 @@ public class App {
         config.directIoEnabled = directEnable;
         config.writeSyncEnabled = writeSyncEnable;
         config.sectorAlignment = sectorAlignment;
+        config.gcRetryEnabled = GcDetector.gcRetryEnabled;
+        config.gcHintsEnabled = GcDetector.gcHintsEnabled;
         config.multiFileEnabled = multiFile;
         config.testDir = dataDir.getAbsolutePath();
         return config;
@@ -531,19 +553,29 @@ public class App {
     }
     
     public static void err(String message) {
+        String formattedMsg = formatWithTimestamp(message);
         switch(mode) {
-            case GUI -> { 
-                System.err.println(message);
-                Gui.mainFrame.msg(message);
+            case GUI -> {
+                System.err.println(formattedMsg);
+                if (Gui.mainFrame != null) {
+                    Gui.mainFrame.msg(formattedMsg);
+                }
             }
-            case CLI -> System.err.println(message);
+            case CLI -> System.err.println(formattedMsg);
         }
     }
-    
+
     public static void msg(String message) {
+        String formattedMsg = formatWithTimestamp(message);
         switch(mode) {
-            case GUI -> Gui.mainFrame.msg(message);
-            case CLI -> System.out.println(message);
+            case GUI -> {
+                if (Gui.mainFrame != null) {
+                    Gui.mainFrame.msg(formattedMsg);
+                } else {
+                    System.out.println(formattedMsg);
+                }
+            }
+            case CLI -> System.out.println(formattedMsg);
         }
     }
 

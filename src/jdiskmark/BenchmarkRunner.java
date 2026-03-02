@@ -1,5 +1,7 @@
 package jdiskmark;
 
+import static jdiskmark.GcDetector.MAX_GC_RETRIES;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.time.LocalDateTime;
@@ -13,6 +15,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import jdiskmark.App.IoEngine;
 import jdiskmark.Benchmark.IOMode;
+import static jdiskmark.Benchmark.IOMode.READ;
+import static jdiskmark.Benchmark.IOMode.WRITE;
 
 public class BenchmarkRunner {
     
@@ -111,6 +115,10 @@ public class BenchmarkRunner {
         int endingSample = App.nextSampleNumber + config.numSamples;
         int[][] tRanges = divideIntoRanges(startingSample, endingSample, config.numThreads);
 
+        if (config.gcHintsEnabled && !listener.isCancelled()) {
+            GcDetector.triggerAndWait(); // Initial cleanup
+        }
+        
         benchmark.recordStartTime();
         
         // Execution Loops
@@ -134,11 +142,20 @@ public class BenchmarkRunner {
             listener.attemptCacheDrop();
         }
         
+        // If we are doing both, clear the heap between them
+        if (config.gcHintsEnabled && !listener.isCancelled() && 
+                config.hasWriteOperation() && config.hasReadOperation()) {
+            GcDetector.triggerAndWait();
+        }
+        
         if (config.hasReadOperation() && !listener.isCancelled()) {
             runOperation(benchmark, IOMode.READ, tRanges);
         }
 
         benchmark.recordEndTime();
+        
+        if (config.gcHintsEnabled) { System.gc(); } // clear heap no wait
+        
         return benchmark;
     }
 
@@ -147,7 +164,8 @@ public class BenchmarkRunner {
         ExecutorService executor = Executors.newFixedThreadPool(config.numThreads);
         List<Future<?>> futures = new ArrayList<>();
 
-        final IOAction action = switch (config.ioEngine) {
+        // use action to avoid adding a field in sample object
+        final IOAction ioAction = switch (config.ioEngine) {
             case LEGACY -> switch (mode) {
                 case WRITE -> (s) -> s.measureWriteLegacy(blockSize, config.numBlocks, blockArr, this);
                 case READ -> (s) -> s.measureReadLegacy(blockSize, config.numBlocks, blockArr, this);
@@ -160,32 +178,61 @@ public class BenchmarkRunner {
         
         for (int[] range : ranges) {
             futures.add(executor.submit(() -> {
-                for (int s = range[0]; s < range[1] && !listener.isCancelled(); s++) {
-                    Sample.Type type = mode == IOMode.WRITE ? Sample.Type.WRITE : Sample.Type.READ;
-                    Sample sample = new Sample(type, s);
-                    try {
-                        action.perform(sample);
-                    } catch (Exception ex) {
-                        logger.log(Level.SEVERE, null, ex);
-                        throw new RuntimeException(ex);
+                GcDetector gcDetector = config.gcRetryEnabled ? new GcDetector() : null;
+                if (gcDetector != null) gcDetector.start();
+                try {
+                    for (int s = range[0]; s < range[1] && !listener.isCancelled(); s++) {
+                        Sample.Type type = mode == IOMode.WRITE ? Sample.Type.WRITE : Sample.Type.READ;
+                        Sample sample = new Sample(type, s);
+                        int retries = 0;
+                        do {
+                            if (gcDetector != null) gcDetector.reset();
+                            try {
+                                ioAction.perform(sample);
+                            } catch (Exception e) {
+                                logger.log(Level.SEVERE, null, e);
+                                throw new RuntimeException(e);
+                            }
+                            if (gcDetector != null && gcDetector.isGcDetected() && retries < MAX_GC_RETRIES) {
+                                retries++;
+                                synchronized (op) {
+                                    op.gcRetriedSamples.add(s);
+                                }
+                                logger.log(Level.INFO,
+                                        "GC detected during {0} sample {1}, retrying ({2}/{3})",
+                                        new Object[]{mode, s, retries, MAX_GC_RETRIES});
+                                App.msg("gc detected on sample " + s + " retrying...");
+                                // reset progress by num blocks per sample
+                                long resetUnits = (long)(config.numBlocks);
+                                switch (mode) {
+                                    case WRITE -> writeUnitsComplete.add(-resetUnits);
+                                    case READ -> readUnitsComplete.add(-resetUnits);
+                                }
+                            } else {
+                                // no gc retry enabled || no detection || max retries exceeded
+                                break;
+                            }
+                        } while (true);
+
+                        //TODO: review for putting into onSampleComplete
+                        App.updateMetrics(sample);
+                        // Update op-level cumulative stats
+                        op.bwMax = sample.cumMax;
+                        op.bwMin = sample.cumMin;
+                        op.bwAvg = sample.cumAvg;
+                        op.accAvg = sample.cumAccTimeMs;
+                        op.add(sample);
+
+                        switch (mode) {
+                            case WRITE -> writeUnitsComplete.increment();
+                            case READ -> readUnitsComplete.increment();
+                        }
+
+                        listener.onSampleComplete(sample);
+                        throttledProgressUpdate(false);
                     }
-                    
-                    //TODO: review for putting into onSampleComplete
-                    App.updateMetrics(sample);
-                    // Update op-level cumulative stats
-                    op.bwMax = sample.cumMax;
-                    op.bwMin = sample.cumMin;
-                    op.bwAvg = sample.cumAvg;
-                    op.accAvg = sample.cumAccTimeMs;
-                    op.add(sample);
-                    
-                    switch (mode) {
-                        case WRITE -> writeUnitsComplete.increment();
-                        case READ -> readUnitsComplete.increment();
-                    }
-                    
-                    listener.onSampleComplete(sample);
-                    throttledProgressUpdate(false);
+                } finally {
+                    if (gcDetector != null) gcDetector.stop();
                 }
             }));
         }
