@@ -224,7 +224,20 @@ public class Sample {
                 return;
             }
         } catch (IOException e) {
-            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
+            if (App.directEnable) {
+                App.err("Direct I/O open failed: " + e.getMessage() + ". Falling back to buffered I/O.");
+                options.remove(ExtendedOpenOption.DIRECT);
+                try {
+                    initialFc = FileChannel.open(testFile.toPath(), options);
+                } catch (IOException ex) {
+                    Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Failed to open FileChannel", ex);
+                    App.err("Failed to open FileChannel, aborting measurement");
+                    return;
+                }
+            } else {
+                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
+                return;
+            }
         }
         
         try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
@@ -325,7 +338,20 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
                 return;
             }
         } catch (IOException ex) {
-            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
+            if (App.directEnable) {
+                App.err("Direct I/O open failed: " + ex.getMessage() + ". Falling back to buffered I/O.");
+                options.remove(ExtendedOpenOption.DIRECT);
+                try {
+                    initialFc = FileChannel.open(testFile.toPath(), options);
+                } catch (IOException e) {
+                    Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Failed to open FileChannel", e);
+                    App.err("Failed to open FileChannel, aborting measurement");
+                    return;
+                }
+            } else {
+                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
+                return;
+            }
         }
         
         try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
