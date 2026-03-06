@@ -453,7 +453,9 @@ public class UtilOs {
             ProcessBuilder builder = new ProcessBuilder(command);
             Process process = builder.start();
             boolean interrupted = false;
-            while (true) {
+            boolean finished = false;
+            // prevent interruption from intefering w flush
+            while (!finished) {
                 try {
                     int exitValue = process.waitFor();
 
@@ -473,7 +475,7 @@ public class UtilOs {
                     }
 
                     System.out.println("EXIT VALUE: " + exitValue);
-                    break;
+                    finished = true;
                 } catch (InterruptedException e) {
                     interrupted = true;
                     LOGGER.log(Level.WARNING, "Interrupted while waiting for sync, retrying", e);
@@ -532,7 +534,9 @@ public class UtilOs {
             ProcessBuilder builder = new ProcessBuilder(command);
             Process process = builder.start();
             boolean interrupted = false;
-            while (true) {
+            boolean finished = false;
+            // prevent interruption from intefering w cleaning cache
+            while (!finished) {
                 try {
                     int exitValue = process.waitFor();
 
@@ -553,7 +557,7 @@ public class UtilOs {
                     }
 
                     System.out.println("EXIT VALUE: " + exitValue);
-                    break;
+                    finished = true;
                 } catch (InterruptedException e) {
                     interrupted = true;
                     LOGGER.log(Level.WARNING, "Interrupted while waiting for drop_caches, retrying", e);
