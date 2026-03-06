@@ -454,7 +454,7 @@ public class UtilOs {
             Process process = builder.start();
             boolean interrupted = false;
             boolean finished = false;
-            // prevent interruption from intefering w flush
+            // prevent interruption from interfering with flush
             while (!finished) {
                 try {
                     int exitValue = process.waitFor();
