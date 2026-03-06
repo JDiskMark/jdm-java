@@ -775,11 +775,40 @@ public class UtilOs {
                 LOGGER.log(Level.SEVERE,
                         "Failed to get processor name. Exit code: {0}", exitCode);
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
+            // wmic may not be available on newer Windows versions (e.g. Windows 11)
+            LOGGER.log(Level.INFO, "wmic not available, falling back to PowerShell: {0}", e.getMessage());
+            return getProcessorNameWindowsPowerShell();
+        } catch (InterruptedException e) {
             LOGGER.log(Level.SEVERE, null, e);
         }
 
         return ""; // Return an empty string if no processor name was found
+    }
+
+    static String getProcessorNameWindowsPowerShell() {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    "powershell.exe", "-Command",
+                    "Get-CimInstance -Class Win32_Processor | Select-Object -ExpandProperty Name");
+            Process process = pb.start();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (!line.trim().isEmpty()) {
+                        return line.trim();
+                    }
+                }
+            }
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                LOGGER.log(Level.SEVERE,
+                        "Failed to get processor name via PowerShell. Exit code: {0}", exitCode);
+            }
+        } catch (IOException | InterruptedException e) {
+            LOGGER.log(Level.SEVERE, null, e);
+        }
+        return "";
     }
     
     public static String getProcessorNameMacOS() {
