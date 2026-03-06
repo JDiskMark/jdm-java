@@ -280,13 +280,13 @@ public final class Gui {
     public static ChartPanel createChartPanel() {
         
         wSeries = new XYSeries("Write Sample");
-        wAvgSeries = new XYSeries("Write Avg");
+        wAvgSeries = new XYSeries("Write Trend");
         wMaxSeries = new XYSeries("Write Max");
         wMinSeries = new XYSeries("Write Min");
         wDrvAccess = new XYSeries("Write Latency");
         
         rSeries = new XYSeries("Read Sample");
-        rAvgSeries = new XYSeries("Read Avg");
+        rAvgSeries = new XYSeries("Read Trend");
         rMaxSeries = new XYSeries("Read Max");
         rMinSeries = new XYSeries("Read Min");
         rDrvAccess = new XYSeries("Read Latency");
