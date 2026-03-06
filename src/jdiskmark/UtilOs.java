@@ -777,7 +777,7 @@ public class UtilOs {
             }
         } catch (IOException e) {
             // wmic may not be available on newer Windows versions (e.g. Windows 11)
-            LOGGER.log(Level.WARNING, "wmic not available, falling back to PowerShell: {0}", e.getMessage());
+            LOGGER.log(Level.INFO, "wmic not available, falling back to PowerShell: {0}", e.getMessage());
             return getProcessorNameWindowsPowerShell();
         } catch (InterruptedException e) {
             LOGGER.log(Level.SEVERE, null, e);
