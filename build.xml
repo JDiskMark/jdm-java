@@ -82,6 +82,9 @@
 
     <!-- default gc for packaging -->
     <property name="jvm.run.options" value="-XX:+UseZGC"/>
+
+    <!-- java modules to add for jpackage -->
+    <property name="java.modules" value="java.base,java.desktop,java.logging,java.prefs,java.management,java.instrument,java.sql,java.rmi,java.naming,jdk.unsupported"/>
     
     <!-- version properties -->
     <property name="pkg.name" value="jdiskmark"/>
@@ -385,7 +388,7 @@ Categories=Utility;System;</echo>
             <arg value="jdiskmark.App" />
 
             <arg value="--add-modules" />
-            <arg value="java.base,java.desktop,java.logging,java.prefs,java.management,java.instrument,java.sql,java.rmi,java.naming,jdk.unsupported" />
+            <arg value="${java.modules}" />
 
             <arg value="--license-file" />
             <arg value="LICENSE.md" />
@@ -463,7 +466,7 @@ Categories=Utility;System;</echo>
             <arg value="jdiskmark.App" />
 
             <arg value="--add-modules" />
-            <arg value="java.base,java.desktop,java.logging,java.prefs,java.management,java.instrument,java.sql,java.rmi,java.naming,jdk.unsupported" />
+            <arg value="${java.modules}" />
 
             <arg value="--license-file" />
             <arg value="LICENSE.md" />

@@ -100,8 +100,8 @@ public enum BenchmarkProfile {
             BenchmarkType.READ, 
             BlockSequence.SEQUENTIAL, 
             1,    // single thread for linear playback
-            300,  // samples (from your list)
-            256,  // blocks (from your list)
+            160,  // samples
+            64,   // blocks
             2048, // 2MB block size for high-bitrate simulation
             IoEngine.MODERN, 
             true, // direct io (bypass cache)
@@ -116,8 +116,8 @@ public enum BenchmarkProfile {
             BenchmarkType.WRITE, 
             BlockSequence.SEQUENTIAL, 
             4,    // Parallel chunks from the encoder
-            500,  // samples (from your list)
-            128,  // blocks (from your list)
+            500,  // samples
+            128,  // blocks
             1024, // 1MB block size
             IoEngine.MODERN, 
             true, // direct io
