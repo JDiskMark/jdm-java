@@ -212,19 +212,23 @@ public class Sample {
         FileChannel initialFc = null;
         try {
             initialFc = FileChannel.open(testFile.toPath(), options);
-        } catch (UnsupportedOperationException e) {
-            // Fallback: Remove ExtendedOpenOption.DIRECT and try again
-            App.err("Direct I/O is not supported on this system. Falling back to buffered I/O; benchmark results may differ from native Direct I/O performance.");
-            options.remove(ExtendedOpenOption.DIRECT);
-            try {
-                initialFc = FileChannel.open(testFile.toPath(), options);
-            } catch (IOException ex) {
-                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Failed to open FileChannel", ex);
-                App.err("Failed to open FileChannel, aborting measurement");
+        } catch (UnsupportedOperationException | IOException e) {
+            // If direct I/O was requested, try falling back to buffered I/O
+            if (App.directEnable && options.contains(ExtendedOpenOption.DIRECT)) {
+                App.err("Direct I/O open failed or unsupported: " + e.getMessage() + ". Falling back to buffered I/O.");
+                options.remove(ExtendedOpenOption.DIRECT);
+                try {
+                    initialFc = FileChannel.open(testFile.toPath(), options);
+                } catch (IOException ex) {
+                    Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Failed to open FileChannel on fallback", ex);
+                    App.err("Failed to open FileChannel, aborting measurement");
+                    return;
+                }
+            } else {
+                // If it wasn't a Direct I/O issue, it's a fatal IO error (e.g., disk full, permissions)
+                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Fatal error opening FileChannel", e);
                 return;
             }
-        } catch (IOException e) {
-            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
         }
         
         try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
@@ -313,19 +317,23 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
         FileChannel initialFc = null;
         try {
             initialFc = FileChannel.open(testFile.toPath(), options);
-        } catch (UnsupportedOperationException e) {
-            // Fallback: Remove ExtendedOpenOption.DIRECT and try again
-            App.err("Direct I/O is not supported on this system. Falling back to buffered I/O; benchmark results may differ from native Direct I/O performance.");
-            options.remove(ExtendedOpenOption.DIRECT);
-            try {
-                initialFc = FileChannel.open(testFile.toPath(), options);
-            } catch (IOException ex) {
-                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Failed to open FileChannel", ex);
-                App.err("Failed to open FileChannel, aborting measurement");
+        } catch (UnsupportedOperationException | IOException e) {
+            // If direct I/O was requested, try falling back to buffered I/O
+            if (App.directEnable && options.contains(ExtendedOpenOption.DIRECT)) {
+                App.err("Direct I/O open failed or unsupported: " + e.getMessage() + ". Falling back to buffered I/O.");
+                options.remove(ExtendedOpenOption.DIRECT);
+                try {
+                    initialFc = FileChannel.open(testFile.toPath(), options);
+                } catch (IOException ex) {
+                    Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Failed to open FileChannel on fallback", ex);
+                    App.err("Failed to open FileChannel, aborting measurement");
+                    return;
+                }
+            } else {
+                // If it wasn't a Direct I/O issue, it's a fatal IO error (e.g., disk full, permissions)
+                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Fatal error opening FileChannel", e);
                 return;
             }
-        } catch (IOException ex) {
-            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
         }
         
         try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {

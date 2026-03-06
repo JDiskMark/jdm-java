@@ -8,6 +8,10 @@ import static jdiskmark.App.dataDir;
 
 import jakarta.persistence.EntityManager;
 import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.SwingWorker;
 
 /**
@@ -89,6 +93,16 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
     @Override
     protected void done() {
+        try {
+            get();
+        } catch (CancellationException e) {
+            // Normal cancellation path — no error to report
+        } catch (ExecutionException e) {
+            Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, "Benchmark failed", e.getCause());
+            App.err("Benchmark failed: " + e.getCause().getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         if (App.autoRemoveData) {
             Util.deleteDirectory(dataDir);
         }

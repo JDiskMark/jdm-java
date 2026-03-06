@@ -452,27 +452,47 @@ public class UtilOs {
         try {
             ProcessBuilder builder = new ProcessBuilder(command);
             Process process = builder.start();
-            int exitValue = process.waitFor();
+            boolean interrupted = false;
+            boolean finished = false;
+            // prevent interruption from interfering with flush
+            while (!finished) {
+                try {
+                    int exitValue = process.waitFor();
 
-            try (BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                System.out.println("Standard Output:");
-                while ((line = outputReader.readLine()) != null) {
-                    System.out.println(line);
+                    try (BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                        String line;
+                        while ((line = outputReader.readLine()) != null) {
+                            System.out.println(line);
+                        }
+                    }
+
+                    StringBuilder stderr = new StringBuilder();
+                    try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                        String line;
+                        while ((line = errorReader.readLine()) != null) {
+                            stderr.append(line).append(System.lineSeparator());
+                        }
+                    }
+
+                    if (!stderr.isEmpty() || exitValue != 0) {
+                        String errMsg = "sync failed (exit=" + exitValue + ")"
+                                + (stderr.isEmpty() ? "" : ": " + stderr.toString().trim());
+                        LOGGER.log(Level.WARNING, errMsg);
+                        App.err(errMsg);
+                    }
+                    System.out.println("EXIT VALUE: " + exitValue);
+                    finished = true;
+                } catch (InterruptedException e) {
+                    interrupted = true;
+                    LOGGER.log(Level.WARNING, "Interrupted while waiting for sync, retrying", e);
                 }
             }
-            try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-                String line;
-                System.err.println("Standard Error:");
-                while ((line = errorReader.readLine()) != null) {
-                    System.err.println(line);
-                }
+            if (interrupted) {
+                Thread.currentThread().interrupt();
             }
-
-            System.out.println("EXIT VALUE: " + exitValue);
-
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             LOGGER.log(Level.SEVERE, null, e);
+            App.err("sync command failed: " + e.getMessage());
         }
     }
     
@@ -510,7 +530,7 @@ public class UtilOs {
     }
     
     /**
-     * GH-2 Drop the write catch, used to prevent invalid read measurement
+     * GH-2 Drop the write cache, used to prevent invalid read measurement
      */
     static public void dropWriteCacheLinux() {
 
@@ -520,28 +540,47 @@ public class UtilOs {
         try {
             ProcessBuilder builder = new ProcessBuilder(command);
             Process process = builder.start();
-            int exitValue = process.waitFor();
+            boolean interrupted = false;
+            boolean finished = false;
+            // prevent interruption from interfering with cleaning cache
+            while (!finished) {
+                try {
+                    int exitValue = process.waitFor();
 
-            try (BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                System.out.println("Standard Output:");
-                while ((line = outputReader.readLine()) != null) {
-                    System.out.println(line);
+                    try (BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                        String line;
+                        while ((line = outputReader.readLine()) != null) {
+                            System.out.println(line);
+                        }
+                    }
+
+                    StringBuilder stderr = new StringBuilder();
+                    try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
+                        String line;
+                        while ((line = errorReader.readLine()) != null) {
+                            stderr.append(line).append(System.lineSeparator());
+                        }
+                    }
+
+                    if (!stderr.isEmpty() || exitValue != 0) {
+                        String errMsg = "drop_caches failed (exit=" + exitValue + ")"
+                                + (stderr.isEmpty() ? "" : ": " + stderr.toString().trim());
+                        LOGGER.log(Level.WARNING, errMsg);
+                        App.err(errMsg);
+                    }
+                    System.out.println("EXIT VALUE: " + exitValue);
+                    finished = true;
+                } catch (InterruptedException e) {
+                    interrupted = true;
+                    LOGGER.log(Level.WARNING, "Interrupted while waiting for drop_caches, retrying", e);
                 }
             }
-
-            try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-                String line;
-                System.err.println("Standard Error:");
-                while ((line = errorReader.readLine()) != null) {
-                    System.err.println(line);
-                }
+            if (interrupted) {
+                Thread.currentThread().interrupt();
             }
-
-            System.out.println("EXIT VALUE: " + exitValue);
-
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Error executing command", e);
+            App.err("drop_caches command failed: " + e.getMessage());
         }
     }
     
