@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>net.jdiskmark.JDiskMark</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>Apache-2.0</project_license>
+  <name>JDiskMark</name>
+  <summary>Measure the read and write performance of your storage devices</summary>
+  <description>
+    <p>JDiskMark is a cross-platform disk benchmark utility written in Java.
+    It provides a simple way to measure the read and write performance of
+    storage devices including SSDs, NVMe drives, SD cards, and hard drives.</p>
+    <p>It is especially useful for gamers validating SD card and SSD upgrades
+    on platforms like Steam Deck, Bazzite, and SteamOS.</p>
+  </description>
+  <categories>
+    <category>Utility</category>
+    <category>System</category>
+  </categories>
+  <url type="homepage">https://github.com/jDiskMark/jdm-java</url>
+  <url type="bugtracker">https://github.com/jDiskMark/jdm-java/issues</url>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.7.0" date="2025-01-01"/>
+  </releases>
+  <provides>
+    <binary>jdiskmark</binary>
+  </provides>
+</component>
