@@ -461,19 +461,25 @@ public class UtilOs {
 
                     try (BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                         String line;
-                        System.out.println("Standard Output:");
                         while ((line = outputReader.readLine()) != null) {
                             System.out.println(line);
                         }
                     }
+
+                    StringBuilder stderr = new StringBuilder();
                     try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
                         String line;
-                        System.err.println("Standard Error:");
                         while ((line = errorReader.readLine()) != null) {
-                            System.err.println(line);
+                            stderr.append(line).append(System.lineSeparator());
                         }
                     }
 
+                    if (!stderr.isEmpty() || exitValue != 0) {
+                        String errMsg = "sync failed (exit=" + exitValue + ")"
+                                + (stderr.isEmpty() ? "" : ": " + stderr.toString().trim());
+                        LOGGER.log(Level.WARNING, errMsg);
+                        App.err(errMsg);
+                    }
                     System.out.println("EXIT VALUE: " + exitValue);
                     finished = true;
                 } catch (InterruptedException e) {
@@ -486,6 +492,7 @@ public class UtilOs {
             }
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, null, e);
+            App.err("sync command failed: " + e.getMessage());
         }
     }
     
@@ -542,20 +549,25 @@ public class UtilOs {
 
                     try (BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                         String line;
-                        System.out.println("Standard Output:");
                         while ((line = outputReader.readLine()) != null) {
                             System.out.println(line);
                         }
                     }
 
+                    StringBuilder stderr = new StringBuilder();
                     try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
                         String line;
-                        System.err.println("Standard Error:");
                         while ((line = errorReader.readLine()) != null) {
-                            System.err.println(line);
+                            stderr.append(line).append(System.lineSeparator());
                         }
                     }
 
+                    if (!stderr.isEmpty() || exitValue != 0) {
+                        String errMsg = "drop_caches failed (exit=" + exitValue + ")"
+                                + (stderr.isEmpty() ? "" : ": " + stderr.toString().trim());
+                        LOGGER.log(Level.WARNING, errMsg);
+                        App.err(errMsg);
+                    }
                     System.out.println("EXIT VALUE: " + exitValue);
                     finished = true;
                 } catch (InterruptedException e) {
@@ -568,6 +580,7 @@ public class UtilOs {
             }
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Error executing command", e);
+            App.err("drop_caches command failed: " + e.getMessage());
         }
     }
     

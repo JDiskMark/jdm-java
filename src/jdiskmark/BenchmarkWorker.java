@@ -8,6 +8,7 @@ import static jdiskmark.App.dataDir;
 
 import jakarta.persistence.EntityManager;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -94,6 +95,8 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
     protected void done() {
         try {
             get();
+        } catch (CancellationException e) {
+            // Normal cancellation path — no error to report
         } catch (ExecutionException e) {
             Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, "Benchmark failed", e.getCause());
             App.err("Benchmark failed: " + e.getCause().getMessage());
