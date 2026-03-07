@@ -525,9 +525,17 @@ Categories=Utility;System;</echo>
             <arg value="${flatpak.app.id}"/>
         </exec>
 
-        <!-- Clean up intermediate build artifacts -->
-        <delete dir="${flatpak.build.dir}"/>
-        <delete dir="${flatpak.repo.dir}"/>
+        <!-- Clean up intermediate build artifacts.
+             Use rm -rf instead of <delete> because flatpak-builder creates
+             special files (e.g. var/run/adduser) that Ant cannot delete. -->
+        <exec executable="rm" failonerror="false">
+            <arg value="-rf"/>
+            <arg value="${flatpak.build.dir}"/>
+        </exec>
+        <exec executable="rm" failonerror="false">
+            <arg value="-rf"/>
+            <arg value="${flatpak.repo.dir}"/>
+        </exec>
 
         <echo message="Flatpak bundle created: ${flatpak.bundle.file}"/>
     </target>
