@@ -52,9 +52,14 @@ jobs:
       # JDK 25 fully supports targeting older release levels via -source/-target.
       run: ant -Djavac.source=21 -Djavac.target=21 create-flatpak
 
+    - name: Copy Install Instructions into dist/
+      run: cp pkg/flatpak/INSTALL.md dist/INSTALL.md
+
     - name: Upload Flatpak Bundle
       uses: actions/upload-artifact@v4
       with:
         name: jdiskmark-flatpak
-        path: dist/*.flatpak
+        path: |
+          dist/*.flatpak
+          dist/INSTALL.md
 
