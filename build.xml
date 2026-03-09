@@ -517,13 +517,9 @@ Categories=Utility;System;</echo>
             <arg value="${flatpak.manifest.dir}/${flatpak.app.id}.yml"/>
         </exec>
 
-        <!-- Export a single-file Flatpak bundle from the local repo.
-             The runtime-repo flag embeds the Flathub URL so that installing
-             the bundle on a system without the runtime will automatically
-             offer to fetch it from Flathub. -->
+        <!-- Export a single-file Flatpak bundle from the local repo. -->
         <exec executable="flatpak" failonerror="true">
             <arg value="build-bundle"/>
-            <arg value="--runtime-repo=https://dl.flathub.org/repo/"/>
             <arg value="${flatpak.repo.dir}"/>
             <arg value="${flatpak.bundle.file}"/>
             <arg value="${flatpak.app.id}"/>

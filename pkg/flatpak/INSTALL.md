@@ -5,11 +5,24 @@
 Flatpak must be installed on your system. If you are on a gaming-oriented distro such
 as Bazzite or SteamOS, Flatpak and Flathub are already configured by default.
 
-On Ubuntu / Debian you can add Flathub with:
+### 1. Add Flathub (if not already configured)
+
+On Ubuntu / Debian:
 
 ```sh
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 ```
+
+### 2. Install the required runtime
+
+The bundle requires the `org.freedesktop.Platform 24.08` runtime from Flathub.
+Install it before installing the bundle:
+
+```sh
+flatpak install --user flathub org.freedesktop.Platform//24.08
+```
+
+If prompted to install other dependencies, accept them.
 
 ## Install
 
@@ -21,9 +34,6 @@ flatpak install --user ./jdiskmark-<version>.flatpak
 
 > **Note:** Do **not** use `flatpak install --from` — that flag is for `.flatpakref`
 > reference files, not `.flatpak` bundles, and will produce an error.
-
-If the `org.freedesktop.Platform` runtime is not yet present, Flatpak will offer to
-download it from Flathub automatically during the install step.
 
 ## Run
 
