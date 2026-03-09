@@ -34,7 +34,7 @@ modules:
     sources:
       # Main application JAR — built by 'ant jar' prior to flatpak-builder
       - type: file
-        path: ../../dist/jdiskmark-0.7.0/jdiskmark.jar
+        path: ../../dist/flatpak-staging/jdiskmark.jar
       # Runtime library dependencies from the libs/ directory
       - type: file
         path: ../../libs/derby.jar

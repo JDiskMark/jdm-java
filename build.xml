@@ -493,8 +493,9 @@ Categories=Utility;System;</echo>
     <property name="flatpak.build.dir" value="flatpak-build"/>
     <property name="flatpak.repo.dir" value="flatpak-repo"/>
     <property name="flatpak.bundle.file" value="dist/${pkg.name}-${version}.flatpak"/>
+    <property name="flatpak.staging.dir" value="dist/flatpak-staging"/>
 
-    <target name="create-flatpak" depends="clean, jar, -post-jar"
+    <target name="create-flatpak" depends="clean, jar, -post-jar, -prepare-jpackage-input-jar"
             description="Build Flatpak bundle using flatpak-builder">
         <condition property="is.linux">
             <os family="unix"/>
@@ -509,8 +510,16 @@ Categories=Utility;System;</echo>
         <!-- Ensure the dist output directory exists -->
         <mkdir dir="dist"/>
 
+        <!-- Prepare a version-agnostic staging directory for the flatpak builder -->
+        <delete dir="${flatpak.staging.dir}" failonerror="false"/>
+        <mkdir dir="${flatpak.staging.dir}"/>
+        <copy file="dist/${release.dir}/${pkg.name}.jar" tofile="${flatpak.staging.dir}/jdiskmark.jar" failonerror="true"/>
+
         <!-- Run flatpak-builder to assemble the Flatpak from the manifest -->
         <exec executable="flatpak-builder" failonerror="true">
+            <arg value="--user"/>
+            <arg value="--install-deps-from=flathub"/>
+            <arg value="--assumeyes"/>
             <arg value="--force-clean"/>
             <arg value="--repo=${flatpak.repo.dir}"/>
             <arg value="${flatpak.build.dir}"/>

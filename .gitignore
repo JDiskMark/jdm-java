@@ -19,3 +19,7 @@ jdiskmark-deb
 # rpm packaging
 jdiskmark.spec
 temp_resources
+
+# flatpak
+.flatpak-builder
+flatpak-staging
