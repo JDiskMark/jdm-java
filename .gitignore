@@ -19,3 +19,6 @@ jdiskmark-deb
 # rpm packaging
 jdiskmark.spec
 temp_resources
+
+#Maven
+target
