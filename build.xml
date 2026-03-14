@@ -498,7 +498,7 @@ Categories=Utility;System;</echo>
     <target name="create-flatpak" depends="clean, jar, -post-jar, -prepare-jpackage-input-jar"
             description="Build Flatpak bundle using flatpak-builder">
         <condition property="is.linux">
-            <os family="unix"/>
+            <os name="Linux"/>
         </condition>
         <fail unless="is.linux" message="The create-flatpak target can only be run on Linux."/>
 
