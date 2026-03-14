@@ -43,14 +43,12 @@ jobs:
     - name: Install Flatpak Runtime and SDK
       run: |
         flatpak install --user --noninteractive flathub \
-          org.freedesktop.Platform//24.08 \
-          org.freedesktop.Sdk//24.08 \
-          org.freedesktop.Sdk.Extension.openjdk21//24.08
+          org.freedesktop.Platform//25.08 \
+          org.freedesktop.Sdk//25.08 \
+          org.freedesktop.Sdk.Extension.openjdk25//25.08
 
     - name: Build Flatpak Bundle
-      # Compile to Java 21 bytecode so the bundled JRE 21 can load the classes.
-      # JDK 25 fully supports targeting older release levels via -source/-target.
-      run: ant -Djavac.source=21 -Djavac.target=21 create-flatpak
+      run: ant create-flatpak
 
     - name: Copy Install Instructions into dist/
       run: cp pkg/flatpak/INSTALL.md dist/INSTALL.md

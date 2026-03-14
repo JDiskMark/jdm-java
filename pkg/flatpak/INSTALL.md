@@ -15,11 +15,11 @@ flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flath
 
 ### 2. Install the required runtime
 
-The bundle requires the `org.freedesktop.Platform 24.08` runtime from Flathub.
+The bundle requires the `org.freedesktop.Platform 25.08` runtime from Flathub.
 Install it before installing the bundle:
 
 ```sh
-flatpak install --user flathub org.freedesktop.Platform//24.08
+flatpak install --user flathub org.freedesktop.Platform//25.08
 ```
 
 If prompted to install other dependencies, accept them.

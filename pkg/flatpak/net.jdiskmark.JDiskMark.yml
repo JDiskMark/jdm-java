@@ -21,7 +21,7 @@ finish-args:
   - --filesystem=/run/media:rw
 
 modules:
-  # Install OpenJDK 21 JRE from the SDK extension into /app/jre
+  # Install OpenJDK 25 JRE from the SDK extension into /app/jre
   - name: openjdk
     buildsystem: simple
     build-commands:
