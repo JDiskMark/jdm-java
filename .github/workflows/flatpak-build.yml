@@ -62,7 +62,7 @@ jobs:
     - name: Upload Flatpak Bundle
       uses: actions/upload-artifact@v4
       with:
-        name: jdiskmark-flatpak-${{ steps.version.outputs.value }}
+        name: jdiskmark-${{ steps.version.outputs.value }}.flatpak
         path: |
           dist/*.flatpak
           dist/INSTALL.md
