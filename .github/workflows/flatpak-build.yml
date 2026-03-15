@@ -47,6 +47,12 @@ jobs:
           org.freedesktop.Sdk//25.08 \
           org.freedesktop.Sdk.Extension.openjdk25//25.08
 
+    - name: Extract Version
+      id: version
+      run: |
+        VERSION=$(grep -oP '(?<=<property name="version" value=")[^"]+' build.xml | head -1)
+        echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
     - name: Build Flatpak Bundle
       run: ant create-flatpak
 
@@ -56,7 +62,7 @@ jobs:
     - name: Upload Flatpak Bundle
       uses: actions/upload-artifact@v4
       with:
-        name: jdiskmark-flatpak
+        name: jdiskmark-flatpak-${{ steps.version.outputs.value }}
         path: |
           dist/*.flatpak
           dist/INSTALL.md
