@@ -495,7 +495,7 @@ Categories=Utility;System;</echo>
     <property name="flatpak.bundle.file" value="dist/${pkg.name}-${version}.flatpak"/>
     <property name="flatpak.staging.dir" value="dist/flatpak-staging"/>
 
-    <target name="create-flatpak" depends="clean, jar, -post-jar, -prepare-jpackage-input-jar"
+    <target name="create-flatpak" depends="clean, -pre-jar, jar, -post-jar, -prepare-jpackage-input-jar"
             description="Build Flatpak bundle using flatpak-builder">
         <condition property="is.linux">
             <os name="Linux"/>
