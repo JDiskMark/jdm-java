@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>jdiskmark</groupId>
+        <artifactId>jdiskmark-parent</artifactId>
+        <version>0.6.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>packages</artifactId>
+    <packaging>pom</packaging>
+
+    <name>jDiskMark Packaging Project</name>
+
+    <modules>
+        <module>jdm-zip</module>
+        
+        <module>jdm-windows</module>
+        
+        </modules>
+
+    <dependencies>
+        <dependency>
+            <groupId>jdiskmark</groupId>
+            <artifactId>jdm-java</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+</project>

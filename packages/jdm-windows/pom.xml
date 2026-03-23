@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>jdiskmark</groupId>
+        <artifactId>packages</artifactId>
+        <version>0.6.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>jdm-windows</artifactId>
+    <packaging>pom</packaging>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>build-msi</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>jpackage</executable>
+                            <arguments>
+                                <argument>--type</argument><argument>msi</argument>
+                                <argument>--dest</argument><argument>${project.build.directory}</argument>
+                                <argument>--name</argument><argument>jDiskMark</argument>
+                                <argument>--app-version</argument><argument>0.6.0</argument>
+                                <argument>--input</argument><argument>${project.basedir}/../../jdm-java/target</argument>
+                                <argument>--main-jar</argument><argument>jdm-java-${project.version}.jar</argument>
+                                <argument>--main-class</argument><argument>jdiskmark.App</argument>
+                                <argument>--win-shortcut</argument>
+                                <argument>--win-menu</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
