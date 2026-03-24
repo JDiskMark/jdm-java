@@ -15,6 +15,7 @@ debug-benchmark.json
 build.properties
 hs_err_pid*.log
 private.properties
+.DS_Store
 
 # deb packaging
 jdiskmark-deb
@@ -22,3 +23,8 @@ jdiskmark-deb
 # rpm packaging
 jdiskmark.spec
 temp_resources
+
+# flatpak
+flatpak-repo
+.flatpak-builder
+flatpak-staging

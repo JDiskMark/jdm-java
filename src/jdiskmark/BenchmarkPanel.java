@@ -1,4 +1,3 @@
-
 package jdiskmark;
 
 import java.awt.event.ComponentAdapter;
@@ -26,15 +25,15 @@ public class BenchmarkPanel extends javax.swing.JPanel {
     OperationTableSelectionListener selectionListener = new OperationTableSelectionListener(runTable);
     runTable.getSelectionModel().addListSelectionListener(selectionListener);
 
-    // center align cells 2 - 11
-    for (int i = 2; i <= 11; i++) {
+    // center align cells 3 - 12
+    for (int i = 3; i <= 12; i++) {
         TableColumn c = runTable.getColumnModel().getColumn(i);
         c.setCellRenderer(new CenterTableCellRenderer());
     }
 
     // right align cell 12 (avg bw)
-    TableColumn c = runTable.getColumnModel().getColumn(12);
-    c.setCellRenderer(new RightTableCellRenderer());
+    //TableColumn c = runTable.getColumnModel().getColumn(12);
+    //c.setCellRenderer(new RightTableCellRenderer());
 
     // auto scroll to bottom when a new record is added
     runTable.addComponentListener(new ComponentAdapter() {
@@ -64,7 +63,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
 
             },
             new String [] {
-                "ID", "Drive Model", "Usage", "Type", "Order", "Samples", "Blocks (Size)", "Thread", "Start Time", "Time (ms)", "Acc (ms)", "Min/Max (MB/s)", "IO (MB/s)"
+                "ID", "Drive Model", "Profile", "Type", "Order", "Samples", "Blocks (Size)", "Thread", "Start Time", "Time (ms)", "Lat (ms)", "IOPS", "BW (MB/s)"
             }
         ) {
             boolean[] canEdit = new boolean [] {
@@ -80,10 +79,10 @@ public class BenchmarkPanel extends javax.swing.JPanel {
         if (runTable.getColumnModel().getColumnCount() > 0) {
             runTable.getColumnModel().getColumn(0).setPreferredWidth(10);
             runTable.getColumnModel().getColumn(1).setPreferredWidth(135);
-            runTable.getColumnModel().getColumn(2).setPreferredWidth(46);
-            runTable.getColumnModel().getColumn(2).setMaxWidth(45);
+            runTable.getColumnModel().getColumn(2).setPreferredWidth(110);
+            runTable.getColumnModel().getColumn(2).setMaxWidth(130);
             runTable.getColumnModel().getColumn(3).setPreferredWidth(6);
-            runTable.getColumnModel().getColumn(4).setPreferredWidth(40);
+            runTable.getColumnModel().getColumn(4).setPreferredWidth(30);
             runTable.getColumnModel().getColumn(5).setPreferredWidth(6);
             runTable.getColumnModel().getColumn(6).setPreferredWidth(35);
             runTable.getColumnModel().getColumn(7).setPreferredWidth(45);
@@ -91,8 +90,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
             runTable.getColumnModel().getColumn(8).setPreferredWidth(80);
             runTable.getColumnModel().getColumn(9).setPreferredWidth(15);
             runTable.getColumnModel().getColumn(10).setPreferredWidth(10);
-            runTable.getColumnModel().getColumn(11).setResizable(false);
-            runTable.getColumnModel().getColumn(11).setPreferredWidth(50);
+            runTable.getColumnModel().getColumn(11).setPreferredWidth(20);
             runTable.getColumnModel().getColumn(12).setResizable(false);
             runTable.getColumnModel().getColumn(12).setPreferredWidth(32);
         }
@@ -131,8 +129,8 @@ public class BenchmarkPanel extends javax.swing.JPanel {
             model.addRow(
                     new Object[] {
                         run.getId(),
-                        run.getDriveModel(),
-                        run.getUsageColumnDisplay(),
+                        run.getDriveInfo().getDriveModel(),
+                        run.getConfig().getProfile(),
                         o.getModeDisplay(),
                         o.blockOrder,
                         o.numSamples,
@@ -141,7 +139,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
                         o.getStartTimeString(),
                         o.getDuration(),
                         o.getAccTimeDisplay(),
-                        o.getBwMinMaxDisplay(),
+                        o.getIops(),
                         o.getBwAvgDisplay(),
                     });
         }

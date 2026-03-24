@@ -1,4 +1,3 @@
-
 package jdiskmark;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -10,6 +9,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.GeneratedValue;
@@ -44,41 +44,35 @@ public class Benchmark implements Serializable {
     static final DecimalFormat DFT = new DecimalFormat("###");
     static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     
-        public enum BenchmarkType {
-        READ {
-            @Override
-            public String toString() { return "Read"; }
-        },
-        WRITE {
-            @Override
-            public String toString() { return "Write"; }
-        },
-        READ_WRITE {    
-            @Override
-            public String toString() { return "Read & Write"; }
-        }
+    public enum BenchmarkType {
+        READ("Read"),
+        WRITE("Write"),
+        READ_WRITE("Read & Write");
+
+        private final String display;
+        BenchmarkType(String display) { this.display = display; }
+        @Override
+        public String toString() { return display; }
     }
-    
+
     public enum IOMode {
-        READ {
-            @Override
-            public String toString() { return "Read"; }
-        },
-        WRITE {
-            @Override
-            public String toString() { return "Write"; }
-        }
+        READ("Read"),
+        WRITE("Write");
+
+        private final String display;
+        IOMode(String display) { this.display = display; }
+        @Override
+        public String toString() { return display; }
     }
 
     public enum BlockSequence {
-        SEQUENTIAL {
-            @Override
-            public String toString() { return "Sequential"; }
-        },
-        RANDOM {
-            @Override
-            public String toString() { return "Random"; }
-        }
+        SEQUENTIAL("Sequential"),
+        RANDOM("Random");
+
+        private final String display;
+        BlockSequence(String display) { this.display = display; }
+        @Override
+        public String toString() { return display; }
     }
     
     /**
@@ -133,56 +127,20 @@ public class Benchmark implements Serializable {
     String username = "anonymous"; // "user" is reserved in Derby
     public String getUsername() { return username; }
     
-    // system data
-    @Column
-    String os;
-    public String getOs() { return os; }
-    @Column
-    String arch;
-    public String getArch() { return arch; }
-    @Column
-    String processorName;
-    public String getProcessorName() { return processorName; }
-    @Column
-    String jdk;
-    public String getJdk() { return jdk; }
-    @Column
-    String locationDir;
-    public String getLocationDir() { return locationDir; }
+    // system info
+    @Embedded
+    final BenchmarkSystemInfo systemInfo = new BenchmarkSystemInfo();
+    public BenchmarkSystemInfo getSystemInfo() { return systemInfo; }
     
     // drive info
-    @Column
-    String driveModel = null;
-    public String getDriveModel() { return driveModel; }
-    @Column
-    String partitionId;      // on windows the drive letter
-    public String getPartitionId() { return partitionId; }
-    @Column
-    long percentUsed;
-    public long getPercentUsed() { return percentUsed; }
-    @Column
-    double usedGb;
-    public double getUsedGb() { return usedGb; }
-    @Column
-    double totalGb;
-    public double getTotalGb() { return totalGb; }
+    @Embedded
+    final BenchmarkDriveInfo driveInfo = new BenchmarkDriveInfo();
+    public BenchmarkDriveInfo getDriveInfo() { return driveInfo; }
 
-    // benchmark configuration
-    
-    // app version performing the benchmark
-    @Column
-    String appVersion;
-    public String getAppVersion() { return appVersion; }
-    
-    // name of the profile used
-    @Column
-    String profileName;
-    public String getProfileName() { return profileName; }
-    
     // benchmark parameters
-    @Column
-    BenchmarkType benchmarkType;
-    public BenchmarkType getBenchmarkType() { return benchmarkType; }
+    @Embedded
+    BenchmarkConfig config = new BenchmarkConfig();
+    public BenchmarkConfig getConfig() { return config; }
     
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
@@ -191,14 +149,10 @@ public class Benchmark implements Serializable {
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column
     LocalDateTime endTime = null;
-
     
     @OneToMany(mappedBy = "benchmark", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<BenchmarkOperation> operations;
-    
-    public List<BenchmarkOperation> getOperations() {
-        return operations;
-    }
+    List<BenchmarkOperation> operations = new ArrayList<>();
+    public List<BenchmarkOperation> getOperations() { return operations; }
     
     // get the first operation of that type
     public BenchmarkOperation getOperation(IOMode mode) {
@@ -212,7 +166,7 @@ public class Benchmark implements Serializable {
     
     @Override
     public String toString() {
-        return "Benchmark(" + benchmarkType + ") start=" + startTime + "numOps=" + operations.size();
+        return "Benchmark(" + config.benchmarkType + ") start=" + startTime + "numOps=" + operations.size();
     }
     
     /**
@@ -225,14 +179,15 @@ public class Benchmark implements Serializable {
         sb.append("-------------------------------------------\n");
         sb.append("JDiskMark Benchmark Results (v").append(App.VERSION).append(")\n");
         sb.append("-------------------------------------------\n");
-        sb.append("Benchmark: ").append(benchmarkType).append("\n");
+        sb.append("Profile: ").append(config.profile.name).append("\n");
+        sb.append("Benchmark: ").append(config.benchmarkType).append("\n");
         sb.append("Drive: ").append(App.getDriveModel()).append("\n");
         sb.append("Capacity: ").append(App.getDriveCapacity()).append("\n");
         sb.append("Timestamp: ").append(startTime).append("\n");
-        sb.append("CPU: ").append(processorName).append("\n");
-        sb.append("System: ").append(os).append(" / ").append((arch)).append("\n");
-        sb.append("Java: ").append(jdk).append("\n");
-        sb.append("Path: ").append(locationDir).append("\n");
+        sb.append("CPU: ").append(systemInfo.processorName).append("\n");
+        sb.append("System: ").append(systemInfo.os).append(" / ").append(systemInfo.arch).append("\n");
+        sb.append("Java: ").append(systemInfo.jdk).append("\n");
+        sb.append("Path: ").append(systemInfo.locationDir).append("\n");
         for (BenchmarkOperation o : operations) {
             sb.append("-------------------------------------------\n");
             sb.append("Order: ").append(o.blockOrder).append("\n");
@@ -251,37 +206,38 @@ public class Benchmark implements Serializable {
         return sb.toString();
     }
     
-    public Benchmark() {
-        operations = new ArrayList<>();
-        startTime = LocalDateTime.now();
-        appVersion = App.VERSION;
-        profileName = App.activeProfile.getName();
+    public Benchmark() {}
+    
+    public Benchmark(BenchmarkConfig config) {
+        this.config = config;
     }
     
-    Benchmark(BenchmarkType type) {
-        operations = new ArrayList<>();
+    public void recordStartTime() {
         startTime = LocalDateTime.now();
-        benchmarkType = type;
-        appVersion = App.VERSION;
-        profileName = App.activeProfile.getName();
+    }
+    
+    public void recordEndTime() {
+        endTime = LocalDateTime.now();
     }
     
     // basic getters and setters
     
-    public UUID getId() {
-        return id;
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+    
+    @JsonIgnore
+    public String getDriveInfoDisplay() {
+        return driveInfo.driveModel + " - " + driveInfo.partitionId + ": " + getUsageTitleDisplay();
     }
-    public void setId(UUID id) {
-        this.id = id;
-    }
-    public String getDriveInfo() {
-        return driveModel + " - " + partitionId + ": " + getUsageTitleDisplay();
-    }
+    
+    @JsonIgnore
     public String getUsageTitleDisplay() {
-        return  percentUsed + "% (" + DFT.format(usedGb) + "/" + DFT.format(totalGb) + " GB)";
+        return  driveInfo.percentUsed + "% (" + DFT.format(driveInfo.usedGb) + "/" + DFT.format(driveInfo.totalGb) + " GB)";
     }
+    
+    @JsonIgnore
     public String getUsageColumnDisplay() {
-        return percentUsed + "%";
+        return driveInfo.percentUsed + "%";
     }
        
     public String getStartTimeString() {

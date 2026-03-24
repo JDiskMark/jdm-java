@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=JDiskMark
+GenericName=Disk Benchmark
+Comment=Measure the read and write performance of your storage devices
+Exec=jdiskmark
+Icon=net.jdiskmark.JDiskMark
+Terminal=false
+Categories=Utility;System;
+Keywords=disk;benchmark;performance;storage;speed;

@@ -1,7 +1,5 @@
-
 package jdiskmark;
 
-import static jdiskmark.App.dataDir;
 import static jdiskmark.App.SLASH_DATADIRNAME;
 import java.awt.BorderLayout;
 import java.awt.Desktop;
@@ -11,14 +9,11 @@ import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
-import static jdiskmark.App.IoEngine.MODERN;
-import static jdiskmark.App.SectorAlignment.ALIGN_512;
-import jdiskmark.Benchmark.BenchmarkType;
-import jdiskmark.Benchmark.BlockSequence;
+import jdiskmark.Exporter.ExportFormat;
+import net.miginfocom.swing.MigLayout;
 
 /**
  * The parent frame of the app
@@ -30,7 +25,6 @@ public final class MainFrame extends javax.swing.JFrame {
     /**
      * Creates new form MainFrame
      */
-    
     @SuppressWarnings("unchecked")
     public MainFrame() {
         initComponents();
@@ -38,20 +32,14 @@ public final class MainFrame extends javax.swing.JFrame {
         //for diagnostics
         //controlsPanel.setBackground(Color.blue);
         
-        DefaultComboBoxModel<BenchmarkProfile> profileModel
-            = new DefaultComboBoxModel<>(BenchmarkProfile.getDefaults());
-        profileCombo.setModel(profileModel);
-        
-        DefaultComboBoxModel<BenchmarkType> bTypeModel
-                = new DefaultComboBoxModel<>(BenchmarkType.values());
-        typeCombo.setModel(bTypeModel);
-        
-        startButton.requestFocus();
         Gui.createChartPanel();
-        mountPanel.setLayout(new BorderLayout());
-        Gui.chartPanel.setSize(mountPanel.getSize());
-        Gui.chartPanel.setSize(mountPanel.getWidth(), 200);
-        mountPanel.add(Gui.chartPanel);
+        cResultMountPanel.setLayout(new BorderLayout());
+        Gui.chartPanel.setSize(cResultMountPanel.getSize());
+        Gui.chartPanel.setSize(cResultMountPanel.getWidth(), 200);
+        cResultMountPanel.add(Gui.chartPanel);
+        BenchmarkControlPanel bcPanel = Gui.createControlPanel();
+        bControlMountPanel.setLayout(new MigLayout());
+        bControlMountPanel.add(bcPanel);
         totalTxProgBar.setStringPainted(true);
         totalTxProgBar.setValue(0);
         totalTxProgBar.setString("");
@@ -59,7 +47,8 @@ public final class MainFrame extends javax.swing.JFrame {
         StringBuilder titleSb = new StringBuilder();
         titleSb.append(getTitle()).append(" ").append(App.VERSION);    
 
-        initializeComboSettings();
+        refreshConfig();
+        bcPanel.configChangeDetection();
         
         // architecture
         if (App.arch != null && !App.arch.isEmpty()) {
@@ -78,16 +67,12 @@ public final class MainFrame extends javax.swing.JFrame {
         setTitle(titleSb.toString());
         
         // auto scroll the text area.
-        DefaultCaret caret = (DefaultCaret) msgTextArea.getCaret();
+        DefaultCaret caret = (DefaultCaret)msgTextArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
-        
-        // init order combo box
-        orderComboBox.addItem(BlockSequence.SEQUENTIAL);
-        orderComboBox.addItem(BlockSequence.RANDOM);
     }
 
     public JPanel getMountPanel() {
-        return mountPanel;
+        return cResultMountPanel;
     }
     
     /**
@@ -95,7 +80,7 @@ public final class MainFrame extends javax.swing.JFrame {
      * has been loaded.
      */
     public void loadPropertiesConfig() {
-        loadBenchmarkConfig();
+        refreshConfig();
         if (App.locationDir != null) { // set the location dir if not null
             setLocation(App.locationDir.getAbsolutePath());
         }
@@ -117,110 +102,48 @@ public final class MainFrame extends javax.swing.JFrame {
         autoRemoveCheckBoxMenuItem.setSelected(App.autoRemoveData);
         autoResetCheckBoxMenuItem.setSelected(App.autoReset);
         // display preferences
-        showMaxMinCheckBoxMenuItem.setSelected(App.showMaxMin);
-        showAccessCheckBoxMenuItem.setSelected(App.showDriveAccess);
+        showSingleOpMenuItem.setSelected(Gui.showSingleOp);
+        showMaxMinCheckBoxMenuItem.setSelected(Gui.showMaxMin);
+        showAccessCheckBoxMenuItem.setSelected(Gui.showDriveAccess);
+        switch (Gui.theme) {
+            case DARK -> darkThemeRbMenuItem.setSelected(true);
+            case LIGHT -> lightThemeRbMenuItem.setSelected(true);
+            case DARCULA -> darculaThemeRbMenuItem.setSelected(true);
+        }
         switch (Gui.palette) {
-            case Gui.Palette.CLASSIC -> {
+            case CLASSIC -> {
                 classicPaletteMenuItem.setSelected(true);
                 Gui.setClassicColorScheme();
             }
-            case Gui.Palette.BLUE_GREEN -> {
+            case BLUE_GREEN -> {
                 blueGreenPaletteMenuItem.setSelected(true);
                 Gui.setBlueGreenScheme();
             }
-            case Gui.Palette.BARD_COOL -> {
+            case BARD_COOL -> {
                 bardCoolPaletteMenuItem.setSelected(true);
                 Gui.setCoolColorScheme();
             }
-            case Gui.Palette.BARD_WARM -> {
+            case BARD_WARM -> {
                 bardWarmPaletteMenuItem.setSelected(true);
                 Gui.setWarmColorScheme();
             }
         }
     }
-    
-    private void setProfileToCustom() {
-        // do not adjust if profile is being triggered
-        if (profileCombo.hasFocus()) return;
-        // Check if the current profile is already CUSTOM_TEST to prevent unnecessary UI flicker
-        if (App.activeProfile == BenchmarkProfile.CUSTOM_TEST) return;
-        
-        App.activeProfile = BenchmarkProfile.CUSTOM_TEST;
-        profileCombo.setSelectedItem(BenchmarkProfile.CUSTOM_TEST);
-        System.out.println("Profile reset to CUSTOM_TEST due to configuration change.");
-    }
-    
-    public void initializeComboSettings() {
-        loadBenchmarkConfig();
-        
-        // action listeners to detect change and update custom profile
-        final BenchmarkType[] previousBenchmarkType = { (BenchmarkType) typeCombo.getSelectedItem() };
-        typeCombo.addActionListener(e -> {
-            if (!typeCombo.hasFocus()) return;
-            BenchmarkType currentSelection = (BenchmarkType)typeCombo.getSelectedItem();
-            if (currentSelection != null && !currentSelection.equals(previousBenchmarkType[0])) {
-                //System.out.println("previous=" + previousBenchmarkType[0] + " curr=" + currentSelection);
-                previousBenchmarkType[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-        final BlockSequence[] previousSequence = { (BlockSequence) orderComboBox.getSelectedItem() };
-        orderComboBox.addActionListener(e -> {
-            if (!orderComboBox.hasFocus()) return;
-            BlockSequence currentSelection = (BlockSequence)orderComboBox.getSelectedItem();
-            if (currentSelection != null && !currentSelection.equals(previousSequence[0])) {
-                previousSequence[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-        final int[] previousNumThreads = { Integer.parseInt((String)numThreadsCombo.getSelectedItem()) };
-        numThreadsCombo.addActionListener(e -> {
-            int currentSelection = Integer.parseInt((String)numThreadsCombo.getSelectedItem());
-            if (currentSelection != previousNumThreads[0]) {
-                previousNumThreads[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-        final int[] previousNumSamples = { Integer.parseInt((String)numSamplesCombo.getSelectedItem()) };
-        numSamplesCombo.addActionListener(e -> {
-            int currentSelection = Integer.parseInt((String)numSamplesCombo.getSelectedItem());
-            if (currentSelection != previousNumSamples[0]) {
-                previousNumSamples[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-        final int[] previousNumBlocks = { Integer.parseInt((String)numBlocksCombo.getSelectedItem()) };
-        numBlocksCombo.addActionListener(e -> {
-            int currentSelection = Integer.parseInt((String)numBlocksCombo.getSelectedItem());
-            if (currentSelection != previousNumBlocks[0]) {
-                previousNumBlocks[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-        final int[] previousBlockSize = { Integer.parseInt((String)blockSizeCombo.getSelectedItem()) };
-        blockSizeCombo.addActionListener(e -> {
-            int currentSelection = Integer.parseInt((String)blockSizeCombo.getSelectedItem());
-            if (currentSelection != previousBlockSize[0]) {
-                previousBlockSize[0] = currentSelection; // update for next check
-                setProfileToCustom();
-            }
-        });
-    }
 
-    public void loadBenchmarkConfig() {
-        profileCombo.setSelectedItem(App.activeProfile);
-        typeCombo.setSelectedItem(App.benchmarkType);
+    public void refreshConfig() {
         // basic benchmark config
-        typeCombo.setSelectedItem(App.benchmarkType);
-        numThreadsCombo.setSelectedItem(String.valueOf(App.numOfThreads));
-        orderComboBox.setSelectedItem(App.blockSequence);
-        numBlocksCombo.setSelectedItem(String.valueOf(App.numOfBlocks));
-        blockSizeCombo.setSelectedItem(String.valueOf(App.blockSizeKb));
-        numSamplesCombo.setSelectedItem(String.valueOf(App.numOfSamples));
+        if (Gui.controlPanel != null) {
+            Gui.controlPanel.refreshSettings();
+        }
+
         // advanced benchmark config
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
         switch (App.ioEngine) {
-            case MODERN -> engModernRbMenuItem.setSelected(true);
+            case MODERN -> {
+                engModernRbMenuItem.setSelected(true);
+                directIoCbMenuItem.setEnabled(true);
+                sectorAlignmentMenu.setEnabled(true);
+            }
             case LEGACY -> {
                 engLegacyRbMenuItem.setSelected(true);
                 directIoCbMenuItem.setEnabled(false);
@@ -231,12 +154,16 @@ public final class MainFrame extends javax.swing.JFrame {
         directIoCbMenuItem.setSelected(App.directEnable);
         // sector alignment
         switch (App.sectorAlignment) {
+            case NONE -> alignNoneRbMenuItem.setSelected(true);
             case ALIGN_512 -> align512RbMenuItem.setSelected(true);
             case ALIGN_4K -> align4KRbMenuItem.setSelected(true);
             case ALIGN_8K -> align8KRbMenuItem.setSelected(true);
             case ALIGN_16K -> align16KRbMenuItem.setSelected(true);
             case ALIGN_64K -> align64KRbMenuItem.setSelected(true);
         }
+        gcHintsCbMenuItem.setSelected(GcDetector.gcHintsEnabled);
+        gcRetryCbMenuItem.setSelected(GcDetector.gcRetryEnabled);
+        exportMenu.setEnabled(App.benchmark != null);
     }
     
     /**
@@ -252,6 +179,7 @@ public final class MainFrame extends javax.swing.JFrame {
         ioEnginebuttonGroup = new javax.swing.ButtonGroup();
         sectorAlignbuttonGroup = new javax.swing.ButtonGroup();
         portalEndpointButtonGroup = new javax.swing.ButtonGroup();
+        themeButtonGroup = new javax.swing.ButtonGroup();
         tabbedPane = new javax.swing.JTabbedPane();
         runPanel = new jdiskmark.BenchmarkPanel();
         eventScrollPane = new javax.swing.JScrollPane();
@@ -262,53 +190,18 @@ public final class MainFrame extends javax.swing.JFrame {
         openLocButton = new javax.swing.JButton();
         dataDirLabel = new javax.swing.JLabel();
         jLabel22 = new javax.swing.JLabel();
-        mountPanel = new javax.swing.JPanel();
-        controlsPanel = new javax.swing.JPanel();
-        numBlocksCombo = new javax.swing.JComboBox();
-        jLabel5 = new javax.swing.JLabel();
-        jLabel6 = new javax.swing.JLabel();
-        blockSizeCombo = new javax.swing.JComboBox();
-        jLabel8 = new javax.swing.JLabel();
-        numSamplesCombo = new javax.swing.JComboBox();
-        jLabel4 = new javax.swing.JLabel();
-        typeCombo = new javax.swing.JComboBox();
-        jLabel9 = new javax.swing.JLabel();
-        sampleSizeLabel = new javax.swing.JLabel();
-        orderComboBox = new javax.swing.JComboBox<>();
-        jLabel14 = new javax.swing.JLabel();
-        startButton = new javax.swing.JButton();
-        numThreadsCombo = new javax.swing.JComboBox();
-        jLabel21 = new javax.swing.JLabel();
-        wAvgLabel = new javax.swing.JLabel();
-        jLabel19 = new javax.swing.JLabel();
-        rMinLabel = new javax.swing.JLabel();
-        wIopsLabel = new javax.swing.JLabel();
-        rMaxLabel = new javax.swing.JLabel();
-        rIopsLabel = new javax.swing.JLabel();
-        rAvgLabel = new javax.swing.JLabel();
-        jLabel20 = new javax.swing.JLabel();
-        jLabel10 = new javax.swing.JLabel();
-        jLabel17 = new javax.swing.JLabel();
-        jLabel1 = new javax.swing.JLabel();
-        rAccessLabel = new javax.swing.JLabel();
-        jLabel2 = new javax.swing.JLabel();
-        jLabel16 = new javax.swing.JLabel();
-        jLabel3 = new javax.swing.JLabel();
-        jLabel13 = new javax.swing.JLabel();
-        wAccessLabel = new javax.swing.JLabel();
-        jLabel11 = new javax.swing.JLabel();
-        wMinLabel = new javax.swing.JLabel();
-        jLabel12 = new javax.swing.JLabel();
-        wMaxLabel = new javax.swing.JLabel();
-        jLabel18 = new javax.swing.JLabel();
-        jLabel23 = new javax.swing.JLabel();
-        profileCombo = new javax.swing.JComboBox();
+        cResultMountPanel = new javax.swing.JPanel();
         progressPanel = new javax.swing.JPanel();
         totalTxProgBar = new javax.swing.JProgressBar();
         jLabel7 = new javax.swing.JLabel();
+        bControlMountPanel = new javax.swing.JPanel();
         menuBar = new javax.swing.JMenuBar();
         fileMenu = new javax.swing.JMenu();
-        jMenuItem1 = new javax.swing.JMenuItem();
+        exportMenu = new javax.swing.JMenu();
+        exportJsonMenuItem = new javax.swing.JMenuItem();
+        exportYmlMenuItem = new javax.swing.JMenuItem();
+        exportCsvMenuItem = new javax.swing.JMenuItem();
+        exitMenuItem = new javax.swing.JMenuItem();
         actionMenu = new javax.swing.JMenu();
         clearLogsItem = new javax.swing.JMenuItem();
         deleteDataMenuItem = new javax.swing.JMenuItem();
@@ -323,19 +216,28 @@ public final class MainFrame extends javax.swing.JFrame {
         directIoCbMenuItem = new javax.swing.JCheckBoxMenuItem();
         writeSyncCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         sectorAlignmentMenu = new javax.swing.JMenu();
+        alignNoneRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align512RbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align4KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align8KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align16KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align64KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
-        jSeparator3 = new javax.swing.JPopupMenu.Separator();
         multiFileCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
+        jSeparator4 = new javax.swing.JPopupMenu.Separator();
+        gcHintsCbMenuItem = new javax.swing.JCheckBoxMenuItem();
+        gcRetryCbMenuItem = new javax.swing.JCheckBoxMenuItem();
+        jSeparator3 = new javax.swing.JPopupMenu.Separator();
         autoRemoveCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         autoResetCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator2 = new javax.swing.JPopupMenu.Separator();
+        showSingleOpMenuItem = new javax.swing.JCheckBoxMenuItem();
         showMaxMinCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         showAccessCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator1 = new javax.swing.JPopupMenu.Separator();
+        themeMenu = new javax.swing.JMenu();
+        lightThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
+        darkThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
+        darculaThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         colorPaletteMenu = new javax.swing.JMenu();
         classicPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
         blueGreenPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
@@ -414,327 +316,23 @@ public final class MainFrame extends javax.swing.JFrame {
                     .addComponent(dataDirLabel))
                 .addGap(18, 18, 18)
                 .addComponent(jLabel22)
-                .addContainerGap(48, Short.MAX_VALUE))
+                .addContainerGap(95, Short.MAX_VALUE))
         );
 
         tabbedPane.addTab("Drive Location", locationPanel);
 
-        mountPanel.setBorder(javax.swing.BorderFactory.createEtchedBorder());
-        mountPanel.setMaximumSize(new java.awt.Dimension(503, 200));
+        cResultMountPanel.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        cResultMountPanel.setMaximumSize(new java.awt.Dimension(503, 200));
 
-        javax.swing.GroupLayout mountPanelLayout = new javax.swing.GroupLayout(mountPanel);
-        mountPanel.setLayout(mountPanelLayout);
-        mountPanelLayout.setHorizontalGroup(
-            mountPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        javax.swing.GroupLayout cResultMountPanelLayout = new javax.swing.GroupLayout(cResultMountPanel);
+        cResultMountPanel.setLayout(cResultMountPanelLayout);
+        cResultMountPanelLayout.setHorizontalGroup(
+            cResultMountPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGap(0, 0, Short.MAX_VALUE)
         );
-        mountPanelLayout.setVerticalGroup(
-            mountPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
-        );
-
-        controlsPanel.setPreferredSize(new java.awt.Dimension(250, 420));
-
-        numBlocksCombo.setEditable(true);
-        numBlocksCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "1", "2", "3", "4", "8", "16", "32", "64", "128", "256", "512", "1024", "2048", "4096", "8192" }));
-        numBlocksCombo.setSelectedIndex(6);
-        numBlocksCombo.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                numBlocksComboActionPerformed(evt);
-            }
-        });
-
-        jLabel5.setText("Blocks / Sample");
-
-        jLabel6.setText("Block Size (KB)");
-
-        blockSizeCombo.setEditable(true);
-        blockSizeCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "2", "4", "8", "16", "32", "64", "128", "256", "512", "1024", "2048" }));
-        blockSizeCombo.setSelectedIndex(8);
-        blockSizeCombo.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                blockSizeComboActionPerformed(evt);
-            }
-        });
-
-        jLabel8.setText("No. Samples");
-
-        numSamplesCombo.setEditable(true);
-        numSamplesCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "50", "100", "200", "300", "500", "1000", "2000", "3000", "5000", "10000" }));
-        numSamplesCombo.setSelectedIndex(2);
-        numSamplesCombo.setPreferredSize(new java.awt.Dimension(72, 24));
-        numSamplesCombo.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                numSamplesComboActionPerformed(evt);
-            }
-        });
-
-        jLabel4.setText("Type");
-
-        typeCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { " ", " " }));
-        typeCombo.setPreferredSize(new java.awt.Dimension(60, 24));
-        typeCombo.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                typeComboActionPerformed(evt);
-            }
-        });
-
-        jLabel9.setText("Sample Size (KB)");
-
-        sampleSizeLabel.setText("- -");
-        sampleSizeLabel.setPreferredSize(new java.awt.Dimension(70, 18));
-
-        orderComboBox.setMaximumSize(new java.awt.Dimension(106, 32767));
-        orderComboBox.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                orderComboBoxActionPerformed(evt);
-            }
-        });
-
-        jLabel14.setText("Block Order");
-
-        startButton.setText("Start");
-        startButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                startButtonActionPerformed(evt);
-            }
-        });
-
-        numThreadsCombo.setEditable(true);
-        numThreadsCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "1", "2", "4", "8", "16" }));
-        numThreadsCombo.setSelectedIndex(2);
-        numThreadsCombo.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                numThreadsComboActionPerformed(evt);
-            }
-        });
-
-        jLabel21.setText("Number Threads");
-
-        wAvgLabel.setText("- -");
-
-        jLabel19.setText("IOPS");
-
-        rMinLabel.setText("- -");
-
-        wIopsLabel.setText("- -");
-
-        rMaxLabel.setText("- -");
-
-        rIopsLabel.setText("- -");
-
-        rAvgLabel.setText("- -");
-
-        jLabel20.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel20.setText("Read IO (MB/s)");
-
-        jLabel10.setText("Min");
-
-        jLabel17.setText("Acc (ms)");
-
-        jLabel1.setText("Min");
-
-        rAccessLabel.setText("- -");
-
-        jLabel2.setText("Max");
-
-        jLabel16.setText("Acc (ms)");
-
-        jLabel3.setText("Avg");
-
-        jLabel13.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel13.setText("Write IO (MB/s)");
-
-        wAccessLabel.setText("- -");
-
-        jLabel11.setText("Max");
-
-        wMinLabel.setText("- -");
-
-        jLabel12.setText("Avg");
-
-        wMaxLabel.setText("- -");
-
-        jLabel18.setText("IOPS");
-
-        jLabel23.setText("Profile");
-
-        profileCombo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { " ", " " }));
-        profileCombo.setPreferredSize(new java.awt.Dimension(60, 24));
-        profileCombo.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                profileComboActionPerformed(evt);
-            }
-        });
-
-        javax.swing.GroupLayout controlsPanelLayout = new javax.swing.GroupLayout(controlsPanel);
-        controlsPanel.setLayout(controlsPanelLayout);
-        controlsPanelLayout.setHorizontalGroup(
-            controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(controlsPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(startButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(controlsPanelLayout.createSequentialGroup()
-                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(controlsPanelLayout.createSequentialGroup()
-                                .addComponent(jLabel9)
-                                .addGap(20, 20, 20)
-                                .addComponent(sampleSizeLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                            .addGroup(controlsPanelLayout.createSequentialGroup()
-                                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addGroup(controlsPanelLayout.createSequentialGroup()
-                                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(jLabel5)
-                                            .addComponent(jLabel14)
-                                            .addComponent(jLabel6)
-                                            .addComponent(jLabel8)
-                                            .addComponent(jLabel21))
-                                        .addGap(18, 18, 18)
-                                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                            .addComponent(numThreadsCombo, 0, 100, Short.MAX_VALUE)
-                                            .addComponent(orderComboBox, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                            .addComponent(numBlocksCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                            .addComponent(blockSizeCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                            .addComponent(numSamplesCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                                    .addGroup(controlsPanelLayout.createSequentialGroup()
-                                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(jLabel13)
-                                            .addGroup(controlsPanelLayout.createSequentialGroup()
-                                                .addComponent(jLabel18)
-                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(wIopsLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                            .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                                .addGroup(controlsPanelLayout.createSequentialGroup()
-                                                    .addComponent(jLabel16)
-                                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                    .addComponent(wAccessLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 38, Short.MAX_VALUE))
-                                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, controlsPanelLayout.createSequentialGroup()
-                                                    .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                        .addComponent(jLabel1)
-                                                        .addComponent(jLabel2)
-                                                        .addComponent(jLabel3))
-                                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                    .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                                        .addComponent(wAvgLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                                        .addComponent(wMaxLabel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                                        .addComponent(wMinLabel, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 61, javax.swing.GroupLayout.PREFERRED_SIZE)))))
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(jLabel20)
-                                            .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                                .addGroup(controlsPanelLayout.createSequentialGroup()
-                                                    .addComponent(jLabel19)
-                                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                    .addComponent(rIopsLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, controlsPanelLayout.createSequentialGroup()
-                                                    .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                        .addComponent(jLabel10)
-                                                        .addComponent(jLabel12)
-                                                        .addComponent(jLabel11))
-                                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                    .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                                        .addComponent(rMinLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                                        .addComponent(rMaxLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                                        .addComponent(rAvgLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 65, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, controlsPanelLayout.createSequentialGroup()
-                                                    .addComponent(jLabel17)
-                                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                    .addComponent(rAccessLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)))))
-                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, controlsPanelLayout.createSequentialGroup()
-                                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(jLabel23)
-                                            .addComponent(jLabel4))
-                                        .addGap(18, 18, 18)
-                                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(profileCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                            .addComponent(typeCombo, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
-                                .addGap(0, 0, Short.MAX_VALUE)))
-                        .addGap(2, 2, 2)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-        controlsPanelLayout.setVerticalGroup(
-            controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(controlsPanelLayout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel23)
-                    .addComponent(profileCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel4)
-                    .addComponent(typeCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(numThreadsCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel21))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(orderComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel14))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel5)
-                    .addComponent(numBlocksCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel6)
-                    .addComponent(blockSizeCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel8)
-                    .addComponent(numSamplesCombo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel9)
-                    .addComponent(sampleSizeLabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(startButton)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel20, javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jLabel13, javax.swing.GroupLayout.Alignment.TRAILING))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(controlsPanelLayout.createSequentialGroup()
-                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel10)
-                            .addComponent(rMinLabel))
-                        .addGap(30, 30, 30)
-                        .addComponent(rAvgLabel)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel17)
-                            .addComponent(rAccessLabel))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel19)
-                            .addComponent(rIopsLabel)))
-                    .addGroup(controlsPanelLayout.createSequentialGroup()
-                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel1)
-                            .addComponent(wMinLabel))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel2)
-                            .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(wMaxLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jLabel11)
-                                .addComponent(rMaxLabel)))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel3)
-                            .addComponent(wAvgLabel)
-                            .addComponent(jLabel12))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel16)
-                            .addComponent(wAccessLabel))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(controlsPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel18)
-                            .addComponent(wIopsLabel))))
-                .addContainerGap())
+        cResultMountPanelLayout.setVerticalGroup(
+            cResultMountPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 346, Short.MAX_VALUE)
         );
 
         jLabel7.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
@@ -761,16 +359,59 @@ public final class MainFrame extends javax.swing.JFrame {
                 .addContainerGap())
         );
 
+        javax.swing.GroupLayout bControlMountPanelLayout = new javax.swing.GroupLayout(bControlMountPanel);
+        bControlMountPanel.setLayout(bControlMountPanelLayout);
+        bControlMountPanelLayout.setHorizontalGroup(
+            bControlMountPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 242, Short.MAX_VALUE)
+        );
+        bControlMountPanelLayout.setVerticalGroup(
+            bControlMountPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+
         fileMenu.setText("File");
 
-        jMenuItem1.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F4, java.awt.event.InputEvent.ALT_DOWN_MASK));
-        jMenuItem1.setText("Exit");
-        jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
+        exportMenu.setText("Export");
+        exportMenu.setEnabled(false);
+
+        exportJsonMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_J, java.awt.event.InputEvent.ALT_DOWN_MASK));
+        exportJsonMenuItem.setText("JSON (.json)");
+        exportJsonMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                exportJsonMenuItemActionPerformed(evt);
+            }
+        });
+        exportMenu.add(exportJsonMenuItem);
+
+        exportYmlMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_Y, java.awt.event.InputEvent.ALT_DOWN_MASK));
+        exportYmlMenuItem.setText("YAML (.yml)");
+        exportYmlMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                exportYmlMenuItemActionPerformed(evt);
+            }
+        });
+        exportMenu.add(exportYmlMenuItem);
+
+        exportCsvMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_C, java.awt.event.InputEvent.ALT_DOWN_MASK));
+        exportCsvMenuItem.setText("CSV (.csv)");
+        exportCsvMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                exportCsvMenuItemActionPerformed(evt);
+            }
+        });
+        exportMenu.add(exportCsvMenuItem);
+
+        fileMenu.add(exportMenu);
+
+        exitMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F4, java.awt.event.InputEvent.ALT_DOWN_MASK));
+        exitMenuItem.setText("Exit");
+        exitMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 exitMenuItemActionPerformed(evt);
             }
         });
-        fileMenu.add(jMenuItem1);
+        fileMenu.add(exitMenuItem);
 
         menuBar.add(fileMenu);
 
@@ -850,7 +491,6 @@ public final class MainFrame extends javax.swing.JFrame {
 
         optionMenu.add(ioEngineMenu);
 
-        directIoCbMenuItem.setSelected(true);
         directIoCbMenuItem.setText("Direct IO (unbuffered)");
         directIoCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -869,6 +509,16 @@ public final class MainFrame extends javax.swing.JFrame {
         optionMenu.add(writeSyncCheckBoxMenuItem);
 
         sectorAlignmentMenu.setText("Sector Alignment");
+
+        sectorAlignbuttonGroup.add(alignNoneRbMenuItem);
+        alignNoneRbMenuItem.setSelected(true);
+        alignNoneRbMenuItem.setText(App.SectorAlignment.NONE.toString());
+        alignNoneRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                alignNoneRbMenuItemActionPerformed(evt);
+            }
+        });
+        sectorAlignmentMenu.add(alignNoneRbMenuItem);
 
         sectorAlignbuttonGroup.add(align512RbMenuItem);
         align512RbMenuItem.setText(App.SectorAlignment.ALIGN_512.toString());
@@ -916,7 +566,6 @@ public final class MainFrame extends javax.swing.JFrame {
         sectorAlignmentMenu.add(align64KRbMenuItem);
 
         optionMenu.add(sectorAlignmentMenu);
-        optionMenu.add(jSeparator3);
 
         multiFileCheckBoxMenuItem.setSelected(true);
         multiFileCheckBoxMenuItem.setText("Multi Data File");
@@ -926,6 +575,24 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
         optionMenu.add(multiFileCheckBoxMenuItem);
+        optionMenu.add(jSeparator4);
+
+        gcHintsCbMenuItem.setText("GC Hint Optimizing");
+        gcHintsCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                gcHintsCbMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(gcHintsCbMenuItem);
+
+        gcRetryCbMenuItem.setText("GC Sample Retries");
+        gcRetryCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                gcRetryCbMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(gcRetryCbMenuItem);
+        optionMenu.add(jSeparator3);
 
         autoRemoveCheckBoxMenuItem.setSelected(true);
         autoRemoveCheckBoxMenuItem.setText("Auto Remove Data Dir");
@@ -946,6 +613,15 @@ public final class MainFrame extends javax.swing.JFrame {
         optionMenu.add(autoResetCheckBoxMenuItem);
         optionMenu.add(jSeparator2);
 
+        showSingleOpMenuItem.setSelected(true);
+        showSingleOpMenuItem.setText("Show Single Operation");
+        showSingleOpMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                showSingleOpMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(showSingleOpMenuItem);
+
         showMaxMinCheckBoxMenuItem.setSelected(true);
         showMaxMinCheckBoxMenuItem.setText("Show Max Min");
         showMaxMinCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -956,7 +632,7 @@ public final class MainFrame extends javax.swing.JFrame {
         optionMenu.add(showMaxMinCheckBoxMenuItem);
 
         showAccessCheckBoxMenuItem.setSelected(true);
-        showAccessCheckBoxMenuItem.setText("Show Access Time");
+        showAccessCheckBoxMenuItem.setText("Show Latency");
         showAccessCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 showAccessCheckBoxMenuItemActionPerformed(evt);
@@ -965,7 +641,39 @@ public final class MainFrame extends javax.swing.JFrame {
         optionMenu.add(showAccessCheckBoxMenuItem);
         optionMenu.add(jSeparator1);
 
-        colorPaletteMenu.setText("Color Palette");
+        themeMenu.setText("Window Theme");
+
+        themeButtonGroup.add(lightThemeRbMenuItem);
+        lightThemeRbMenuItem.setText("Light");
+        lightThemeRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                lightThemeRbMenuItemActionPerformed(evt);
+            }
+        });
+        themeMenu.add(lightThemeRbMenuItem);
+
+        themeButtonGroup.add(darkThemeRbMenuItem);
+        darkThemeRbMenuItem.setSelected(true);
+        darkThemeRbMenuItem.setText("Dark");
+        darkThemeRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                darkThemeRbMenuItemActionPerformed(evt);
+            }
+        });
+        themeMenu.add(darkThemeRbMenuItem);
+
+        themeButtonGroup.add(darculaThemeRbMenuItem);
+        darculaThemeRbMenuItem.setText("Darcula");
+        darculaThemeRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                darculaThemeRbMenuItemActionPerformed(evt);
+            }
+        });
+        themeMenu.add(darculaThemeRbMenuItem);
+
+        optionMenu.add(themeMenu);
+
+        colorPaletteMenu.setText("Graph Palette");
         palettebuttonGroup.add(colorPaletteMenu);
 
         palettebuttonGroup.add(classicPaletteMenuItem);
@@ -1071,20 +779,18 @@ public final class MainFrame extends javax.swing.JFrame {
                 .addContainerGap())
             .addComponent(progressPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 242, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(bControlMountPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(mountPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(cResultMountPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addGroup(layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(controlsPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 391, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(mountPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(cResultMountPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(bControlMountPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(tabbedPane, javax.swing.GroupLayout.DEFAULT_SIZE, 146, Short.MAX_VALUE)
+                .addComponent(tabbedPane)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(progressPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
@@ -1095,55 +801,6 @@ public final class MainFrame extends javax.swing.JFrame {
     private void chooseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chooseButtonActionPerformed
         Gui.browseLocation();
     }//GEN-LAST:event_chooseButtonActionPerformed
-
-    private void startButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startButtonActionPerformed
-        if (App.state == App.State.DISK_TEST_STATE) {
-            App.cancelBenchmark();
-        } else if (App.state == App.State.IDLE_STATE) {
-            applyTestParams();
-            App.saveConfig();
-            App.startBenchmark();
-        }
-    }//GEN-LAST:event_startButtonActionPerformed
-
-    private void blockSizeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_blockSizeComboActionPerformed
-        // NOTE: selecting a value from dropdown does not trigger the below
-        if (blockSizeCombo.hasFocus()) {
-            App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
-            sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-            totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
-            App.saveConfig();
-        }
-    }//GEN-LAST:event_blockSizeComboActionPerformed
-
-    private void numBlocksComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_numBlocksComboActionPerformed
-        // NOTE: selecting a value from dropdown does not trigger the below
-        if (numBlocksCombo.hasFocus()) {
-            App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
-            sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-            totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
-            App.saveConfig();
-        }
-    }//GEN-LAST:event_numBlocksComboActionPerformed
-
-    private void numSamplesComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_numSamplesComboActionPerformed
-        // NOTE: selecting a value from dropdown does not trigger the below
-        if (numSamplesCombo.hasFocus()) {
-            App.numOfSamples = Integer.parseInt((String) numSamplesCombo.getSelectedItem());
-            sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-            totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
-            App.saveConfig();
-        }
-    }//GEN-LAST:event_numSamplesComboActionPerformed
-
-    private void typeComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_typeComboActionPerformed
-        if (typeCombo.hasFocus()) {
-            BenchmarkType mode = (BenchmarkType) typeCombo.getSelectedItem();
-            App.benchmarkType = mode;
-            App.saveConfig();
-            System.out.println("emulate custom: " + evt.paramString());
-        }
-    }//GEN-LAST:event_typeComboActionPerformed
 
     private void exitMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exitMenuItemActionPerformed
         System.exit(0);
@@ -1177,7 +834,8 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_autoRemoveCheckBoxMenuItemActionPerformed
 
     private void deleteDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteDataMenuItemActionPerformed
-        Util.deleteDirectory(dataDir);
+        Util.deleteDirectory(App.dataDir);
+        App.msg("Data dir " + App.dataDir + " has been deleted.");
     }//GEN-LAST:event_deleteDataMenuItemActionPerformed
 
     private void autoResetCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_autoResetCheckBoxMenuItemActionPerformed
@@ -1190,16 +848,9 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_resetSequenceMenuItemActionPerformed
 
     private void showMaxMinCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showMaxMinCheckBoxMenuItemActionPerformed
-        App.showMaxMin = showMaxMinCheckBoxMenuItem.getState();
+        Gui.showMaxMin = showMaxMinCheckBoxMenuItem.getState();
         App.saveConfig();
     }//GEN-LAST:event_showMaxMinCheckBoxMenuItemActionPerformed
-
-    private void orderComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_orderComboBoxActionPerformed
-        if (orderComboBox.hasFocus()) {
-            App.blockSequence = (BlockSequence) orderComboBox.getSelectedItem();
-            App.saveConfig();
-        }
-    }//GEN-LAST:event_orderComboBoxActionPerformed
 
     private void writeSyncCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_writeSyncCheckBoxMenuItemActionPerformed
         App.writeSyncEnable = writeSyncCheckBoxMenuItem.getState();
@@ -1213,13 +864,14 @@ public final class MainFrame extends javax.swing.JFrame {
             JOptionPane.YES_NO_OPTION);
 
         if (result == JOptionPane.YES_OPTION) {
-            App.msg("Deleting all benchmarks.");
+            App.msg("Deleting all benchmarks...");
             App.deleteAllBenchmarks();
+            App.msg("All benchmarks have been deleted.");
         }
     }//GEN-LAST:event_deleteAllBenchmarksItemActionPerformed
 
     private void showAccessCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showAccessCheckBoxMenuItemActionPerformed
-        App.showDriveAccess = showAccessCheckBoxMenuItem.getState();
+        Gui.showDriveAccess = showAccessCheckBoxMenuItem.getState();
         App.saveConfig();
     }//GEN-LAST:event_showAccessCheckBoxMenuItemActionPerformed
 
@@ -1253,6 +905,7 @@ public final class MainFrame extends javax.swing.JFrame {
             App.msg("Deleting selected benchmarks.");
             List<UUID> benchmarkIds = Gui.runPanel.getSelectedIds();
             App.deleteBenchmarks(benchmarkIds);
+            App.msg("Deleted " + benchmarkIds.size() + " benchmark(s).");
         }
     }//GEN-LAST:event_deleteSelBenchmarksItemActionPerformed
 
@@ -1261,36 +914,6 @@ public final class MainFrame extends javax.swing.JFrame {
         Gui.resetBenchmarkData();
         Gui.updateLegendAndAxis();
     }//GEN-LAST:event_resetBenchmarkItemActionPerformed
-
-    private void numThreadsComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_numThreadsComboActionPerformed
-        // NOTE: selecting a value from dropdown does not trigger the below
-        if (numThreadsCombo.hasFocus()) {
-            App.numOfThreads = Integer.parseInt((String) numThreadsCombo.getSelectedItem());
-            App.saveConfig();
-        }
-    }//GEN-LAST:event_numThreadsComboActionPerformed
-
-    private void profileComboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_profileComboActionPerformed
-        BenchmarkProfile profile = (BenchmarkProfile) profileCombo.getSelectedItem();
-        App.activeProfile = profile;
-        
-        // skip adjustments if custom test was selected
-        if (profile.equals(BenchmarkProfile.CUSTOM_TEST)) {
-            return;
-        }
-        
-        // TODO: later relocate into a BenchmarkConfiguration.java
-        App.benchmarkType = profile.getBenchmarkType();
-        App.blockSequence = profile.getBlockSequence();
-        App.numOfThreads = profile.getNumThreads();
-        App.numOfSamples = profile.getNumSamples();
-        App.numOfBlocks = profile.getNumBlocks();
-        App.blockSizeKb = profile.getBlockSizeKb();
-        App.writeSyncEnable = profile.isWriteSyncEnable();
-        App.multiFile = profile.isMultiFile();
-        
-        loadBenchmarkConfig();
-    }//GEN-LAST:event_profileComboActionPerformed
 
     private void portalUploadMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_portalUploadMenuItemActionPerformed
         if (portalUploadMenuItem.getState() == true) {
@@ -1370,6 +993,57 @@ public final class MainFrame extends javax.swing.JFrame {
         App.saveConfig();
     }//GEN-LAST:event_prodEndpointRbMenuItemActionPerformed
 
+    private void alignNoneRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alignNoneRbMenuItemActionPerformed
+        App.sectorAlignment = App.SectorAlignment.NONE;
+        App.saveConfig();
+    }//GEN-LAST:event_alignNoneRbMenuItemActionPerformed
+
+    private void darkThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_darkThemeRbMenuItemActionPerformed
+        Gui.theme = Gui.Theme.DARK;
+        Gui.goDarkTheme();
+        App.saveConfig();
+    }//GEN-LAST:event_darkThemeRbMenuItemActionPerformed
+
+    private void lightThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_lightThemeRbMenuItemActionPerformed
+        Gui.theme = Gui.Theme.LIGHT;
+        Gui.goLightTheme();
+        App.saveConfig();
+    }//GEN-LAST:event_lightThemeRbMenuItemActionPerformed
+
+    private void darculaThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_darculaThemeRbMenuItemActionPerformed
+        Gui.theme = Gui.Theme.DARCULA;
+        Gui.goDarculaTheme();
+        App.saveConfig();
+    }//GEN-LAST:event_darculaThemeRbMenuItemActionPerformed
+
+    private void exportJsonMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportJsonMenuItemActionPerformed
+        Exporter.exportBenchmarkAction(App.benchmark, ExportFormat.JSON);
+    }//GEN-LAST:event_exportJsonMenuItemActionPerformed
+
+    private void showSingleOpMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showSingleOpMenuItemActionPerformed
+        Gui.showSingleOp = showSingleOpMenuItem.isSelected();
+        App.saveConfig();
+        Gui.singleOpTrigReloadGraph();
+    }//GEN-LAST:event_showSingleOpMenuItemActionPerformed
+
+    private void exportYmlMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportYmlMenuItemActionPerformed
+        Exporter.exportBenchmarkAction(App.benchmark, ExportFormat.YAML);
+    }//GEN-LAST:event_exportYmlMenuItemActionPerformed
+
+    private void exportCsvMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exportCsvMenuItemActionPerformed
+        Exporter.exportBenchmarkAction(App.benchmark, ExportFormat.CSV);
+    }//GEN-LAST:event_exportCsvMenuItemActionPerformed
+
+    private void gcHintsCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gcHintsCbMenuItemActionPerformed
+        GcDetector.gcHintsEnabled = gcHintsCbMenuItem.isSelected();
+        App.saveConfig();
+    }//GEN-LAST:event_gcHintsCbMenuItemActionPerformed
+
+    private void gcRetryCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gcRetryCbMenuItemActionPerformed
+        GcDetector.gcRetryEnabled = gcRetryCbMenuItem.isSelected();
+        App.saveConfig();
+    }//GEN-LAST:event_gcRetryCbMenuItemActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
     private javax.swing.JRadioButtonMenuItem align16KRbMenuItem;
@@ -1377,17 +1051,20 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JRadioButtonMenuItem align512RbMenuItem;
     private javax.swing.JRadioButtonMenuItem align64KRbMenuItem;
     private javax.swing.JRadioButtonMenuItem align8KRbMenuItem;
+    private javax.swing.JRadioButtonMenuItem alignNoneRbMenuItem;
     private javax.swing.JCheckBoxMenuItem autoRemoveCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem autoResetCheckBoxMenuItem;
+    private javax.swing.JPanel bControlMountPanel;
     private javax.swing.JRadioButtonMenuItem bardCoolPaletteMenuItem;
     private javax.swing.JRadioButtonMenuItem bardWarmPaletteMenuItem;
-    private javax.swing.JComboBox blockSizeCombo;
     private javax.swing.JRadioButtonMenuItem blueGreenPaletteMenuItem;
+    private javax.swing.JPanel cResultMountPanel;
     private javax.swing.JButton chooseButton;
     private javax.swing.JRadioButtonMenuItem classicPaletteMenuItem;
     private javax.swing.JMenuItem clearLogsItem;
     private javax.swing.JMenu colorPaletteMenu;
-    private javax.swing.JPanel controlsPanel;
+    private javax.swing.JRadioButtonMenuItem darculaThemeRbMenuItem;
+    private javax.swing.JRadioButtonMenuItem darkThemeRbMenuItem;
     private javax.swing.JLabel dataDirLabel;
     private javax.swing.JMenuItem deleteAllBenchmarksItem;
     private javax.swing.JMenuItem deleteDataMenuItem;
@@ -1396,80 +1073,52 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JRadioButtonMenuItem engLegacyRbMenuItem;
     private javax.swing.JRadioButtonMenuItem engModernRbMenuItem;
     private javax.swing.JScrollPane eventScrollPane;
+    private javax.swing.JMenuItem exitMenuItem;
+    private javax.swing.JMenuItem exportCsvMenuItem;
+    private javax.swing.JMenuItem exportJsonMenuItem;
+    private javax.swing.JMenu exportMenu;
+    private javax.swing.JMenuItem exportYmlMenuItem;
     private javax.swing.JMenu fileMenu;
+    private javax.swing.JCheckBoxMenuItem gcHintsCbMenuItem;
+    private javax.swing.JCheckBoxMenuItem gcRetryCbMenuItem;
     private javax.swing.JMenu helpMenu;
     private javax.swing.JMenu ioEngineMenu;
     private javax.swing.ButtonGroup ioEnginebuttonGroup;
-    private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel10;
-    private javax.swing.JLabel jLabel11;
-    private javax.swing.JLabel jLabel12;
-    private javax.swing.JLabel jLabel13;
-    private javax.swing.JLabel jLabel14;
-    private javax.swing.JLabel jLabel16;
-    private javax.swing.JLabel jLabel17;
-    private javax.swing.JLabel jLabel18;
-    private javax.swing.JLabel jLabel19;
-    private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel20;
-    private javax.swing.JLabel jLabel21;
-    private javax.swing.JLabel jLabel22;
-    private javax.swing.JLabel jLabel23;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel6;
+        private javax.swing.JLabel jLabel22;
     private javax.swing.JLabel jLabel7;
-    private javax.swing.JLabel jLabel8;
-    private javax.swing.JLabel jLabel9;
-    private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JPopupMenu.Separator jSeparator2;
     private javax.swing.JPopupMenu.Separator jSeparator3;
+    private javax.swing.JPopupMenu.Separator jSeparator4;
+    private javax.swing.JRadioButtonMenuItem lightThemeRbMenuItem;
     private javax.swing.JRadioButtonMenuItem localEndpointRbMenuItem;
     private javax.swing.JPanel locationPanel;
     private javax.swing.JTextField locationText;
     private javax.swing.JMenuBar menuBar;
-    private javax.swing.JPanel mountPanel;
     private javax.swing.JTextArea msgTextArea;
     private javax.swing.JCheckBoxMenuItem multiFileCheckBoxMenuItem;
-    private javax.swing.JComboBox numBlocksCombo;
-    private javax.swing.JComboBox numSamplesCombo;
-    private javax.swing.JComboBox numThreadsCombo;
     private javax.swing.JButton openLocButton;
     private javax.swing.JMenu optionMenu;
-    private javax.swing.JComboBox<BlockSequence> orderComboBox;
     private javax.swing.ButtonGroup palettebuttonGroup;
     private javax.swing.ButtonGroup portalEndpointButtonGroup;
     private javax.swing.JMenu portalEndpointMenu;
     private javax.swing.JCheckBoxMenuItem portalUploadMenuItem;
     private javax.swing.JRadioButtonMenuItem prodEndpointRbMenuItem;
-    private javax.swing.JComboBox profileCombo;
     private javax.swing.JPanel progressPanel;
-    private javax.swing.JLabel rAccessLabel;
-    private javax.swing.JLabel rAvgLabel;
-    private javax.swing.JLabel rIopsLabel;
-    private javax.swing.JLabel rMaxLabel;
-    private javax.swing.JLabel rMinLabel;
     private javax.swing.JMenuItem resetBenchmarkItem;
     private javax.swing.JMenuItem resetSequenceMenuItem;
     private jdiskmark.BenchmarkPanel runPanel;
-    private javax.swing.JLabel sampleSizeLabel;
     private javax.swing.ButtonGroup sectorAlignbuttonGroup;
     private javax.swing.JMenu sectorAlignmentMenu;
     private javax.swing.JCheckBoxMenuItem showAccessCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem showMaxMinCheckBoxMenuItem;
-    private javax.swing.JButton startButton;
+    private javax.swing.JCheckBoxMenuItem showSingleOpMenuItem;
     private javax.swing.JTabbedPane tabbedPane;
     private javax.swing.JRadioButtonMenuItem testEndpointRbMenuItem;
+    private javax.swing.ButtonGroup themeButtonGroup;
+    private javax.swing.JMenu themeMenu;
     private javax.swing.JProgressBar totalTxProgBar;
-    private javax.swing.JComboBox typeCombo;
-    private javax.swing.JLabel wAccessLabel;
-    private javax.swing.JLabel wAvgLabel;
-    private javax.swing.JLabel wIopsLabel;
-    private javax.swing.JLabel wMaxLabel;
-    private javax.swing.JLabel wMinLabel;
     private javax.swing.JCheckBoxMenuItem writeSyncCheckBoxMenuItem;
     // End of variables declaration//GEN-END:variables
 
@@ -1482,43 +1131,10 @@ public final class MainFrame extends javax.swing.JFrame {
     }
   
     public void applyTestParams() {
-        BenchmarkType mode = (BenchmarkType) typeCombo.getSelectedItem();
-        App.benchmarkType = mode;
-        App.blockSequence = (BlockSequence) orderComboBox.getSelectedItem();
-        App.numOfSamples = Integer.parseInt((String) numSamplesCombo.getSelectedItem());
-        App.numOfBlocks = Integer.parseInt((String) numBlocksCombo.getSelectedItem());
-        App.blockSizeKb = Integer.parseInt((String) blockSizeCombo.getSelectedItem());
-        App.numOfThreads = Integer.parseInt((String) numThreadsCombo.getSelectedItem());
-        sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-        totalTxProgBar.setString(String.valueOf(App.targetTxSizeKb()));
-    }
-    
-    public void refreshWriteMetrics() {
-        String value;
-        value = App.wMin == -1 ? "- -" : DF.format(App.wMin);
-        wMinLabel.setText(value);
-        value = App.wMax == -1 ? "- -" : DF.format(App.wMax);
-        wMaxLabel.setText(value);
-        value = App.wAvg == -1 ? "- -" : DF.format(App.wAvg);
-        wAvgLabel.setText(value);
-        value = App.wAcc == -1 ? "- -" : DF.format(App.wAcc);
-        wAccessLabel.setText(value);
-        value = App.wIops == -1 ? "- -" : String.valueOf(App.wIops);
-        wIopsLabel.setText(value);
-    }
-    
-    public void refreshReadMetrics() {
-        String value;
-        value = App.rMin == -1 ? "- -" : DF.format(App.rMin);
-        rMinLabel.setText(value);
-        value = App.rMax == -1 ? "- -" : DF.format(App.rMax);
-        rMaxLabel.setText(value);
-        value = App.rAvg == -1 ? "- -" : DF.format(App.rAvg);
-        rAvgLabel.setText(value);
-        value = App.rAcc == -1 ? "- -" : DF.format(App.rAcc);
-        rAccessLabel.setText(value);
-        value = App.rIops == -1 ? "- -" : String.valueOf(App.rIops);
-        rIopsLabel.setText(value);
+        if (Gui.controlPanel != null) {
+            Gui.controlPanel.applySettings();
+        }
+        totalTxProgBar.setString(String.valueOf(App.targetBenchmarkTxSizeKb()));
     }
     
     public javax.swing.JProgressBar getProgressBar() {
@@ -1536,26 +1152,20 @@ public final class MainFrame extends javax.swing.JFrame {
     public void adjustSensitivity() {
         switch (App.state) {
             case App.State.DISK_TEST_STATE -> {
-                startButton.setText("Cancel");
-                profileCombo.setEnabled(false);
-                orderComboBox.setEnabled(false);
-                blockSizeCombo.setEnabled(false);
-                numBlocksCombo.setEnabled(false);
-                numSamplesCombo.setEnabled(false);
-                typeCombo.setEnabled(false);
-                numThreadsCombo.setEnabled(false);
+                if (Gui.controlPanel != null) {
+                    Gui.controlPanel.startButton.setText("Cancel");
+                    Gui.controlPanel.enableControls(false);
+                }
                 resetBenchmarkItem.setEnabled(false);
+                exportMenu.setEnabled(false);
             }
             case App.State.IDLE_STATE -> {
-                startButton.setText("Start");
-                profileCombo.setEnabled(true);
-                orderComboBox.setEnabled(true);
-                blockSizeCombo.setEnabled(true);
-                numBlocksCombo.setEnabled(true);
-                numSamplesCombo.setEnabled(true);
-                typeCombo.setEnabled(true);
-                numThreadsCombo.setEnabled(true);
+                if (Gui.controlPanel != null) {
+                    Gui.controlPanel.startButton.setText("Start");
+                    Gui.controlPanel.enableControls(true);
+                }
                 resetBenchmarkItem.setEnabled(true);
+                exportMenu.setEnabled(App.benchmark != null);
             }
         }
     }

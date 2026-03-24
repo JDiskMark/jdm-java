@@ -30,6 +30,7 @@ public class Portal {
             socket.connect(new InetSocketAddress(host, port), 2000);
             return true;
         } catch (IOException e) {
+            App.err("IO Exception " + e.getMessage());
             return false; // Host unreachable or port closed
         }
     }

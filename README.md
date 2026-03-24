@@ -1,4 +1,4 @@
-# JDiskMark v0.6.3 beta (Windows/Mac/Linux)
+# JDiskMark v0.6.4 beta (Windows/Mac/Linux)
 
 Java Disk Benchmark Utility
 
@@ -14,7 +14,7 @@ Java Disk Benchmark Utility
 - multi threaded benchmarks
 - Default profiles
 - Command line interface
-- available in msi, deb, rpm and zip releses
+- available in msi, deb, rpm and zip releases
 
 ## Releases
 
@@ -40,26 +40,39 @@ To install use `sudo rpm -i jdiskmark-<rpm.version>.x86_64.rpm` and to remove us
 
 Note: the `rpm.version` is similar to the `version` but replaces hyphens with periods.
 
+### Flatpak Installer (.flatpak)
+
+The flatpak installer is a universal linux package that can be used on many distributions.
+
+To install download the `jdiskmark-<version>.flatpak` file and run:
+`flatpak install --user ./jdiskmark-<version>.flatpak`
+
+To run:
+`flatpak run net.jdiskmark.JDiskMark`
+
+To remove:
+`flatpak uninstall net.jdiskmark.JDiskMark`
+
 ### Zip Archive (.zip)
 
 The zip distribution does not require admin for installing but does require 
-Java 21 to be installed seperately.
+Java 25 to be installed seperately.
 
-1. Download and install [java 21](https://www.oracle.com/java/technologies/downloads/) from Oracle.
+1. Download and install [java 25](https://www.oracle.com/java/technologies/downloads/) from Oracle.
 
-2. Verify java 21 is installed:
+2. Verify java 25 is installed:
    ```
    C:\Users\username>java --version
-   java 21.0.1 2023-10-17 LTS
-   Java(TM) SE Runtime Environment (build 21.0.1+12-LTS-29)
-   Java HotSpot(TM) 64-Bit Server VM (build 21.0.1+12-LTS-29, mixed mode, sharing)
+   java 25.0.1 2025-10-21 LTS
+   Java(TM) SE Runtime Environment (build 25.0.1+8-LTS-27)
+   Java HotSpot(TM) 64-Bit Server VM (build 25.0.1+8-LTS-27, mixed mode, sharing)
    ```
 
 3. Extract release zip archive into desired location.
    ```
    Examples:  
-   /Users/username/jdiskmark-v0.6.0
-   /opt/jdiskmark-v0.6.0
+   /Users/username/jdiskmark-v0.6.3
+   /opt/jdiskmark-v0.6.3
    ```
 
 ## Launching as normal process
@@ -107,30 +120,46 @@ java -jar jdiskmark.jar -h
 display benchmark options
 
 ```
-java -jar jdiskmark.jar run -h
-Usage: jdm run [-chsv] [-b=<numOfBlocks>] [-e=<exportPath>] [-l=<locationDir>] [-n=<numOfSamples>]
-               [-o=<blockSequence>] [-t=<benchmarkType>] [-T=<numOfThreads>] [-z=<blockSizeKb>]
+java -jar .\jdiskmark.jar run -h
+Usage: jdiskmark run [-cdhmsvy] [-a=<sectorAlignment>] [-b=<numOfBlocks>] [-e=<exportPath>]
+                     [-i=<ioEngine>] [-l=<locationDir>] [-n=<numOfSamples>] [-o=<blockSequence>]
+                     [-p=<profile>] [-t=<benchmarkType>] [-T=<numOfThreads>] [-z=<blockSizeKb>]
 Starts a disk benchmark test with specified parameters.
+  -a, --alignment=<sectorAlignment>
+                            Sector alignment: NONE, ALIGN_512, ALIGN_4K, ALIGN_8K, ALIGN_16K,
+                              ALIGN_64K. (Profile default used if not specified)
   -b, --blocks=<numOfBlocks>
-                  Number of blocks/chunks per sample. (Default: 32)
-  -c, --clean     Remove existing JDiskMark data directory before starting.
-  -e, --export=<exportPath>
-                  The output file to export benchmark results in json format.
-  -h, --help      Display this help and exit.
+                            Number of blocks/chunks per sample. (Profile default used if not
+                              specified)
+  -c, --clean               Remove existing JDiskMark data directory before starting.
+  -d, --direct              Enable Direct I/O (bypass OS cache). Only works with MODERN engine.
+  -e, --export=<exportPath> The output file to export benchmark results in json format.
+  -h, --help                Display this help and exit.
+  -i, --io-engine=<ioEngine>
+                            I/O Engine: MODERN, LEGACY. (Profile default used if not specified)
   -l, --location=<locationDir>
-                  The directory path where test files will be created.
+                            The directory path where test files will be created.
+  -m, --multi-file          Create a new file for every sample instead of using one large file.
   -n, --samples=<numOfSamples>
-                  Total number of samples/files to write/read. (Default: 200)
+                            Total number of samples/files to write/read. (Profile default used if
+                              not specified)
   -o, --order=<blockSequence>
-                  Block order: Sequential, Random. (Default: SEQUENTIAL)
-  -s, --save      Enable saving the benchmark.
+                            Block order: SEQUENTIAL, RANDOM. (Profile default used if not specified)
+  -p, --profile=<profile>   Profile: QUICK_TEST, MAX_THROUGHPUT, HIGH_LOAD_RANDOM_T32,
+                              LOW_LOAD_RANDOM_T1, MAX_WRITE_STRESS, MEDIA_PLAYBACK,
+                              VIDEO_EXPORTING, PHOTO_LIBRARY. (Default: QUICK_TEST)
+  -s, --save                Enable saving the benchmark results to the database.
   -t, --type=<benchmarkType>
-                  Benchmark type: Read, Write, Read & Write. (Default: WRITE)
+                            Benchmark type: READ, WRITE, READ_WRITE. (Profile default used if not
+                              specified)
   -T, --threads=<numOfThreads>
-                  Number of threads to use for testing. (Default: 1)
-  -v, --verbose   Enable detailed logging.
+                            Number of threads to use for testing. (Profile default used if not
+                              specified)
+  -v, --verbose             Enable detailed logging.
+  -y, --write-sync          Enable Write Sync (flush to disk).
   -z, --block-size=<blockSizeKb>
-                  Size of a block/chunk in Kilobytes (KB). (Default: 512)
+                            Size of a block/chunk in Kilobytes (KB). (Profile default used if not
+                              specified)
 ```
 
 run benchmarks example syntax
@@ -139,6 +168,7 @@ run benchmarks example syntax
 java -jar jdiskmark.jar run -n 25 -t "Write"
 java -jar jdiskmark.jar run -l D:\ -n 25 -t "Read"
 java -jar jdiskmark.jar run -n 25 -t "Read & Write"
+java -jar jdiskmark.jar run -p MAX_WRITE_STRESS
 ```
 run example benchmark
 ```
@@ -172,7 +202,7 @@ IOPS: 28892857
 
 ## Development Environment
 
-jdiskmark client is developed with [NetBeans 21](https://netbeans.apache.org/front/main/download/) and [Java 21](https://www.oracle.com/java/technologies/downloads/)
+jdiskmark client is developed with [NetBeans 25](https://netbeans.apache.org/front/main/download/) and [Java 25](https://www.oracle.com/java/technologies/downloads/)
 
 ## Source
 
@@ -180,21 +210,34 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 
 ## Release Notes
 
-### v1.0.0 planned
+### v1.0.0 proposed
+- TODO: #16 pkg installer (MacOS) - tyler
 - TODO: #70 app icon - ian
 - TODO: #33 maven build - lane
-- TODO: #40 gui presentation issues - james
-- TODO: #78 throttle graphics render - valerio
-- TODO: #95 disk cache purging - valerio
-- TODO: #67 portal uploads - james
-    - #111 extract cfg from benchmark
-    - #117 user portal upload acknowledgement
-    - #118 test interlock or OAuth upload
+- TODO: #78 throttle graphics render - val
+- TODO: #95 disk cache purging - val
+- #67 portal uploads
+    - TODO: #117 user portal upload acknowledgement
+    - TODO: #118 test interlock or OAuth upload
+
+### v0.7.0
+- #115 flatpak installer
+- #134 zgc optimization
+- #44 gui benchmark export for json, yml, csv
+- #67 rename sample fields `bwt` > `bt`, `lat` > `lt`
+- #130 dark flatlaf
+- #131 default direct io
+- #132 fix read only benchmarks
+- #40 resolve cross platform gui laf
+- #121 common benchmark runner for cli and gui
+    - cli options for: profile, direct io, alignment
+    - new profiles: media playback, video export, photo library
+- #111 extract cfg model from benchmark
+- #42 replace `Custom Test` option w profileModified flag
 
 ### v0.6.3
 - #82 drive access notification
 - #107 sector aligned / direct io
-- #16 pkg installer (MacOS)
 - #15 deb installer (Ubuntu)
 - #98 rpm installer (Redhat)
 - #42 default profiles
@@ -277,10 +320,6 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 - response time histogram > distribution of IO
 - IOPS charts, review potential charts
 - help that describes features and controls
-
-## issues
-- read&write not consistant with order caps
-- bottom margins between table to bar to window edge should be the same
 
 ## Windows Paths Examples for Building
 

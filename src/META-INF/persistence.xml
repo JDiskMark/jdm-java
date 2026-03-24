@@ -8,8 +8,6 @@
       <property name="jakarta.persistence.jdbc.driver" value="org.apache.derby.jdbc.EmbeddedDriver"/>
       <!-- valid log levels default WARNING, FINE... -->
       <property name="eclipselink.logging.level" value="WARNING"/>
-      <!-- per gemini this is deprecated -->
-      <!--<property name="eclipselink.ddl-generation" value="create-or-extend-tables"/>-->
       <!-- this will drop and create a new db every time, useful for testing -->
       <!--<property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/>-->
       <property name="jakarta.persistence.schema-generation.database.action" value="create-or-extend-tables"/>

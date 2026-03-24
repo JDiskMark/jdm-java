@@ -1,7 +1,7 @@
-
 package jdiskmark;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -63,8 +63,8 @@ public class BenchmarkOperation implements Serializable {
     int numBlocks = 0;
     public int getNumBlocks() { return numBlocks; }
     @Column
-    int blockSize = 0;
-    public int getBlockSize() { return blockSize; }
+    long blockSize = 0;
+    public long getBlockSize() { return blockSize; }
     @Column
     int numSamples = 0;
     public int getNumSamples() { return numSamples; }
@@ -101,6 +101,12 @@ public class BenchmarkOperation implements Serializable {
     double accAvg = 0;
     @Column
     long iops = 0;
+    
+    // samples affected by background gc
+    @Convert(converter = GcRetriedSamplesConverter.class)
+    @Column(name = "gc_retried_samples", columnDefinition = "CLOB")
+    ArrayList<Integer> gcRetriedSamples = new ArrayList<>();
+    public List<Integer> getGcRetriedSamples() { return gcRetriedSamples; }
     
     @Override
     public String toString() {
@@ -143,31 +149,31 @@ public class BenchmarkOperation implements Serializable {
     }
     
     // display friendly methods
-    
+    @JsonIgnore
     public String getBlocksDisplay() {
         return numBlocks + " (" + blockSize + ")";
     }
-    
+    @JsonIgnore
     public String getStartTimeString() {
         return startTime.format(DATE_FORMAT);
     }
-    
+    @JsonIgnore
     public String getAccTimeDisplay() {
         return accAvg == -1? "- -" : DF.format(accAvg);
     }
-    
+    @JsonIgnore
     public String getBwMinDisplay() {
         return bwMin == -1 ? "- -" : DF.format(bwMin);
     }
-    
+    @JsonIgnore
     public String getBwMaxDisplay() {
         return bwMax == -1 ? "- -" : DF.format(bwMax);
     }
-    
+    @JsonIgnore
     public String getBwMinMaxDisplay() {
         return bwMax == -1 ? "- -" : DFT.format(bwMin) + "/" + DFT.format(bwMax);
     }
-    
+    @JsonIgnore
     public String getBwAvgDisplay() {
         return bwAvg == -1 ? "- -" : DF.format(bwAvg);
     }
@@ -182,14 +188,14 @@ public class BenchmarkOperation implements Serializable {
     
     public void setTotalOps(long totalOps) {
         // iops = operations / sec = ops / (elapsed ms / 1,000ms)
-        // Multiply by 1_000_000 to convert milliseconds to seconds
         if (App.verbose) {
             System.err.println("startTime=" + startTime);
             System.err.println("endTime=" + endTime);
         }
-        long diffMs = Duration.between(startTime, endTime).toMillis();
-        if (diffMs != 0) {
-            double iopsDouble = (double) (totalOps * 1_000_000) / (double) diffMs;
+        long diffNanos = Duration.between(startTime, endTime).toNanos();
+        if (diffNanos > 0) {
+            double seconds = diffNanos / 1_000_000_000.0;
+            double iopsDouble = totalOps / seconds;
             iops = Math.round(iopsDouble);
         }
     }
@@ -204,13 +210,18 @@ public class BenchmarkOperation implements Serializable {
         this.writeSyncEnabled = writeSyncEnabled;
     }
 
-    public long getIops() {
-        return iops;
-    }
-
-    public void setIops(long iops) {
-        this.iops = iops;
-    }
+    // primary results
+    
+    @JsonSerialize(using = RoundingSerializer.class)
+    public double getBandwidth() { return bwAvg; }
+    public void setBandwidth(double bandwidth) { this.bwAvg = bandwidth; }
+    
+    @JsonSerialize(using = RoundingSerializer.class)
+    public double getLatency() { return accAvg; }
+    public void setLatency(double latency) { this.accAvg = latency; }
+    
+    public long getIops() { return iops; }
+    public void setIops(long iops) { this.iops = iops; }
     
     // utility methods for collection
     

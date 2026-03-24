@@ -1,4 +1,3 @@
-
 package jdiskmark;
 
 import com.fasterxml.jackson.core.JsonProcessingException;

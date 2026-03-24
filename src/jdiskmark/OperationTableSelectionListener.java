@@ -1,4 +1,3 @@
-
 package jdiskmark;
 
 import javax.swing.JTable;
@@ -23,10 +22,19 @@ public class OperationTableSelectionListener implements ListSelectionListener {
         int selectedRow = table.getSelectedRow();
         if (selectedRow != -1) {
             String timeString = (String) table.getValueAt(selectedRow, START_TIME_COLUMN);
-            System.out.println("sel op start=" + timeString);
+            
+            // right now the table uses operation start time stamps
             BenchmarkOperation operation = App.operations.get(timeString);
             if (operation != null) {
-                Gui.loadOperation(operation);
+                App.operation = operation;
+                Benchmark benchmark = operation.getBenchmark();
+                App.benchmark = benchmark;
+                
+                if (Gui.showSingleOp) {
+                    Gui.loadOperation(operation);
+                } else {
+                    Gui.loadBenchmark(benchmark);
+                }
             }
         }
     }
