@@ -1,0 +1,122 @@
+name: macOS PKG Build
+
+on:
+  push:
+    branches: [ "dev", "release/**", "main" ]
+  pull_request:
+    branches: [ "dev", "release/**" ]
+  workflow_dispatch:
+
+jobs:
+  build-macos-pkg:
+    runs-on: macos-latest
+    permissions:
+      contents: read
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 25
+      uses: actions/setup-java@v4
+      with:
+        java-version: '25'
+        distribution: 'oracle'
+
+    - name: Cache Ant Dependencies
+      uses: actions/cache@v4
+      with:
+        path: libs
+        key: ${{ runner.os }}-ant-${{ hashFiles('build.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-ant-
+
+    - name: Install Ant
+      run: brew install ant
+
+    - name: Extract Version
+      id: version
+      run: |
+        VERSION=$(grep -oE 'name="version" value="[^"]+"' build.xml | head -1 | grep -oE '"[^"]+"\s*$' | tr -d '"' | tr -d ' ')
+        echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
+    # Detect whether signing secrets are configured.
+    # Secrets cannot be compared directly in `if` expressions, so we output
+    # boolean flags from this step and reference them in subsequent steps.
+    - name: Check Signing Secrets
+      id: secrets
+      env:
+        HAS_CERT: ${{ secrets.MACOS_CERTIFICATE != '' }}
+        HAS_NOTARY: ${{ secrets.APPLE_ID != '' }}
+      run: |
+        echo "has-cert=$HAS_CERT" >> "$GITHUB_OUTPUT"
+        echo "has-notary=$HAS_NOTARY" >> "$GITHUB_OUTPUT"
+
+    # Import the Developer ID certificate into a temporary keychain.
+    # Requires the following repository secrets to be configured:
+    #   MACOS_CERTIFICATE        – base64-encoded .p12 certificate file
+    #   MACOS_CERTIFICATE_PWD    – password for the .p12 certificate
+    #   MACOS_CERTIFICATE_NAME   – Developer ID Application name (signing identity)
+    - name: Import Signing Certificate
+      if: steps.secrets.outputs.has-cert == 'true'
+      env:
+        MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+        MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+      run: |
+        echo "$MACOS_CERTIFICATE" | base64 --decode > /tmp/certificate.p12
+        KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+        security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+        security import /tmp/certificate.p12 -k build.keychain \
+          -P "$MACOS_CERTIFICATE_PWD" -T /usr/bin/codesign -T /usr/bin/pkgbuild \
+          -T /usr/bin/productbuild
+        security set-key-partition-list -S apple-tool:,apple: \
+          -s -k "$KEYCHAIN_PASSWORD" build.keychain
+        rm /tmp/certificate.p12
+
+    # Build signed PKG installer when signing secrets are available.
+    # Requires the following additional repository secrets:
+    #   MACOS_CERTIFICATE_NAME   – Developer ID Application name (mac.signing.key.user.name)
+    #   MAC_PACKAGE_IDENTIFIER   – Reverse-DNS bundle ID (e.g. com.jdiskmark.jdiskmark)
+    #   SIGNING_IDENTITY         – Full signing identity string for codesign
+    - name: Build Signed PKG
+      if: steps.secrets.outputs.has-cert == 'true'
+      run: |
+        ant create-pkg \
+          -Dmac.signing.key.user.name="${{ secrets.MACOS_CERTIFICATE_NAME }}" \
+          -Dmac.package.identifier="${{ secrets.MAC_PACKAGE_IDENTIFIER }}" \
+          -Dsigning.identity="${{ secrets.SIGNING_IDENTITY }}"
+
+    # Notarize the signed PKG with Apple.
+    # Requires the following additional repository secrets:
+    #   APPLE_ID        – Apple ID email used for notarization
+    #   APPLE_PASSWORD  – App-specific password for that Apple ID
+    #   APPLE_TEAM_ID   – Apple Developer Team ID
+    - name: Notarize PKG
+      if: steps.secrets.outputs.has-cert == 'true' && steps.secrets.outputs.has-notary == 'true'
+      run: |
+        ant notarize-pkg \
+          -Dapple.id="${{ secrets.APPLE_ID }}" \
+          -Dapple.password="${{ secrets.APPLE_PASSWORD }}" \
+          -Dapple.team.id="${{ secrets.APPLE_TEAM_ID }}"
+
+    # Upload signed PKG if it was produced.
+    - name: Upload Signed PKG
+      if: steps.secrets.outputs.has-cert == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: jdiskmark-${{ steps.version.outputs.value }}.pkg
+        path: dist/*.pkg
+
+    # Build unsigned DMG when no signing certificate is available (e.g. fork PRs).
+    - name: Build Unsigned DMG
+      if: steps.secrets.outputs.has-cert != 'true'
+      run: ant create-dmg
+
+    - name: Upload Unsigned DMG
+      if: steps.secrets.outputs.has-cert != 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: jdiskmark-${{ steps.version.outputs.value }}.dmg
+        path: dist/*.dmg
