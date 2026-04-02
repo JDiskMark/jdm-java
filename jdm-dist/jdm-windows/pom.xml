@@ -33,8 +33,8 @@
                                 <argument>--dest</argument><argument>${project.build.directory}</argument>
                                 <argument>--name</argument><argument>jDiskMark</argument>
                                 <argument>--app-version</argument><argument>0.6.0</argument>
-                                <argument>--input</argument><argument>${project.basedir}/../../jdm-java/target</argument>
-                                <argument>--main-jar</argument><argument>jdm-java-${project.version}.jar</argument>
+                                <argument>--input</argument><argument>${project.basedir}/../../jdm-core/target</argument>
+                                <argument>--main-jar</argument><argument>jdm-core-${project.version}.jar</argument>
                                 <argument>--main-class</argument><argument>jdiskmark.App</argument>
                                 <argument>--win-shortcut</argument>
                                 <argument>--win-menu</argument>
