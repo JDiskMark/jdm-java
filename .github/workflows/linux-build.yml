@@ -1,47 +1,56 @@
-name: Linux DEB Build
+name: Build and Release
 
 on:
+  # This "**" means it will run on the branch you are currently testing
   push:
-    branches: [ "dev", "release/**", "main" ]
+    branches: [ "**" ]
   pull_request:
-    branches: [ "dev", "release/**" ]
-  workflow_dispatch:
+    branches: [ main ]
+  workflow_dispatch: # This adds a button to manually trigger the build
 
 jobs:
-  build-debian:
-    runs-on: ubuntu-latest
-
+  # --- WINDOWS MSI BUILD ---
+  build-windows:
+    runs-on: windows-latest
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 25
-      uses: actions/setup-java@v4
-      with:
-        java-version: '25'
-        distribution: 'oracle'
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
 
-    - name: Cache Ant Dependencies
-      uses: actions/cache@v4
-      with:
-        path: libs
-        key: ${{ runner.os }}-ant-${{ hashFiles('build.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-ant-
+      - name: Build Windows MSI
+        run: mvn clean install -P win-msi
 
-    - name: Install Build Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y ant ant-optional fakeroot dpkg-dev
+      - name: Upload MSI Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jdiskmark-windows-msi
+          path: jdm-dist/jdm-windows/target/*.msi
 
-    - name: Build Standard DEB
-      run: ant create-deb
+  # --- LINUX DEBIAN BUILD ---
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: Build Fat DEB
-      run: ant create-fat-deb
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
 
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: jdiskmark-debs
-        path: dist/*.deb
+      - name: Build Debian Package
+        run: mvn clean install -P linux-deb
+
+      - name: Upload DEB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jdiskmark-debian-pkg
+          path: jdm-dist/target/*.deb
