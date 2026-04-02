@@ -8,10 +8,11 @@
     <artifactId>jdiskmark-parent</artifactId>
     <version>0.6.0-SNAPSHOT</version>
     <packaging>pom</packaging>
+    <name>jDiskMark</name>
 
     <modules>
-        <module>jdm-java</module>
-        <module>packages</module> 
+        <module>jdm-core</module>
+        <module>jdm-dist</module> 
     </modules>
 
     <properties>
@@ -75,4 +76,33 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <profile>
+            <id>win-msi</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <modules>
+                <module>jdm-core</module>
+                <module>jdm-dist</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>linux-deb</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>linux</name>
+                </os>
+            </activation>
+            <modules>
+                <module>jdm-core</module>
+                <module>jdm-dist</module>
+            </modules>
+        </profile>
+    </profiles>
 </project>
