@@ -11,7 +11,7 @@
             <useProjectArtifact>false</useProjectArtifact>
             <outputDirectory>/</outputDirectory>
             <includes>
-                <include>jdiskmark:jdm-java</include>
+                <include>jdiskmark:jdm-core</include>
             </includes>
         </dependencySet>
     </dependencySets>
