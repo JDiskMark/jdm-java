@@ -24,7 +24,9 @@ jobs:
           cache: maven
 
       - name: Build Windows MSI
-        run: mvn clean install -P win-msi
+        # -pl tells Maven to only build the windows module
+        # -am tells Maven to also build any dependencies (like jdm-core)
+        run: mvn clean install -P win-msi -pl jdm-dist/jdm-windows -am
 
       - name: Upload MSI Artifact
         uses: actions/upload-artifact@v4
@@ -47,10 +49,13 @@ jobs:
           cache: maven
 
       - name: Build Debian Package
-        run: mvn clean install -P linux-deb
+        # -pl tells Maven to only build the zip/linux module
+        # -am tells Maven to also build any dependencies (like jdm-core)
+        run: mvn clean install -P linux-deb -pl jdm-dist/jdm-zip -am
 
       - name: Upload DEB Artifact
         uses: actions/upload-artifact@v4
         with:
           name: jdiskmark-debian-pkg
-          path: jdm-dist/target/*.deb
+          # Updated path to match the jdm-zip target folder
+          path: jdm-dist/jdm-zip/target/*.deb
