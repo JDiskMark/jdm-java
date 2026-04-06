@@ -32,6 +32,7 @@
                                 <delete dir="${project.basedir}/../../jdm-core/target/generated-sources"/>
                                 <delete dir="${project.basedir}/../../jdm-core/target/maven-archiver"/>
                                 <delete dir="${project.basedir}/../../jdm-core/target/maven-status"/>
+                                <delete dir="${project.basedir}/../../jdm-core/target/antrun"/>
                             </target>
                         </configuration>
                     </execution>
@@ -45,7 +46,7 @@
                 <executions>
                     <execution>
                         <id>build-msi</id>
-                        <phase>install</phase>
+                        <phase>install</phase> 
                         <goals>
                             <goal>exec</goal>
                         </goals>
