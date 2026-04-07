@@ -42,13 +42,10 @@ public class UtilOs {
     /**
      * This method became obsolete with an updated version of windows 10. 
      * A newer version of the method is used.
-     * 
-     * Get the drive model description based on the windows drive letter. 
+     * * Get the drive model description based on the windows drive letter. 
      * Uses the powershell script disk-model.ps1
-     * 
-     * This appears to be the output of the original ps script before the update:
-     * 
-     * d:\>powershell -ExecutionPolicy ByPass -File tmp.ps1
+     * * This appears to be the output of the original ps script before the update:
+     * * d:\>powershell -ExecutionPolicy ByPass -File tmp.ps1
 
         DiskSize    : 128034708480
         RawSize     : 117894545408
@@ -72,8 +69,7 @@ public class UtilOs {
 
      * We should be able to modify the new parser to detect the 
      * output type and adjust parsing as needed.
-     * 
-     * @param driveLetter The single character drive letter.
+     * * @param driveLetter The single character drive letter.
      * @return Disk Drive Model description or empty string if not found.
      */
     @Deprecated
@@ -124,17 +120,13 @@ public class UtilOs {
     /**
      * Get the drive model description based on the windows drive letter. 
      * Uses the powershell script disk-model.ps1
-     * 
-     * Parses output such as the following:
-     * 
-     * DiskModel                          DriveLetter
+     * * Parses output such as the following:
+     * * DiskModel                          DriveLetter
      * ---------                          -----------
      * ST31500341AS ATA Device            D:         
      * Samsung SSD 850 EVO 1TB ATA Device C:         
-     * 
-     * Tested on Windows 10 on 3/6/2017
-     * 
-     * @param driveLetter as a string
+     * * Tested on Windows 10 on 3/6/2017
+     * * @param driveLetter as a string
      * @return the model as a string
      */
     public static String getDriveModelWindows(String driveLetter) {
@@ -178,7 +170,9 @@ public class UtilOs {
         try {
             ProcessBuilder pb = new ProcessBuilder("powershell", "-ExecutionPolicy", 
                     "ByPass", "-File", capacityPsFile.getAbsolutePath(), driveLetter);
-            pb.redirectErrorStream(true);
+            
+            // FIX: Set to false so error messages don't get mixed into the JSON output
+            pb.redirectErrorStream(false); 
             
             final Process process = pb.start();
             
@@ -201,15 +195,24 @@ public class UtilOs {
                 while ((line = reader.readLine()) != null) {
                     jsonBuilder.append(line);
                 }
+                
+                String jsonOutput = jsonBuilder.toString().trim();
+                
+                // FIX: Guard clause. Only parse if it actually looks like JSON.
+                if (jsonOutput.isEmpty() || !jsonOutput.startsWith("{")) {
+                    LOGGER.log(Level.WARNING, "PowerShell returned non-JSON data: {0}", jsonOutput);
+                    return usageInfo; // Returns default 0 values to prevent a UI crash
+                }
+                
                 ObjectMapper objectMapper = new ObjectMapper();
-                JsonNode rootNode = objectMapper.readTree(jsonBuilder.toString());
+                JsonNode rootNode = objectMapper.readTree(jsonOutput);
                 usageInfo.totalGb = rootNode.get("TotalSpaceGb").asDouble(); 
                 usageInfo.freeGb = rootNode.get("FreeSpaceGb").asDouble();
                 usageInfo.usedGb = rootNode.get("UsedSpaceGb").asDouble();
                 usageInfo.calcPercentageUsed(); 
             }
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "IO exception retrieving disk capacity: " + e.getLocalizedMessage(), e);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Exception retrieving disk capacity: " + e.getLocalizedMessage(), e);
         }
         return usageInfo;
     }
@@ -217,14 +220,12 @@ public class UtilOs {
     /**
      * On Linux OS get the device path when given a file path.
      * eg.  filePath = /home/james/Desktop/jdm-data
-     *      devicePath = /dev/sda
-     *      
-     * Example command and output:
+     * devicePath = /dev/sda
+     * * Example command and output:
      * $ df /home/james/jdm-data
      * Filesystem     1K-blocks     Used Available Use% Mounted on
      * /dev/sda2      238737052 54179492 172357524  24% /
-     * 
-     * @param path the file path
+     * * @param path the file path
      * @return the device path
      */
     static public String getPartitionFromFilePathLinux(Path path) {
@@ -287,13 +288,11 @@ public class UtilOs {
     /**
      * On Linux OS use the lsblk command to get the disk model number for a 
      * specific Device ie. /dev/sda
-     * 
-     * Example output of command:
+     * * Example output of command:
      * ~$ lsblk /dev/sda --output MODEL
      * MODEL
      * Samsung SSD 860 EVO M.2 250GB
-     * 
-     * @param devicePath path of the device
+     * * @param devicePath path of the device
      * @return the disk model number
      */
     static public String getDeviceModelLinux(String devicePath) {
@@ -320,24 +319,19 @@ public class UtilOs {
     /**
      * On Linux OS use the lsblk command to get the disk size for a 
      * specific Device ie. /dev/sda
-     * 
-     * The full command is:
-     * 
-     * $ lsblk /dev/sda
+     * * The full command is:
+     * * $ lsblk /dev/sda
      * NAME   MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
      * sda      8:0    0 232.9G  0 disk 
      * ├─sda1   8:1    0   512M  0 part /boot/efi
      * └─sda2   8:2    0 232.4G  0 part /var/snap/firefox/common/host-hunspell
-     * 
-     * Retrieving just the size column is:
-     * 
-     * $ lsblk /dev/sda --output SIZE
-     *   SIZE
+     * * Retrieving just the size column is:
+     * * $ lsblk /dev/sda --output SIZE
+     * SIZE
      * 232.9G
-     *   512M
+     * 512M
      * 232.4G
-     * 
-     * @param devicePath path of the device
+     * * @param devicePath path of the device
      * @return the size of the device
      */
     static public String getDeviceSizeLinux(String devicePath) {
@@ -661,8 +655,7 @@ public class UtilOs {
      * $ df -h /home/james
      * Filesystem      Size  Used Avail Use% Mounted on
      * /dev/sda2       228G   52G  165G  24% /
-     * 
-     * @param outputLines
+     * * @param outputLines
      * @return usage object
      */
     static DiskUsageInfo parseDiskUsageInfoLinux(List<String> outputLines) {
@@ -680,9 +673,8 @@ public class UtilOs {
     /**
      * $ df -h /Users/james
      * Filesystem     Size   Used  Avail Capacity iused               ifree %iused  Mounted on
-     * /dev/disk1s1  466Gi  191Gi  273Gi    42%  947563 9223372036853828244    0%   /
-     * 
-     * @param outputLines
+     * /dev/disk1s1  466Gi  191Gi  273Gi    42%  947563 9223372036853828244   0%   /
+     * * @param outputLines
      * @return usage object
      */
     static DiskUsageInfo parseDiskUsageInfoMacOs(List<String> outputLines) {
@@ -699,8 +691,7 @@ public class UtilOs {
     
     /**
      * This parses disk usage on windows, tested on w11.
-     * 
-     * >cmd.exe /c fsutil volume diskfree c:\Users\james
+     * * >cmd.exe /c fsutil volume diskfree c:\Users\james
      * Total free bytes                :  35,466,014,720 ( 33.0 GB)
      * Total bytes                     : 511,324,794,880 (476.2 GB)
      * Total quota free bytes          :  35,466,014,720 ( 33.0 GB)
@@ -711,8 +702,7 @@ public class UtilOs {
      * Volume storage reserved bytes   :               0 (  0.0 KB)
      * Available committed bytes       :               0 (  0.0 KB)
      * Pool available bytes            :               0 (  0.0 KB)
-     * 
-     * @param outputLines lines to parse
+     * * @param outputLines lines to parse
      * @return A data structure with disk usage
      */
     @Deprecated
