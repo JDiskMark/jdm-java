@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <persistence version="3.1" xmlns="https://jakarta.ee/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd">
   <persistence-unit name="JDiskMarkPU" transaction-type="RESOURCE_LOCAL">
-    <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+    
+    <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
     <exclude-unlisted-classes>false</exclude-unlisted-classes>
+    
     <properties>
       <property name="jakarta.persistence.jdbc.url" value="jdbc:derby:derbyDB;create=true"/>
       <property name="jakarta.persistence.jdbc.driver" value="org.apache.derby.jdbc.EmbeddedDriver"/>
-      <!-- valid log levels default WARNING, FINE... -->
-      <property name="eclipselink.logging.level" value="WARNING"/>
-      <!-- this will drop and create a new db every time, useful for testing -->
-      <!--<property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/>-->
-      <property name="jakarta.persistence.schema-generation.database.action" value="create-or-extend-tables"/>
+      
+      <property name="hibernate.dialect" value="org.hibernate.dialect.DerbyDialect"/>
+      
+      <property name="hibernate.hbm2ddl.auto" value="update"/>
+      
+      <property name="hibernate.show_sql" value="false"/>
     </properties>
+    
   </persistence-unit>
 </persistence>
