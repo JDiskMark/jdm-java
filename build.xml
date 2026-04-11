@@ -317,7 +317,7 @@ Version: ${deb.version}
 Section: utils
 Priority: optional
 Architecture: all
-Depends: openjdk-25-jre
+Depends: openjdk-25-jre, libasound2t64 | libasound2
 Maintainer: JDiskMark Team
 Description: JDiskMark - Disk Benchmark Utility
  JDiskMark is a cross-platform disk benchmark utility written in Java.
@@ -406,6 +406,9 @@ Categories=Utility;System;</echo>
             
             <arg value="--linux-package-name" />
             <arg value="${pkg.name}" />
+
+            <arg value="--linux-package-deps" />
+            <arg value="libasound2t64 | libasound2" />
         </exec>
     </target>
     
