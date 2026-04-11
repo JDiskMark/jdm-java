@@ -5,10 +5,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>jdiskmark</groupId>
-    <artifactId>jdiskmark-parent</artifactId>
-    <version>0.6.0-SNAPSHOT</version>
+    <artifactId>jdm-java</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>jDiskMark</name>
+    <name>Java Disk Benchmark Utility</name>
 
     <modules>
         <module>jdm-core</module>
@@ -17,7 +17,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.release>22</maven.compiler.release>
+        <maven.compiler.release>25</maven.compiler.release>
         <exec.mainClass>jdiskmark.App</exec.mainClass>
         <jackson.version>2.17.0</jackson.version>
 

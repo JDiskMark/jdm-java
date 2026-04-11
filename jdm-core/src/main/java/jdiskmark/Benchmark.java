@@ -19,6 +19,8 @@ import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.io.IOException;
 import java.io.Serializable;
 import java.text.DecimalFormat;
@@ -109,6 +111,7 @@ public class Benchmark implements Serializable {
      */
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @JdbcTypeCode(SqlTypes.VARCHAR) // Hibernate 6 changed UUID default to VARBINARY; keep VARCHAR to match existing Derby schema
     // --- JSON Serialization for MERN App ---
 
     /**
@@ -116,7 +119,8 @@ public class Benchmark implements Serializable {
      * the key name for this field is "_id", matching the standard MongoDB primary key convention.
      *
      * @JsonSerialize(using = UuidToMongoIdSerializer.class): Tells Jackson to use
-     * our custom inner class serializer to handle the conversion logic of UUID -> JSON string.
+     * our custom inner class serializer to handle the conversion logic of UUID ->
+     * JSON string.
      */
     @JsonProperty("_id")
     @JsonSerialize(using = UuidToMongoIdSerializer.class)

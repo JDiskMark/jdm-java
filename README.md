@@ -198,14 +198,18 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 ## Release Notes
 
 ### v1.0.0 proposed
+- simple drive selection
+- s.m.a.r.t. diagnostics
+
+### v0.8.0
 - TODO: #16 pkg installer (MacOS) - tyler
 - TODO: #70 app icon - ian
 - TODO: #33 maven build - lane
 - TODO: #78 throttle graphics render - val
 - TODO: #95 disk cache purging - val
-- #67 portal uploads
-    - TODO: #117 user portal upload acknowledgement
-    - TODO: #118 test interlock or OAuth upload
+- TODO: #67 test portal uploads (no auth)
+- TODO: #117 user portal upload acknowledgement
+- TODO: #118 test interlock or OAuth upload
 
 ### v0.7.0
 - #134 zgc optimization
