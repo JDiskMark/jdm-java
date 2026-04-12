@@ -486,4 +486,66 @@ Categories=Utility;System;</echo>
             <arg value="${pkg.name}" />
         </exec>
     </target>
+
+    <!-- Flatpak packaging properties -->
+    <property name="flatpak.manifest.dir" value="pkg/flatpak"/>
+    <property name="flatpak.app.id" value="net.jdiskmark.JDiskMark"/>
+    <property name="flatpak.build.dir" value="flatpak-build"/>
+    <property name="flatpak.repo.dir" value="flatpak-repo"/>
+    <property name="flatpak.bundle.file" value="dist/${pkg.name}-${version}.flatpak"/>
+    <property name="flatpak.staging.dir" value="dist/flatpak-staging"/>
+
+    <target name="create-flatpak" depends="clean, -pre-jar, jar, -post-jar, -prepare-jpackage-input-jar"
+            description="Build Flatpak bundle using flatpak-builder">
+        <condition property="is.linux">
+            <os name="Linux"/>
+        </condition>
+        <fail unless="is.linux" message="The create-flatpak target can only be run on Linux."/>
+
+        <!-- Verify flatpak-builder is available -->
+        <exec executable="which" failonerror="true" outputproperty="flatpak.builder.path">
+            <arg value="flatpak-builder"/>
+        </exec>
+
+        <!-- Ensure the dist output directory exists -->
+        <mkdir dir="dist"/>
+
+        <!-- Prepare a version-agnostic staging directory for the flatpak builder -->
+        <delete dir="${flatpak.staging.dir}" failonerror="false"/>
+        <mkdir dir="${flatpak.staging.dir}"/>
+        <copy file="dist/${release.dir}/${pkg.name}.jar" tofile="${flatpak.staging.dir}/jdiskmark.jar" failonerror="true"/>
+
+        <!-- Run flatpak-builder to assemble the Flatpak from the manifest -->
+        <exec executable="flatpak-builder" failonerror="true">
+            <arg value="--user"/>
+            <arg value="--install-deps-from=flathub"/>
+            <arg value="--assumeyes"/>
+            <arg value="--force-clean"/>
+            <arg value="--repo=${flatpak.repo.dir}"/>
+            <arg value="${flatpak.build.dir}"/>
+            <arg value="${flatpak.manifest.dir}/${flatpak.app.id}.yml"/>
+        </exec>
+
+        <!-- Export a single-file Flatpak bundle from the local repo. -->
+        <exec executable="flatpak" failonerror="true">
+            <arg value="build-bundle"/>
+            <arg value="${flatpak.repo.dir}"/>
+            <arg value="${flatpak.bundle.file}"/>
+            <arg value="${flatpak.app.id}"/>
+        </exec>
+
+        <!-- Clean up intermediate build artifacts.
+             Use rm -rf instead of <delete> because flatpak-builder creates
+             special files (e.g. var/run/adduser) that Ant cannot delete. -->
+        <exec executable="rm" failonerror="false">
+            <arg value="-rf"/>
+            <arg value="${flatpak.build.dir}"/>
+        </exec>
+        <exec executable="rm" failonerror="false">
+            <arg value="-rf"/>
+            <arg value="${flatpak.repo.dir}"/>
+        </exec>
+
+        <echo message="Flatpak bundle created: ${flatpak.bundle.file}"/>
+    </target>
 </project>

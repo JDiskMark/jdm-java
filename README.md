@@ -40,6 +40,19 @@ To install use `sudo rpm -i jdiskmark-<rpm.version>.x86_64.rpm` and to remove us
 
 Note: the `rpm.version` is similar to the `version` but replaces hyphens with periods.
 
+### Flatpak Installer (.flatpak)
+
+The flatpak installer is a universal linux package that can be used on many distributions.
+
+To install download the `jdiskmark-<version>.flatpak` file and run:
+`flatpak install --user ./jdiskmark-<version>.flatpak`
+
+To run:
+`flatpak run net.jdiskmark.JDiskMark`
+
+To remove:
+`flatpak uninstall net.jdiskmark.JDiskMark`
+
 ### Zip Archive (.zip)
 
 The zip distribution does not require admin for installing but does require 
@@ -212,6 +225,7 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 - TODO: #118 test interlock or OAuth upload
 
 ### v0.7.0
+- #115 flatpak installer
 - #134 zgc optimization
 - #44 gui benchmark export for json, yml, csv
 - #67 rename sample fields `bwt` > `bt`, `lat` > `lt`
@@ -310,10 +324,6 @@ Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
 - response time histogram > distribution of IO
 - IOPS charts, review potential charts
 - help that describes features and controls
-
-## issues
-- read&write not consistant with order caps
-- bottom margins between table to bar to window edge should be the same
 
 ## Windows Paths Examples for Building
 

@@ -1,0 +1,119 @@
+app-id: net.jdiskmark.JDiskMark
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.openjdk25
+
+command: jdiskmark
+
+finish-args:
+  # X11 / Wayland display access
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  # Access to all storage devices for disk benchmarking
+  - --device=all
+  # Read/write access to the home directory for selecting benchmark paths
+  - --filesystem=home
+  # Allow access to removable media (SD cards, external drives)
+  - --filesystem=/media:rw
+  - --filesystem=/run/media:rw
+
+modules:
+  # Install OpenJDK 25 JRE from the SDK extension into /app/jre
+  - name: openjdk
+    buildsystem: simple
+    build-commands:
+      - /usr/lib/sdk/openjdk25/install.sh
+
+  # Package the pre-built JDiskMark JAR and its library dependencies.
+  # Run 'ant jar' (or 'ant create-flatpak') before invoking flatpak-builder.
+  - name: jdiskmark
+    buildsystem: simple
+    sources:
+      # Main application JAR — built by 'ant jar' prior to flatpak-builder
+      - type: file
+        path: ../../dist/flatpak-staging/jdiskmark.jar
+      # Runtime library dependencies from the libs/ directory
+      - type: file
+        path: ../../libs/derby.jar
+      - type: file
+        path: ../../libs/eclipselink.jar
+      - type: file
+        path: ../../libs/flatlaf-3.7.jar
+      - type: file
+        path: ../../libs/hibernate-jpamodelgen-jakarta-5.6.15.Final.jar
+      - type: file
+        path: ../../libs/jackson-annotations-2.16.1.jar
+      - type: file
+        path: ../../libs/jackson-core-2.16.1.jar
+      - type: file
+        path: ../../libs/jackson-databind-2.16.1.jar
+      - type: file
+        path: ../../libs/jackson-dataformat-csv-2.16.1.jar
+      - type: file
+        path: ../../libs/jackson-dataformat-yaml-2.16.1.jar
+      - type: file
+        path: ../../libs/jackson-datatype-jsr310-2.16.1.jar
+      - type: file
+        path: ../../libs/jakarta.persistence-api-3.2.0-M1.jar
+      - type: file
+        path: ../../libs/jakarta.xml.bind-api-4.0.1.jar
+      - type: file
+        path: ../../libs/javax.annotation-3.1.2.2.jar
+      - type: file
+        path: ../../libs/jcommon-1.0.21.jar
+      - type: file
+        path: ../../libs/jfreechart-1.0.17.jar
+      - type: file
+        path: ../../libs/miglayout-core-11.4.2.jar
+      - type: file
+        path: ../../libs/miglayout-swing-11.4.2.jar
+      - type: file
+        path: ../../libs/picocli-4.7.7.jar
+      - type: file
+        path: ../../libs/snakeyaml-2.2.jar
+      # Launcher script, desktop entry, AppStream metadata and icons
+      - type: file
+        path: jdiskmark.sh
+      - type: file
+        path: net.jdiskmark.JDiskMark.desktop
+      - type: file
+        path: net.jdiskmark.JDiskMark.metainfo.xml
+      - type: file
+        path: net.jdiskmark.JDiskMark.png
+      - type: file
+        path: net.jdiskmark.JDiskMark.64x64.png
+    build-commands:
+      # Install application JAR
+      - install -Dm644 jdiskmark.jar /app/lib/jdiskmark/jdiskmark.jar
+      # Install library JARs
+      - install -Dm644 derby.jar /app/lib/jdiskmark/libs/derby.jar
+      - install -Dm644 eclipselink.jar /app/lib/jdiskmark/libs/eclipselink.jar
+      - install -Dm644 flatlaf-3.7.jar /app/lib/jdiskmark/libs/flatlaf-3.7.jar
+      - install -Dm644 hibernate-jpamodelgen-jakarta-5.6.15.Final.jar /app/lib/jdiskmark/libs/hibernate-jpamodelgen-jakarta-5.6.15.Final.jar
+      - install -Dm644 jackson-annotations-2.16.1.jar /app/lib/jdiskmark/libs/jackson-annotations-2.16.1.jar
+      - install -Dm644 jackson-core-2.16.1.jar /app/lib/jdiskmark/libs/jackson-core-2.16.1.jar
+      - install -Dm644 jackson-databind-2.16.1.jar /app/lib/jdiskmark/libs/jackson-databind-2.16.1.jar
+      - install -Dm644 jackson-dataformat-csv-2.16.1.jar /app/lib/jdiskmark/libs/jackson-dataformat-csv-2.16.1.jar
+      - install -Dm644 jackson-dataformat-yaml-2.16.1.jar /app/lib/jdiskmark/libs/jackson-dataformat-yaml-2.16.1.jar
+      - install -Dm644 jackson-datatype-jsr310-2.16.1.jar /app/lib/jdiskmark/libs/jackson-datatype-jsr310-2.16.1.jar
+      - install -Dm644 jakarta.persistence-api-3.2.0-M1.jar /app/lib/jdiskmark/libs/jakarta.persistence-api-3.2.0-M1.jar
+      - install -Dm644 jakarta.xml.bind-api-4.0.1.jar /app/lib/jdiskmark/libs/jakarta.xml.bind-api-4.0.1.jar
+      - install -Dm644 javax.annotation-3.1.2.2.jar /app/lib/jdiskmark/libs/javax.annotation-3.1.2.2.jar
+      - install -Dm644 jcommon-1.0.21.jar /app/lib/jdiskmark/libs/jcommon-1.0.21.jar
+      - install -Dm644 jfreechart-1.0.17.jar /app/lib/jdiskmark/libs/jfreechart-1.0.17.jar
+      - install -Dm644 miglayout-core-11.4.2.jar /app/lib/jdiskmark/libs/miglayout-core-11.4.2.jar
+      - install -Dm644 miglayout-swing-11.4.2.jar /app/lib/jdiskmark/libs/miglayout-swing-11.4.2.jar
+      - install -Dm644 picocli-4.7.7.jar /app/lib/jdiskmark/libs/picocli-4.7.7.jar
+      - install -Dm644 snakeyaml-2.2.jar /app/lib/jdiskmark/libs/snakeyaml-2.2.jar
+      # Install launcher wrapper script
+      - install -Dm755 jdiskmark.sh /app/bin/jdiskmark
+      # Install desktop entry
+      - install -Dm644 net.jdiskmark.JDiskMark.desktop /app/share/applications/net.jdiskmark.JDiskMark.desktop
+      # Install AppStream metadata
+      - install -Dm644 net.jdiskmark.JDiskMark.metainfo.xml /app/share/metainfo/net.jdiskmark.JDiskMark.metainfo.xml
+      # Install icons (128x128 and 64x64)
+      - install -Dm644 net.jdiskmark.JDiskMark.png /app/share/icons/hicolor/128x128/apps/net.jdiskmark.JDiskMark.png
+      - install -Dm644 net.jdiskmark.JDiskMark.64x64.png /app/share/icons/hicolor/64x64/apps/net.jdiskmark.JDiskMark.png
