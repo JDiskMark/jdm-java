@@ -286,6 +286,9 @@
         <delete failonerror="false">
             <fileset dir="${dist.dir}/${release.dir}" includes="*.pkg,*.exe,*.msi,*.ps1"/>
         </delete>
+        <!-- Remove any stale app-image dir that may have been swept into the
+             input dir by a prior -post-jar run; jpackage would bundle it. -->
+        <delete dir="${dist.dir}/${release.dir}/${pkg.name}-${version}-app-image" failonerror="false"/>
 
         <!-- Step 1: Sign FlatLaf native dylibs BEFORE packaging.
              They live inside a JAR so codesign deep cannot reach them at
@@ -361,8 +364,25 @@
             <arg value="find &quot;${pkg.app.bundle}/Contents/runtime&quot; -type f -perm +111 ! -name '*.dylib' ! -name '*.so' | while read f; do if file &quot;$f&quot; | grep -q Mach-O; then codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign &quot;${signing.identity}&quot; &quot;$f&quot;; fi; done"/>
         </exec>
 
-        <!-- Step 3c: Sign the main launcher binary. -->
-        <echo message="Step 3c: Signing main launcher..."/>
+        <!-- Step 3c: Seal the bundled JDK runtime as a sub-bundle.
+             The runtime has a Contents/ structure (MacOS/, Home/, Info.plist) that
+             codesign treats as a nested bundle. Individual dylibs/executables inside
+             it were signed in 3a/3b, but the runtime sub-bundle itself needs its own
+             seal before the outer app bundle seal can reference it cleanly. Without
+             this, the outer bundle seal sees "a sealed resource is missing or invalid"
+             on Contents/runtime/Contents/MacOS/libjli.dylib. -->
+        <echo message="Step 3c: Sealing runtime sub-bundle..."/>
+        <exec executable="codesign" failonerror="true">
+            <arg value="--force"/>
+            <arg value="--options"/><arg value="runtime"/>
+            <arg value="--entitlements"/><arg value="entitlements.plist"/>
+            <arg value="--timestamp"/>
+            <arg value="--sign"/><arg value="${signing.identity}"/>
+            <arg value="${pkg.app.bundle}/Contents/runtime"/>
+        </exec>
+
+        <!-- Step 3d: Sign the main launcher binary. -->
+        <echo message="Step 3d: Signing main launcher..."/>
         <exec executable="codesign" failonerror="true">
             <arg value="--force"/>
             <arg value="--options"/><arg value="runtime"/>
@@ -372,8 +392,8 @@
             <arg value="${pkg.app.bundle}/Contents/MacOS/${pkg.name}-${version}"/>
         </exec>
 
-        <!-- Step 3d: Seal the app bundle. -->
-        <echo message="Step 3d: Sealing app bundle..."/>
+        <!-- Step 3e: Seal the app bundle. -->
+        <echo message="Step 3e: Sealing app bundle..."/>
         <exec executable="codesign" failonerror="true">
             <arg value="--force"/>
             <arg value="--options"/><arg value="runtime"/>
@@ -383,28 +403,31 @@
             <arg value="${pkg.app.bundle}"/>
         </exec>
 
-        <!-- Step 4: Build unsigned PKG from the signed app-image.
-             NO mac-sign: jpackage would re-sign the embedded app bundle
-             and strip the entitlements we just applied. -->
-        <echo message="Step 4: Building PKG from signed app-image..."/>
-        <exec executable="jpackage" failonerror="true">
-            <arg value="--type"/><arg value="pkg"/>
-            <arg value="--app-image"/><arg value="${pkg.app.bundle}"/>
-            <arg value="--name"/><arg value="${pkg.name}-${version}"/>
-            <arg value="--app-version"/><arg value="${dmg.version}"/>
-            <arg value="--dest"/><arg value="${dist.dir}"/>
-            <arg value="--resource-dir"/><arg value="pkg/macos/images"/>
-            <arg value="--mac-package-identifier"/><arg value="${mac.package.identifier}"/>
-            <arg value="--mac-package-name"/><arg value="JDiskMark"/>
+        <!-- Step 4: Build unsigned PKG from the signed app-image using pkgbuild + productbuild.
+             jpackage type pkg re-signs the entire app bundle ad-hoc (even without mac-sign),
+             which wipes the Developer ID Application signatures applied in step 3. -->
+        <echo message="Step 4a: Building component PKG..."/>
+        <property name="component.pkg" value="${dist.dir}/${pkg.name}-${version}-component.pkg"/>
+        <delete file="${component.pkg}" failonerror="false"/>
+        <exec executable="pkgbuild" failonerror="true">
+            <arg value="--component"/><arg value="${pkg.app.bundle}"/>
+            <arg value="--install-location"/><arg value="/Applications"/>
+            <arg value="--identifier"/><arg value="${mac.package.identifier}"/>
+            <arg value="--version"/><arg value="${dmg.version}"/>
+            <arg value="--scripts"/><arg value="pkg/macos/scripts"/>
+            <arg value="${component.pkg}"/>
         </exec>
+        <echo message="Step 4b: Building distribution PKG..."/>
+        <exec executable="productbuild" failonerror="true">
+            <arg value="--package"/><arg value="${component.pkg}"/>
+            <arg value="${unsigned.pkg}"/>
+        </exec>
+        <delete file="${component.pkg}"/>
 
         <!-- Step 5: Sign the PKG installer with Developer ID Installer cert.
              productsign signs the outer package; the app bundle inside
              keeps its Developer ID Application signature from step 3. -->
         <echo message="Step 5: Signing PKG installer with Developer ID Installer..."/>
-        <move file="${dist.dir}/${jpackage.output.pkg.defaultname}"
-              tofile="${unsigned.pkg}"
-              overwrite="true"/>
         <exec executable="productsign" failonerror="true">
             <arg value="--sign"/><arg value="${mac.installer.signing.identity}"/>
             <arg value="--timestamp"/>

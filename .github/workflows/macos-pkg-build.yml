@@ -1,0 +1,88 @@
+name: macOS PKG Build & Notarize
+
+on:
+  push:
+    branches: [ "release/**" ]
+  workflow_dispatch:
+
+jobs:
+  build-pkg:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 25
+      uses: actions/setup-java@v4
+      with:
+        java-version: '25'
+        distribution: 'oracle'
+
+    - name: Install Ant
+      run: brew install ant
+
+    # Import both Developer ID Application and Developer ID Installer certs
+    # into a temporary keychain so codesign/productsign never prompt for a password.
+    - name: Install signing certificates
+      env:
+        MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+        MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+        KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      run: |
+        KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+        # Decode the base64-encoded .p12 that contains both Developer ID certs
+        echo -n "$MACOS_CERTIFICATE" | base64 --decode -o /tmp/build_certificate.p12
+
+        # Create a temporary keychain and import the certificate
+        security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+        security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+        security import /tmp/build_certificate.p12 -P "$MACOS_CERTIFICATE_PWD" \
+          -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+
+        # Grant codesign and productsign access without any UI password prompt
+        security set-key-partition-list -S apple-tool:,apple: -s \
+          -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+        # Add this keychain to the search path
+        security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+    - name: Write private.properties
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      run: |
+        cat > private.properties <<EOF
+        apple.id=${APPLE_ID}
+        apple.password=${APPLE_APP_SPECIFIC_PASSWORD}
+        apple.team.id=${APPLE_TEAM_ID}
+        signing.identity=Developer ID Application: Tyler Lui (232JY57U23)
+        mac.package.identifier=tylerlui.pooltesting
+        mac.installer.signing.identity=Developer ID Installer: Tyler Lui (232JY57U23)
+        EOF
+
+    - name: Build and sign PKG
+      run: ant create-pkg
+
+    - name: Notarize PKG
+      run: ant notarize-pkg
+
+    - name: Staple notarization ticket
+      run: xcrun stapler staple dist/jdiskmark-*.pkg
+
+    - name: Verify with Gatekeeper
+      run: spctl --assess --type install dist/jdiskmark-*.pkg
+
+    - name: Upload PKG artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: jdiskmark-macos-pkg
+        path: dist/jdiskmark-*.pkg
+
+    - name: Clean up keychain
+      if: always()
+      run: |
+        security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
