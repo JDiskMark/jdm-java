@@ -1,4 +1,3 @@
-
 package jdiskmark;
 
 import static jdiskmark.Benchmark.BenchmarkType;
@@ -14,6 +13,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,7 +26,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.SwingWorker.StateValue;
 
 /**
  * Primary class for global variables.
@@ -42,94 +42,106 @@ public class App {
     public static final String ESBL_EXE = "EmptyStandbyList.exe";
     // error messages
     public static final String LOCATION_NOT_SELECTED_ERROR = "Location has not been selected";
+    // Standard Binary Units (Power of 2), longs to avoid overflow
+    public static final long KILOBYTE = 1_024L;
+    public static final long MEGABYTE = 1_024L * KILOBYTE;
+    public static final long GIGABYTE = 1_024L * MEGABYTE;
     // numeric constants
-    public static final int MEGABYTE = 1024 * 1024;
-    public static final int KILOBYTE = 1024;
     public static final int IDLE_STATE = 0;
     public static final int DISK_TEST_STATE = 1;
+    
+    // command line or graphical mode
+    public enum Mode { CLI, GUI }
+    
     // benchmark state
     public static enum State { IDLE_STATE, DISK_TEST_STATE };
-    public static State state = State.IDLE_STATE;
-    // app is in command line or graphical mode
-    public enum Mode { CLI, GUI }
-    public static Mode mode = Mode.CLI;
+    
     // io api, modern introduced w jdk 25 lts
     public enum IoEngine {
         MODERN("Modern (FFM API)"),
         LEGACY("Legacy (RandomAccessFile)");
-        private final String label;
-        IoEngine(String label) { this.label = label; }
-        @Override public String toString() { return label; }
+        private final String display;
+        IoEngine(String label) { this.display = label; }
+        @Override public String toString() { return display; }
     }
-    public static IoEngine ioEngine = IoEngine.MODERN;
     
     public enum SectorAlignment {
+        NONE(-1, "None (OS Default)"),
         ALIGN_512(512, "512 B (Legacy)"),
         ALIGN_4K(4096, "4 KB (Standard)"),
         ALIGN_8K(8192, "8 KB (Enterprise)"),
         ALIGN_16K(16384, "16 KB (High-End)"),
         ALIGN_64K(65536, "64 KB (RAID/Stripe)");
-
         public final int bytes;
-        public final String label;
-
+        public final String display;
         SectorAlignment(int bytes, String label) {
             this.bytes = bytes;
-            this.label = label;
+            this.display = label;
         }
-
         @Override
-        public String toString() {
-            return label;
-        }
+        public String toString() { return display; }
     }
-    public static SectorAlignment sectorAlignment = SectorAlignment.ALIGN_4K;
     
-    // member
-    public static Properties p;
-    public static File locationDir = null;
-    public static File exportPath = null;
-    public static File dataDir = null; // refactor to dataPath after all branches merged
-    public static File testFile = null; // still used for cli
+    // application mode
+    public static Mode mode = Mode.CLI;
+    // elevated priviledges
+    public static boolean isRoot = false;
+    public static boolean isAdmin = false;
     // system info
     public static String os;
     public static String arch;
     public static String processorName;
     public static String jdk;
-    // elevated priviledges
-    public static boolean isRoot = false;
-    public static boolean isAdmin = false;
+    public static String username;
     // benchmark options
+    public static Properties p;
+    public static File locationDir = null;
+    public static File exportPath = null;
+    public static File dataDir = null; // refactor to dataPath after all branches merged
+    public static File testFile = null; // still used for cli
     public static boolean autoSave = false;
     public static boolean sharePortal = false;
     public static boolean verbose = false; // affects cli output
     public static boolean multiFile = true;
     public static boolean autoRemoveData = false;
     public static boolean autoReset = true;
-    public static boolean showMaxMin = true;
-    public static boolean showDriveAccess = true;
     public static boolean directEnable = false;
     public static boolean writeSyncEnable = false;
+
+    // benchmark io options
+    public static IoEngine ioEngine = IoEngine.MODERN;
+    public static SectorAlignment sectorAlignment = SectorAlignment.ALIGN_4K;
     // benchmark configuration
     public static BenchmarkProfile activeProfile = BenchmarkProfile.QUICK_TEST;
+    public static boolean profileModified = false;
     public static BenchmarkType benchmarkType = BenchmarkType.WRITE;
     public static BlockSequence blockSequence = BlockSequence.SEQUENTIAL;
     public static int numOfSamples = 200;   // desired number of samples
     public static int numOfBlocks = 32;     // desired number of blocks
     public static int blockSizeKb = 512;    // size of a block in KBs
     public static int numOfThreads = 1;     // number of threads
-    // benchmark result containers
-    public static BenchmarkWorker worker = null;
-    public static Future<Benchmark> cliResult = null;
-    // benchmark primitives
+    // active benchmark state
+    public static State state = State.IDLE_STATE;
     public static int nextSampleNumber = 1;   // number of the next sample
     public static double wMax = -1, wMin = -1, wAvg = -1, wAcc = -1;
     public static double rMax = -1, rMin = -1, rAvg = -1, rAcc = -1;
     public static long wIops = -1;
     public static long rIops = -1;
-    // benchmarks and operations
+    // benchmark result containers
+    public static BenchmarkWorker worker = null;
+    public static Future<Benchmark> cliResult = null;
+    // completed benchmarks and operations
+    public static Benchmark benchmark; // last or loaded benchmark
+    public static BenchmarkOperation operation; // last loaded operation
     public static HashMap<String, Benchmark> benchmarks = new LinkedHashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new LinkedHashMap<>();
+    
+    private static final DateTimeFormatter DATE_FORMATTER = 
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+
+    private static String formatWithTimestamp(String message) {
+        return DATE_FORMATTER.format(LocalDateTime.now()) + ": " + message;
+    }
     
     /**
      * @param args the command line arguments
@@ -196,6 +208,10 @@ public class App {
      * Initialize the GUI Application.
      */
     public static void init() {
+
+        GcDetector.printActive();
+        
+        username = System.getProperty("user.name");
         
         os = System.getProperty("os.name");
         arch = System.getProperty("os.arch");
@@ -219,14 +235,7 @@ public class App {
         }
         
         if (mode == Mode.GUI) {
-            Gui.configureLaf();
-            Gui.mainFrame = new MainFrame();
-            Gui.runPanel.hideFirstColumn();
-            Gui.selFrame = new SelectDriveFrame();
-            System.out.println(getConfigString());
-            Gui.mainFrame.loadPropertiesConfig();
-            Gui.mainFrame.setLocationRelativeTo(null);
-            Gui.progressBar = Gui.mainFrame.getProgressBar();
+            Gui.init();
         }
         
         if (App.autoSave) {
@@ -258,6 +267,28 @@ public class App {
         }
         if (isRoot || isAdmin) {
             System.out.println("Running w elevated priviledges");
+        }
+    }
+    
+    public static void loadProfile(BenchmarkProfile profile) {
+        try {
+            activeProfile = profile;
+            profileModified = false;
+
+            // TODO: later relocate into a BenchmarkConfiguration.java
+            benchmarkType = profile.getBenchmarkType();
+            blockSequence = profile.getBlockSequence();
+            numOfThreads = profile.getNumThreads();
+            numOfSamples = profile.getNumSamples();
+            numOfBlocks = profile.getNumBlocks();
+            blockSizeKb = profile.getBlockSizeKb();
+            ioEngine = profile.getIoEngine();
+            directEnable = profile.isDirectEnable();
+            writeSyncEnable = profile.isWriteSyncEnable();
+            sectorAlignment = profile.getSectorAlignment();
+            multiFile = profile.isMultiFile();
+        } finally {
+            saveConfig();
         }
     }
     
@@ -299,6 +330,9 @@ public class App {
             activeProfile = previousActiveProfile;
         }
         
+        value = p.getProperty("profileModified", String.valueOf(profileModified));
+        profileModified = Boolean.parseBoolean(value);
+        
         value = p.getProperty("benchmarkType", String.valueOf(benchmarkType));
         benchmarkType = BenchmarkType.valueOf(value.toUpperCase());
         
@@ -313,12 +347,6 @@ public class App {
 
         value = p.getProperty("blockSequence", String.valueOf(blockSequence));
         blockSequence = BlockSequence.valueOf(value.toUpperCase());
-
-        value = p.getProperty("showMaxMin", String.valueOf(showMaxMin));
-        showMaxMin = Boolean.parseBoolean(value);
-
-        value = p.getProperty("showDriveAccess", String.valueOf(showDriveAccess));
-        showDriveAccess = Boolean.parseBoolean(value);
 
         value = p.getProperty("numOfSamples", String.valueOf(numOfSamples));
         numOfSamples = Integer.parseInt(value);
@@ -359,9 +387,35 @@ public class App {
                     new Object[] { value, sectorAlignment.name() }
             );
         }
+        
+        value = p.getProperty("gcRetryEnabled", String.valueOf(GcDetector.gcRetryEnabled));
+        GcDetector.gcRetryEnabled = Boolean.parseBoolean(value);
 
+        value = p.getProperty("gcHintsEnabled", String.valueOf(GcDetector.gcHintsEnabled));
+        GcDetector.gcHintsEnabled = Boolean.parseBoolean(value);
+        
+        value = p.getProperty("theme", Gui.theme.name());
+        try {
+            Gui.theme = Gui.Theme.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid theme value in properties: \"{0}\", using default: {1}",
+                    new Object[] { value, Gui.theme.name() }
+            );
+        }
+        
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
+        
+        value = p.getProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
+        Gui.showMaxMin = Boolean.parseBoolean(value);
+
+        value = p.getProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
+        Gui.showDriveAccess = Boolean.parseBoolean(value);
+
+        value = p.getProperty("showSingleOp", String.valueOf(Gui.showSingleOp));
+        Gui.showSingleOp = Boolean.parseBoolean(value);        
     }
     
     public static void saveConfig() {
@@ -371,13 +425,12 @@ public class App {
         p.setProperty("sharePortal", String.valueOf(sharePortal));
         p.setProperty("uploadUrl", Portal.uploadUrl);
         p.setProperty("activeProfile", activeProfile.name());
+        p.setProperty("profileModified", String.valueOf(profileModified));
         p.setProperty("benchmarkType", benchmarkType.name());
         p.setProperty("multiFile", String.valueOf(multiFile));
         p.setProperty("autoRemoveData", String.valueOf(autoRemoveData));
         p.setProperty("autoReset", String.valueOf(autoReset));
         p.setProperty("blockSequence", blockSequence.name());
-        p.setProperty("showMaxMin", String.valueOf(showMaxMin));
-        p.setProperty("showDriveAccess", String.valueOf(showDriveAccess));
         p.setProperty("numOfSamples", String.valueOf(numOfSamples));
         p.setProperty("numOfBlocks", String.valueOf(numOfBlocks));
         p.setProperty("blockSizeKb", String.valueOf(blockSizeKb));
@@ -386,7 +439,14 @@ public class App {
         p.setProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         p.setProperty("directEnable", String.valueOf(directEnable));
         p.setProperty("sectorAlignment", sectorAlignment.name());
+        p.setProperty("gcRetryEnabled", String.valueOf(GcDetector.gcRetryEnabled));
+        p.setProperty("gcHintsEnabled", String.valueOf(GcDetector.gcHintsEnabled));
+        // display properties
+        p.setProperty("theme", Gui.theme.name());
         p.setProperty("palette", Gui.palette.name());
+        p.setProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
+        p.setProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
+        p.setProperty("showSingleOp", String.valueOf(Gui.showSingleOp));
         
         // write properties file
         try {
@@ -397,39 +457,66 @@ public class App {
         }
     }
     
-    public static boolean isReadEnabled() {
+    /**
+     * Creates a point-in-time snapshot of the current settings.
+     * @return the configuration for benchmarking
+     */
+    public static BenchmarkConfig getConfig() {
+        BenchmarkConfig config = new BenchmarkConfig();
+        config.appVersion = VERSION;
+        config.profile = activeProfile;
+        config.profileModified = profileModified;
+        config.benchmarkType = benchmarkType;
+        config.blockOrder = blockSequence;
+        config.numBlocks = numOfBlocks;
+        config.blockSize = (long) blockSizeKb * KILOBYTE;
+        config.numSamples = numOfSamples;
+        config.numThreads = numOfThreads;
+        config.txSize = targetOperationTxSizeKb();
+        config.ioEngine = ioEngine;
+        config.directIoEnabled = directEnable;
+        config.writeSyncEnabled = writeSyncEnable;
+        config.sectorAlignment = sectorAlignment;
+        config.gcRetryEnabled = GcDetector.gcRetryEnabled;
+        config.gcHintsEnabled = GcDetector.gcHintsEnabled;
+        config.multiFileEnabled = multiFile;
+        config.testDir = dataDir.getAbsolutePath();
+        return config;
+    }
+    
+    public static boolean hasReadOperation() {
         return benchmarkType == BenchmarkType.READ || benchmarkType == BenchmarkType.READ_WRITE;
     }
 
-    public static boolean isWriteEnabled() {
+    public static boolean hasWriteOperation() {
         return benchmarkType == BenchmarkType.WRITE || benchmarkType == BenchmarkType.READ_WRITE;
     }
     
     public static String getConfigString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Config for JDiskMark ").append(VERSION).append('\n');
-        sb.append("readTest: ").append(isReadEnabled()).append('\n');
-        sb.append("writeTest: ").append(isWriteEnabled()).append('\n');
+        sb.append("readTest: ").append(hasReadOperation()).append('\n');
+        sb.append("writeTest: ").append(hasWriteOperation()).append('\n');
         sb.append("locationDir: ").append(locationDir).append('\n');
         sb.append("multiFile: ").append(multiFile).append('\n');
         sb.append("autoRemoveData: ").append(autoRemoveData).append('\n');
         sb.append("autoReset: ").append(autoReset).append('\n');
         sb.append("blockSequence: ").append(blockSequence).append('\n');
-        sb.append("showMaxMin: ").append(showMaxMin).append('\n');
         sb.append("numOfFiles: ").append(numOfSamples).append('\n');
         sb.append("numOfBlocks: ").append(numOfBlocks).append('\n');
         sb.append("blockSizeKb: ").append(blockSizeKb).append('\n');
         sb.append("numOfThreads: ").append(numOfThreads).append('\n');
-        sb.append("palette: ").append(Gui.palette).append('\n');
         sb.append("benchmarkType: ").append(benchmarkType).append('\n');
         sb.append("ioEngine: ").append(ioEngine).append('\n');
         sb.append("writeSyncEnable: ").append(writeSyncEnable).append('\n');
         sb.append("directEnable: ").append(directEnable).append('\n');
+        sb.append("palette: ").append(Gui.palette).append('\n');
+        sb.append("showMaxMin: ").append(Gui.showMaxMin).append('\n');
         return sb.toString();
     }
     
     public static void loadBenchmarks() {
-        if (App.verbose) {
+        if (verbose) {
             System.out.println("loading benchmarks");
         }
 
@@ -466,19 +553,29 @@ public class App {
     }
     
     public static void err(String message) {
+        String formattedMsg = formatWithTimestamp(message);
         switch(mode) {
-            case GUI -> { 
-                System.err.println(message);
-                Gui.mainFrame.msg(message);
+            case GUI -> {
+                System.err.println(formattedMsg);
+                if (Gui.mainFrame != null) {
+                    Gui.mainFrame.msg(formattedMsg);
+                }
             }
-            case CLI -> System.err.println(message);
+            case CLI -> System.err.println(formattedMsg);
         }
     }
-    
+
     public static void msg(String message) {
+        String formattedMsg = formatWithTimestamp(message);
         switch(mode) {
-            case GUI -> Gui.mainFrame.msg(message);
-            case CLI -> System.out.println(message);
+            case GUI -> {
+                if (Gui.mainFrame != null) {
+                    Gui.mainFrame.msg(formattedMsg);
+                } else {
+                    System.out.println(formattedMsg);
+                }
+            }
+            case CLI -> System.out.println(formattedMsg);
         }
     }
 
@@ -492,6 +589,10 @@ public class App {
     
     public static void startBenchmark() {
 
+        // clear the selected benchmark and operation
+        App.benchmark = null;
+        App.operation = null;
+        
         if (!validateTargetDirectory(locationDir, false))  { return; }
         
         // 1. check that there isn't already a worker in progress
@@ -529,29 +630,14 @@ public class App {
         // 6. create data dir if not already present
         if (dataDir.exists() == false) { dataDir.mkdirs(); }
         
-        // 7. start disk worker thread
+        // 7. start benchmark job thread
         switch (mode) {
-            case Mode.GUI -> {
+            case GUI -> {
                 worker = new BenchmarkWorker();
-                worker.addPropertyChangeListener((final var event) -> {
-                    switch (event.getPropertyName()) {
-                        case "progress" -> {
-                            int value = (Integer)event.getNewValue();
-                            Gui.progressBar.setValue(value);
-                            long kbProcessed = value * App.targetTxSizeKb() / 100;
-                            Gui.progressBar.setString(String.valueOf(kbProcessed) + " / " + String.valueOf(App.targetTxSizeKb()));
-                        }
-                        case "state" -> {
-                            switch ((StateValue)event.getNewValue()) {
-                                case STARTED -> Gui.progressBar.setString("0 / " + String.valueOf(App.targetTxSizeKb()));
-                                case DONE -> {}
-                            } // end inner switch
-                        }
-                    }
-                });
+                worker.addPropertyChangeListener(new Gui.WorkerProgressListener());
                 worker.execute();
             }
-            case Mode.CLI -> {
+            case CLI -> {
                 ExecutorService executor = Executors.newFixedThreadPool(1);
                 BenchmarkCallable benchmarkCallable = new BenchmarkCallable();
                 cliResult = executor.submit(benchmarkCallable);
@@ -559,17 +645,18 @@ public class App {
         }
     }
     
+    // currently only used by cli implementation, assess if gui switch should
+    // be removed or a common blocking pattern is recommended
     public static void waitBenchmarkDone() {
-        Benchmark benchmark = null;
         switch (mode) {
-            case Mode.GUI -> {
+            case GUI -> {
                 try {
                     benchmark = worker.get();
                 } catch (InterruptedException | ExecutionException e) {
                     Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
                 }
             }
-            case Mode.CLI -> {
+            case CLI -> {
                 try {
                     benchmark = cliResult.get();
                 } catch (InterruptedException | ExecutionException e) {
@@ -578,16 +665,25 @@ public class App {
             }
         }
         if (benchmark != null) {
-            System.out.println(benchmark.toResultString());
+            msg(benchmark.toResultString());
         }
     }
     
-    public static long targetMarkSizeKb() {
-        return blockSizeKb * numOfBlocks;
+    public static long targetSampleSizeKb() {
+        return (long)blockSizeKb * numOfBlocks;
+    }
+
+    public static long targetOperationTxSizeKb() {
+        return (long)blockSizeKb * numOfBlocks * numOfSamples;
     }
     
-    public static long targetTxSizeKb() {
-        return blockSizeKb * numOfBlocks * numOfSamples;
+    public static long targetBenchmarkTxSizeKb() {
+        long operationTxSize = targetOperationTxSizeKb();
+        switch (benchmarkType) {
+            case WRITE -> { return operationTxSize; }
+            case READ, READ_WRITE -> { return 2L * operationTxSize; }
+            default -> throw new IllegalStateException("Unexpected value: " + benchmarkType);
+        }
     }
     
     public static void updateMetrics(Sample s) {

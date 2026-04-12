@@ -1,0 +1,47 @@
+name: Linux DEB Build
+
+on:
+  push:
+    branches: [ "dev", "release/**", "main" ]
+  pull_request:
+    branches: [ "dev", "release/**" ]
+  workflow_dispatch:
+
+jobs:
+  build-debian:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 25
+      uses: actions/setup-java@v4
+      with:
+        java-version: '25'
+        distribution: 'oracle'
+
+    - name: Cache Ant Dependencies
+      uses: actions/cache@v4
+      with:
+        path: libs
+        key: ${{ runner.os }}-ant-${{ hashFiles('build.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-ant-
+
+    - name: Install Build Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ant ant-optional fakeroot dpkg-dev
+
+    - name: Build Standard DEB
+      run: ant create-deb
+
+    - name: Build Fat DEB
+      run: ant create-fat-deb
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: jdiskmark-debs
+        path: dist/*.deb

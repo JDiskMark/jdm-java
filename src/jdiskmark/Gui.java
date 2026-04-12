@@ -1,26 +1,40 @@
-   
 package jdiskmark;
 
+import com.formdev.flatlaf.FlatDarculaLaf;
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.themes.FlatMacDarkLaf;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
+
+import jdiskmark.Benchmark.IOMode;
+
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Shape;
 import java.awt.geom.Rectangle2D;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
-import org.jfree.chart.ChartMouseEvent;
-import org.jfree.chart.ChartMouseListener;
+import javax.swing.SwingWorker.StateValue;
+import static javax.swing.SwingWorker.StateValue.DONE;
+import static javax.swing.SwingWorker.StateValue.STARTED;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-import jdiskmark.Benchmark.IOMode;
+import static jdiskmark.Benchmark.IOMode.READ;
+import static jdiskmark.Benchmark.IOMode.WRITE;
+import org.jfree.chart.ChartMouseEvent;
+import org.jfree.chart.ChartMouseListener;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.AxisLocation;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.block.BlockBorder;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
@@ -33,48 +47,69 @@ import org.jfree.ui.RectangleInsets;
  */
 public final class Gui {
     
-    public static enum Palette { CLASSIC, BLUE_GREEN, BARD_COOL, BARD_WARM };
-    public static Palette palette = Palette.CLASSIC;
+    public enum Palette { CLASSIC, BLUE_GREEN, BARD_COOL, BARD_WARM };
     
+    public enum Theme {
+        DARK("Dark"),
+        LIGHT("Light"),
+        DARCULA("Darcula");
+
+        private final String displayName;
+
+        Theme(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getLafClassName() {
+            boolean isMac = System.getProperty("os.name").toLowerCase().contains("mac");
+
+            return switch (this) {
+                case DARK -> isMac ? "com.formdev.flatlaf.themes.FlatMacDarkLaf" 
+                                   : "com.formdev.flatlaf.FlatDarkLaf";
+                case LIGHT -> isMac ? "com.formdev.flatlaf.themes.FlatMacLightLaf" 
+                                    : "com.formdev.flatlaf.FlatLightLaf";
+                case DARCULA -> "com.formdev.flatlaf.FlatDarculaLaf";
+            };
+        }
+
+        @Override
+        public String toString() {
+            return displayName;
+        }
+    }
+        
+    // display settings
+    public static Theme theme = Theme.DARK;
+    public static Palette palette = Palette.CLASSIC;
+    public static boolean showMaxMin = true;
+    public static boolean showDriveAccess = true;
+    public static boolean showSingleOp = false;
+    // form components
     public static ChartPanel chartPanel = null;
     public static MainFrame mainFrame = null;
+    public static BenchmarkControlPanel controlPanel = null;
     public static SelectDriveFrame selFrame = null;
+    public static BenchmarkPanel runPanel = null;
+    public static JProgressBar progressBar = null;
+    // graph component
+    public static JFreeChart chart;
+    public static NumberAxis msAxis, bwAxis, sampleAxis;
     public static XYSeries wSeries, wAvgSeries, wMaxSeries, wMinSeries, wDrvAccess;
     public static XYSeries rSeries, rAvgSeries, rMaxSeries, rMinSeries, rDrvAccess;
-    public static NumberAxis msAxis;
-    public static JFreeChart chart;
-    public static JProgressBar progressBar = null;
-    public static BenchmarkPanel runPanel = null;
-    
     public static XYLineAndShapeRenderer bwRenderer;
     public static XYLineAndShapeRenderer msRenderer;
+    static Color foregroundColor;
     
-    /**
-     * Setup the look and feel
-     */
-    public static void configureLaf() {
+    public static void configureDarkLaf() {
         try {
             if (App.os.contains("Windows")) {
-                UIManager.setLookAndFeel(new FlatLightLaf()); // Light theme
-                // Or: UIManager.setLookAndFeel(new FlatDarkLaf()); // Dark theme
+                UIManager.setLookAndFeel(new FlatDarkLaf());
             } else if (App.os.contains("Mac OS")) {
-                UIManager.setLookAndFeel("apple.laf.AquaLookAndFeel");
-//                for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-//                    if ("Nimbus".equals(info.getName())) {
-//                        UIManager.setLookAndFeel(info.getClassName());
-//                        break;
-//                    }
-//                }
+                UIManager.setLookAndFeel(new FlatMacDarkLaf());
             } else if (App.os.contains("Linux")) {
-                UIManager.setLookAndFeel(new FlatLightLaf()); // Light theme
-//                for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-//                    if ("Nimbus".equals(info.getName())) {
-//                        UIManager.setLookAndFeel(info.getClassName());
-//                        break;
-//                    }
-//                }
+                UIManager.setLookAndFeel(new FlatDarkLaf());
             }
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+        } catch (UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
             /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
              * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
@@ -88,19 +123,173 @@ public final class Gui {
         }
     }
     
+    public static void configureDarculaLaf() {
+        try {
+            UIManager.setLookAndFeel(new FlatDarculaLaf());
+        } catch (UnsupportedLookAndFeelException e) {
+            //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+            /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+             * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+             */
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
+                java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            }
+            //</editor-fold>
+        }
+    }
+    
+    public static void configureLightLaf() {
+        try {
+            if (App.os.contains("Windows")) {
+                UIManager.setLookAndFeel(new FlatLightLaf());
+            } else if (App.os.contains("Mac OS")) {
+                UIManager.setLookAndFeel(new FlatMacLightLaf());
+            } else if (App.os.contains("Linux")) {
+                UIManager.setLookAndFeel(new FlatLightLaf());
+            }
+        } catch (UnsupportedLookAndFeelException e) {
+            //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+            /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+             * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+             */
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
+                java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            }
+            //</editor-fold>
+        }
+    }
+    
+    // switch to dark theme
+    public static void goDarkTheme() {
+        configureDarkLaf();
+        FlatLaf.updateUI();
+        updateChartPanelStyle();
+    }
+    
+    // switch to darcula theme
+    public static void goDarculaTheme() {
+        configureDarculaLaf();
+        FlatLaf.updateUI();
+        updateChartPanelStyle();
+    }
+    
+    // switch to light theme
+    public static void goLightTheme() {
+        configureLightLaf();
+        FlatLaf.updateUI();
+        updateChartPanelStyle();
+    }
+    
+    /**
+     * Handles progress and state updates from the SwingWorker 
+     * and updates the progress bar accordingly.
+     */
+    public static class WorkerProgressListener implements PropertyChangeListener {
+        @Override
+        public void propertyChange(PropertyChangeEvent event) {
+            long targetSize = App.targetBenchmarkTxSizeKb();
+            
+            switch (event.getPropertyName()) {
+                case "progress" -> {
+                    int value = (Integer) event.getNewValue();
+                    long kbProcessed = value * targetSize / 100;
+                    String progressText = String.format("%d / %d", kbProcessed, targetSize);
+                    progressBar.setValue(value);
+                    progressBar.setString(progressText);
+                }
+                case "state" -> {
+                    String targetTxSize = String.valueOf(App.targetBenchmarkTxSizeKb());
+                    switch ((StateValue)event.getNewValue()) {
+                        case STARTED -> Gui.progressBar.setString("0 / " + targetTxSize);
+                        case DONE -> { 
+                            progressBar.setString(targetTxSize);
+                            progressBar.setValue(100);
+                        }
+                    } // end inner switch
+                }
+            }
+        }
+    }
+    
+    public static void resetProgressBar() {
+        progressBar.setString(String.valueOf(App.targetBenchmarkTxSizeKb()));
+        progressBar.setValue(0);
+    }
+    
+    public static void init() {
+        switch (Gui.theme) {
+            case DARK -> configureDarkLaf();
+            case LIGHT -> configureLightLaf();
+            case DARCULA -> configureDarculaLaf();
+        }
+        
+        mainFrame = new MainFrame();
+        if (runPanel != null) {
+            runPanel.hideFirstColumn();
+        }
+        selFrame = new SelectDriveFrame();
+        mainFrame.loadPropertiesConfig();
+        mainFrame.setLocationRelativeTo(null);
+        progressBar = mainFrame.getProgressBar();
+    }
+    
+    public static void updateChartPanelStyle() {
+        // correct the parenthesis from being below vertical centering
+        chart.getTitle().setFont(new Font("Verdana", Font.BOLD, 17));
+        
+        foregroundColor = UIManager.getColor("Label.foreground");
+        if (foregroundColor == null) foregroundColor = Color.LIGHT_GRAY;
+        
+        chart.getTitle().setPaint(foregroundColor);
+        Color bgColor = UIManager.getColor("Panel.background");
+        chart.setBackgroundPaint(bgColor);
+        
+        // Style the Axis (Labels and Tick Marks)
+        
+        // Bandwidth Axis (Left)
+        bwAxis.setLabelPaint(foregroundColor);
+        bwAxis.setTickLabelPaint(foregroundColor);
+        bwAxis.setTickMarkPaint(foregroundColor);
+        // Latency Axis (Right)
+        msAxis.setLabelPaint(foregroundColor);
+        msAxis.setTickLabelPaint(foregroundColor);
+        msAxis.setTickMarkPaint(foregroundColor);
+        // Sample Axis (Bottom)
+        sampleAxis.setLabelPaint(foregroundColor);
+        sampleAxis.setTickLabelPaint(foregroundColor);
+        sampleAxis.setTickMarkPaint(foregroundColor);
+
+        // Style the Legend
+        if (chart.getLegend() != null) {
+            chart.getLegend().setItemPaint(foregroundColor);
+            // Set legend background with slight transparency (macos like look)
+            Color panelBg = UIManager.getColor("Panel.background");
+            if (panelBg != null) {
+                Color legendBg = new Color(panelBg.getRed(), panelBg.getGreen(), panelBg.getBlue(), 200);
+                chart.getLegend().setBackgroundPaint(legendBg);
+            }
+            // Remove the border or set it to a subtle gray
+            chart.getLegend().setFrame(new BlockBorder(new Color(80, 80, 80)));
+        }
+    }
+    
     public static ChartPanel createChartPanel() {
         
-        wSeries = new XYSeries("Write");
-        wAvgSeries = new XYSeries("Write Avg");
+        wSeries = new XYSeries("Write Sample");
+        wAvgSeries = new XYSeries("Write Trend");
         wMaxSeries = new XYSeries("Write Max");
         wMinSeries = new XYSeries("Write Min");
-        wDrvAccess = new XYSeries("Write Access");
+        wDrvAccess = new XYSeries("Write Latency");
         
-        rSeries = new XYSeries("Read");
-        rAvgSeries = new XYSeries("Read Avg");
+        rSeries = new XYSeries("Read Sample");
+        rAvgSeries = new XYSeries("Read Trend");
         rMaxSeries = new XYSeries("Read Max");
         rMinSeries = new XYSeries("Read Min");
-        rDrvAccess = new XYSeries("Read Access");
+        rDrvAccess = new XYSeries("Read Latency");
         
         // primary dataset mapped against the bw axis
         XYSeriesCollection bwDataset = new XYSeriesCollection();
@@ -144,16 +333,16 @@ public final class Gui {
         plot.setRenderer(1, msRenderer);
         
         // y axis on the left
-        NumberAxis bwAxis = new NumberAxis("Bandwidth (MB/s)");
+        bwAxis = new NumberAxis("Bandwidth (MB/s)");
         bwAxis.setAutoRangeIncludesZero(false);
         
         // y axis on the right
-        msAxis = new NumberAxis("Access Time (ms)");
+        msAxis = new NumberAxis("Latency (ms)");
         msAxis.setAutoRange(true);
         msAxis.setAutoRangeIncludesZero(false);
         
         // x axis on the bottom
-        NumberAxis sampleAxis = new NumberAxis();
+        sampleAxis = new NumberAxis();
         sampleAxis.setNumberFormatOverride(NumberFormat.getNumberInstance());
         sampleAxis.setAutoRangeIncludesZero(false);
         
@@ -176,8 +365,7 @@ public final class Gui {
         
         chart = new JFreeChart("", null , plot, true);
         
-        // correct the parenthesis from being below vertical centering
-        chart.getTitle().setFont(new Font("Verdana", Font.BOLD, 17));
+        updateChartPanelStyle();
         
         chartPanel = new ChartPanel(chart) {
             // Only way to set the size of chart panel
@@ -214,29 +402,35 @@ public final class Gui {
         return chartPanel;
     }
     
+    public static BenchmarkControlPanel createControlPanel() {
+        controlPanel = new BenchmarkControlPanel();
+        return controlPanel;
+    }
+    
     public static void addWriteSample(Sample s) {
         wSeries.add(s.sampleNum, s.bwMbSec);
         wAvgSeries.add(s.sampleNum, s.cumAvg);
-        if (App.showMaxMin) {
+        if (showMaxMin) {
             wMaxSeries.add(s.sampleNum, s.cumMax);
             wMinSeries.add(s.sampleNum, s.cumMin);
         }
-        if (App.showDriveAccess) {
+        if (showDriveAccess) {
             wDrvAccess.add(s.sampleNum, s.accessTimeMs);
         }
-        mainFrame.refreshWriteMetrics();
+        controlPanel.refreshWriteMetrics();
     }
+    
     public static void addReadSample(Sample s) {
         rSeries.add(s.sampleNum, s.bwMbSec);
         rAvgSeries.add(s.sampleNum, s.cumAvg);
-        if (App.showMaxMin) {
+        if (showMaxMin) {
             rMaxSeries.add(s.sampleNum, s.cumMax);
             rMinSeries.add(s.sampleNum, s.cumMin);
         }
-        if (App.showDriveAccess) {
+        if (showDriveAccess) {
             rDrvAccess.add(s.sampleNum, s.accessTimeMs);
         }
-        mainFrame.refreshReadMetrics();
+        controlPanel.refreshReadMetrics();
     }
     
     public static void resetBenchmarkData() {
@@ -251,42 +445,62 @@ public final class Gui {
         wDrvAccess.clear();
         rDrvAccess.clear();
         progressBar.setValue(0);
-        mainFrame.refreshReadMetrics();
-        mainFrame.refreshWriteMetrics();
+        controlPanel.refreshReadMetrics();
+        controlPanel.refreshWriteMetrics();
     }
     
     public static void updateLegendAndAxis() {
-        bwRenderer.setSeriesVisibleInLegend(0, App.isWriteEnabled());
-        bwRenderer.setSeriesVisibleInLegend(1, App.isWriteEnabled());
-        bwRenderer.setSeriesVisibleInLegend(2, App.isWriteEnabled() && App.showMaxMin);
-        bwRenderer.setSeriesVisibleInLegend(3, App.isWriteEnabled() && App.showMaxMin);
-        bwRenderer.setSeriesVisibleInLegend(4, App.isReadEnabled());
-        bwRenderer.setSeriesVisibleInLegend(5, App.isReadEnabled());
-        bwRenderer.setSeriesVisibleInLegend(6, App.isReadEnabled() && App.showMaxMin);
-        bwRenderer.setSeriesVisibleInLegend(7, App.isReadEnabled() && App.showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(0, App.hasWriteOperation());
+        bwRenderer.setSeriesVisibleInLegend(1, App.hasWriteOperation());
+        bwRenderer.setSeriesVisibleInLegend(2, App.hasWriteOperation() && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(3, App.hasWriteOperation() && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(4, App.hasReadOperation());
+        bwRenderer.setSeriesVisibleInLegend(5, App.hasReadOperation());
+        bwRenderer.setSeriesVisibleInLegend(6, App.hasReadOperation() && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(7, App.hasReadOperation() && showMaxMin);
 
-        msRenderer.setSeriesVisibleInLegend(0, App.isWriteEnabled() && App.showDriveAccess);
-        msRenderer.setSeriesVisibleInLegend(1, App.isReadEnabled() && App.showDriveAccess);
+        msRenderer.setSeriesVisibleInLegend(0, App.hasWriteOperation() && showDriveAccess);
+        msRenderer.setSeriesVisibleInLegend(1, App.hasReadOperation() && showDriveAccess);
         
-        msAxis.setVisible(App.showDriveAccess);
+        msAxis.setVisible(showDriveAccess);
+    }
+
+    // update for a specific benchmark
+    public static void updateLegendAndAxis(Benchmark b) {
+        boolean hasWrite = b.config.hasWriteOperation();
+        boolean hasRead = b.config.hasReadOperation();
+        bwRenderer.setSeriesVisibleInLegend(0, hasWrite);
+        bwRenderer.setSeriesVisibleInLegend(1, hasWrite);
+        bwRenderer.setSeriesVisibleInLegend(2, hasWrite && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(3, hasWrite && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(4, hasRead);
+        bwRenderer.setSeriesVisibleInLegend(5, hasRead);
+        bwRenderer.setSeriesVisibleInLegend(6, hasRead && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(7, hasRead && showMaxMin);
+        
+        msRenderer.setSeriesVisibleInLegend(0, hasWrite && showDriveAccess);
+        msRenderer.setSeriesVisibleInLegend(1, hasRead && showDriveAccess);
+        
+        msAxis.setVisible(showDriveAccess);
     }
     
+    // update for a specific operation
     public static void updateLegendAndAxis(BenchmarkOperation o) {
         boolean isWriteTest = o.ioMode == IOMode.WRITE;
         boolean isReadTest = o.ioMode == IOMode.READ;
         bwRenderer.setSeriesVisibleInLegend(0, isWriteTest);
         bwRenderer.setSeriesVisibleInLegend(1, isWriteTest);
-        bwRenderer.setSeriesVisibleInLegend(2, isWriteTest && App.showMaxMin);
-        bwRenderer.setSeriesVisibleInLegend(3, isWriteTest && App.showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(2, isWriteTest && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(3, isWriteTest && showMaxMin);
         bwRenderer.setSeriesVisibleInLegend(4, isReadTest);
         bwRenderer.setSeriesVisibleInLegend(5, isReadTest);
-        bwRenderer.setSeriesVisibleInLegend(6, isReadTest && App.showMaxMin);
-        bwRenderer.setSeriesVisibleInLegend(7, isReadTest && App.showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(6, isReadTest && showMaxMin);
+        bwRenderer.setSeriesVisibleInLegend(7, isReadTest && showMaxMin);
         
-        msRenderer.setSeriesVisibleInLegend(0, isWriteTest && App.showDriveAccess);
-        msRenderer.setSeriesVisibleInLegend(1, isReadTest && App.showDriveAccess);
+        msRenderer.setSeriesVisibleInLegend(0, isWriteTest && showDriveAccess);
+        msRenderer.setSeriesVisibleInLegend(1, isReadTest && showDriveAccess);
         
-        msAxis.setVisible(App.showDriveAccess);
+        msAxis.setVisible(showDriveAccess);
     }
     
     static public void updateDiskInfo() {
@@ -328,8 +542,7 @@ public final class Gui {
 
                         Removable drives can be disconnected and reconnected.
 
-                        For system drives perform a WRITE benchmark, restart 
-                        the OS and then perform a READ benchmark.
+                        sudo purge
 
                         Press OK to continue when disk cache has been cleared.""";
                 JOptionPane.showMessageDialog(mainFrame, 
@@ -359,9 +572,6 @@ public final class Gui {
                         For valid READ benchmarks please clear the disk cache by
                         using EmptyStandbyList.exe or RAMMap.exe utilities.
 
-                        For system drives perform a WRITE benchmark, restart 
-                        the OS and then perform a READ benchmark.
-
                         Press OK to continue when disk cache has been cleared.
                         """;
                 JOptionPane.showMessageDialog(mainFrame, 
@@ -375,9 +585,6 @@ public final class Gui {
                         For valid READ benchmarks please clear the disk cache by
                         using EmptyStandbyList.exe or RAMMap.exe utilities.
 
-                        For system drives perform a WRITE benchmark, restart 
-                        the OS and then perform a READ benchmark.
-
                         Press OK to continue when disk cache has been cleared.""";
                 JOptionPane.showMessageDialog(mainFrame, 
                         message, "Clear Disk Cache Now",
@@ -390,9 +597,6 @@ public final class Gui {
 
                     Removable drives can be disconnected and reconnected.
 
-                    For system drives perform a WRITE benchmark, restart 
-                    the OS and then perform a READ benchmarks benchmark.
-
                     Press OK to continue when disk cache has been cleared.""";
             JOptionPane.showMessageDialog(mainFrame,
                     message, "Clear Disk Cache Now",
@@ -400,52 +604,99 @@ public final class Gui {
         }
     }
     
-    static public void loadOperation(BenchmarkOperation operation) {        
-        Benchmark benchmark = operation.getBenchmark();
-        System.out.println("loading benchmark w type: " + benchmark.benchmarkType + " o: " + operation.ioMode);
+    static public void loadBenchmark(Benchmark benchmark) {
         resetBenchmarkData();
-        updateLegendAndAxis(operation);
-        chart.getTitle().setText(benchmark.getDriveInfo());
-        ArrayList<Sample> samples = operation.getSamples();
-        System.out.println("samples=" + samples.size());
-        for (Sample s : samples) {
+        chart.getTitle().setText(benchmark.getDriveInfoDisplay());
+
+        updateLegendAndAxis(benchmark);
+        
+        // benchmark data
+        App.benchmarkType = benchmark.config.benchmarkType;
+        App.numOfBlocks = benchmark.config.numBlocks;
+        App.numOfSamples = benchmark.config.numSamples;
+        App.blockSizeKb = (int)(benchmark.config.blockSize / App.KILOBYTE);
+        App.blockSequence = benchmark.config.blockOrder;
+        App.numOfThreads = benchmark.config.numThreads;
+        App.activeProfile = benchmark.config.profile;
+        App.profileModified = benchmark.config.profileModified;
+        mainFrame.refreshConfig();
+        
+        // operation data
+        for (BenchmarkOperation operation : benchmark.operations) {
+            
+            ArrayList<Sample> samples = operation.getSamples();
+            for (Sample s : samples) {
+                switch (operation.ioMode) {
+                    case READ -> addReadSample(s);
+                    case WRITE -> addWriteSample(s);
+                }
+            }
             switch (operation.ioMode) {
-                case IOMode.READ -> addReadSample(s);
-                case IOMode.WRITE -> addWriteSample(s);
+                case READ -> {
+                    App.rAvg = operation.bwAvg;
+                    App.rMax = operation.bwMax;
+                    App.rMin = operation.bwMin;
+                    App.rAcc = operation.accAvg;
+                    App.rIops = operation.iops;
+                    controlPanel.refreshReadMetrics();                
+                }
+                case WRITE -> {
+                    App.wAvg = operation.bwAvg;
+                    App.wMax = operation.bwMax;
+                    App.wMin = operation.bwMin;
+                    App.wAcc = operation.accAvg;
+                    App.wIops = operation.iops;
+                    controlPanel.refreshWriteMetrics();
+                }
             }
         }
-        App.benchmarkType = benchmark.benchmarkType;
+        resetProgressBar();
+    }
+    
+    static public void loadOperation(BenchmarkOperation operation) {        
+        Benchmark benchmark = operation.getBenchmark();
+        resetBenchmarkData();
+        updateLegendAndAxis(operation);
+        chart.getTitle().setText(benchmark.getDriveInfoDisplay());
+        ArrayList<Sample> samples = operation.getSamples();
+        for (Sample s : samples) {
+            switch (operation.ioMode) {
+                case READ -> addReadSample(s);
+                case WRITE -> addWriteSample(s);
+            }
+        }
+        App.benchmarkType = benchmark.config.benchmarkType;
         App.numOfBlocks = operation.numBlocks;
         App.numOfSamples = operation.numSamples;
-        App.blockSizeKb = operation.blockSize;
+        App.blockSizeKb = (int)(operation.blockSize / App.KILOBYTE);
         App.blockSequence = operation.blockOrder;
         App.numOfThreads = operation.numThreads;
-        mainFrame.loadBenchmarkConfig();
+        mainFrame.refreshConfig();
         switch (operation.ioMode) {
-            case IOMode.READ -> {
+            case READ -> {
                 App.rAvg = operation.bwAvg;
                 App.rMax = operation.bwMax;
                 App.rMin = operation.bwMin;
                 App.rAcc = operation.accAvg;
                 App.rIops = operation.iops;
-                mainFrame.refreshReadMetrics();                
+                controlPanel.refreshReadMetrics();                
             }
-            case IOMode.WRITE -> {
+            case WRITE -> {
                 App.wAvg = operation.bwAvg;
                 App.wMax = operation.bwMax;
                 App.wMin = operation.bwMin;
                 App.wAcc = operation.accAvg;
                 App.wIops = operation.iops;
-                mainFrame.refreshWriteMetrics();
+                controlPanel.refreshWriteMetrics();
             }
         }
+        resetProgressBar();
     }
 
     /**
      * The original color scheme.
      */
     static void setClassicColorScheme() {
-        System.out.println("setting classic palette");
         palette = Palette.CLASSIC;
         
         // configure the bw series colors
@@ -545,5 +796,16 @@ public final class Gui {
         }
         selFrame.setLocationRelativeTo(mainFrame);
         selFrame.setVisible(true);
+    }
+    
+    // reload the graph
+    public static void singleOpTrigReloadGraph() {
+        if (Gui.showSingleOp && App.operation != null) {
+            Gui.loadOperation(App.operation);
+        } else {
+            if (App.benchmark != null) {
+                Gui.loadBenchmark(App.benchmark);
+            }
+        }
     }
 }

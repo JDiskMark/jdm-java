@@ -46,8 +46,7 @@ public class Cli {
 
                         Removable drives can be disconnected and reconnected.
 
-                        For system drives perform a WRITE benchmark, restart 
-                        the OS and then perform a READ benchmark.
+                        runn command `sudo purge`
 
                         Press OK to continue when disk cache has been cleared.""";
                 System.out.println(message);
@@ -81,9 +80,6 @@ public class Cli {
                         For valid READ benchmarks please clear the disk cache by
                         using EmptyStandbyList.exe or RAMMap.exe utilities.
 
-                        For system drives perform a WRITE benchmark, restart 
-                        the OS and then perform a READ benchmark.
-
                         Press OK to continue when disk cache has been cleared.
                         """;
                 System.out.println(message);
@@ -100,9 +96,6 @@ public class Cli {
                         For valid READ benchmarks please clear the disk cache by
                         using EmptyStandbyList.exe or RAMMap.exe utilities.
 
-                        For system drives perform a WRITE benchmark, restart 
-                        the OS and then perform a READ benchmark.
-
                         Press OK to continue when disk cache has been cleared.""";
                 System.out.println(message);
                 try (Scanner scanner = new Scanner(System.in)) {
@@ -118,9 +111,6 @@ public class Cli {
                     For valid READ benchmarks please clear the disk cache now.
 
                     Removable drives can be disconnected and reconnected.
-
-                    For system drives perform a WRITE benchmark, restart 
-                    the OS and then perform a READ benchmarks benchmark.
 
                     Press OK to continue when disk cache has been cleared.""";
             System.out.println(message);

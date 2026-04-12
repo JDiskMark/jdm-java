@@ -10,6 +10,7 @@
 <project name="JDiskMark" default="default" basedir=".">
     <description>Builds, tests, and runs the project JDiskMark.</description>
     <import file="nbproject/build-impl.xml"/>
+    <property name="linux.package.deps" value="libasound2t64 | libasound2" />
     <!--
 
     There exist several targets which are by default empty and which can be 
@@ -80,12 +81,18 @@
     <property name="jpackage.executable" value="C:\Program Files\java\jdk-25\bin\jpackage"/>
     <property name="signtool.executable" value="C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x86\signtool.exe"/>
 
+    <!-- default gc for packaging -->
+    <property name="jvm.run.options" value="-XX:+UseZGC"/>
+
+    <!-- java modules to add for jpackage -->
+    <property name="java.modules" value="java.base,java.desktop,java.logging,java.prefs,java.management,java.instrument,java.sql,java.rmi,java.naming,jdk.unsupported"/>
+    
     <!-- version properties -->
     <property name="pkg.name" value="jdiskmark"/>
     <property name="app.name" value="JDiskMark"/>
-    <property name="version" value="0.6.3"/>
+    <property name="version" value="0.7.0"/>
     <!-- full semver does not work for msi product versions -->
-    <property name="msi.version" value="0.6.3"/>
+    <property name="msi.version" value="0.7.0"/>
     <property name="msi.app.title" value="${app.name} ${version}"/>
     <property name="release.dir" value="${pkg.name}-${version}"/>
     <property name="dmg.version" value="1.0.0"/>
@@ -198,6 +205,10 @@
             <arg line="--type msi"/>
             <arg line="--input ${jpackage.input.dir.relative}"/>
             <arg line="--main-jar ${pkg.name}.jar"/>
+            
+            <arg value="--java-options"/>
+            <arg value="${jvm.run.options}"/>
+            
             <!-- intentionally adding version to the name for concurrent installs -->
             <arg line="--name '${msi.app.title}'"/>
             <arg line="--app-version ${msi.version}"/>
@@ -231,6 +242,8 @@
             <arg line="--type dmg"/>
             <arg line="--input ${dist.dir}/${release.dir}"/>
             <arg line="--main-jar ${pkg.name}.jar"/>
+            <arg value="--java-options"/>
+            <arg value="${jvm.run.options}"/>
             <arg line="--main-class ${pkg.name}.App"/>
             <arg line="--name ${pkg.name}-${version}"/>
             <arg line="--app-version ${dmg.version}"/>
@@ -438,7 +451,6 @@
     <property name="deb.install.dir" value="/usr/share/jdiskmark"/>
 
     <target name="create-deb" depends="clean, jar, -post-jar" description="Build Debian Package">
-
         <condition property="is.linux">
             <os family="unix" />
         </condition>
@@ -468,18 +480,18 @@ Version: ${deb.version}
 Section: utils
 Priority: optional
 Architecture: all
-Depends: openjdk-25-jre
+Depends: openjdk-25-jre, ${linux.package.deps}
 Maintainer: JDiskMark Team
 Description: JDiskMark - Disk Benchmark Utility
  JDiskMark is a cross-platform disk benchmark utility written in Java.
- </echo>
+</echo>
 
         <echo file="${deb.dir}/usr/bin/jdiskmark"><![CDATA[#!/bin/sh
-CLASSPATH="/usr/share/jdiskmark/jdiskmark.jar"
-for jar in /usr/share/jdiskmark/libs/*.jar; do
-    CLASSPATH="$CLASSPATH:$jar"
-done
-exec java -cp "$CLASSPATH" jdiskmark.App "$@"
+CLASSPATH="/usr/share/jdiskmark/jdiskmark.jar:/usr/share/jdiskmark/libs/*"
+#for jar in /usr/share/jdiskmark/libs/*.jar; do
+#    CLASSPATH="$CLASSPATH:$jar"
+#done
+exec java ${jvm.run.options} -cp "$CLASSPATH" jdiskmark.App "$@"
 ]]></echo>
         <chmod file="${deb.dir}/usr/bin/jdiskmark" perm="755"/>
 
@@ -531,12 +543,15 @@ Categories=Utility;System;</echo>
 
             <arg value="--main-jar" />
             <arg value="${pkg.name}.jar" />
+            
+            <arg value="--java-options"/>
+            <arg value="${jvm.run.options}"/>
 
             <arg value="--main-class" />
             <arg value="jdiskmark.App" />
 
             <arg value="--add-modules" />
-            <arg value="java.base,java.desktop,java.logging,java.prefs,java.management,java.instrument,java.sql,java.rmi,java.naming" />
+            <arg value="${java.modules}" />
 
             <arg value="--license-file" />
             <arg value="LICENSE.md" />
@@ -554,6 +569,9 @@ Categories=Utility;System;</echo>
             
             <arg value="--linux-package-name" />
             <arg value="${pkg.name}" />
+
+            <arg value="--linux-package-deps" />
+            <arg value="${linux.package.deps}" />
         </exec>
     </target>
     
@@ -607,11 +625,14 @@ Categories=Utility;System;</echo>
             <arg value="--main-jar" />
             <arg value="${pkg.name}.jar" />
 
+            <arg value="--java-options"/>
+            <arg value="${jvm.run.options}"/>
+            
             <arg value="--main-class" />
             <arg value="jdiskmark.App" />
 
             <arg value="--add-modules" />
-            <arg value="java.base,java.desktop,java.logging,java.prefs,java.management,java.instrument,java.sql,java.rmi,java.naming" />
+            <arg value="${java.modules}" />
 
             <arg value="--license-file" />
             <arg value="LICENSE.md" />
@@ -630,5 +651,67 @@ Categories=Utility;System;</echo>
             <arg value="--linux-package-name" />
             <arg value="${pkg.name}" />
         </exec>
+    </target>
+
+    <!-- Flatpak packaging properties -->
+    <property name="flatpak.manifest.dir" value="pkg/flatpak"/>
+    <property name="flatpak.app.id" value="net.jdiskmark.JDiskMark"/>
+    <property name="flatpak.build.dir" value="flatpak-build"/>
+    <property name="flatpak.repo.dir" value="flatpak-repo"/>
+    <property name="flatpak.bundle.file" value="dist/${pkg.name}-${version}.flatpak"/>
+    <property name="flatpak.staging.dir" value="dist/flatpak-staging"/>
+
+    <target name="create-flatpak" depends="clean, -pre-jar, jar, -post-jar, -prepare-jpackage-input-jar"
+            description="Build Flatpak bundle using flatpak-builder">
+        <condition property="is.linux">
+            <os name="Linux"/>
+        </condition>
+        <fail unless="is.linux" message="The create-flatpak target can only be run on Linux."/>
+
+        <!-- Verify flatpak-builder is available -->
+        <exec executable="which" failonerror="true" outputproperty="flatpak.builder.path">
+            <arg value="flatpak-builder"/>
+        </exec>
+
+        <!-- Ensure the dist output directory exists -->
+        <mkdir dir="dist"/>
+
+        <!-- Prepare a version-agnostic staging directory for the flatpak builder -->
+        <delete dir="${flatpak.staging.dir}" failonerror="false"/>
+        <mkdir dir="${flatpak.staging.dir}"/>
+        <copy file="dist/${release.dir}/${pkg.name}.jar" tofile="${flatpak.staging.dir}/jdiskmark.jar" failonerror="true"/>
+
+        <!-- Run flatpak-builder to assemble the Flatpak from the manifest -->
+        <exec executable="flatpak-builder" failonerror="true">
+            <arg value="--user"/>
+            <arg value="--install-deps-from=flathub"/>
+            <arg value="--assumeyes"/>
+            <arg value="--force-clean"/>
+            <arg value="--repo=${flatpak.repo.dir}"/>
+            <arg value="${flatpak.build.dir}"/>
+            <arg value="${flatpak.manifest.dir}/${flatpak.app.id}.yml"/>
+        </exec>
+
+        <!-- Export a single-file Flatpak bundle from the local repo. -->
+        <exec executable="flatpak" failonerror="true">
+            <arg value="build-bundle"/>
+            <arg value="${flatpak.repo.dir}"/>
+            <arg value="${flatpak.bundle.file}"/>
+            <arg value="${flatpak.app.id}"/>
+        </exec>
+
+        <!-- Clean up intermediate build artifacts.
+             Use rm -rf instead of <delete> because flatpak-builder creates
+             special files (e.g. var/run/adduser) that Ant cannot delete. -->
+        <exec executable="rm" failonerror="false">
+            <arg value="-rf"/>
+            <arg value="${flatpak.build.dir}"/>
+        </exec>
+        <exec executable="rm" failonerror="false">
+            <arg value="-rf"/>
+            <arg value="${flatpak.repo.dir}"/>
+        </exec>
+
+        <echo message="Flatpak bundle created: ${flatpak.bundle.file}"/>
     </target>
 </project>
