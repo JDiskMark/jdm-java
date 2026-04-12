@@ -56,14 +56,9 @@ jobs:
     - name: Build Flatpak Bundle
       run: ant create-flatpak
 
-    - name: Copy Install Instructions into dist/
-      run: cp pkg/flatpak/INSTALL.md dist/INSTALL.md
-
     - name: Upload Flatpak Bundle
       uses: actions/upload-artifact@v4
       with:
         name: jdiskmark-${{ steps.version.outputs.value }}.flatpak
-        path: |
-          dist/*.flatpak
-          dist/INSTALL.md
+        path: dist/*.flatpak
 

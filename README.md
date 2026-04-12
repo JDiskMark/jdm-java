@@ -1,4 +1,4 @@
-# JDiskMark v0.6.4 beta (Windows/Mac/Linux)
+# JDiskMark v0.7.0 beta (Windows/Mac/Linux)
 
 Java Disk Benchmark Utility
 
@@ -43,15 +43,44 @@ Note: the `rpm.version` is similar to the `version` but replaces hyphens with pe
 ### Flatpak Installer (.flatpak)
 
 The flatpak installer is a universal linux package that can be used on many distributions.
+Some gaming-oriented distros such as Bazzite or SteamOS have Flatpak and Flathub 
+pre-configured.
 
-To install download the `jdiskmark-<version>.flatpak` file and run:
-`flatpak install --user ./jdiskmark-<version>.flatpak`
+#### 1. Add Flathub (if not already configured)
 
-To run:
-`flatpak run net.jdiskmark.JDiskMark`
+```sh
+flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+```
 
-To remove:
-`flatpak uninstall net.jdiskmark.JDiskMark`
+#### 2. Install the required runtime
+
+JDiskMark depends on the `org.freedesktop.Platform 25.08` runtime. Install it from Flathub:
+
+```sh
+flatpak install --user flathub org.freedesktop.Platform//25.08
+```
+
+#### 3. Install JDiskMark
+
+Download the `jdiskmark-<version>.flatpak` bundle and run:
+
+```sh
+flatpak install --user ./jdiskmark-<version>.flatpak
+```
+
+#### 4. Run
+
+Launch JDiskMark from your application menu or the terminal:
+
+```sh
+flatpak run net.jdiskmark.JDiskMark
+```
+
+#### 5. Uninstall
+
+```sh
+flatpak uninstall net.jdiskmark.JDiskMark
+```
 
 ### Zip Archive (.zip)
 

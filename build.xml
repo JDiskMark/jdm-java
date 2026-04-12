@@ -10,6 +10,7 @@
 <project name="JDiskMark" default="default" basedir=".">
     <description>Builds, tests, and runs the project JDiskMark.</description>
     <import file="nbproject/build-impl.xml"/>
+    <property name="linux.package.deps" value="libasound2t64 | libasound2" />
     <!--
 
     There exist several targets which are by default empty and which can be 
@@ -317,7 +318,7 @@ Version: ${deb.version}
 Section: utils
 Priority: optional
 Architecture: all
-Depends: openjdk-25-jre
+Depends: openjdk-25-jre, ${linux.package.deps}
 Maintainer: JDiskMark Team
 Description: JDiskMark - Disk Benchmark Utility
  JDiskMark is a cross-platform disk benchmark utility written in Java.
@@ -406,6 +407,9 @@ Categories=Utility;System;</echo>
             
             <arg value="--linux-package-name" />
             <arg value="${pkg.name}" />
+
+            <arg value="--linux-package-deps" />
+            <arg value="${linux.package.deps}" />
         </exec>
     </target>
     
