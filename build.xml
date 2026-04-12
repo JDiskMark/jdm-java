@@ -269,21 +269,69 @@
         <delete>
             <fileset dir="dist" includes="*.pkg"/>
         </delete>
-        <property name="flatlaf.jar" value="libs/flatlaf-3.3.jar"/>
+        <property name="flatlaf.jar.name" value="flatlaf-3.7.jar"/>
+        <property name="flatlaf.jar.src"  value="libs/${flatlaf.jar.name}"/>
+        <property name="flatlaf.jar.input" value="${dist.dir}/${release.dir}/lib/${flatlaf.jar.name}"/>
         <property name="temp.extract.dir" value="build.sign"/>
         <delete dir="${temp.extract.dir}"/>
         <mkdir dir="${temp.extract.dir}"/>
 
-        <property name="jpackage.input.dir.relative" value="${release.dir}"/>
-        <property name="app.image.dir" value="${dist.dir}/${pkg.name}-${version}-app-image"/>
+        <property name="app.image.dir"  value="${dist.dir}/${pkg.name}-${version}-app-image"/>
         <property name="pkg.app.bundle" value="${app.image.dir}/${pkg.name}-${version}.app"/>
+        <property name="unsigned.pkg"   value="${dist.dir}/${pkg.name}-${version}-unsigned.pkg"/>
+        <property name="jpackage.output.pkg.defaultname" value="${pkg.name}-${version}-${dmg.version}.pkg"/>
+        <property name="jpackage.output.pkg.targetname"  value="${pkg.name}-${version}.pkg"/>
 
-        <!-- Step 1: Build an unsigned app-image.
-             jpackage mac-entitlements does not reliably embed entitlements
-             into the inner launcher binary when building type pkg in one pass.
-             Workaround: build app-image, re-sign everything inside-out with
-             entitlements.plist, then build the pkg from the pre-signed image. -->
-        <echo message="Step 1: Building unsigned app-image..."/>
+        <!-- Remove Windows-only files from the jpackage input dir -->
+        <delete failonerror="false">
+            <fileset dir="${dist.dir}/${release.dir}" includes="*.pkg,*.exe,*.msi,*.ps1"/>
+        </delete>
+
+        <!-- Step 1: Sign FlatLaf native dylibs BEFORE packaging.
+             They live inside a JAR so codesign deep cannot reach them at
+             bundle-signing time. Sign them now and repack into both the
+             project libs/ copy and the input-dir copy so jpackage bundles
+             the signed versions. -->
+        <echo message="Step 1: Signing FlatLaf dylibs..."/>
+        <unzip src="${flatlaf.jar.src}" dest="${temp.extract.dir}">
+            <patternset>
+                <include name="com/formdev/flatlaf/natives/libflatlaf-macos-x86_64.dylib"/>
+                <include name="com/formdev/flatlaf/natives/libflatlaf-macos-arm64.dylib"/>
+            </patternset>
+        </unzip>
+        <exec executable="codesign" failonerror="true">
+            <arg value="--force"/>
+            <arg value="--options"/><arg value="runtime"/>
+            <arg value="--entitlements"/><arg value="entitlements.plist"/>
+            <arg value="--timestamp"/>
+            <arg value="--sign"/><arg value="${signing.identity}"/>
+            <arg value="${temp.extract.dir}/com/formdev/flatlaf/natives/libflatlaf-macos-x86_64.dylib"/>
+        </exec>
+        <exec executable="codesign" failonerror="true">
+            <arg value="--force"/>
+            <arg value="--options"/><arg value="runtime"/>
+            <arg value="--entitlements"/><arg value="entitlements.plist"/>
+            <arg value="--timestamp"/>
+            <arg value="--sign"/><arg value="${signing.identity}"/>
+            <arg value="${temp.extract.dir}/com/formdev/flatlaf/natives/libflatlaf-macos-arm64.dylib"/>
+        </exec>
+        <!-- Repack into the project source JAR and the input-dir copy -->
+        <jar destfile="${flatlaf.jar.src}" update="yes">
+            <fileset dir="${temp.extract.dir}"/>
+        </jar>
+        <jar destfile="${flatlaf.jar.input}" update="yes">
+            <fileset dir="${temp.extract.dir}"/>
+        </jar>
+        <delete dir="${temp.extract.dir}"/>
+        <echo message="FlatLaf dylibs signed and repacked."/>
+
+        <!-- Step 2: Build UNSIGNED app-image.
+             Do NOT pass mac-sign. Signing is done manually below so we
+             control entitlements. jpackage's mac-entitlements does not
+             reliably apply to inner binaries, and passing mac-sign on the
+             later pkg step causes jpackage to re-sign the bundle, wiping
+             the entitlements we set here. -->
+        <echo message="Step 2: Building unsigned app-image..."/>
         <delete dir="${app.image.dir}" failonerror="false"/>
         <exec executable="jpackage" failonerror="true">
             <arg value="--type"/><arg value="app-image"/>
@@ -294,24 +342,27 @@
             <arg value="--app-version"/><arg value="${dmg.version}"/>
             <arg value="--vendor"/><arg value="jdiskmark"/>
             <arg value="--dest"/><arg value="${app.image.dir}"/>
+            <arg value="--resource-dir"/><arg value="pkg/macos/images"/>
+            <arg value="--mac-package-identifier"/><arg value="${mac.package.identifier}"/>
+            <arg value="--mac-package-name"/><arg value="JDiskMark"/>
         </exec>
 
-        <!-- Step 2a: Sign all dylibs inside the bundled JDK runtime with entitlements. -->
-        <echo message="Step 2a: Signing runtime dylibs with JIT entitlements..."/>
+        <!-- Step 3a: Sign all dylibs/so files inside the bundled JDK runtime. -->
+        <echo message="Step 3a: Signing runtime dylibs..."/>
         <exec executable="bash" failonerror="true">
             <arg value="-c"/>
-            <arg value="find &quot;${pkg.app.bundle}/Contents/runtime&quot; \( -name &apos;*.dylib&apos; -o -name &apos;*.so&apos; \) | while read f; do codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign &quot;${signing.identity}&quot; &quot;$f&quot;; done"/>
+            <arg value="find &quot;${pkg.app.bundle}/Contents/runtime&quot; \( -name '*.dylib' -o -name '*.so' \) | while read f; do codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign &quot;${signing.identity}&quot; &quot;$f&quot;; done"/>
         </exec>
 
-        <!-- Step 2b: Sign any other Mach-O executables in the runtime (e.g. keytool, java). -->
-        <echo message="Step 2b: Signing runtime executables with JIT entitlements..."/>
+        <!-- Step 3b: Sign Mach-O executables in the runtime (keytool, java, etc.). -->
+        <echo message="Step 3b: Signing runtime executables..."/>
         <exec executable="bash" failonerror="true">
             <arg value="-c"/>
-            <arg value="find &quot;${pkg.app.bundle}/Contents/runtime&quot; -type f -perm +111 ! -name &apos;*.dylib&apos; ! -name &apos;*.so&apos; | while read f; do if file &quot;$f&quot; | grep -q Mach-O; then codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign &quot;${signing.identity}&quot; &quot;$f&quot;; fi; done"/>
+            <arg value="find &quot;${pkg.app.bundle}/Contents/runtime&quot; -type f -perm +111 ! -name '*.dylib' ! -name '*.so' | while read f; do if file &quot;$f&quot; | grep -q Mach-O; then codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign &quot;${signing.identity}&quot; &quot;$f&quot;; fi; done"/>
         </exec>
 
-        <!-- Step 2c: Sign the main app launcher. -->
-        <echo message="Step 2c: Signing main launcher with JIT entitlements..."/>
+        <!-- Step 3c: Sign the main launcher binary. -->
+        <echo message="Step 3c: Signing main launcher..."/>
         <exec executable="codesign" failonerror="true">
             <arg value="--force"/>
             <arg value="--options"/><arg value="runtime"/>
@@ -321,8 +372,8 @@
             <arg value="${pkg.app.bundle}/Contents/MacOS/${pkg.name}-${version}"/>
         </exec>
 
-        <!-- Step 2d: Seal the whole app bundle. -->
-        <echo message="Step 2d: Sealing app bundle..."/>
+        <!-- Step 3d: Seal the app bundle. -->
+        <echo message="Step 3d: Sealing app bundle..."/>
         <exec executable="codesign" failonerror="true">
             <arg value="--force"/>
             <arg value="--options"/><arg value="runtime"/>
@@ -332,8 +383,10 @@
             <arg value="${pkg.app.bundle}"/>
         </exec>
 
-        <!-- Step 3: Build .pkg from the pre-signed app-image. -->
-        <echo message="Step 3: Building PKG from signed app-image..."/>
+        <!-- Step 4: Build unsigned PKG from the signed app-image.
+             NO mac-sign: jpackage would re-sign the embedded app bundle
+             and strip the entitlements we just applied. -->
+        <echo message="Step 4: Building PKG from signed app-image..."/>
         <exec executable="jpackage" failonerror="true">
             <arg value="--type"/><arg value="pkg"/>
             <arg value="--app-image"/><arg value="${pkg.app.bundle}"/>
@@ -341,56 +394,26 @@
             <arg value="--app-version"/><arg value="${dmg.version}"/>
             <arg value="--dest"/><arg value="${dist.dir}"/>
             <arg value="--resource-dir"/><arg value="pkg/macos/images"/>
-            <arg value="--mac-sign"/>
-            <arg value="--mac-signing-key-user-name"/><arg value="${mac.signing.key.user.name}"/>
             <arg value="--mac-package-identifier"/><arg value="${mac.package.identifier}"/>
             <arg value="--mac-package-name"/><arg value="JDiskMark"/>
         </exec>
 
-        <property name="jpackage.output.pkg.defaultname" value="${pkg.name}-${version}-${dmg.version}.pkg"/>
-        <property name="jpackage.output.pkg.targetname" value="${pkg.name}-${version}.pkg"/>
-
-        <echo message="Renaming PKG from '${jpackage.output.pkg.defaultname}' to '${jpackage.output.pkg.targetname}' in ${dist.dir}"/>
+        <!-- Step 5: Sign the PKG installer with Developer ID Installer cert.
+             productsign signs the outer package; the app bundle inside
+             keeps its Developer ID Application signature from step 3. -->
+        <echo message="Step 5: Signing PKG installer with Developer ID Installer..."/>
         <move file="${dist.dir}/${jpackage.output.pkg.defaultname}"
-              tofile="${dist.dir}/${jpackage.output.pkg.targetname}"
+              tofile="${unsigned.pkg}"
               overwrite="true"/>
+        <exec executable="productsign" failonerror="true">
+            <arg value="--sign"/><arg value="${mac.installer.signing.identity}"/>
+            <arg value="--timestamp"/>
+            <arg value="${unsigned.pkg}"/>
+            <arg value="${dist.dir}/${jpackage.output.pkg.targetname}"/>
+        </exec>
+        <delete file="${unsigned.pkg}"/>
 
         <echo message="PKG installer created: ${dist.dir}/${jpackage.output.pkg.targetname}"/>
-
-        <!-- Sign FlatLaf native dylibs (extracted from JAR, signed, repacked). -->
-        <unzip src="libs/flatlaf-3.3.jar" dest="${temp.extract.dir}">
-            <patternset>
-                <include name="com/formdev/flatlaf/natives/libflatlaf-macos-x86_64.dylib"/>
-                <include name="com/formdev/flatlaf/natives/libflatlaf-macos-arm64.dylib"/>
-            </patternset>
-        </unzip>
-        <echo message="Signing extracted FlatLaf dylibs..."/>
-
-        <exec executable="codesign" failonerror="true">
-            <arg value="--force"/>
-            <arg value="--options"/><arg value="runtime"/>
-            <arg value="--entitlements"/><arg value="entitlements.plist"/>
-            <arg value="--timestamp"/>
-            <arg value="--sign"/><arg value="${signing.identity}"/>
-            <arg value="${temp.extract.dir}/com/formdev/flatlaf/natives/libflatlaf-macos-x86_64.dylib"/>
-        </exec>
-
-        <exec executable="codesign" failonerror="true">
-            <arg value="--force"/>
-            <arg value="--options"/><arg value="runtime"/>
-            <arg value="--entitlements"/><arg value="entitlements.plist"/>
-            <arg value="--timestamp"/>
-            <arg value="--sign"/><arg value="${signing.identity}"/>
-            <arg value="${temp.extract.dir}/com/formdev/flatlaf/natives/libflatlaf-macos-arm64.dylib"/>
-        </exec>
-
-        <echo message="Repacking signed dylibs into JAR..."/>
-        <jar destfile="${flatlaf.jar}" update="yes">
-            <fileset dir="${temp.extract.dir}"/>
-        </jar>
-
-        <delete dir="${temp.extract.dir}"/>
-        <echo message="FlatLaf JAR successfully updated and signed."/>
 
     </target>
     <target name="notarize-pkg" description="Submit the package for Apple notarization">
