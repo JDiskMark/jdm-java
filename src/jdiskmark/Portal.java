@@ -69,12 +69,20 @@ public class Portal {
             jsonBody = mapper.writeValueAsString(benchmark);
             
             // Write to a local file for debugging
-            // This creates/overwrites "debug_benchmark.json" in your project root
-            java.nio.file.Files.writeString(
-                java.nio.file.Path.of("debug-benchmark.json"), 
-                jsonBody
-            );
-            App.msg("Debug file written to: " + java.nio.file.Paths.get("debug-benchmark.json").toAbsolutePath());
+            try {
+                java.nio.file.Path debugPath = java.nio.file.Path.of("debug-benchmark.json");
+                java.nio.file.Files.writeString(debugPath, jsonBody);
+                App.msg("Debug file written to: " + debugPath.toAbsolutePath());
+            } catch (IOException e) {
+                // Fallback to user home cache dir if project root is not writable (GH-161)
+                try {
+                    java.nio.file.Path fallbackPath = java.nio.file.Paths.get(App.APP_CACHE_DIR_NAME, "debug-benchmark.json");
+                    java.nio.file.Files.writeString(fallbackPath, jsonBody);
+                    App.msg("Debug file written to fallback: " + fallbackPath.toAbsolutePath());
+                } catch (IOException e2) {
+                    App.err("Failed to write debug file: " + e2.getMessage());
+                }
+            }
             
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
