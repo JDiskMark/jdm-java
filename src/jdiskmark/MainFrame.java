@@ -88,14 +88,21 @@ public final class MainFrame extends javax.swing.JFrame {
         // test portal settings
         portalUploadMenuItem.setSelected(App.sharePortal);
         portalEndpointMenu.setEnabled(App.sharePortal);
-        if (Portal.uploadUrl.equalsIgnoreCase(Portal.LOCAL_UPLOAD_ENDPOINT)) {
+        if (Portal.uploadResourceLocator.equalsIgnoreCase(Portal.LOCAL_UPLOAD_LOCATOR)) {
             localEndpointRbMenuItem.setSelected(true);
         }
-        if (Portal.uploadUrl.equalsIgnoreCase(Portal.TEST_UPLOAD_ENDPOINT)) {
+        if (Portal.uploadResourceLocator.equalsIgnoreCase(Portal.TEST_UPLOAD_LOCATOR)) {
             testEndpointRbMenuItem.setSelected(true);
         }
-        if (Portal.uploadUrl.equalsIgnoreCase(Portal.PRODUCTION_UPLOAD_ENDPOINT)) {
+        if (Portal.uploadResourceLocator.equalsIgnoreCase(Portal.PRODUCTION_UPLOAD_LOCATOR)) {
             prodEndpointRbMenuItem.setSelected(true);
+        }
+        portalProtocolMenu.setEnabled(App.sharePortal);
+        if (Portal.uploadProtocol.equalsIgnoreCase(Portal.HTTP)) {
+            httpProtoRbMenuItem.setSelected(true);
+        }
+        if (Portal.uploadProtocol.equalsIgnoreCase(Portal.HTTPS)) {
+            httpsProtoRbMenuItem.setSelected(true);
         }
         
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
@@ -180,6 +187,7 @@ public final class MainFrame extends javax.swing.JFrame {
         sectorAlignbuttonGroup = new javax.swing.ButtonGroup();
         portalEndpointButtonGroup = new javax.swing.ButtonGroup();
         themeButtonGroup = new javax.swing.ButtonGroup();
+        protocolButtonGroup = new javax.swing.ButtonGroup();
         tabbedPane = new javax.swing.JTabbedPane();
         runPanel = new jdiskmark.BenchmarkPanel();
         eventScrollPane = new javax.swing.JScrollPane();
@@ -245,6 +253,9 @@ public final class MainFrame extends javax.swing.JFrame {
         bardWarmPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
         helpMenu = new javax.swing.JMenu();
         portalUploadMenuItem = new javax.swing.JCheckBoxMenuItem();
+        portalProtocolMenu = new javax.swing.JMenu();
+        httpProtoRbMenuItem = new javax.swing.JRadioButtonMenuItem();
+        httpsProtoRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         portalEndpointMenu = new javax.swing.JMenu();
         localEndpointRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         testEndpointRbMenuItem = new javax.swing.JRadioButtonMenuItem();
@@ -727,6 +738,28 @@ public final class MainFrame extends javax.swing.JFrame {
         });
         helpMenu.add(portalUploadMenuItem);
 
+        portalProtocolMenu.setText("Portal Protocol");
+
+        protocolButtonGroup.add(httpProtoRbMenuItem);
+        httpProtoRbMenuItem.setText("HTTP");
+        httpProtoRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                httpProtoRbMenuItemActionPerformed(evt);
+            }
+        });
+        portalProtocolMenu.add(httpProtoRbMenuItem);
+
+        protocolButtonGroup.add(httpsProtoRbMenuItem);
+        httpsProtoRbMenuItem.setText("HTTPS");
+        httpsProtoRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                httpsProtoRbMenuItemActionPerformed(evt);
+            }
+        });
+        portalProtocolMenu.add(httpsProtoRbMenuItem);
+
+        helpMenu.add(portalProtocolMenu);
+
         portalEndpointMenu.setText("Portal Endpoint");
 
         portalEndpointButtonGroup.add(localEndpointRbMenuItem);
@@ -920,7 +953,7 @@ public final class MainFrame extends javax.swing.JFrame {
             PortalEnableDialog dialog = new PortalEnableDialog(this);
             dialog.setVisible(true); // Execution pauses here because it's modal
             if (!dialog.isAuthorized()) {
-                msg("test passcode required to upload benchmarks");
+                App.msg("test passcode required to upload benchmarks");
                 portalUploadMenuItem.setSelected(false);
                 return;
             }
@@ -933,6 +966,7 @@ public final class MainFrame extends javax.swing.JFrame {
             App.msg("portal upload disabled");
         }
         portalEndpointMenu.setEnabled(App.sharePortal);
+        portalProtocolMenu.setEnabled(App.sharePortal);
     }//GEN-LAST:event_portalUploadMenuItemActionPerformed
     private void directIoCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_directIoCbMenuItemActionPerformed
         App.directEnable = directIoCbMenuItem.isSelected();
@@ -979,17 +1013,17 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_align64KRbMenuItemActionPerformed
 
     private void localEndpointRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_localEndpointRbMenuItemActionPerformed
-        Portal.uploadUrl = Portal.LOCAL_UPLOAD_ENDPOINT;
+        Portal.uploadResourceLocator = Portal.LOCAL_UPLOAD_LOCATOR;
         App.saveConfig();
     }//GEN-LAST:event_localEndpointRbMenuItemActionPerformed
 
     private void testEndpointRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_testEndpointRbMenuItemActionPerformed
-        Portal.uploadUrl = Portal.TEST_UPLOAD_ENDPOINT;
+        Portal.uploadResourceLocator = Portal.TEST_UPLOAD_LOCATOR;
         App.saveConfig();
     }//GEN-LAST:event_testEndpointRbMenuItemActionPerformed
 
     private void prodEndpointRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_prodEndpointRbMenuItemActionPerformed
-        Portal.uploadUrl = Portal.PRODUCTION_UPLOAD_ENDPOINT;
+        Portal.uploadResourceLocator = Portal.PRODUCTION_UPLOAD_LOCATOR;
         App.saveConfig();
     }//GEN-LAST:event_prodEndpointRbMenuItemActionPerformed
 
@@ -1044,6 +1078,16 @@ public final class MainFrame extends javax.swing.JFrame {
         App.saveConfig();
     }//GEN-LAST:event_gcRetryCbMenuItemActionPerformed
 
+    private void httpProtoRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_httpProtoRbMenuItemActionPerformed
+        Portal.uploadProtocol = Portal.HTTP;
+        App.saveConfig();
+    }//GEN-LAST:event_httpProtoRbMenuItemActionPerformed
+
+    private void httpsProtoRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_httpsProtoRbMenuItemActionPerformed
+        Portal.uploadProtocol = Portal.HTTPS;
+        App.saveConfig();
+    }//GEN-LAST:event_httpsProtoRbMenuItemActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
     private javax.swing.JRadioButtonMenuItem align16KRbMenuItem;
@@ -1082,9 +1126,11 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JCheckBoxMenuItem gcHintsCbMenuItem;
     private javax.swing.JCheckBoxMenuItem gcRetryCbMenuItem;
     private javax.swing.JMenu helpMenu;
+    private javax.swing.JRadioButtonMenuItem httpProtoRbMenuItem;
+    private javax.swing.JRadioButtonMenuItem httpsProtoRbMenuItem;
     private javax.swing.JMenu ioEngineMenu;
     private javax.swing.ButtonGroup ioEnginebuttonGroup;
-        private javax.swing.JLabel jLabel22;
+    private javax.swing.JLabel jLabel22;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JPopupMenu.Separator jSeparator1;
@@ -1103,9 +1149,11 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.ButtonGroup palettebuttonGroup;
     private javax.swing.ButtonGroup portalEndpointButtonGroup;
     private javax.swing.JMenu portalEndpointMenu;
+    private javax.swing.JMenu portalProtocolMenu;
     private javax.swing.JCheckBoxMenuItem portalUploadMenuItem;
     private javax.swing.JRadioButtonMenuItem prodEndpointRbMenuItem;
     private javax.swing.JPanel progressPanel;
+    private javax.swing.ButtonGroup protocolButtonGroup;
     private javax.swing.JMenuItem resetBenchmarkItem;
     private javax.swing.JMenuItem resetSequenceMenuItem;
     private jdiskmark.BenchmarkPanel runPanel;
