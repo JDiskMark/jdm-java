@@ -15,13 +15,19 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Portal {
-    
-    static public final String PRODUCTION_UPLOAD_ENDPOINT = "http://www.jdiskmark.net:5000/api/benchmarks/upload";
-    static public final String TEST_UPLOAD_ENDPOINT = "https://test.jdiskmark.net:5000/api/benchmarks/upload";
-    static public final String LOCAL_UPLOAD_ENDPOINT = "http://localhost:5000/api/benchmarks/upload";
+    // protocols
+    static public final String HTTP = "http://";
+    static public final String HTTPS = "https://";
+    // resource locators
+    static public final String PRODUCTION_UPLOAD_LOCATOR = "www.jdiskmark.net:5000/api/benchmarks/upload";
+    static public final String TEST_UPLOAD_LOCATOR = "test.jdiskmark.net:5000/api/benchmarks/upload";
+    static public final String LOCAL_UPLOAD_LOCATOR = "localhost:5000/api/benchmarks/upload";
+    // port
     static public final int UPLOAD_PORT = 5000; // cur dev api port
     
-    static public String uploadUrl = LOCAL_UPLOAD_ENDPOINT;
+    static public String uploadResourceLocator = LOCAL_UPLOAD_LOCATOR;
+    static public String uploadProtocol = HTTP;
+    static String getUploadUrl() { return uploadProtocol + uploadResourceLocator; }
     
     // Helper method to check connectivity to the host
     private static boolean isHostReachable(String host, int port) {
@@ -37,6 +43,7 @@ public class Portal {
     
     static public void upload(Benchmark benchmark) {
         
+        String uploadUrl = getUploadUrl();
         App.msg("starting upload to " + uploadUrl);
         
         // Extract host and port from URI string
@@ -69,12 +76,20 @@ public class Portal {
             jsonBody = mapper.writeValueAsString(benchmark);
             
             // Write to a local file for debugging
-            // This creates/overwrites "debug_benchmark.json" in your project root
-            java.nio.file.Files.writeString(
-                java.nio.file.Path.of("debug-benchmark.json"), 
-                jsonBody
-            );
-            App.msg("Debug file written to: " + java.nio.file.Paths.get("debug-benchmark.json").toAbsolutePath());
+            try {
+                java.nio.file.Path debugPath = java.nio.file.Path.of("debug-benchmark.json");
+                java.nio.file.Files.writeString(debugPath, jsonBody);
+                App.msg("Debug file written to: " + debugPath.toAbsolutePath());
+            } catch (IOException e) {
+                // Fallback to user home cache dir if project root is not writable (GH-161)
+                try {
+                    java.nio.file.Path fallbackPath = java.nio.file.Paths.get(App.APP_CACHE_DIR_NAME, "debug-benchmark.json");
+                    java.nio.file.Files.writeString(fallbackPath, jsonBody);
+                    App.msg("Debug file written to fallback: " + fallbackPath.toAbsolutePath());
+                } catch (IOException e2) {
+                    App.err("Failed to write debug file: " + e2.getMessage());
+                }
+            }
             
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
@@ -87,15 +102,14 @@ public class Portal {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             
             if (response.statusCode() == 201 || response.statusCode() == 200) {
-                App.msg("Benchmark uploaded successfully!");
+                App.msg("Benchmark uploaded successfully to " + uploadUrl);
             } else {
                 App.err("Upload failed. Status: " + response.statusCode());
                 App.err("Server Response: " + response.body());
             }
         } catch (IOException | InterruptedException ex) {
-            Logger.getLogger(Portal.class.getName()).log(Level.SEVERE, null, ex);
+            App.err("Upload failed. Error: " + ex.getMessage());
+            Logger.getLogger(Portal.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
         }
-        
-        App.msg("done uploading to " + uploadUrl);
     }
 }
