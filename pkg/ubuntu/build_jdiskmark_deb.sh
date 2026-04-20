@@ -23,9 +23,9 @@ LIB_DIR="${REPO_DIR}/libs"
 
 # Function to check for and install required packages
 install_dependencies() {
-    echo "Installing build dependencies: git, ant, openjdk-21-jdk, dpkg-dev..."
+    echo "Installing build dependencies: git, ant, openjdk-25-jdk, dpkg-dev..."
     sudo apt update > /dev/null 2>&1
-    if ! sudo apt install -y git ant openjdk-21-jdk dpkg-dev; then
+    if ! sudo apt install -y git ant openjdk-25-jdk dpkg-dev; then
         echo "Error: Failed to install required dependencies."
         exit 1
     fi
@@ -79,10 +79,10 @@ Version: ${DEB_VERSION}
 Section: utils
 Priority: optional
 Architecture: all
-Depends: default-jre | openjdk-21-jre | openjdk-17-jre
+Depends: openjdk-25-jre
 Maintainer: Manus AI <ai@manus.im>
-Description: jDiskMark - Disk Benchmark Utility
- jDiskMark is a cross-platform disk benchmark utility written in Java.
+Description: JDiskMark - Java Disk Benchmark Utility
+ JDiskMark is a cross-platform disk benchmark utility written in Java.
  It provides a simple way to measure the read and write performance of
  your storage devices.
 EOF
@@ -94,6 +94,13 @@ EOF
 #!/bin/sh
 # Wrapper script for jDiskMark
 
+# Require Java 25 — java.net.http.HttpClient and other APIs depend on it.
+if [ -x "/usr/lib/jvm/java-25-openjdk-amd64/bin/java" ]; then
+    JAVA_CMD="/usr/lib/jvm/java-25-openjdk-amd64/bin/java"
+else
+    JAVA_CMD="java"
+fi
+
 # Set the classpath to include the main jar and all jars in the libs directory
 CLASSPATH="${INSTALL_DIR}/${JAR_FILE}"
 for jar in ${INSTALL_DIR}/libs/*.jar; do
@@ -101,9 +108,7 @@ for jar in ${INSTALL_DIR}/libs/*.jar; do
 done
 
 # Execute the application with the correct main class and classpath
-# The main class is jdiskmark.App, but the jar is a runnable jar, so we use -jar
-# However, since we need the external libs, we must use -cp and specify the main class.
-exec java -cp "\$CLASSPATH" jdiskmark.App "\$@"
+exec "\$JAVA_CMD" -cp "\$CLASSPATH" jdiskmark.App "\$@"
 EOF
 
     # Set permissions
