@@ -79,7 +79,7 @@ Version: ${DEB_VERSION}
 Section: utils
 Priority: optional
 Architecture: all
-Depends: openjdk-25-jre
+Depends: openjdk-25-jdk
 Maintainer: Manus AI <ai@manus.im>
 Description: JDiskMark - Java Disk Benchmark Utility
  JDiskMark is a cross-platform disk benchmark utility written in Java.
@@ -108,7 +108,9 @@ for jar in ${INSTALL_DIR}/libs/*.jar; do
 done
 
 # Execute the application with the correct main class and classpath
-exec "\$JAVA_CMD" -cp "\$CLASSPATH" jdiskmark.App "\$@"
+# --add-modules java.net.http is required because openjdk JRE packages on Ubuntu
+# are jlink-generated minimal runtimes that may omit this module.
+exec "\$JAVA_CMD" --add-modules java.net.http -cp "\$CLASSPATH" jdiskmark.App "\$@"
 EOF
 
     # Set permissions
