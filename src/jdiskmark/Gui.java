@@ -90,6 +90,7 @@ public final class Gui {
     public static BenchmarkControlPanel controlPanel = null;
     public static SelectDriveFrame selFrame = null;
     public static BenchmarkPanel runPanel = null;
+    public static SmartPanel smartPanel = null;
     public static JProgressBar progressBar = null;
     // graph component
     public static JFreeChart chart;

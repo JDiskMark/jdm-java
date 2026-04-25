@@ -36,6 +36,7 @@ public final class MainFrame extends javax.swing.JFrame {
         cResultMountPanel.setLayout(new BorderLayout());
         Gui.chartPanel.setSize(cResultMountPanel.getSize());
         Gui.chartPanel.setSize(cResultMountPanel.getWidth(), 200);
+        Gui.smartPanel = new SmartPanel();
         cResultMountPanel.add(Gui.chartPanel);
         BenchmarkControlPanel bcPanel = Gui.createControlPanel();
         bControlMountPanel.setLayout(new MigLayout());
@@ -69,8 +70,38 @@ public final class MainFrame extends javax.swing.JFrame {
         // auto scroll the text area.
         DefaultCaret caret = (DefaultCaret)msgTextArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+        
+        
+        if (App.isLinux()) {
+            // Build new left-side main navigation tab pane wrapping the top content area.
+            // The Benchmark tab contains the control panel (left) + chart (right).
+            // The bottom tabbedPane (Benchmark Operations / Events / Drive Location) stays below.
+            javax.swing.JTabbedPane mainTabPane = new javax.swing.JTabbedPane(javax.swing.JTabbedPane.LEFT);
+            mainTabPane.putClientProperty("JTabbedPane.tabRotation", "auto");
+
+            JPanel benchTab = new JPanel(new BorderLayout());
+            benchTab.add(bControlMountPanel, BorderLayout.WEST);
+            benchTab.add(cResultMountPanel, BorderLayout.CENTER);
+            mainTabPane.addTab("Benchmark", benchTab);
+
+            // SMART tab placeholder — ready for SMART data panel
+            mainTabPane.addTab("SMART", Gui.smartPanel);
+
+            // Rebuild the content pane: mainTabPane fills the center;
+            // the original bottom tabs + progress bar go in a south panel.
+            getContentPane().removeAll();
+            getContentPane().setLayout(new BorderLayout());
+            getContentPane().add(mainTabPane, BorderLayout.CENTER);
+
+            JPanel southPanel = new JPanel(new BorderLayout());
+            southPanel.add(tabbedPane, BorderLayout.CENTER);
+            southPanel.add(progressPanel, BorderLayout.SOUTH);
+            getContentPane().add(southPanel, BorderLayout.SOUTH);
+        }
     }
 
+    
+    
     public JPanel getMountPanel() {
         return cResultMountPanel;
     }
@@ -231,6 +262,7 @@ public final class MainFrame extends javax.swing.JFrame {
         align16KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align64KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         multiFileCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
+        smartCbMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator4 = new javax.swing.JPopupMenu.Separator();
         gcHintsCbMenuItem = new javax.swing.JCheckBoxMenuItem();
         gcRetryCbMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -586,6 +618,15 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
         optionMenu.add(multiFileCheckBoxMenuItem);
+
+        smartCbMenuItem.setSelected(true);
+        smartCbMenuItem.setText("S.M.A.R.T.");
+        smartCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                smartCbMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(smartCbMenuItem);
         optionMenu.add(jSeparator4);
 
         gcHintsCbMenuItem.setText("GC Hint Optimizing");
@@ -1088,6 +1129,12 @@ public final class MainFrame extends javax.swing.JFrame {
         App.saveConfig();
     }//GEN-LAST:event_httpsProtoRbMenuItemActionPerformed
 
+    private void smartCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_smartCbMenuItemActionPerformed
+        Smart.enableSmart = this.smartCbMenuItem.isSelected();
+        App.saveConfig();
+        
+    }//GEN-LAST:event_smartCbMenuItemActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
     private javax.swing.JRadioButtonMenuItem align16KRbMenuItem;
@@ -1162,6 +1209,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JCheckBoxMenuItem showAccessCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem showMaxMinCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem showSingleOpMenuItem;
+    private javax.swing.JCheckBoxMenuItem smartCbMenuItem;
     private javax.swing.JTabbedPane tabbedPane;
     private javax.swing.JRadioButtonMenuItem testEndpointRbMenuItem;
     private javax.swing.ButtonGroup themeButtonGroup;

@@ -1,5 +1,7 @@
 package jdiskmark;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import static jdiskmark.GcDetector.MAX_GC_RETRIES;
 
 import java.util.logging.Level;
@@ -117,6 +119,47 @@ public class BenchmarkRunner {
 
         if (config.gcHintsEnabled && !listener.isCancelled()) {
             GcDetector.triggerAndWait(); // Initial cleanup
+        }
+        
+        if (Smart.enableSmart && App.isLinux()) {
+//            privilege escallation
+            String testDir = config.getTestDir();
+            String partition = UtilOs.getPartitionFromFilePathLinux(Path.of(testDir));
+            String deviceName = UtilOs.getDeviceNamesFromPartitionLinux(partition).get(0);
+            
+//            System.out.println(deviceName);
+            ProcessBuilder pb = new ProcessBuilder("pkexec", "/usr/sbin/smartctl", "--json", "-a", "/dev/" + deviceName);
+            Process process = pb.start();
+            
+            String result = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            Smart smart = Smart.fromJson(result);
+            logger.log(Level.INFO, "SMART model      : {0}", smart.getModelName());
+            logger.log(Level.INFO, "SMART serial     : {0}", smart.getSerialNumber());
+            logger.log(Level.INFO, "SMART firmware   : {0}", smart.getFirmwareVersion());
+            if (smart.getSmartStatus() != null) {
+                logger.log(Level.INFO, "SMART status     : {0}", smart.getSmartStatus().isPassed() ? "PASSED" : "FAILED");
+            }
+            if (smart.getTemperature() != null) {
+                logger.log(Level.INFO, "SMART temp       : {0} C", smart.getTemperature().getCurrent());
+            }
+            if (smart.getPowerOnTime() != null) {
+                logger.log(Level.INFO, "SMART power-on   : {0} hours", smart.getPowerOnTime().getHours());
+            }
+            if (smart.getNvmeHealthLog() != null) {
+                Smart.NvmeHealthLog nvme = smart.getNvmeHealthLog();
+                logger.log(Level.INFO, "NVMe avail spare : {0}%", nvme.getAvailableSpare());
+                logger.log(Level.INFO, "NVMe used %      : {0}%", nvme.getPercentageUsed());
+                logger.log(Level.INFO, "NVMe written     : {0} GB", nvme.getDataWrittenGb());
+                logger.log(Level.INFO, "NVMe read        : {0} GB", nvme.getDataReadGb());
+                logger.log(Level.INFO, "NVMe media errs  : {0}", nvme.getMediaErrors());
+                if (nvme.hasCriticalWarning()) {
+                    logger.log(Level.WARNING, "NVMe critical warning flag: {0}", nvme.getCriticalWarning());
+                }
+            }
+            // Populate the SMART tab in the GUI
+            if (Gui.smartPanel != null) {
+                Gui.smartPanel.populate(smart);
+            }
         }
         
         benchmark.recordStartTime();
