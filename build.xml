@@ -85,7 +85,7 @@
     <property name="jvm.run.options" value="-XX:+UseZGC"/>
 
     <!-- java modules to add for jpackage -->
-    <property name="java.modules" value="java.base,java.desktop,java.logging,java.prefs,java.management,java.instrument,java.sql,java.rmi,java.naming,jdk.unsupported"/>
+    <property name="java.modules" value="java.base,java.desktop,java.logging,java.prefs,java.management,java.instrument,java.sql,java.rmi,java.naming,jdk.unsupported,java.net.http"/>
     
     <!-- version properties -->
     <property name="pkg.name" value="jdiskmark"/>
