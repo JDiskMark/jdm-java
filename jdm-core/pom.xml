@@ -87,6 +87,22 @@
     </dependencies>
 
     <build>
+        <resources>
+            <!-- Default resources directory -->
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <!-- Copy build.properties into META-INF on the classpath so
+                 App.class.getResourceAsStream("/META-INF/build.properties")
+                 works for both IDE (class files) and the shaded JAR. -->
+            <resource>
+                <directory>${project.basedir}</directory>
+                <includes>
+                    <include>build.properties</include>
+                </includes>
+                <targetPath>META-INF</targetPath>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -119,6 +135,34 @@
                                     </excludes>
                                 </filter>
                             </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-windows-runtime-assets</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <!-- Copy Windows runtime assets into target/ so jpackage
+                                     bundles them into the MSI app/ directory.
+                                     UtilOs.java falls back to "./app/<file>" when the
+                                     script is not found next to the CWD. -->
+                                <copy file="${project.basedir}/capacity.ps1"
+                                      todir="${project.build.directory}" overwrite="true"/>
+                                <copy file="${project.basedir}/disk-model.ps1"
+                                      todir="${project.build.directory}" overwrite="true"/>
+                                <copy file="${project.basedir}/EmptyStandbyList.exe"
+                                      todir="${project.build.directory}" overwrite="true"/>
+                            </target>
                         </configuration>
                     </execution>
                 </executions>
