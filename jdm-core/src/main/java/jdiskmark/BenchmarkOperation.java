@@ -3,6 +3,7 @@ package jdiskmark;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.Column;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityManager;
@@ -85,7 +86,10 @@ public class BenchmarkOperation implements Serializable {
     @Column
     LocalDateTime endTime = null;
     
-    // sample data
+    // sample data - @Lob required: SampleAttributeConverter converts to byte[], so @Lob
+    // maps to BLOB on any JPA database. Without it Derby defaults to VARCHAR(255) FOR BIT DATA
+    // which truncates when sample count grows beyond ~3-4 samples.
+    @Lob
     @Column
     @Convert(converter = SampleAttributeConverter.class)
     ArrayList<Sample> samples = new ArrayList<>();
@@ -102,9 +106,12 @@ public class BenchmarkOperation implements Serializable {
     @Column
     long iops = 0;
     
-    // samples affected by background gc
+    // samples affected by background gc - @Lob maps to CLOB since GcRetriedSamplesConverter
+    // converts to String. Data is small (comma-separated ints) but @Lob is used for
+    // consistency with the samples field and portability across JPA databases.
+    @Lob
     @Convert(converter = GcRetriedSamplesConverter.class)
-    @Column(name = "gc_retried_samples", columnDefinition = "CLOB")
+    @Column(name = "gc_retried_samples")
     ArrayList<Integer> gcRetriedSamples = new ArrayList<>();
     public List<Integer> getGcRetriedSamples() { return gcRetriedSamples; }
     
