@@ -1,0 +1,144 @@
+name: Unified Release
+ 
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags like v0.8.0
+
+jobs:
+  # --- LINUX DEB BUILD ---
+  build-deb:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Update Version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
+
+      - name: Build Debian Package
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am --no-transfer-progress
+
+      - name: Upload DEB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-package
+          path: jdm-dist/jdm-deb/target/*.deb
+
+  # --- WINDOWS MSI BUILD ---
+  build-msi:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Update Version
+        shell: bash
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
+          # Strip suffixes for MSI numeric requirement (e.g., 0.8.0-beta -> 0.8.0)
+          MSI_VERSION=$(echo $VERSION | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo "0.0.0")
+          sed -i "s|<msi.version>.*</msi.version>|<msi.version>$MSI_VERSION</msi.version>|" pom.xml
+
+      - name: Build Windows MSI
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am --no-transfer-progress
+
+      - name: Upload MSI Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: msi-package
+          path: jdm-dist/jdm-msi/target/*.msi
+
+  # --- LINUX FLATPAK BUILD ---
+  build-flatpak:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'oracle'
+
+      - name: Update Version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          sed -i "s|property name=\"version\" value=\"[^\"]*\"|property name=\"version\" value=\"$VERSION\"|" build.xml
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ant ant-optional flatpak flatpak-builder
+
+      - name: Add Flathub Remote
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+      - name: Install Flatpak Runtime and SDK
+        run: |
+          flatpak install --user --noninteractive flathub \
+            org.freedesktop.Platform//25.08 \
+            org.freedesktop.Sdk//25.08 \
+            org.freedesktop.Sdk.Extension.openjdk25//25.08
+
+      - name: Build Flatpak Bundle
+        run: ant create-flatpak
+
+      - name: Upload Flatpak Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flatpak-package
+          path: dist/*.flatpak
+
+  # --- CREATE GITHUB RELEASE ---
+  create-release:
+    needs: [build-deb, build-msi, build-flatpak]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download DEB
+        uses: actions/download-artifact@v4
+        with:
+          name: deb-package
+          path: release-assets
+
+      - name: Download MSI
+        uses: actions/download-artifact@v4
+        with:
+          name: msi-package
+          path: release-assets
+
+      - name: Download Flatpak
+        uses: actions/download-artifact@v4
+        with:
+          name: flatpak-package
+          path: release-assets
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
