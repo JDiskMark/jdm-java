@@ -35,7 +35,7 @@
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>${project.basedir}/../../pkg/macos/package-pkg.sh</executable>
+                                    <executable>${project.basedir}/package-pkg.sh</executable>
                                     <arguments>
                                         <argument>${project.version}</argument>
                                         <argument>${app.name}</argument>

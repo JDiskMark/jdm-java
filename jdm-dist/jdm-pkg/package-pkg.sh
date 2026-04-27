@@ -51,7 +51,7 @@ jpackage --type app-image \
          --app-version "1.0.0" \
          --vendor "jdiskmark" \
          --dest "$APP_IMAGE_DIR" \
-         --resource-dir "pkg/macos/images" \
+         --resource-dir "images" \
          --mac-package-identifier "$IDENTIFIER" \
          --mac-package-name "$APP_NAME" \
          --java-options "-XX:+UseZGC" \
@@ -86,7 +86,7 @@ pkgbuild --component "$APP_BUNDLE" \
          --install-location "/Applications" \
          --identifier "$IDENTIFIER" \
          --version "1.0.0" \
-         --scripts "pkg/macos/scripts" \
+         --scripts "scripts" \
          "$COMPONENT_PKG"
 
 productbuild --package "$COMPONENT_PKG" "$UNSIGNED_PKG"

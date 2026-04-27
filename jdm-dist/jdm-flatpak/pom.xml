@@ -53,8 +53,12 @@
                                               
                                         <!-- Copy Flatpak resources -->
                                         <copy todir="${flatpak.staging.dir}">
-                                            <fileset dir="${project.basedir}/../../pkg/flatpak">
-                                                <include name="*"/>
+                                            <fileset dir="${project.basedir}">
+                                                <include name="*.yml"/>
+                                                <include name="*.sh"/>
+                                                <include name="*.png"/>
+                                                <include name="*.xml"/>
+                                                <include name="*.desktop"/>
                                             </fileset>
                                         </copy>
 
