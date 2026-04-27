@@ -61,10 +61,10 @@
                                 </goals>
                                 <configuration>
                                     <target>
-                                        <move file="${project.build.directory}/${app.name} ${version}-${msi.version}.msi"
-                                              tofile="${project.build.directory}/${pkg.name}-${version}.msi"
+                                        <move file="${project.build.directory}/${app.name} ${project.version}-${msi.version}.msi"
+                                              tofile="${project.build.directory}/${pkg.name}-${project.version}.msi"
                                               failonerror="false"/>
-                                        <echo message="MSI renamed to: ${pkg.name}-${version}.msi"/>
+                                        <echo message="MSI renamed to: ${pkg.name}-${project.version}.msi"/>
                                     </target>
                                 </configuration>
                             </execution>
@@ -91,11 +91,11 @@
                                              and the output filename. Using the full versioned title here
                                              (e.g. "JDiskMark 0.8.0-SNAPSHOT") so Programs list shows it correctly.
                                              The generated MSI is renamed to pkg.name-version.msi in install phase. -->
-                                        <argument>--name</argument><argument>${app.name} ${version}</argument>
+                                        <argument>--name</argument><argument>${app.name} ${project.version}</argument>
                                         <argument>--app-version</argument><argument>${msi.version}</argument>
                                         <argument>--vendor</argument><argument>${app.name} Maintainers</argument>
                                         <!-- install-dir matches name for side-by-side version installs -->
-                                        <argument>--install-dir</argument><argument>${app.name} ${version}</argument>
+                                        <argument>--install-dir</argument><argument>${app.name} ${project.version}</argument>
                                         <argument>--input</argument><argument>${project.basedir}/../../jdm-core/target</argument>
                                         <argument>--main-jar</argument><argument>jdm-core-${project.version}.jar</argument>
                                         <argument>--main-class</argument><argument>jdiskmark.App</argument>
@@ -143,14 +143,14 @@
                                                 <not><available file="${signtool.executable}" type="file"/></not>
                                             </condition>
                                         </fail>
-                                        <echo message="Signing MSI: ${pkg.name}-${version}.msi"/>
+                                        <echo message="Signing MSI: ${pkg.name}-${project.version}.msi"/>
                                         <exec executable="${signtool.executable}" failonerror="true">
                                             <arg value="sign"/>
                                             <arg value="/tr"/><arg value="${timestamp.server.url}"/>
                                             <arg value="/td"/><arg value="${sign.digest.td}"/>
                                             <arg value="/fd"/><arg value="${sign.digest.fd}"/>
                                             <arg value="/a"/>
-                                            <arg file="${project.build.directory}/${pkg.name}-${version}.msi"/>
+                                            <arg file="${project.build.directory}/${pkg.name}-${project.version}.msi"/>
                                         </exec>
                                         <echo message="MSI signed successfully."/>
                                     </target>

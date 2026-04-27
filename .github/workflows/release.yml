@@ -163,7 +163,7 @@ jobs:
       - name: Download all packages
         uses: actions/download-artifact@v7
         with:
-          pattern: "*-package"
+          pattern: "*"
           path: release-assets
           merge-multiple: true
 
