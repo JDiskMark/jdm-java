@@ -16,24 +16,31 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.2.0</version>
                 <executions>
                     <execution>
-                        <id>create-pkg</id>
+                        <id>package-macos</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>run</goal>
+                            <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <target>
-                                <ant antfile="${project.basedir}/../../build.xml" target="create-pkg">
-                                    <property name="dist.dir" value="${project.build.directory}"/>
-                                    <property name="version" value="${project.version}"/>
-                                    <property name="mac.package.identifier" value="${mac.package.identifier}"/>
-                                </ant>
-                            </target>
+                            <executable>${project.basedir}/../../pkg/macos/package-pkg.sh</executable>
+                            <arguments>
+                                <argument>${project.version}</argument>
+                                <argument>${app.name}</argument>
+                                <argument>${pkg.name}</argument>
+                                <argument>${project.build.directory}</argument>
+                                <argument>${project.basedir}/../../jdm-core/target</argument>
+                                <argument>${signing.identity}</argument>
+                                <argument>${mac.installer.signing.identity}</argument>
+                                <argument>${apple.id}</argument>
+                                <argument>${apple.password}</argument>
+                                <argument>${apple.team.id}</argument>
+                                <argument>${mac.package.identifier}</argument>
+                            </arguments>
                         </configuration>
                     </execution>
                 </executions>
@@ -43,39 +50,22 @@
 
     <profiles>
         <profile>
-            <id>sign</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>notarize-pkg</id>
-                                <phase>install</phase>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <configuration>
-                                    <target>
-                                        <ant antfile="${project.basedir}/../../build.xml" target="notarize-pkg">
-                                            <property name="dist.dir" value="${project.build.directory}"/>
-                                            <property name="version" value="${project.version}"/>
-                                            <property name="apple.id" value="${apple.id}"/>
-                                            <property name="apple.password" value="${apple.password}"/>
-                                            <property name="apple.team.id" value="${apple.team.id}"/>
-                                        </ant>
-                                    </target>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
+            <id>macos-pkg</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                </os>
+            </activation>
         </profile>
     </profiles>
 
     <properties>
         <mac.package.identifier>net.jdiskmark.JDiskMark</mac.package.identifier>
+        <!-- Defaults to empty if not provided via CLI or profiles -->
+        <signing.identity></signing.identity>
+        <mac.installer.signing.identity></mac.installer.signing.identity>
+        <apple.id></apple.id>
+        <apple.password></apple.password>
+        <apple.team.id></apple.team.id>
     </properties>
 </project>
