@@ -123,7 +123,7 @@ jobs:
       - name: Install Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ant ant-optional flatpak flatpak-builder
+          sudo apt-get install -y flatpak flatpak-builder
 
       - name: Add Flathub Remote
         run: |
@@ -137,13 +137,13 @@ jobs:
             org.freedesktop.Sdk.Extension.openjdk25//25.08
 
       - name: Build Flatpak Bundle
-        run: ant create-flatpak
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am --no-transfer-progress
 
       - name: Upload Flatpak Artifact
         uses: actions/upload-artifact@v4
         with:
           name: flatpak-package
-          path: dist/*.flatpak
+          path: jdm-dist/jdm-flatpak/target/*.flatpak
 
   # --- CREATE GITHUB RELEASE ---
   create-release:

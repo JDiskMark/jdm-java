@@ -22,19 +22,12 @@ jobs:
       with:
         java-version: '25'
         distribution: 'oracle'
-
-    - name: Cache Ant Dependencies
-      uses: actions/cache@v4
-      with:
-        path: libs
-        key: ${{ runner.os }}-ant-${{ hashFiles('build.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-ant-
+        cache: maven
 
     - name: Install Build Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ant ant-optional flatpak flatpak-builder
+        sudo apt-get install -y flatpak flatpak-builder
 
     - name: Add Flathub Remote
       run: |
@@ -47,18 +40,13 @@ jobs:
           org.freedesktop.Sdk//25.08 \
           org.freedesktop.Sdk.Extension.openjdk25//25.08
 
-    - name: Extract Version
-      id: version
-      run: |
-        VERSION=$(grep -oP '(?<=<property name="version" value=")[^"]+' build.xml | head -1)
-        echo "value=$VERSION" >> "$GITHUB_OUTPUT"
-
     - name: Build Flatpak Bundle
-      run: ant create-flatpak
+      # The linux-flatpak Maven profile activates automatically on the Linux runner.
+      run: mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am --no-transfer-progress
 
-    - name: Upload Flatpak Bundle
+    - name: Upload Flatpak Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: jdiskmark-${{ steps.version.outputs.value }}.flatpak
-        path: dist/*.flatpak
-
+        name: flatpak-package
+        path: jdm-dist/jdm-flatpak/target/*.flatpak
+        if-no-files-found: error
