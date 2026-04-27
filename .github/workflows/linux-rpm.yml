@@ -27,8 +27,8 @@ jobs:
           sudo apt-get install -y rpm
 
       - name: Build RPM Package
-        # The linux-rpm Maven profile activates automatically on the Linux runner.
-        run: mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am --no-transfer-progress
+        # Explicitly activating the linux-rpm profile to ensure jpackage runs.
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm --no-transfer-progress
 
       - name: Upload RPM Artifact
         uses: actions/upload-artifact@v7

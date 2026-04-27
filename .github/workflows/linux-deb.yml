@@ -24,8 +24,8 @@ jobs:
 
       - name: Build Debian Package
         # -pl targets jdm-core and jdm-deb. -am also builds upstream dependencies.
-        # The linux-deb Maven profile activates automatically on the Linux runner.
-        run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am --no-transfer-progress
+        # Explicitly activating the linux-deb profile to ensure jpackage runs.
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am -Plinux-deb --no-transfer-progress
 
       - name: Upload DEB Artifact
         uses: actions/upload-artifact@v7

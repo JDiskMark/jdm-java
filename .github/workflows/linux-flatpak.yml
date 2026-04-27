@@ -41,8 +41,8 @@ jobs:
           org.freedesktop.Sdk.Extension.openjdk25//25.08
 
     - name: Build Flatpak Bundle
-      # The linux-flatpak Maven profile activates automatically on the Linux runner.
-      run: mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am --no-transfer-progress
+      # Explicitly activating the linux-flatpak profile to ensure jpackage/antrun runs.
+      run: mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak --no-transfer-progress
 
     - name: Upload Flatpak Artifact
       uses: actions/upload-artifact@v7

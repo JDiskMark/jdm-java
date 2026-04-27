@@ -26,13 +26,14 @@ jobs:
           mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
 
       - name: Build Debian Package
-        run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am --no-transfer-progress
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am -Plinux-deb --no-transfer-progress
 
       - name: Upload DEB Artifact
         uses: actions/upload-artifact@v7
         with:
           name: deb-package
           path: jdm-dist/jdm-deb/target/*.deb
+          if-no-files-found: error
           archive: false
 
   # --- WINDOWS MSI BUILD ---
@@ -59,13 +60,14 @@ jobs:
           sed -i "s|<msi.version>.*</msi.version>|<msi.version>$MSI_VERSION</msi.version>|" pom.xml
 
       - name: Build Windows MSI
-        run: mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am --no-transfer-progress
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am -Pwindows-msi --no-transfer-progress
 
       - name: Upload MSI Artifact
         uses: actions/upload-artifact@v7
         with:
           name: msi-package
           path: jdm-dist/jdm-msi/target/*.msi
+          if-no-files-found: error
           archive: false
 
   # --- LINUX RPM BUILD ---
@@ -96,13 +98,14 @@ jobs:
           sed -i "s|<rpm.version>.*</rpm.version>|<rpm.version>$RPM_VERSION</rpm.version>|" pom.xml
 
       - name: Build RPM Package
-        run: mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am --no-transfer-progress
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm --no-transfer-progress
 
       - name: Upload RPM Artifact
         uses: actions/upload-artifact@v7
         with:
           name: rpm-package
           path: jdm-dist/jdm-rpm/target/*.rpm
+          if-no-files-found: error
           archive: false
 
   # --- LINUX FLATPAK BUILD ---
@@ -140,13 +143,14 @@ jobs:
             org.freedesktop.Sdk.Extension.openjdk25//25.08
 
       - name: Build Flatpak Bundle
-        run: mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am --no-transfer-progress
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak --no-transfer-progress
 
       - name: Upload Flatpak Artifact
         uses: actions/upload-artifact@v7
         with:
           name: flatpak-package
           path: jdm-dist/jdm-flatpak/target/*.flatpak
+          if-no-files-found: error
           archive: false
 
   # --- CREATE GITHUB RELEASE ---
@@ -156,29 +160,12 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download DEB
+      - name: Download all packages
         uses: actions/download-artifact@v7
         with:
-          name: deb-package
+          pattern: "*-package"
           path: release-assets
-
-      - name: Download MSI
-        uses: actions/download-artifact@v7
-        with:
-          name: msi-package
-          path: release-assets
-
-      - name: Download RPM
-        uses: actions/download-artifact@v7
-        with:
-          name: rpm-package
-          path: release-assets
-
-      - name: Download Flatpak
-        uses: actions/download-artifact@v7
-        with:
-          name: flatpak-package
-          path: release-assets
+          merge-multiple: true
 
       - name: Create Release
         uses: softprops/action-gh-release@v2

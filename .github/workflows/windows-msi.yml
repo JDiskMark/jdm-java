@@ -24,9 +24,8 @@ jobs:
 
       - name: Build Windows MSI (unsigned)
         # Builds jdm-core first (-am = also build upstream dependencies),
-        # then jdm-msi. The windows-msi Maven profile activates automatically
-        # on the Windows runner. No -Psign so signtool is not invoked.
-        run: mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am --no-transfer-progress
+        # then jdm-msi. Explicitly activating the windows-msi profile.
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am -Pwindows-msi --no-transfer-progress
 
       - name: Upload MSI Artifact
         uses: actions/upload-artifact@v7
