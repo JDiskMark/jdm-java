@@ -58,4 +58,5 @@ jobs:
           name: jdiskmark-macos-pkg
           path: jdm-dist/jdm-pkg/target/*.pkg
           if-no-files-found: error
+          # Disable zipping so it can be downloaded raw from the Actions tab
           archive: false

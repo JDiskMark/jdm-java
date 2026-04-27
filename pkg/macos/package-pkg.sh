@@ -45,7 +45,7 @@ echo "Step 2: Building unsigned app-image..."
 rm -rf "$APP_IMAGE_DIR"
 jpackage --type app-image \
          --input "$INPUT_DIR" \
-         --main-jar "$PKG_NAME.jar" \
+         --main-jar "jdm-core-$VERSION.jar" \
          --main-class "jdiskmark.App" \
          --name "$PKG_NAME-$VERSION" \
          --app-version "1.0.0" \
