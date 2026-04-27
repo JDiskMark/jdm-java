@@ -2,7 +2,7 @@ name: Flatpak Build
 
 on:
   push:
-    branches: [ "dev", "release/**", "main" ]
+    branches: [ "**" ]
   pull_request:
     branches: [ "dev", "release/**" ]
   workflow_dispatch:
