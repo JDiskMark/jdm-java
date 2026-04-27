@@ -14,7 +14,9 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>jdm-zip</module>
+        <!-- jdm-zip is the legacy Ant-based zip/deb packager — disabled while jdm-deb (jpackage) is being validated -->
+        <!-- <module>jdm-zip</module> -->
+        <module>jdm-deb</module>
         <module>jdm-msi</module>
     </modules>
 

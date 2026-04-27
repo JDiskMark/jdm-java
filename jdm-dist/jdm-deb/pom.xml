@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>jdiskmark</groupId>
+        <artifactId>jdm-dist</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>jdm-deb</artifactId>
+    <packaging>pom</packaging>
+
+    <profiles>
+
+        <!-- =========================================================
+             Linux DEB build — auto-activated on Linux only.
+             On Windows/macOS this entire profile is skipped.
+             ========================================================= -->
+        <profile>
+            <id>linux-deb</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>Linux</name>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.2.0</version>
+                        <executions>
+                            <execution>
+                                <id>build-deb</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>jpackage</executable>
+                                    <arguments>
+                                        <argument>--type</argument><argument>deb</argument>
+                                        <argument>--dest</argument><argument>${project.build.directory}</argument>
+                                        <argument>--name</argument><argument>${pkg.name}</argument>
+                                        <!-- DEB supports the full semantic version -->
+                                        <argument>--app-version</argument><argument>${project.version}</argument>
+                                        <argument>--vendor</argument><argument>${app.name} Maintainers</argument>
+                                        <argument>--description</argument><argument>Java disk benchmark utility for read/write performance testing</argument>
+                                        <argument>--input</argument><argument>${project.basedir}/../../jdm-core/target</argument>
+                                        <argument>--main-jar</argument><argument>jdm-core-${project.version}.jar</argument>
+                                        <argument>--main-class</argument><argument>jdiskmark.App</argument>
+                                        <argument>--java-options</argument><argument>${jvm.run.options}</argument>
+                                        <argument>--linux-shortcut</argument>
+                                        <argument>--linux-menu-group</argument><argument>Utility</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+    </profiles>
+</project>
