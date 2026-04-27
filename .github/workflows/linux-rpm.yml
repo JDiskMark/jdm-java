@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'temurin'
@@ -31,8 +31,10 @@ jobs:
         run: mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am --no-transfer-progress
 
       - name: Upload RPM Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jdiskmark-rpm-pkg
           path: jdm-dist/jdm-rpm/target/*.rpm
           if-no-files-found: error
+          # Disable zipping so it can be downloaded raw from the Actions tab
+          archive: false
