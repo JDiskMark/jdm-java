@@ -20,6 +20,7 @@
         <module>jdm-msi</module>
         <module>jdm-rpm</module>
         <module>jdm-flatpak</module>
+        <module>jdm-pkg</module>
     </modules>
 
     <dependencies>

@@ -133,5 +133,18 @@
                 <module>jdm-dist</module>
             </modules>
         </profile>
+
+        <profile>
+            <id>macos-pkg</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                </os>
+            </activation>
+            <modules>
+                <module>jdm-core</module>
+                <module>jdm-dist</module>
+            </modules>
+        </profile>
     </profiles>
 </project>

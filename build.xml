@@ -85,7 +85,7 @@
     <property name="jvm.run.options" value="-XX:+UseZGC"/>
 
     <!-- java modules to add for jpackage -->
-    <property name="java.modules" value="java.base,java.desktop,java.logging,java.prefs,java.management,java.instrument,java.sql,java.rmi,java.naming,jdk.unsupported"/>
+    <property name="java.modules" value="java.base,java.desktop,java.logging,java.prefs,java.management,java.instrument,java.sql,java.rmi,java.naming,jdk.unsupported,java.net.http"/>
     
     <!-- version properties -->
     <property name="pkg.name" value="jdiskmark"/>
@@ -283,6 +283,167 @@
     </target>
     <target name="package-msi" depends="clean, jar, create-msi, sign-msi" description="Builds JAR and MSI installer"/>
     <target name="package-dmg" depends="clean, jar, create-dmg" description="Builds JAR and DMG installer"/>
+
+    <target name="create-pkg" depends="clean, -pre-jar, jar, -post-jar, -prepare-jpackage-input-jar" description="Creates the PKG installer using jpackage">
+        <property file="private.properties" />
+        <delete>
+            <fileset dir="dist" includes="*.pkg"/>
+        </delete>
+        <property name="flatlaf.jar.name" value="flatlaf-3.7.jar"/>
+        <property name="flatlaf.jar.src"  value="libs/${flatlaf.jar.name}"/>
+        <property name="flatlaf.jar.input" value="${dist.dir}/${release.dir}/lib/${flatlaf.jar.name}"/>
+        <property name="temp.extract.dir" value="build.sign"/>
+        
+        <property name="app.image.dir"  value="${dist.dir}/${pkg.name}-${version}-app-image"/>
+        <property name="pkg.app.bundle" value="${app.image.dir}/${pkg.name}-${version}.app"/>
+        <property name="unsigned.pkg"   value="${dist.dir}/${pkg.name}-${version}-unsigned.pkg"/>
+        <property name="jpackage.output.pkg.defaultname" value="${pkg.name}-${version}-${dmg.version}.pkg"/>
+        <property name="jpackage.output.pkg.targetname"  value="${pkg.name}-${version}.pkg"/>
+
+        <!-- Remove Windows-only files from the jpackage input dir -->
+        <delete failonerror="false">
+            <fileset dir="${dist.dir}/${release.dir}" includes="*.pkg,*.exe,*.msi,*.ps1"/>
+        </delete>
+
+        <!-- Step 1: Sign FlatLaf native dylibs BEFORE packaging (Optional) -->
+        <condition property="do.sign">
+            <isset property="signing.identity"/>
+        </condition>
+
+        <antcall target="-sign-flatlaf-if-requested"/>
+
+        <!-- Step 2: Build UNSIGNED app-image -->
+        <echo message="Step 2: Building unsigned app-image..."/>
+        <delete dir="${app.image.dir}" failonerror="false"/>
+        <exec executable="jpackage" failonerror="true">
+            <arg value="--type"/><arg value="app-image"/>
+            <arg value="--input"/><arg value="${dist.dir}/${release.dir}"/>
+            <arg value="--main-jar"/><arg value="${pkg.name}.jar"/>
+            <arg value="--main-class"/><arg value="jdiskmark.App"/>
+            <arg value="--name"/><arg value="${pkg.name}-${version}"/>
+            <arg value="--app-version"/><arg value="${dmg.version}"/>
+            <arg value="--vendor"/><arg value="jdiskmark"/>
+            <arg value="--dest"/><arg value="${app.image.dir}"/>
+            <arg value="--resource-dir"/><arg value="pkg/macos/images"/>
+            <arg value="--mac-package-identifier"/><arg value="${mac.package.identifier}"/>
+            <arg value="--mac-package-name"/><arg value="JDiskMark"/>
+        </exec>
+
+        <!-- Step 3: Sign app bundle (Optional) -->
+        <antcall target="-sign-app-bundle-if-requested"/>
+
+        <!-- Step 4: Build PKG -->
+        <echo message="Step 4a: Building component PKG..."/>
+        <property name="component.pkg" value="${dist.dir}/${pkg.name}-${version}-component.pkg"/>
+        <delete file="${component.pkg}" failonerror="false"/>
+        <exec executable="pkgbuild" failonerror="true">
+            <arg value="--component"/><arg value="${pkg.app.bundle}"/>
+            <arg value="--install-location"/><arg value="/Applications"/>
+            <arg value="--identifier"/><arg value="${mac.package.identifier}"/>
+            <arg value="--version"/><arg value="${dmg.version}"/>
+            <arg value="--scripts"/><arg value="pkg/macos/scripts"/>
+            <arg value="${component.pkg}"/>
+        </exec>
+        <echo message="Step 4b: Building distribution PKG..."/>
+        <exec executable="productbuild" failonerror="true">
+            <arg value="--package"/><arg value="${component.pkg}"/>
+            <arg value="${unsigned.pkg}"/>
+        </exec>
+        <delete file="${component.pkg}"/>
+
+        <!-- Step 5: Sign the PKG installer (Optional) -->
+        <antcall target="-sign-pkg-installer-if-requested"/>
+
+        <!-- If not signing, move the unsigned pkg to the final name -->
+        <condition property="is.unsigned">
+            <not><isset property="signing.identity"/></not>
+        </condition>
+        <move file="${unsigned.pkg}" tofile="${dist.dir}/${jpackage.output.pkg.targetname}" if:set="is.unsigned" xmlns:if="ant:if"/>
+
+        <echo message="PKG installer created: ${dist.dir}/${jpackage.output.pkg.targetname}"/>
+    </target>
+
+    <target name="-sign-flatlaf-if-requested" if="do.sign">
+        <echo message="Step 1: Signing FlatLaf dylibs..."/>
+        <delete dir="${temp.extract.dir}" failonerror="false"/>
+        <mkdir dir="${temp.extract.dir}"/>
+        <unzip src="${flatlaf.jar.src}" dest="${temp.extract.dir}">
+            <patternset>
+                <include name="com/formdev/flatlaf/natives/libflatlaf-macos-x86_64.dylib"/>
+                <include name="com/formdev/flatlaf/natives/libflatlaf-macos-arm64.dylib"/>
+            </patternset>
+        </unzip>
+        <exec executable="codesign" failonerror="true">
+            <arg value="--force"/>
+            <arg value="--options"/><arg value="runtime"/>
+            <arg value="--entitlements"/><arg value="entitlements.plist"/>
+            <arg value="--timestamp"/>
+            <arg value="--sign"/><arg value="${signing.identity}"/>
+            <arg value="${temp.extract.dir}/com/formdev/flatlaf/natives/libflatlaf-macos-x86_64.dylib"/>
+        </exec>
+        <exec executable="codesign" failonerror="true">
+            <arg value="--force"/>
+            <arg value="--options"/><arg value="runtime"/>
+            <arg value="--entitlements"/><arg value="entitlements.plist"/>
+            <arg value="--timestamp"/>
+            <arg value="--sign"/><arg value="${signing.identity}"/>
+            <arg value="${temp.extract.dir}/com/formdev/flatlaf/natives/libflatlaf-macos-arm64.dylib"/>
+        </exec>
+        <jar destfile="${flatlaf.jar.src}" update="yes"><fileset dir="${temp.extract.dir}"/></jar>
+        <jar destfile="${flatlaf.jar.input}" update="yes"><fileset dir="${temp.extract.dir}"/></jar>
+        <delete dir="${temp.extract.dir}"/>
+    </target>
+
+    <target name="-sign-app-bundle-if-requested" if="do.sign">
+        <echo message="Step 3: Signing app bundle..."/>
+        <exec executable="bash" failonerror="true">
+            <arg value="-c"/>
+            <arg value="find &quot;${pkg.app.bundle}/Contents/runtime&quot; \( -name '*.dylib' -o -name '*.so' \) | while read f; do codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign &quot;${signing.identity}&quot; &quot;$f&quot;; done"/>
+        </exec>
+        <exec executable="bash" failonerror="true">
+            <arg value="-c"/>
+            <arg value="find &quot;${pkg.app.bundle}/Contents/runtime&quot; -type f -perm +111 ! -name '*.dylib' ! -name '*.so' | while read f; do if file &quot;$f&quot; | grep -q Mach-O; then codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign &quot;${signing.identity}&quot; &quot;$f&quot;; fi; done"/>
+        </exec>
+        <exec executable="codesign" failonerror="true">
+            <arg value="--force"/><arg value="--options"/><arg value="runtime"/><arg value="--entitlements"/><arg value="entitlements.plist"/><arg value="--timestamp"/><arg value="--sign"/><arg value="${signing.identity}"/><arg value="${pkg.app.bundle}/Contents/runtime"/>
+        </exec>
+        <exec executable="codesign" failonerror="true">
+            <arg value="--force"/><arg value="--options"/><arg value="runtime"/><arg value="--entitlements"/><arg value="entitlements.plist"/><arg value="--timestamp"/><arg value="--sign"/><arg value="${signing.identity}"/><arg value="${pkg.app.bundle}/Contents/MacOS/${pkg.name}-${version}"/>
+        </exec>
+        <exec executable="codesign" failonerror="true">
+            <arg value="--force"/><arg value="--options"/><arg value="runtime"/><arg value="--entitlements"/><arg value="entitlements.plist"/><arg value="--timestamp"/><arg value="--sign"/><arg value="${signing.identity}"/><arg value="${pkg.app.bundle}"/>
+        </exec>
+    </target>
+
+    <target name="-sign-pkg-installer-if-requested" if="do.sign">
+        <echo message="Step 5: Signing PKG installer..."/>
+        <exec executable="productsign" failonerror="true">
+            <arg value="--sign"/><arg value="${mac.installer.signing.identity}"/>
+            <arg value="--timestamp"/>
+            <arg value="${unsigned.pkg}"/>
+            <arg value="${dist.dir}/${jpackage.output.pkg.targetname}"/>
+        </exec>
+        <delete file="${unsigned.pkg}"/>
+    </target>
+
+    <target name="notarize-pkg" description="Submit the package for Apple notarization">
+        <property file="private.properties" /> 
+        <condition property="can.notarize">
+            <isset property="apple.id"/>
+        </condition>
+        <fail unless="can.notarize" message="Apple ID not set. Skipping notarization."/>
+        <echo message="Submitting ${dist.dir}/${pkg.name}-${version}.pkg for notarization..."/>
+        <exec executable="xcrun" failonerror="true">
+            <arg value="notarytool"/><arg value="submit"/><arg value="${dist.dir}/${pkg.name}-${version}.pkg"/><arg value="--apple-id"/><arg value="${apple.id}"/><arg value="--password"/><arg value="${apple.password}"/><arg value="--team-id"/><arg value="${apple.team.id}"/><arg value="--wait"/>
+        </exec>
+        <exec executable="xcrun" failonerror="true">
+            <arg value="stapler"/><arg value="staple"/><arg value="${dist.dir}/${pkg.name}-${version}.pkg"/>
+        </exec>
+    </target>
+
+    <target name="package-pkg" depends="clean, jar, create-pkg" description="Builds PKG installer">
+        <antcall target="notarize-pkg"/>
+    </target>
 
     <property name="deb.dir" value="jdiskmark-deb"/>
     <property name="deb.version" value="${version}-1"/>
