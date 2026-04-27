@@ -27,6 +27,24 @@
         <jdeb.plugin.version>1.10</jdeb.plugin.version>
         <rpm.plugin.version>2.2.0</rpm.plugin.version>
         <exec.plugin.version>3.2.0</exec.plugin.version>
+
+        <!-- package properties -->
+        <pkg.name>jdiskmark</pkg.name>
+        <app.name>JDiskMark</app.name>
+
+        <!-- MSI (Windows Installer) requires a purely numeric version in Major.Minor.Build
+             format — no letters, no -SNAPSHOT. This is an MSI format restriction, not
+             jpackage itself. Linux packages (DEB/RPM) can use the full project.version.
+             Update this alongside project.version when cutting a release. -->
+        <msi.version>0.8.0</msi.version>
+        <app.title>${app.name} ${project.version}</app.title>
+        <release.dir>${pkg.name}-${msi.version}</release.dir>
+
+        <!-- JVM options passed to jpackage for all installer types -->
+        <jvm.run.options>-XX:+UseZGC</jvm.run.options>
+
+        <!-- macos versions do not accept values less than 1.0.0 -->
+        <dmg.version>1.0.0</dmg.version>
     </properties>
 
     <build>

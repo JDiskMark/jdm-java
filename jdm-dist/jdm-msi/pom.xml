@@ -36,6 +36,25 @@
                             </target>
                         </configuration>
                     </execution>
+                    <execution>
+                        <!-- Rename the MSI from jpackage's verbose output name
+                             ("JDiskMark 0.8.0-0.8.0.msi") to the clean convention
+                             ("jdiskmark-0.8.0.msi"). Runs at install phase, after jpackage
+                             which is bound to the earlier verify phase. -->
+                        <id>rename-msi</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <move file="${project.build.directory}/${app.name} ${version}-${msi.version}.msi"
+                                      tofile="${project.build.directory}/${pkg.name}-${version}.msi"
+                                      failonerror="false"/>
+                                <echo message="MSI renamed to: ${pkg.name}-${version}.msi"/>
+                            </target>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
@@ -46,7 +65,7 @@
                 <executions>
                     <execution>
                         <id>build-msi</id>
-                        <phase>install</phase> 
+                        <phase>verify</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
@@ -55,13 +74,22 @@
                             <arguments>
                                 <argument>--type</argument><argument>msi</argument>
                                 <argument>--dest</argument><argument>${project.build.directory}</argument>
-                                <argument>--name</argument><argument>jDiskMark</argument>
-                                <argument>--app-version</argument><argument>0.6.0</argument>
+                                <!-- jpackage uses `name` for BOTH the Start Menu display name
+                                     and the output filename. Using the full versioned title here
+                                     (e.g. "JDiskMark 0.8.0") so Programs list shows it correctly.
+                                     The generated "JDiskMark 0.8.0-0.8.0.msi" is renamed in install phase. -->
+                                <argument>--name</argument><argument>${app.name} ${version}</argument>
+                                <argument>--app-version</argument><argument>${msi.version}</argument>
+                                <argument>--vendor</argument><argument>${app.name} Maintainers</argument>
+                                <!-- install-dir matches name for side-by-side version installs -->
+                                <argument>--install-dir</argument><argument>${app.name} ${version}</argument>
                                 <argument>--input</argument><argument>${project.basedir}/../../jdm-core/target</argument>
                                 <argument>--main-jar</argument><argument>jdm-core-${project.version}.jar</argument>
                                 <argument>--main-class</argument><argument>jdiskmark.App</argument>
-                                <argument>--win-shortcut</argument>
+                                <argument>--java-options</argument><argument>${jvm.run.options}</argument>
+                                <argument>--win-console</argument>
                                 <argument>--win-menu</argument>
+                                <argument>--win-shortcut</argument>
                             </arguments>
                         </configuration>
                     </execution>
