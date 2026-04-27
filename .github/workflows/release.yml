@@ -66,6 +66,42 @@ jobs:
           name: msi-package
           path: jdm-dist/jdm-msi/target/*.msi
 
+  # --- LINUX RPM BUILD ---
+  build-rpm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Install rpmbuild
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm
+
+      - name: Update Version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
+          # Strip suffixes for RPM format (e.g., 0.8.0-beta -> 0.8.0)
+          RPM_VERSION=$(echo $VERSION | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo "0.0.0")
+          sed -i "s|<rpm.version>.*</rpm.version>|<rpm.version>$RPM_VERSION</rpm.version>|" pom.xml
+
+      - name: Build RPM Package
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am --no-transfer-progress
+
+      - name: Upload RPM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm-package
+          path: jdm-dist/jdm-rpm/target/*.rpm
+
   # --- LINUX FLATPAK BUILD ---
   build-flatpak:
     runs-on: ubuntu-latest
@@ -111,7 +147,7 @@ jobs:
 
   # --- CREATE GITHUB RELEASE ---
   create-release:
-    needs: [build-deb, build-msi, build-flatpak]
+    needs: [build-deb, build-msi, build-rpm, build-flatpak]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -126,6 +162,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: msi-package
+          path: release-assets
+
+      - name: Download RPM
+        uses: actions/download-artifact@v4
+        with:
+          name: rpm-package
           path: release-assets
 
       - name: Download Flatpak

@@ -18,6 +18,7 @@
         <!-- <module>jdm-zip</module> -->
         <module>jdm-deb</module>
         <module>jdm-msi</module>
+        <module>jdm-rpm</module>
     </modules>
 
     <dependencies>

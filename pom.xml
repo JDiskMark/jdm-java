@@ -43,6 +43,9 @@
         <!-- JVM options passed to jpackage for all installer types -->
         <jvm.run.options>-XX:+UseZGC</jvm.run.options>
 
+        <!-- RPM version must not contain hyphens -->
+        <rpm.version>0.8.0</rpm.version>
+
         <!-- macos versions do not accept values less than 1.0.0 -->
         <dmg.version>1.0.0</dmg.version>
 
