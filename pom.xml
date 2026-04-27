@@ -45,6 +45,14 @@
 
         <!-- macos versions do not accept values less than 1.0.0 -->
         <dmg.version>1.0.0</dmg.version>
+
+        <!-- MSI code signing properties (used by -Psign profile in jdm-msi).
+             signtool.exe ships with the Windows SDK. Update the path if your
+             SDK version differs. -->
+        <signtool.executable>C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x86\signtool.exe</signtool.executable>
+        <timestamp.server.url>http://timestamp.sectigo.com</timestamp.server.url>
+        <sign.digest.td>sha256</sign.digest.td>
+        <sign.digest.fd>sha256</sign.digest.fd>
     </properties>
 
     <build>
