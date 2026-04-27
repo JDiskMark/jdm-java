@@ -1,4 +1,4 @@
-name: macOS PKG Build
+name: MacOS PKG Build
 
 on:
   push:

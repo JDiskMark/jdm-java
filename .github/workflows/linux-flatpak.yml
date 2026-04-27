@@ -1,4 +1,4 @@
-name: Flatpak Build
+name: Linux Flatpak Build
 
 on:
   push:
