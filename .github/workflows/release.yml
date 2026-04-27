@@ -124,6 +124,7 @@ jobs:
       - name: Update Version
         run: |
           VERSION=${GITHUB_REF_NAME#v}
+          mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
           sed -i "s|property name=\"version\" value=\"[^\"]*\"|property name=\"version\" value=\"$VERSION\"|" build.xml
 
       - name: Install Build Dependencies
@@ -161,7 +162,7 @@ jobs:
       contents: write
     steps:
       - name: Download all packages
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: "*"
           path: release-assets
