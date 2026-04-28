@@ -101,6 +101,9 @@ public class App {
     public static File testFile = null; // still used for cli
     public static boolean autoSave = false;
     public static boolean sharePortal = false;
+    // True if sharePortal was enabled in the last session; used to offer a one-click
+    // re-enable prompt at startup rather than silently resuming network activity.
+    public static boolean sharePortalPreviouslyEnabled = false;
     public static boolean verbose = false; // affects cli output
     public static boolean multiFile = true;
     public static boolean autoRemoveData = false;
@@ -253,6 +256,11 @@ public class App {
                 @Override
                 public void run() { App.saveConfig(); }
             });
+            // If portal upload was active last session, offer a one-click re-enable.
+            // This avoids silent outbound network activity while keeping dev workflow smooth.
+            if (sharePortalPreviouslyEnabled) {
+                javax.swing.SwingUtilities.invokeLater(App::promptResumePortalUpload);
+            }
         }
     }
     
@@ -267,6 +275,35 @@ public class App {
         }
         if (isRoot || isAdmin) {
             System.out.println("Running w elevated priviledges");
+        }
+    }
+    
+    /**
+     * Offers a one-click prompt to re-enable portal upload when it was active
+     * in the previous session. Called after the main window is visible so the
+     * dialog has a proper parent. This avoids silent outbound network activity
+     * while keeping the dev workflow convenient (no password re-entry required).
+     */
+    public static void promptResumePortalUpload() {
+        int choice = javax.swing.JOptionPane.showConfirmDialog(
+            Gui.mainFrame,
+            "Portal upload was enabled in your last session.\nResume uploading benchmarks to " + Portal.uploadUrl + "?",
+            "Resume Portal Upload?",
+            javax.swing.JOptionPane.YES_NO_OPTION,
+            javax.swing.JOptionPane.QUESTION_MESSAGE
+        );
+        if (choice == javax.swing.JOptionPane.YES_OPTION) {
+            sharePortal = true;
+            msg("Portal upload resumed.");
+        } else {
+            sharePortal = false;
+            sharePortalPreviouslyEnabled = false; // clear so we don't prompt again next launch
+            msg("Portal upload not resumed.");
+            saveConfig(); // persist the cleared state
+        }
+        // sync the menu checkbox to reflect the resolved state
+        if (Gui.mainFrame != null) {
+            Gui.mainFrame.loadPropertiesConfig();
         }
     }
     
@@ -313,8 +350,12 @@ public class App {
         // configure settings from properties
         String value;
 
-        value = p.getProperty("sharePortal", String.valueOf(sharePortal));
-        sharePortal = Boolean.parseBoolean(value);
+        // Never silently re-enable portal upload on startup — network activity must
+        // always be explicitly user-confirmed each session. We remember the previous
+        // state only to offer a convenient one-click re-enable prompt.
+        value = p.getProperty("sharePortal", "false");
+        sharePortalPreviouslyEnabled = Boolean.parseBoolean(value);
+        sharePortal = false; // always start disabled; prompt offered after window visible
         
         Portal.uploadUrl = p.getProperty("uploadUrl", Portal.uploadUrl);
         
