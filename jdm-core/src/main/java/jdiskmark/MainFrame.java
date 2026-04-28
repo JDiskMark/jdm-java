@@ -718,7 +718,6 @@ public final class MainFrame extends javax.swing.JFrame {
 
         helpMenu.setText("Help");
 
-        portalUploadMenuItem.setSelected(true);
         portalUploadMenuItem.setText("Portal Upload");
         portalUploadMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1084,7 +1083,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenu helpMenu;
     private javax.swing.JMenu ioEngineMenu;
     private javax.swing.ButtonGroup ioEnginebuttonGroup;
-        private javax.swing.JLabel jLabel22;
+    private javax.swing.JLabel jLabel22;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JPopupMenu.Separator jSeparator1;
