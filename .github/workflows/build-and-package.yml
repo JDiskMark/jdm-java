@@ -14,14 +14,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # Temporarily commenting this if issues persist and backtracking is needed
+      # Uncomment the line below if not commenting for troubleshooting
       # FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4  # Confirm if newer releases address this issue
+      uses: actions/checkout@v4  # Ensure this line is correctly formatted
     - name: Set up JDK
-      uses: actions/setup-java@v4  # Confirm if newer releases address this issue
+      uses: actions/setup-java@v4  # Ensure this line is correctly formatted
       with:
         distribution: 'temurin'
         java-version: '17'
