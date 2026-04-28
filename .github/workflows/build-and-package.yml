@@ -14,13 +14,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Ensure correct formatting
-    
+      # Use any necessary environment variables or adjust as needed
+
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4  # Ensure this is correctly formatted
+      uses: actions/checkout@v6  # Upgrade to the latest compatible version with Node.js 24
+
     - name: Set up JDK
-      uses: actions/setup-java@v4  # Ensure this is correctly formatted
+      uses: actions/setup-java@v4  # Ensure using latest versions compatible with Node.js 24
       with:
         distribution: 'temurin'
         java-version: '17'
