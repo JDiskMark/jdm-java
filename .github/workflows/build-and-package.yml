@@ -13,15 +13,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # Force Node.js 24 compatibility [\[1\]](https://devactivity.com/insights/clearing-the-noise-understanding-node-js-20-deprecation-warnings-in-github-actions/) [\[3\]](https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/)
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v6
 
     - name: Set up JDK
-      uses: actions/setup-java@v4  # Latest v4 supports Node.js 24 [\[1\]](https://devactivity.com/insights/clearing-the-noise-understanding-node-js-20-deprecation-warnings-in-github-actions/)
+      uses: actions/setup-java@v5  # Updated to v5 for Node.js 24 support [\[1\]](https://github.com/actions/setup-java)
       with:
         distribution: 'temurin'
         java-version: '17'
