@@ -16,20 +16,19 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up JDK
-      uses: actions/setup-java@v2
+      uses: actions/setup-java@v3
       with:
-        distribution: 'temurin' # Use Adoptium's Temurin distribution
+        distribution: 'temurin'
         java-version: '17'      # Ensure this matches your project's Java version
 
     - name: Build with Maven
       run: mvn clean install
 
     - name: Archive ZIP Artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3  # Updated to version 3
       with:
         name: jdm-zip-distribution
         path: jdm-zip/target/*.zip # Adjust the path according to where the ZIP is generated
-
