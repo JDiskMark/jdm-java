@@ -18,9 +18,9 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3  # Update if a newer version is available
+      uses: actions/checkout@v4  # Use the latest version if available, update this as needed
     - name: Set up JDK
-      uses: actions/setup-java@v3  # Update if a newer version is available
+      uses: actions/setup-java@v4  # Use the latest version if available, update this as needed
       with:
         distribution: 'temurin'
         java-version: '17'
