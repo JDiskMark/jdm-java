@@ -9,6 +9,7 @@ import static jdiskmark.App.dataDir;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -73,8 +74,14 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             em.getTransaction().commit();
         }
         // #67 upload to community portal (in progress)
+        // Run asynchronously so the benchmark result returns to the UI immediately
+        // without blocking on the socket timeout + HTTP POST in Portal.upload().
         if (App.sharePortal) {
-            Portal.upload(benchmark);
+            CompletableFuture.runAsync(() -> Portal.upload(benchmark))
+                .exceptionally(ex -> {
+                    App.err("Portal upload error: " + ex.getMessage());
+                    return null;
+                });
         }
         Gui.runPanel.addRun(benchmark);
         App.nextSampleNumber += App.numOfSamples;
