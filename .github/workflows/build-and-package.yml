@@ -1,0 +1,35 @@
+name: Build and Package
+
+on:
+  push:
+    branches:
+      - main
+      - maven
+  pull_request:
+    branches:
+      - main
+      - maven
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up JDK
+      uses: actions/setup-java@v2
+      with:
+        distribution: 'temurin' # Use Adoptium's Temurin distribution
+        java-version: '17'      # Ensure this matches your project's Java version
+
+    - name: Build with Maven
+      run: mvn clean install
+
+    - name: Archive ZIP Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: jdm-zip-distribution
+        path: jdm-zip/target/*.zip # Adjust the path according to where the ZIP is generated
+
