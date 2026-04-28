@@ -70,11 +70,11 @@ public class Portal {
             
             // Write to a local file for debugging
             // This creates/overwrites "debug_benchmark.json" in your project root
-            java.nio.file.Files.writeString(
-                java.nio.file.Path.of("debug-benchmark.json"), 
-                jsonBody
-            );
-            App.msg("Debug file written to: " + java.nio.file.Paths.get("debug-benchmark.json").toAbsolutePath());
+            // java.nio.file.Files.writeString(
+            //     java.nio.file.Path.of("debug-benchmark.json"), 
+            //     jsonBody
+            // );
+            // App.msg("Debug file written to: " + java.nio.file.Paths.get("debug-benchmark.json").toAbsolutePath());
             
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
