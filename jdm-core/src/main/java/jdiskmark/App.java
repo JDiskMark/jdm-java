@@ -357,7 +357,8 @@ public class App {
         sharePortalPreviouslyEnabled = Boolean.parseBoolean(value);
         sharePortal = false; // always start disabled; prompt offered after window visible
         
-        Portal.uploadUrl = p.getProperty("uploadUrl", Portal.uploadUrl);
+        Portal.uploadResourceLocator = p.getProperty("uploadResourceLocator", Portal.uploadResourceLocator);
+        Portal.uploadProtocol = p.getProperty("uploadProtocol", Portal.uploadProtocol);
         
         value = p.getProperty("activeProfile", activeProfile.name());
         BenchmarkProfile previousActiveProfile = activeProfile;
@@ -464,7 +465,8 @@ public class App {
         
         // configure properties
         p.setProperty("sharePortal", String.valueOf(sharePortal));
-        p.setProperty("uploadUrl", Portal.uploadUrl);
+        p.setProperty("uploadResourceLocator", Portal.uploadResourceLocator);
+        p.setProperty("uploadProtocol", Portal.uploadProtocol);
         p.setProperty("activeProfile", activeProfile.name());
         p.setProperty("profileModified", String.valueOf(profileModified));
         p.setProperty("benchmarkType", benchmarkType.name());

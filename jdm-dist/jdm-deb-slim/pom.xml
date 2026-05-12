@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>jdiskmark</groupId>
+        <artifactId>jdm-dist</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>jdm-deb-slim</artifactId>
+    <packaging>pom</packaging>
+
+    <profiles>
+
+        <!-- =========================================================
+             Linux DEB Slim build — explicit activation only.
+             Produces a thin .deb that depends on the system JRE
+             (no bundled runtime). Activate with -Plinux-deb-slim.
+             Contrast with jdm-deb (jpackage, bundled JRE).
+             ========================================================= -->
+        <profile>
+            <id>linux-deb-slim</id>
+            <!-- No <activation> block — must be activated explicitly. -->
+            <build>
+                <plugins>
+
+                    <!-- Step 1: copy + rename the shaded fat-jar from jdm-core
+                         to a stable, version-independent filename so the
+                         installed wrapper script never needs updating. -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>3.6.1</version>
+                        <executions>
+                            <execution>
+                                <id>copy-core-jar</id>
+                                <phase>prepare-package</phase>
+                                <goals><goal>copy</goal></goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>jdiskmark</groupId>
+                                            <artifactId>jdm-core</artifactId>
+                                            <version>${project.version}</version>
+                                            <type>jar</type>
+                                            <outputDirectory>${project.build.directory}/deb-staging</outputDirectory>
+                                            <!-- Fixed filename so wrapper script is version-agnostic -->
+                                            <destFileName>jdiskmark.jar</destFileName>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Step 2: assemble the .deb using the jdeb plugin.
+                         Installs:
+                           /usr/share/jdiskmark/jdiskmark.jar  (fat jar, all deps bundled)
+                           /usr/bin/jdiskmark                   (launcher wrapper script)
+                         Depends on system Java (openjdk-21-jre or newer). -->
+                    <plugin>
+                        <groupId>org.vafer</groupId>
+                        <artifactId>jdeb</artifactId>
+                        <version>1.12</version>
+                        <executions>
+                            <execution>
+                                <id>build-deb-slim</id>
+                                <phase>package</phase>
+                                <goals><goal>jdeb</goal></goals>
+                                <configuration>
+                                    <deb>${project.build.directory}/jdiskmark_[[version]]_all.deb</deb>
+                                    <!-- Directory containing the DEBIAN/control template -->
+                                    <controldir>${project.basedir}/src/deb/control</controldir>
+                                    <dataSet>
+                                        <!-- Fat jar (all deps shaded in, stable filename) -->
+                                        <data>
+                                            <src>${project.build.directory}/deb-staging/jdiskmark.jar</src>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>/usr/share/jdiskmark</prefix>
+                                                <filemode>644</filemode>
+                                                <user>root</user>
+                                                <group>root</group>
+                                            </mapper>
+                                        </data>
+                                        <!-- Launcher script — installed directly to /usr/bin,
+                                             no postinst symlink required. -->
+                                        <data>
+                                            <src>${project.basedir}/src/deb/bin/jdiskmark</src>
+                                            <type>file</type>
+                                            <mapper>
+                                                <type>perm</type>
+                                                <prefix>/usr/bin</prefix>
+                                                <filemode>755</filemode>
+                                                <user>root</user>
+                                                <group>root</group>
+                                            </mapper>
+                                        </data>
+                                    </dataSet>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                </plugins>
+            </build>
+        </profile>
+
+    </profiles>
+</project>

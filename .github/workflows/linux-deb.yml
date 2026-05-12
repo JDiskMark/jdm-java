@@ -8,8 +8,8 @@ on:
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI
 
 jobs:
-  # --- LINUX DEBIAN BUILD ---
-  build-linux:
+  # --- LINUX DEBIAN FAT BUILD (jpackage, bundled JRE) ---
+  build-deb-fat:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -22,17 +22,44 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build Debian Package
+      - name: Build Fat Debian Package
         # -pl targets jdm-core and jdm-deb. -am also builds upstream dependencies.
         # Explicitly activating the linux-deb profile to ensure jpackage runs.
         run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am -Plinux-deb --no-transfer-progress
 
-      - name: Upload DEB Artifact
+      - name: Upload Fat DEB Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: jdiskmark-debian-pkg
+          name: jdiskmark-debian-fat-pkg
           path: jdm-dist/jdm-deb/target/*.deb
           if-no-files-found: error
           # Disable zipping so it can be downloaded raw from the Actions tab
+          archive: false
+
+  # --- LINUX DEBIAN SLIM BUILD (jdeb plugin, system JRE dependency) ---
+  build-deb-slim:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build Slim Debian Package
+        # Builds jdm-core (shade fat jar) then assembles the slim .deb via jdeb.
+        # The slim package depends on the system JRE — no bundled runtime.
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb-slim -am -Plinux-deb-slim --no-transfer-progress
+
+      - name: Upload Slim DEB Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: jdiskmark-debian-slim-pkg
+          path: jdm-dist/jdm-deb-slim/target/*.deb
+          if-no-files-found: error
           archive: false
 

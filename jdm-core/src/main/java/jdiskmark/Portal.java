@@ -15,27 +15,36 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Portal {
+    // rotocols
+    static public final String HTTP = "http://";
+    static public final String HTTPS = "https://";
+    // resource locators
+    static public final String PRODUCTION_UPLOAD_LOCATOR = "www.jdiskmark.net:5000/api/benchmarks/upload";
+    static public final String TEST_UPLOAD_LOCATOR = "test.jdiskmark.net:5000/api/benchmarks/upload";
+    static public final String LOCAL_UPLOAD_LOCATOR = "localhost:5000/api/benchmarks/upload";
+    // port
 
-    static public final String PRODUCTION_UPLOAD_ENDPOINT = "http://www.jdiskmark.net:5000/api/benchmarks/upload";
-    static public final String TEST_UPLOAD_ENDPOINT = "https://test.jdiskmark.net:5000/api/benchmarks/upload";
-    static public final String LOCAL_UPLOAD_ENDPOINT = "http://localhost:5000/api/benchmarks/upload";
-    static public final int UPLOAD_PORT = 5000; // cur dev api port
+    static public String uploadResourceLocator = LOCAL_UPLOAD_LOCATOR;
+    static public String uploadProtocol = HTTP;
 
-    static public String uploadUrl = LOCAL_UPLOAD_ENDPOINT;
+    static String getUploadUrl() {
+        return uploadProtocol + uploadResourceLocator;
+    }
 
     // Helper method to check connectivity to the host
     private static boolean isHostReachable(String host, int port) {
         try (Socket socket = new Socket()) {
             // Connect with a 2-second timeout
-            socket.connect(new InetSocketAddress(host, port), 2000);
-            return true;
+            socket.connect(new InetSocketAddress(host, port), 2000)
+
         } catch (IOException e) {
-            App.err("IO Exception " + e.getMessage());
+            App.err("IO Exception " + e.getMess
+
             return false; // Host unreachable or port closed
         }
-    }
 
-    static public void upload(Benchmark benchmark) {
+
+        
 
         App.msg("starting upload to " + uploadUrl);
 
@@ -67,7 +76,6 @@ public class Portal {
         String jsonBody;
         try {
             jsonBody = mapper.writeValueAsString(benchmark);
-
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(uploadUrl))
@@ -79,13 +87,14 @@ public class Portal {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 201 || response.statusCode() == 200) {
-                App.msg("Benchmark uploaded successfully!");
+                App.msg("Benchmark uploaded successfully to " + uploadUrl);
             } else {
                 App.err("Upload failed. Status: " + response.statusCode());
                 App.err("Server Response: " + response.body());
             }
         } catch (IOException | InterruptedException ex) {
-            Logger.getLogger(Portal.class.getName()).log(Level.SEVERE, null, ex);
+            App.err("Upload failed. Error: " + ex.getMessage());
+            Logger.getLogger(Portal.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
         }
 
         App.msg("done uploading to " + uploadUrl);

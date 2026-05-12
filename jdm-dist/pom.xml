@@ -17,6 +17,7 @@
         <!-- jdm-zip is the legacy Ant-based zip/deb packager — disabled while jdm-deb (jpackage) is being validated -->
         <!-- <module>jdm-zip</module> -->
         <module>jdm-deb</module>
+        <module>jdm-deb-slim</module>
         <module>jdm-msi</module>
         <module>jdm-rpm</module>
         <module>jdm-flatpak</module>
