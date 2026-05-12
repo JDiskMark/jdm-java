@@ -287,7 +287,7 @@ public class App {
     public static void promptResumePortalUpload() {
         int choice = javax.swing.JOptionPane.showConfirmDialog(
             Gui.mainFrame,
-            "Portal upload was enabled in your last session.\nResume uploading benchmarks to " + Portal.uploadUrl + "?",
+            "Portal upload was enabled in your last session.\nResume uploading benchmarks to " + Portal.getUploadUrl() + "?",
             "Resume Portal Upload?",
             javax.swing.JOptionPane.YES_NO_OPTION,
             javax.swing.JOptionPane.QUESTION_MESSAGE

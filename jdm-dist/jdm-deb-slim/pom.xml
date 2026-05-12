@@ -64,7 +64,7 @@
                     <plugin>
                         <groupId>org.vafer</groupId>
                         <artifactId>jdeb</artifactId>
-                        <version>1.12</version>
+                        <version>${jdeb.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>build-deb-slim</id>
