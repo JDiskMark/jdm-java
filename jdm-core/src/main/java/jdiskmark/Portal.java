@@ -43,7 +43,8 @@ public class Portal {
         }
     }
 
-    static void upload(Benchmark benchmark) {
+        staic v
+
         String uploadUrl = getUploadUrl();
         URI uploadUri = URI.create(uploadUrl);
         String host = uploadUri.getHost();
