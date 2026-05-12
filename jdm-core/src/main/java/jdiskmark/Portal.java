@@ -35,20 +35,13 @@ public class Portal {
     private static boolean isHostReachable(String host, int port) {
         try (Socket socket = new Socket()) {
             // Connect with a 2-second timeout
-            socket.connect(new InetSocketAddress(host, port), 2000)
-
+            socket.connect(new InetSocketAddress(host, port), 2000);
+            return true;
         } catch (IOException e) {
-            App.err("IO Exception " + e.getMess
-
+            App.err("IO Exception " + e.getMessage());
             return false; // Host unreachable or port closed
         }
 
-
-        
-
-        App.msg("starting upload to " + uploadUrl);
-
-        // Extract host and port from URI string
         URI uploadUri = URI.create(uploadUrl);
         String host = uploadUri.getHost();
         int port = uploadUri.getPort() != -1 ? uploadUri.getPort() : 80;
