@@ -1,4 +1,4 @@
-name: Build and Package
+name: Generic ZIP Build
 
 on:
   push:
@@ -24,14 +24,10 @@ jobs:
         distribution: 'temurin'
         java-version: '25'
 
-    - name: Install flatpak-builder and configure flathub
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y flatpak flatpak-builder
-        flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-
+    # TODO: wire the Maven command to target only jdm-core + jdm-dist/jdm-zip
+    # e.g. mvn clean install -pl jdm-core,jdm-dist/jdm-zip -am --no-transfer-progress
     - name: Build with Maven
-      run: mvn clean install
+      run: mvn clean install --no-transfer-progress
 
     - name: Archive ZIP Artifact
       uses: actions/upload-artifact@v4
