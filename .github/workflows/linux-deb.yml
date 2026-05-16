@@ -9,8 +9,9 @@ on:
 
 jobs:
   # --- LINUX DEBIAN FAT BUILD (jpackage, bundled JRE) ---
+  # Builds once on ubuntu-22.04 (older LTS = wider install compatibility).
   build-deb-fat:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
@@ -30,15 +31,41 @@ jobs:
       - name: Upload Fat DEB Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: jdiskmark-debian-fat-pkg
+          name: jdiskmark-deb-fat
           path: jdm-dist/jdm-deb/target/*.deb
           if-no-files-found: error
           # Disable zipping so it can be downloaded raw from the Actions tab
           archive: false
 
+      - name: Smoke test — install DEB and run --help
+        # Fat package bundles its own JRE so no java install needed.
+        # jdiskmark --help exits 0 (picocli standard), confirming install worked.
+        run: |
+          sudo dpkg -i jdm-dist/jdm-deb/target/*.deb
+          jdiskmark --help
+
+  # --- FAT DEB COMPAT CHECK — verify the artifact installs on ubuntu-24.04 ---
+  # Downloads the artifact built above and smoke tests it on 24.04.
+  # This confirms the single .deb works across both active Ubuntu LTS versions.
+  smoke-deb-fat-24:
+    needs: build-deb-fat
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download Fat DEB Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: jdiskmark-deb-fat
+
+      - name: Install and smoke test on Ubuntu 24.04
+        run: |
+          sudo dpkg -i *.deb
+          jdiskmark --help
+
   # --- LINUX DEBIAN SLIM BUILD (jdeb plugin, system JRE dependency) ---
+  # Builds once on ubuntu-22.04; slim package is just a JAR + wrapper script,
+  # not OS-version-specific.
   build-deb-slim:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
@@ -58,8 +85,22 @@ jobs:
       - name: Upload Slim DEB Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: jdiskmark-debian-slim-pkg
+          name: jdiskmark-deb-slim
           path: jdm-dist/jdm-deb-slim/target/*.deb
           if-no-files-found: error
           archive: false
-
+
+  # --- SLIM DEB COMPAT CHECK — verify the artifact installs on ubuntu-24.04 ---
+  smoke-deb-slim-24:
+    needs: build-deb-slim
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download Slim DEB Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: jdiskmark-deb-slim
+
+      - name: Install and smoke test on Ubuntu 24.04
+        run: |
+          sudo dpkg -i *.deb || sudo apt-get install -f -y
+          jdiskmark --help
