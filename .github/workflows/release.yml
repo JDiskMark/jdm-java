@@ -226,11 +226,21 @@ jobs:
           path: release-assets
           merge-multiple: true
 
+      - name: Detect pre-release
+        id: prerelease
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if echo "$VERSION" | grep -qiE '(alpha|beta|rc|snapshot|dev|preview)'; then
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create Release
         uses: softprops/action-gh-release@v3
         with:
           files: release-assets/*
           draft: false
-          prerelease: false
+          prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
           generate_release_notes: true
           token: ${{ secrets.GITHUB_TOKEN }}
