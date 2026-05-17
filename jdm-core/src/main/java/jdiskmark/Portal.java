@@ -85,14 +85,14 @@ public class Portal {
             if (response.statusCode() == 201 || response.statusCode() == 200) {
                 App.msg("Benchmark uploaded successfully to " + uploadUrl);
             } else {
+                App.err("Error uploading to " + uploadUrl);
                 App.err("Upload failed. Status: " + response.statusCode());
                 App.err("Server Response: " + response.body());
             }
         } catch (IOException | InterruptedException ex) {
-            App.err("Upload failed. Error: " + ex.getMessage());
+            App.err("Error uploading to " + uploadUrl);
+            App.err("Error message: " + ex.getMessage());
             Logger.getLogger(Portal.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
         }
-
-        App.msg("done uploading to " + uploadUrl);
     }
 }
