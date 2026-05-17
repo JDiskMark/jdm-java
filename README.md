@@ -1,6 +1,16 @@
-# JDiskMark v0.7.0 beta (Windows/Mac/Linux)
+# JDiskMark
 
-Java Disk Benchmark Utility
+**Java Disk Benchmark Utility** — cross-platform disk I/O performance testing for Windows, macOS and Linux.
+
+[![Windows MSI Build](https://github.com/JDiskMark/jdm-java/actions/workflows/windows-msi.yml/badge.svg)](https://github.com/JDiskMark/jdm-java/actions/workflows/windows-msi.yml)
+[![Linux DEB Build](https://github.com/JDiskMark/jdm-java/actions/workflows/linux-deb.yml/badge.svg)](https://github.com/JDiskMark/jdm-java/actions/workflows/linux-deb.yml)
+[![Linux RPM Build](https://github.com/JDiskMark/jdm-java/actions/workflows/linux-rpm.yml/badge.svg)](https://github.com/JDiskMark/jdm-java/actions/workflows/linux-rpm.yml)
+[![Linux Flatpak Build](https://github.com/JDiskMark/jdm-java/actions/workflows/linux-flatpak.yml/badge.svg)](https://github.com/JDiskMark/jdm-java/actions/workflows/linux-flatpak.yml)
+[![MacOS PKG Build](https://github.com/JDiskMark/jdm-java/actions/workflows/macos-pkg.yml/badge.svg)](https://github.com/JDiskMark/jdm-java/actions/workflows/macos-pkg.yml)
+[![Download](https://img.shields.io/sourceforge/dt/jdiskmark.svg)](https://sourceforge.net/projects/jdiskmark/files/latest/download)
+[![License](https://img.shields.io/badge/License-Custom-blue.svg)](LICENSE.md)
+
+![JDiskMark v0.8.0 benchmark screenshot](docs/images/jdiskmark-screenshot.png)
 
 ## Features
 
@@ -14,7 +24,7 @@ Java Disk Benchmark Utility
 - multi threaded benchmarks
 - Default profiles
 - Command line interface
-- available in msi, deb, rpm and zip releases
+- Installers for msi, pkg, deb, rpm and flatpak
 
 ## Releases
 
@@ -39,6 +49,33 @@ The rpm installer is used on RHEL, CENTOS, SUSELinux and Fedora distributions.
 To install use `sudo rpm -i jdiskmark-<rpm.version>.x86_64.rpm` and to remove use `sudo rpm -e jdiskmark`
 
 Note: the `rpm.version` is similar to the `version` but replaces hyphens with periods.
+
+### macOS Installer (.pkg)
+
+Download the `jdiskmark-<version>.pkg` and double-click to launch the installer.
+JDiskMark will be installed to `/Applications/JDiskMark.app`.
+
+#### Gatekeeper security prompt
+
+Because JDiskMark is not yet notarized with Apple, macOS will block the first launch.
+To allow it:
+
+1. Open **System Settings → Privacy & Security**
+2. Scroll down to the Security section — you will see a message that JDiskMark was blocked
+3. Click **Open Anyway**
+
+#### Uninstall
+
+JDiskMark registers with macOS's package manager (`pkgutil`) during install,
+so it can be cleanly removed without leaving behind stale entries.
+
+```sh
+# Remove the application bundle
+sudo rm -rf /Applications/JDiskMark.app
+
+# Forget the package receipt so macOS no longer tracks it
+sudo pkgutil --forget net.jdiskmark.JDiskMark
+```
 
 ### Flatpak Installer (.flatpak)
 
@@ -84,12 +121,14 @@ flatpak uninstall net.jdiskmark.JDiskMark
 
 ### Zip Archive (.zip)
 
-The zip distribution does not require admin for installing but does require 
-Java 25 to be installed seperately.
+> **Note:** The zip distribution is currently disabled in the build pipeline and is planned for restoration in a future release. It is intended as a portable, no-install option — ideal for running from a USB drive on systems where admin rights are not available (e.g. PC repair shops).
 
-1. Download and install [java 25](https://www.oracle.com/java/technologies/downloads/) from Oracle.
+The zip distribution does not require admin for installing but does require
+Java 25 to be installed separately.
 
-2. Verify java 25 is installed:
+1. Download and install [Java 25](https://www.oracle.com/java/technologies/downloads/) from Oracle.
+
+2. Verify Java 25 is installed:
    ```
    C:\Users\username>java --version
    java 25.0.1 2025-10-21 LTS
@@ -99,9 +138,9 @@ Java 25 to be installed seperately.
 
 3. Extract release zip archive into desired location.
    ```
-   Examples:  
-   /Users/username/jdiskmark-v0.6.3
-   /opt/jdiskmark-v0.6.3
+   Examples:
+   /Users/username/jdiskmark-<version>
+   /opt/jdiskmark-<version>
    ```
 
 ## Launching as normal process
@@ -204,16 +243,16 @@ run example benchmark
 java -jar jdiskmark.jar run -n 25 -o Random -t "Write" -T 4
 ...
 -------------------------------------------
-JDiskMark Benchmark Results (v0.6.3-dev)
+JDiskMark Benchmark Results (v0.8.0)
 -------------------------------------------
 Benchmark: Write
 Drive: Samsung SSD 990 PRO 4TB
 Capacity: 32% (1178/3725 GB)
-Timestamp: 2025-10-26T18:17:37.529141200
+Timestamp: 2026-05-17T05:50:32.000000000
 CPU: 13th Gen Intel(R) Core(TM) i9-13900K
 System: Windows 11 / amd64
-Java: Java(TM) SE Runtime Environment 21.0.3
-Path: C:\Users\james
+Java: Java(TM) SE Runtime Environment 25.0.1
+Path: C:\Users\username
 -------------------------------------------
 Order: Random
 IOMode: Write
@@ -231,14 +270,39 @@ IOPS: 28892857
 
 ## Development Environment
 
-jdiskmark client is developed with [NetBeans 25](https://netbeans.apache.org/front/main/download/) and [Java 25](https://www.oracle.com/java/technologies/downloads/)
+JDiskMark is developed with [NetBeans 25](https://netbeans.apache.org/front/main/download/) and [Java 25](https://www.oracle.com/java/technologies/downloads/).
+
+## Build from Source
+
+### Prerequisites
+
+- [Java 25 JDK](https://www.oracle.com/java/technologies/downloads/)
+- [Apache Maven 3.9+](https://maven.apache.org/download.cgi)
+- [NetBeans 25](https://netbeans.apache.org/front/main/download/) (recommended IDE)
+
+### Build Commands
+
+| Goal | Command |
+|---|---|
+| Build core only (fastest) | `mvn clean install -pl jdm-core -am --no-transfer-progress` |
+| Full reactor (all modules) | `mvn clean install --no-transfer-progress` |
+| Windows MSI (Windows only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am` |
+| Fat DEB, bundled JRE (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am -Plinux-deb` |
+| Slim DEB, system JRE (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-deb-slim -am -Plinux-deb-slim` |
+| RPM (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm` |
+| Flatpak (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak` |
+| macOS PKG (macOS only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am` |
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
 ## Source
 
-Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
+Source is available on our [GitHub repo](https://github.com/JDiskMark/jdm-java/).
+
+## Issues & Contributing
+
+Bug reports and pull requests are welcome on [GitHub Issues](https://github.com/JDiskMark/jdm-java/issues).
 
 ## Release Notes
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
-
-

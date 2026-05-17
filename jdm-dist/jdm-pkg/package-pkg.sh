@@ -17,7 +17,10 @@ IDENTIFIER=${11}
 echo "Building macOS PKG for $APP_NAME version $VERSION..."
 
 APP_IMAGE_DIR="${DIST_DIR}/${PKG_NAME}-${VERSION}-app-image"
-APP_BUNDLE="${APP_IMAGE_DIR}/${PKG_NAME}-${VERSION}.app"
+# APP_NAME (e.g. "JDiskMark") is used as the .app bundle name so that
+# /Applications/JDiskMark.app is the install path and pkgutil registers
+# the receipt under $IDENTIFIER for clean uninstalls.
+APP_BUNDLE="${APP_IMAGE_DIR}/${APP_NAME}.app"
 UNSIGNED_PKG="${DIST_DIR}/${PKG_NAME}-${VERSION}-unsigned.pkg"
 FINAL_PKG="${DIST_DIR}/${PKG_NAME}-${VERSION}.pkg"
 
@@ -47,7 +50,7 @@ jpackage --type app-image \
          --input "$INPUT_DIR" \
          --main-jar "jdm-core-$VERSION.jar" \
          --main-class "jdiskmark.App" \
-         --name "$PKG_NAME-$VERSION" \
+         --name "$APP_NAME" \
          --app-version "1.0.0" \
          --vendor "jdiskmark" \
          --dest "$APP_IMAGE_DIR" \
@@ -75,7 +78,7 @@ if [ -n "$SIGNING_IDENTITY" ]; then
     codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign "$SIGNING_IDENTITY" "$APP_BUNDLE/Contents/runtime"
     
     # Sign main launcher and app bundle
-    codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign "$SIGNING_IDENTITY" "$APP_BUNDLE/Contents/MacOS/$PKG_NAME-$VERSION"
+    codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign "$SIGNING_IDENTITY" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
     codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign "$SIGNING_IDENTITY" "$APP_BUNDLE"
 fi
 
