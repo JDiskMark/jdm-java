@@ -21,12 +21,6 @@
              ========================================================= -->
         <profile>
             <id>linux-deb</id>
-            <activation>
-                <os>
-                    <family>unix</family>
-                    <name>Linux</name>
-                </os>
-            </activation>
             <build>
                 <plugins>
                     <plugin>

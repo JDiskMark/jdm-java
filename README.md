@@ -288,12 +288,12 @@ JDiskMark is developed with [NetBeans 25](https://netbeans.apache.org/front/main
 |---|---|
 | Build core only (fastest) | `mvn clean install -pl jdm-core -am --no-transfer-progress` |
 | Full reactor (all modules) | `mvn clean install --no-transfer-progress` |
-| Windows MSI (Windows only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am` |
+| Windows MSI (Windows only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am -Pwindows-msi` |
 | Fat DEB, bundled JRE (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am -Plinux-deb` |
 | Slim DEB, system JRE (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-deb-slim -am -Plinux-deb-slim` |
 | RPM (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm` |
 | Flatpak (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak` |
-| macOS PKG (macOS only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am` |
+| macOS PKG (macOS only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am -Pmacos-pkg` |
 
 ### Pipeline triggered pre-release
 

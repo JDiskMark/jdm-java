@@ -50,10 +50,10 @@ jdm-java/                    ← root POM (aggregator)
 └── jdm-dist/                ← packaging aggregator
     ├── jdm-deb/             ← Linux .deb — fat pkg, bundled JRE (jpackage, -Plinux-deb)
     ├── jdm-deb-slim/        ← Linux .deb — slim pkg, system JRE (jdeb plugin, -Plinux-deb-slim)
-    ├── jdm-msi/             ← Windows .msi — bundled JRE (jpackage, auto on Windows)
-    ├── jdm-rpm/             ← Linux .rpm — bundled JRE (jpackage, auto on Linux)
-    ├── jdm-flatpak/         ← Linux Flatpak (auto on Linux)
-    ├── jdm-pkg/             ← macOS .pkg (auto on macOS)
+    ├── jdm-msi/             ← Windows .msi — bundled JRE (jpackage, -Pwindows-msi)
+    ├── jdm-rpm/             ← Linux .rpm — bundled JRE (jpackage, -Plinux-rpm)
+    ├── jdm-flatpak/         ← Linux Flatpak (-Plinux-flatpak)
+    ├── jdm-pkg/             ← macOS .pkg (-Pmacos-pkg)
     └── jdm-zip/             ← legacy zip packager (disabled, kept for reference)
 ```
 
@@ -65,7 +65,7 @@ jdm-java/                    ← root POM (aggregator)
 | Full reactor (all modules) | `mvn clean install --no-transfer-progress` |
 | Fat DEB (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am -Plinux-deb` |
 | Slim DEB (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-deb-slim -am -Plinux-deb-slim` |
-| Windows MSI (Windows only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am` |
+| Windows MSI (Windows only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am -Pwindows-msi` |
 
 ### Version Properties
 

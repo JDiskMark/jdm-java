@@ -23,12 +23,6 @@
     <profiles>
         <profile>
             <id>linux-flatpak</id>
-            <activation>
-                <os>
-                    <family>unix</family>
-                    <name>Linux</name>
-                </os>
-            </activation>
             <build>
                 <plugins>
                     <plugin>
