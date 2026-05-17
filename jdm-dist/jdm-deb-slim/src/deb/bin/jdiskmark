@@ -1,0 +1,18 @@
+#!/bin/sh
+# JDiskMark launcher
+# Installed by the jdiskmark Debian package to /usr/bin/jdiskmark
+
+# Requires Java 25+ (class file version 69). Java 21 cannot run this jar.
+# Check the standard apt-installed path first; fall back to PATH's java
+# (e.g. when temurin-25 is installed via SDKMAN, setup-java, etc.).
+if [ -x "/usr/lib/jvm/java-25-openjdk-amd64/bin/java" ]; then
+    JAVA_CMD="/usr/lib/jvm/java-25-openjdk-amd64/bin/java"
+else
+    JAVA_CMD="java"
+fi
+
+# java.net.http guard: full OpenJDK packages include this module, but jlink-
+# generated minimal runtimes may omit it.  --add-modules is a no-op when the
+# module is already present, so this is safe to leave unconditionally.
+exec "$JAVA_CMD" --add-modules java.net.http \
+     -jar /usr/share/jdiskmark/jdiskmark.jar "$@"

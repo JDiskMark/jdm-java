@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>jdiskmark</groupId>
+        <artifactId>jdm-dist</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>jdm-flatpak</artifactId>
+    <packaging>pom</packaging>
+
+    <properties>
+        <flatpak.app.id>net.jdiskmark.JDiskMark</flatpak.app.id>
+        <flatpak.staging.dir>${project.build.directory}/staging</flatpak.staging.dir>
+        <flatpak.repo.dir>${project.build.directory}/repo</flatpak.repo.dir>
+        <flatpak.build.dir>${project.build.directory}/flatpak-build</flatpak.build.dir>
+    </properties>
+
+    <profiles>
+        <profile>
+            <id>linux-flatpak</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>build-flatpak</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <echo message="Staging Flatpak assets..."/>
+                                        <mkdir dir="${flatpak.staging.dir}"/>
+                                        
+                                        <!-- Copy shaded JAR -->
+                                        <copy file="${project.basedir}/../../jdm-core/target/jdm-core-${project.version}.jar"
+                                              tofile="${flatpak.staging.dir}/jdiskmark.jar"/>
+                                              
+                                        <!-- Copy Flatpak resources -->
+                                        <copy todir="${flatpak.staging.dir}">
+                                            <fileset dir="${project.basedir}">
+                                                <include name="*.yml"/>
+                                                <include name="*.sh"/>
+                                                <include name="*.png"/>
+                                                <include name="*.xml"/>
+                                                <include name="*.desktop"/>
+                                            </fileset>
+                                        </copy>
+
+                                        <echo message="Running flatpak-builder..."/>
+                                        <exec executable="flatpak-builder" dir="${flatpak.staging.dir}" failonerror="true">
+                                            <arg value="--user"/>
+                                            <arg value="--install-deps-from=flathub"/>
+                                            <arg value="--assumeyes"/>
+                                            <arg value="--force-clean"/>
+                                            <arg value="--repo=${flatpak.repo.dir}"/>
+                                            <arg value="${flatpak.build.dir}"/>
+                                            <arg value="${flatpak.app.id}.yml"/>
+                                        </exec>
+
+                                        <echo message="Building Flatpak bundle..."/>
+                                        <exec executable="flatpak" failonerror="true">
+                                            <arg value="build-bundle"/>
+                                            <arg value="${flatpak.repo.dir}"/>
+                                            <arg file="${project.build.directory}/${pkg.name}-${project.version}.flatpak"/>
+                                            <arg value="${flatpak.app.id}"/>
+                                        </exec>
+                                        
+                                        <echo message="Flatpak bundle created: ${project.build.directory}/${pkg.name}-${project.version}.flatpak"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

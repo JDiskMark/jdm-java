@@ -1,0 +1,6 @@
+#!/bin/bash
+# Remove any existing jdiskmark installation before installing fresh.
+# This prevents macOS from skipping the install when the same bundle ID
+# and version is already on disk (upgrade-bundle version check behaviour).
+rm -rf /Applications/jdiskmark*.app 2>/dev/null
+exit 0

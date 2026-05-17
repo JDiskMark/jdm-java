@@ -1,0 +1,59 @@
+app-id: net.jdiskmark.JDiskMark
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.openjdk25
+
+command: jdiskmark
+
+finish-args:
+  # X11 / Wayland display access
+  - --share=ipc
+  - --socket=x11
+  - --socket=wayland
+  # Access to all storage devices for disk benchmarking
+  - --device=all
+  # Read/write access to the home directory for selecting benchmark paths
+  - --filesystem=home
+  # Allow access to removable media (SD cards, external drives)
+  - --filesystem=/media:rw
+  - --filesystem=/run/media:rw
+
+modules:
+  # Install OpenJDK 25 JRE from the SDK extension into /app/jre
+  - name: openjdk
+    buildsystem: simple
+    build-commands:
+      - /usr/lib/sdk/openjdk25/install.sh
+
+  # Package the JDiskMark shaded JAR.
+  - name: jdiskmark
+    buildsystem: simple
+    sources:
+      # Main application JAR (shaded) — staged by Maven
+      - type: file
+        path: jdiskmark.jar
+      # Launcher script, desktop entry, AppStream metadata and icons
+      - type: file
+        path: jdiskmark.sh
+      - type: file
+        path: net.jdiskmark.JDiskMark.desktop
+      - type: file
+        path: net.jdiskmark.JDiskMark.metainfo.xml
+      - type: file
+        path: net.jdiskmark.JDiskMark.png
+      - type: file
+        path: net.jdiskmark.JDiskMark.64x64.png
+    build-commands:
+      # Install application JAR
+      - install -Dm644 jdiskmark.jar /app/lib/jdiskmark/jdiskmark.jar
+      # Install launcher wrapper script
+      - install -Dm755 jdiskmark.sh /app/bin/jdiskmark
+      # Install desktop entry
+      - install -Dm644 net.jdiskmark.JDiskMark.desktop /app/share/applications/net.jdiskmark.JDiskMark.desktop
+      # Install AppStream metadata
+      - install -Dm644 net.jdiskmark.JDiskMark.metainfo.xml /app/share/metainfo/net.jdiskmark.JDiskMark.metainfo.xml
+      # Install icons (128x128 and 64x64)
+      - install -Dm644 net.jdiskmark.JDiskMark.png /app/share/icons/hicolor/128x128/apps/net.jdiskmark.JDiskMark.png
+      - install -Dm644 net.jdiskmark.JDiskMark.64x64.png /app/share/icons/hicolor/64x64/apps/net.jdiskmark.JDiskMark.png

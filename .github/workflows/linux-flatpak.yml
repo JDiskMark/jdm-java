@@ -1,0 +1,58 @@
+name: Linux Flatpak Build
+
+on:
+  push:
+    branches: [ "**" ]
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+      - 'docs/**'
+  pull_request:
+    branches: [ "dev", "release/**" ]
+  workflow_dispatch:
+
+jobs:
+  build-flatpak:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v6
+
+    - name: Set up JDK 25
+      uses: actions/setup-java@v5
+      with:
+        java-version: '25'
+        distribution: 'oracle'
+        cache: maven
+
+    - name: Install Build Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y flatpak flatpak-builder
+
+    - name: Add Flathub Remote
+      run: |
+        flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+    - name: Install Flatpak Runtime and SDK
+      run: |
+        flatpak install --user --noninteractive flathub \
+          org.freedesktop.Platform//25.08 \
+          org.freedesktop.Sdk//25.08 \
+          org.freedesktop.Sdk.Extension.openjdk25//25.08
+
+    - name: Build Flatpak Bundle
+      # Explicitly activating the linux-flatpak profile to ensure jpackage/antrun runs.
+      run: mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak --no-transfer-progress
+
+    - name: Upload Flatpak Artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: flatpak-package
+        path: jdm-dist/jdm-flatpak/target/*.flatpak
+        if-no-files-found: error
+        # Disable zipping so it can be downloaded raw from the Actions tab
+        archive: false

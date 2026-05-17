@@ -1,0 +1,13 @@
+Package: jdiskmark
+Version: [[version]]
+Section: utils
+Priority: optional
+Architecture: all
+# Requires Java 25+ (class file version 69 / --enable-preview).
+# The fat jar bundles all library deps; only a JRE is needed at runtime.
+Depends: openjdk-25-jre | openjdk-25-jdk
+Maintainer: JDiskMark Maintainers <maintainers@jdiskmark.net>
+Description: JDiskMark - Java Disk Benchmark Utility
+ JDiskMark is a cross-platform disk benchmark utility written in Java.
+ It measures the sequential read and write performance of storage devices
+ and logs results over time for comparison.

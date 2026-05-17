@@ -20,6 +20,19 @@ jdiskmark-deb
 jdiskmark.spec
 temp_resources
 
+#Maven
+target/
+dependency-reduced-pom.xml
+pom.xml.versionsBackup
+pom.xml.releaseBackup
+release.properties
+
+# VS Code - ignore personal files, keep shared project configs
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/extensions.json
 # flatpak
 flatpak-repo
 .flatpak-builder

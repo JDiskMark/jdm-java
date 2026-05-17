@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>jdiskmark</groupId>
+        <artifactId>jdm-dist</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>jdm-pkg</artifactId>
+    <packaging>pom</packaging>
+
+    <profiles>
+        <profile>
+            <id>macos-pkg</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.2.0</version>
+                        <executions>
+                            <execution>
+                                <id>package-macos</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>${project.basedir}/package-pkg.sh</executable>
+                                    <arguments>
+                                        <argument>${project.version}</argument>
+                                        <argument>${app.name}</argument>
+                                        <argument>${pkg.name}</argument>
+                                        <argument>${project.build.directory}</argument>
+                                        <argument>${project.basedir}/../../jdm-core/target</argument>
+                                        <argument>${signing.identity}</argument>
+                                        <argument>${mac.installer.signing.identity}</argument>
+                                        <argument>${apple.id}</argument>
+                                        <argument>${apple.password}</argument>
+                                        <argument>${apple.team.id}</argument>
+                                        <argument>${mac.package.identifier}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <properties>
+        <mac.package.identifier>net.jdiskmark.JDiskMark</mac.package.identifier>
+        <!-- Defaults to empty if not provided via CLI or profiles -->
+        <signing.identity></signing.identity>
+        <mac.installer.signing.identity></mac.installer.signing.identity>
+        <apple.id></apple.id>
+        <apple.password></apple.password>
+        <apple.team.id></apple.team.id>
+    </properties>
+</project>

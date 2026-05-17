@@ -1,0 +1,41 @@
+name: Windows MSI Build
+
+on:
+  push:
+    branches: [ "**" ]
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+      - 'docs/**'
+  pull_request:
+    branches: [ "dev", "release/**" ]
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+jobs:
+  build-msi:
+    runs-on: windows-latest  # Windows runner auto-activates the windows-msi Maven profile
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build Windows MSI (unsigned)
+        # Builds jdm-core first (-am = also build upstream dependencies),
+        # then jdm-msi. Explicitly activating the windows-msi profile.
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am -Pwindows-msi --no-transfer-progress
+
+      - name: Upload MSI Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: jdiskmark-windows-msi
+          path: jdm-dist/jdm-msi/target/*.msi
+          if-no-files-found: error
+          # Disable zipping so it can be downloaded raw from the Actions tab
+          archive: false
