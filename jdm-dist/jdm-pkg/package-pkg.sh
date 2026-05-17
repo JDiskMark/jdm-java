@@ -82,12 +82,20 @@ fi
 # Step 4: Build PKG
 echo "Step 4: Building PKG..."
 COMPONENT_PKG="${DIST_DIR}/${PKG_NAME}-${VERSION}-component.pkg"
-pkgbuild --component "$APP_BUNDLE" \
+
+# Copy bundle to a staging directory to avoid pkgbuild chowning the source files to root
+STAGING_DIR=$(mktemp -d)
+cp -R "$APP_BUNDLE" "$STAGING_DIR/"
+
+pkgbuild --component "$STAGING_DIR/$(basename "$APP_BUNDLE")" \
          --install-location "/Applications" \
          --identifier "$IDENTIFIER" \
          --version "1.0.0" \
          --scripts "scripts" \
          "$COMPONENT_PKG"
+
+# Attempt to clean up staging directory, ignoring failure since files are now owned by root
+rm -rf "$STAGING_DIR" 2>/dev/null || true
 
 productbuild --package "$COMPONENT_PKG" "$UNSIGNED_PKG"
 rm "$COMPONENT_PKG"
