@@ -230,7 +230,11 @@ jobs:
         id: prerelease
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          if echo "$VERSION" | grep -qiE '(alpha|beta|rc|snapshot|dev|preview)'; then
+          # Flag as pre-release if the version has a hyphen-separated suffix after x.y.z
+          # (standard semver pre-release convention: x.y.z-label).
+          # Fallback named patterns also catch common labels in non-semver tags.
+          if echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+-\S+' || \
+             echo "$VERSION" | grep -qiE '(alpha|beta|rc|snapshot|dev|preview|tst)'; then
             echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
           else
             echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
