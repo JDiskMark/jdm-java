@@ -98,10 +98,11 @@ jobs:
         with:
           name: jdiskmark-deb-slim
 
-      - name: Install Java runtime (slim package requires system JRE)
-        run: sudo apt-get install -y default-jre
-
       - name: Install and smoke test on Ubuntu 24.04
+        # Use 'apt install ./file.deb' rather than bare 'dpkg -i' so that apt
+        # can resolve virtual-package dependencies (e.g. default-jre) that
+        # dpkg alone does not understand.
         run: |
-          sudo dpkg -i *.deb
+          sudo apt-get update -q
+          sudo apt install -y ./*.deb
           jdiskmark --help
