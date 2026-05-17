@@ -3,6 +3,10 @@ name: Windows MSI Build
 on:
   push:
     branches: [ "**" ]
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+      - 'docs/**'
   pull_request:
     branches: [ "dev", "release/**" ]
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI

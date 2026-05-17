@@ -28,7 +28,9 @@
 
 ## Releases
 
-https://sourceforge.net/projects/jdiskmark/
+See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+Installers and archives can be found on [sourceforge](https://sourceforge.net/projects/jdiskmark/files/)
 
 ### Windows Installer (.msi)
 
@@ -293,16 +295,24 @@ JDiskMark is developed with [NetBeans 25](https://netbeans.apache.org/front/main
 | Flatpak (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak` |
 | macOS PKG (macOS only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am` |
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+### Pipeline triggered pre-release
 
-## Source
+## GitHub Actions
 
-Source is available on our [GitHub repo](https://github.com/JDiskMark/jdm-java/).
+1. Run from terminal
+
+```sh
+# create tag
+git tag v0.8.0-tst14
+
+# push tag
+git push origin v0.8.0-tst14
+```
+
+2. go to https://github.com/JDiskMark/jdm-java/releases and mark the new tag as a pre-release.
 
 ## Issues & Contributing
 
 Bug reports and pull requests are welcome on [GitHub Issues](https://github.com/JDiskMark/jdm-java/issues).
 
-## Release Notes
-
-See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
