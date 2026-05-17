@@ -50,6 +50,33 @@ To install use `sudo rpm -i jdiskmark-<rpm.version>.x86_64.rpm` and to remove us
 
 Note: the `rpm.version` is similar to the `version` but replaces hyphens with periods.
 
+### macOS Installer (.pkg)
+
+Download the `jdiskmark-<version>.pkg` and double-click to launch the installer.
+JDiskMark will be installed to `/Applications/JDiskMark.app`.
+
+#### Gatekeeper security prompt
+
+Because JDiskMark is not yet notarized with Apple, macOS will block the first launch.
+To allow it:
+
+1. Open **System Settings → Privacy & Security**
+2. Scroll down to the Security section — you will see a message that JDiskMark was blocked
+3. Click **Open Anyway**
+
+#### Uninstall
+
+JDiskMark registers with macOS's package manager (`pkgutil`) during install,
+so it can be cleanly removed without leaving behind stale entries.
+
+```sh
+# Remove the application bundle
+sudo rm -rf /Applications/JDiskMark.app
+
+# Forget the package receipt so macOS no longer tracks it
+sudo pkgutil --forget net.jdiskmark.JDiskMark
+```
+
 ### Flatpak Installer (.flatpak)
 
 The flatpak installer is a universal linux package that can be used on many distributions.
