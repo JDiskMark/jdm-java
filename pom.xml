@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>jdiskmark</groupId>
+    <artifactId>jdm-java</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>Java Disk Benchmark Utility</name>
+
+    <modules>
+        <module>jdm-core</module>
+        <module>jdm-dist</module> 
+    </modules>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.release>25</maven.compiler.release>
+        <exec.mainClass>jdiskmark.App</exec.mainClass>
+        <jackson.version>2.17.0</jackson.version>
+
+        <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
+        <maven.shade.plugin.version>3.5.2</maven.shade.plugin.version>
+        <maven.assembly.plugin.version>3.6.0</maven.assembly.plugin.version>
+        <jdeb.plugin.version>1.10</jdeb.plugin.version>
+        <rpm.plugin.version>2.2.0</rpm.plugin.version>
+        <exec.plugin.version>3.2.0</exec.plugin.version>
+
+        <!-- package properties -->
+        <pkg.name>jdiskmark</pkg.name>
+        <app.name>JDiskMark</app.name>
+
+        <!-- MSI (Windows Installer) requires a purely numeric version in Major.Minor.Build
+             format — no letters, no -SNAPSHOT. This is an MSI format restriction, not
+             jpackage itself. Linux packages (DEB/RPM) can use the full project.version.
+             Update this alongside project.version when cutting a release. -->
+        <msi.version>0.8.0</msi.version>
+        <app.title>${app.name} ${project.version}</app.title>
+        <release.dir>${pkg.name}-${msi.version}</release.dir>
+
+        <!-- JVM options passed to jpackage for all installer types -->
+        <jvm.run.options>-XX:+UseZGC</jvm.run.options>
+
+        <!-- RPM version must not contain hyphens -->
+        <rpm.version>0.8.0</rpm.version>
+
+        <!-- macos versions do not accept values less than 1.0.0 -->
+        <dmg.version>1.0.0</dmg.version>
+
+        <!-- MSI code signing properties (used by -Psign profile in jdm-msi).
+             signtool.exe ships with the Windows SDK. Update the path if your
+             SDK version differs. -->
+        <signtool.executable>C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x86\signtool.exe</signtool.executable>
+        <timestamp.server.url>http://timestamp.sectigo.com</timestamp.server.url>
+        <sign.digest.td>sha256</sign.digest.td>
+        <sign.digest.fd>sha256</sign.digest.fd>
+    </properties>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven.compiler.plugin.version}</version>
+                    <configuration>
+                        <release>${maven.compiler.release}</release>
+                        <compilerArgs>
+                            <arg>--enable-preview</arg>
+                        </compilerArgs>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>${maven.shade.plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>shade</goal>
+                            </goals>
+                            <configuration>
+                                <transformers>
+                                    <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                        <mainClass>${exec.mainClass}</mainClass>
+                                    </transformer>
+                                </transformers>
+                                <filters>
+                                    <filter>
+                                        <artifact>*:*</artifact>
+                                        <excludes>
+                                            <exclude>META-INF/*.SF</exclude>
+                                            <exclude>META-INF/*.DSA</exclude>
+                                            <exclude>META-INF/*.RSA</exclude>
+                                        </excludes>
+                                    </filter>
+                                </filters>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>win-msi</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <modules>
+                <module>jdm-core</module>
+                <module>jdm-dist</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>linux-deb</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>linux</name>
+                </os>
+            </activation>
+            <modules>
+                <module>jdm-core</module>
+                <module>jdm-dist</module>
+            </modules>
+        </profile>
+
+        <profile>
+            <id>macos-pkg</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                </os>
+            </activation>
+            <modules>
+                <module>jdm-core</module>
+                <module>jdm-dist</module>
+            </modules>
+        </profile>
+    </profiles>
+</project>

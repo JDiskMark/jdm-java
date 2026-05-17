@@ -1,0 +1,250 @@
+name: Unified Release
+ 
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags like v0.8.0
+
+jobs:
+  # --- LINUX DEB BUILD ---
+  build-deb:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Update Version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
+
+      - name: Build Debian Package
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am -Plinux-deb --no-transfer-progress
+
+      - name: Upload DEB Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: deb-package
+          path: jdm-dist/jdm-deb/target/*.deb
+          if-no-files-found: error
+          archive: false
+
+  # --- WINDOWS MSI BUILD ---
+  build-msi:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Update Version
+        shell: bash
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
+          # Strip suffixes for MSI numeric requirement (e.g., 0.8.0-beta -> 0.8.0)
+          MSI_VERSION=$(echo $VERSION | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo "0.0.0")
+          sed -i "s|<msi.version>.*</msi.version>|<msi.version>$MSI_VERSION</msi.version>|" pom.xml
+
+      - name: Build Windows MSI
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am -Pwindows-msi --no-transfer-progress
+
+      - name: Upload MSI Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: msi-package
+          path: jdm-dist/jdm-msi/target/*.msi
+          if-no-files-found: error
+          archive: false
+
+  # --- LINUX RPM BUILD ---
+  build-rpm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Install rpmbuild
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm
+
+      - name: Update Version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
+          # Strip suffixes for RPM format (e.g., 0.8.0-beta -> 0.8.0)
+          RPM_VERSION=$(echo $VERSION | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo "0.0.0")
+          sed -i "s|<rpm.version>.*</rpm.version>|<rpm.version>$RPM_VERSION</rpm.version>|" pom.xml
+
+      - name: Build RPM Package
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm --no-transfer-progress
+
+      - name: Upload RPM Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: rpm-package
+          path: jdm-dist/jdm-rpm/target/*.rpm
+          if-no-files-found: error
+          archive: false
+
+  # --- LINUX FLATPAK BUILD ---
+  build-flatpak:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'oracle'
+
+      - name: Update Version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
+          sed -i "s|property name=\"version\" value=\"[^\"]*\"|property name=\"version\" value=\"$VERSION\"|" build.xml
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+
+      - name: Add Flathub Remote
+        run: |
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+      - name: Install Flatpak Runtime and SDK
+        run: |
+          flatpak install --user --noninteractive flathub \
+            org.freedesktop.Platform//25.08 \
+            org.freedesktop.Sdk//25.08 \
+            org.freedesktop.Sdk.Extension.openjdk25//25.08
+
+      - name: Build Flatpak Bundle
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak --no-transfer-progress
+
+      - name: Upload Flatpak Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: flatpak-package
+          path: jdm-dist/jdm-flatpak/target/*.flatpak
+          if-no-files-found: error
+          archive: false
+
+  # --- MACOS PKG BUILD ---
+  build-macos-pkg:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Update Version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
+
+      - name: Build macOS PKG
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am -Pmacos-pkg --no-transfer-progress
+
+      - name: Build and Sign macOS PKG (if secrets available)
+        if: env.MACOS_CERTIFICATE != ''
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          echo -n "$MACOS_CERTIFICATE" | base64 --decode -o /tmp/build_certificate.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import /tmp/build_certificate.p12 -P "$MACOS_CERTIFICATE_PWD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          
+          VERSION=${GITHUB_REF_NAME#v}
+          mvn install -pl jdm-dist/jdm-pkg -Psign \
+            -Dproject.version=$VERSION \
+            -Dsigning.identity="Developer ID Application: Tyler Lui (232JY57U23)" \
+            -Dmac.installer.signing.identity="Developer ID Installer: Tyler Lui (232JY57U23)" \
+            -Dapple.id="$APPLE_ID" \
+            -Dapple.password="$APPLE_APP_SPECIFIC_PASSWORD" \
+            -Dapple.team.id="$APPLE_TEAM_ID"
+
+      - name: Upload PKG Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-pkg
+          path: jdm-dist/jdm-pkg/target/*.pkg
+          if-no-files-found: error
+          archive: false
+
+  # --- CREATE GITHUB RELEASE ---
+  create-release:
+    needs: [build-deb, build-msi, build-rpm, build-flatpak, build-macos-pkg]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all packages
+        uses: actions/download-artifact@v8
+        with:
+          pattern: "*"
+          path: release-assets
+          merge-multiple: true
+
+      - name: Detect pre-release
+        id: prerelease
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          # Flag as pre-release if the version has a hyphen-separated suffix after x.y.z
+          # (standard semver pre-release convention: x.y.z-label).
+          # Fallback named patterns also catch common labels in non-semver tags.
+          if echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+-\S+' || \
+             echo "$VERSION" | grep -qiE '(alpha|beta|rc|snapshot|dev|preview|tst)'; then
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: release-assets/*
+          draft: false
+          prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
+          generate_release_notes: true
+          token: ${{ secrets.GITHUB_TOKEN }}

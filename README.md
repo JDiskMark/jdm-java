@@ -1,6 +1,16 @@
-# JDiskMark v0.7.0 beta (Windows/Mac/Linux)
+# JDiskMark
 
-Java Disk Benchmark Utility
+**Java Disk Benchmark Utility** — cross-platform disk I/O performance testing for Windows, macOS and Linux.
+
+[![Windows MSI Build](https://github.com/JDiskMark/jdm-java/actions/workflows/windows-msi.yml/badge.svg)](https://github.com/JDiskMark/jdm-java/actions/workflows/windows-msi.yml)
+[![Linux DEB Build](https://github.com/JDiskMark/jdm-java/actions/workflows/linux-deb.yml/badge.svg)](https://github.com/JDiskMark/jdm-java/actions/workflows/linux-deb.yml)
+[![Linux RPM Build](https://github.com/JDiskMark/jdm-java/actions/workflows/linux-rpm.yml/badge.svg)](https://github.com/JDiskMark/jdm-java/actions/workflows/linux-rpm.yml)
+[![Linux Flatpak Build](https://github.com/JDiskMark/jdm-java/actions/workflows/linux-flatpak.yml/badge.svg)](https://github.com/JDiskMark/jdm-java/actions/workflows/linux-flatpak.yml)
+[![MacOS PKG Build](https://github.com/JDiskMark/jdm-java/actions/workflows/macos-pkg.yml/badge.svg)](https://github.com/JDiskMark/jdm-java/actions/workflows/macos-pkg.yml)
+[![Download](https://img.shields.io/sourceforge/dt/jdiskmark.svg)](https://sourceforge.net/projects/jdiskmark/files/latest/download)
+[![License](https://img.shields.io/badge/License-Custom-blue.svg)](LICENSE.md)
+
+![JDiskMark v0.8.0 benchmark screenshot](docs/images/jdiskmark-screenshot.png)
 
 ## Features
 
@@ -14,11 +24,13 @@ Java Disk Benchmark Utility
 - multi threaded benchmarks
 - Default profiles
 - Command line interface
-- available in msi, deb, rpm and zip releases
+- Installers for msi, pkg, deb, rpm and flatpak
 
 ## Releases
 
-https://sourceforge.net/projects/jdiskmark/
+See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+Installers and archives can be found on [sourceforge](https://sourceforge.net/projects/jdiskmark/files/)
 
 ### Windows Installer (.msi)
 
@@ -39,6 +51,33 @@ The rpm installer is used on RHEL, CENTOS, SUSELinux and Fedora distributions.
 To install use `sudo rpm -i jdiskmark-<rpm.version>.x86_64.rpm` and to remove use `sudo rpm -e jdiskmark`
 
 Note: the `rpm.version` is similar to the `version` but replaces hyphens with periods.
+
+### macOS Installer (.pkg)
+
+Download the `jdiskmark-<version>.pkg` and double-click to launch the installer.
+JDiskMark will be installed to `/Applications/JDiskMark.app`.
+
+#### Gatekeeper security prompt
+
+Because JDiskMark is not yet notarized with Apple, macOS will block the first launch.
+To allow it:
+
+1. Open **System Settings → Privacy & Security**
+2. Scroll down to the Security section — you will see a message that JDiskMark was blocked
+3. Click **Open Anyway**
+
+#### Uninstall
+
+JDiskMark registers with macOS's package manager (`pkgutil`) during install,
+so it can be cleanly removed without leaving behind stale entries.
+
+```sh
+# Remove the application bundle
+sudo rm -rf /Applications/JDiskMark.app
+
+# Forget the package receipt so macOS no longer tracks it
+sudo pkgutil --forget net.jdiskmark.JDiskMark
+```
 
 ### Flatpak Installer (.flatpak)
 
@@ -84,12 +123,14 @@ flatpak uninstall net.jdiskmark.JDiskMark
 
 ### Zip Archive (.zip)
 
-The zip distribution does not require admin for installing but does require 
-Java 25 to be installed seperately.
+> **Note:** The zip distribution is currently disabled in the build pipeline and is planned for restoration in a future release. It is intended as a portable, no-install option — ideal for running from a USB drive on systems where admin rights are not available (e.g. PC repair shops).
 
-1. Download and install [java 25](https://www.oracle.com/java/technologies/downloads/) from Oracle.
+The zip distribution does not require admin for installing but does require
+Java 25 to be installed separately.
 
-2. Verify java 25 is installed:
+1. Download and install [Java 25](https://www.oracle.com/java/technologies/downloads/) from Oracle.
+
+2. Verify Java 25 is installed:
    ```
    C:\Users\username>java --version
    java 25.0.1 2025-10-21 LTS
@@ -99,9 +140,9 @@ Java 25 to be installed seperately.
 
 3. Extract release zip archive into desired location.
    ```
-   Examples:  
-   /Users/username/jdiskmark-v0.6.3
-   /opt/jdiskmark-v0.6.3
+   Examples:
+   /Users/username/jdiskmark-<version>
+   /opt/jdiskmark-<version>
    ```
 
 ## Launching as normal process
@@ -204,16 +245,16 @@ run example benchmark
 java -jar jdiskmark.jar run -n 25 -o Random -t "Write" -T 4
 ...
 -------------------------------------------
-JDiskMark Benchmark Results (v0.6.3-dev)
+JDiskMark Benchmark Results (v0.8.0)
 -------------------------------------------
 Benchmark: Write
 Drive: Samsung SSD 990 PRO 4TB
 Capacity: 32% (1178/3725 GB)
-Timestamp: 2025-10-26T18:17:37.529141200
+Timestamp: 2026-05-17T05:50:32.000000000
 CPU: 13th Gen Intel(R) Core(TM) i9-13900K
 System: Windows 11 / amd64
-Java: Java(TM) SE Runtime Environment 21.0.3
-Path: C:\Users\james
+Java: Java(TM) SE Runtime Environment 25.0.1
+Path: C:\Users\username
 -------------------------------------------
 Order: Random
 IOMode: Write
@@ -231,135 +272,47 @@ IOPS: 28892857
 
 ## Development Environment
 
-jdiskmark client is developed with [NetBeans 25](https://netbeans.apache.org/front/main/download/) and [Java 25](https://www.oracle.com/java/technologies/downloads/)
+JDiskMark is developed with [NetBeans 25](https://netbeans.apache.org/front/main/download/) and [Java 25](https://www.oracle.com/java/technologies/downloads/).
 
-## Source
+## Build from Source
 
-Source is available on our [github repo](https://github.com/JDiskMark/jdm-java/)
+### Prerequisites
 
-## Release Notes
+- [Java 25 JDK](https://www.oracle.com/java/technologies/downloads/)
+- [Apache Maven 3.9+](https://maven.apache.org/download.cgi)
+- [NetBeans 25](https://netbeans.apache.org/front/main/download/) (recommended IDE)
 
-### v1.0.0 proposed
-- TODO: #16 pkg installer (MacOS) - tyler
-- TODO: #70 app icon - ian
-- TODO: #33 maven build - lane
-- TODO: #78 throttle graphics render - val
-- TODO: #95 disk cache purging - val
-- #67 portal uploads
-    - TODO: #117 user portal upload acknowledgement
-    - TODO: #118 test interlock or OAuth upload
+### Build Commands
 
-### v0.7.0
-- #115 flatpak installer
-- #134 zgc optimization
-- #44 gui benchmark export for json, yml, csv
-- #67 rename sample fields `bwt` > `bt`, `lat` > `lt`
-- #130 dark flatlaf
-- #131 default direct io
-- #132 fix read only benchmarks
-- #40 resolve cross platform gui laf
-- #121 common benchmark runner for cli and gui
-    - cli options for: profile, direct io, alignment
-    - new profiles: media playback, video export, photo library
-- #111 extract cfg model from benchmark
-- #42 replace `Custom Test` option w profileModified flag
+| Goal | Command |
+|---|---|
+| Build core only (fastest) | `mvn clean install -pl jdm-core -am --no-transfer-progress` |
+| Full reactor (all modules) | `mvn clean install --no-transfer-progress` |
+| Windows MSI (Windows only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am -Pwindows-msi` |
+| Fat DEB, bundled JRE (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am -Plinux-deb` |
+| Slim DEB, system JRE (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-deb-slim -am -Plinux-deb-slim` |
+| RPM (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm` |
+| Flatpak (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak` |
+| macOS PKG (macOS only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am -Pmacos-pkg` |
 
-### v0.6.3
-- #82 drive access notification
-- #107 sector aligned / direct io
-- #15 deb installer (Ubuntu)
-- #98 rpm installer (Redhat)
-- #42 default profiles
-- #69 command line interface
-- #84 processor info resolved for (SP) installs
-- #73 refactor benchmark data model, keyboard op sel
+### Pipeline triggered pre-release
 
-### v0.6.2 linux optimized ui
-- #64 persist IOPS, write sync
-- control panel on left
-- allow concurrent version runs
-- event tab swapped w disk location
+## GitHub Actions
 
-### v0.6.1 ms app store release
-- JDiskMark in title and msi vendor name
-- Remove "Average" from "Access Time" label
+1. Run from terminal
 
-### v0.6.0
-- #13 Detect drive info on startup
-- #12 update look and feel (windows)
-- #22 foreign capacity reporting
-- #23 delete selected benchmarks
-- #10 IOPS reporting
-- #25 linux crash, capacity w terabytes and exabytes
-- write sync default off
-- #26 lowercase project and jar
-- #20 threading and queue depth
-- #36 I/O Mode dropdown uses enum values for type safety
+```sh
+# create tag
+git tag v0.8.0-tst14
 
-### v0.5.1
-- resolve #17 invalid disk usage reported win 10
-- msi installer available
+# push tag
+git push origin v0.8.0-tst14
+```
 
-### v0.5
-- update for java 21 LTS w NetBeans 20 environment: eclipselink 4.0, jpa 3.1, 
-  modelgen 5.6, annotations 3.1, xml.bind 4.0
-- increased drive information default col width to 170
-- time format updated to `yyyy-MM-dd HH:mm:ss`
-- default to 200 marks
-- replace Date w LocalDateTime to avoid deprecated @Temporal
-- disk access time (ms) - plotting disabled by default
-- replace display of transfer size with access time in run panel
-- GH-2 auto clear disk cache for combined write read benchmarks
-- GH-6 save and load benchmarks and graph series
-- break out actions into seperate menu
-- admin or root indicator, architecture indicator
-- GH-8 used capacity and total capacity
-- initial color palette options
-- report processor name
+2. go to https://github.com/JDiskMark/jdm-java/releases and mark the new tag as a pre-release.
 
-### v0.4
-- updated eclipselink to 2.6 allows auto schema update
-- improved gui initialization
-- platform disk model info:
-  - windows: via powershell query
-  - linux:   via `df /data/path` & `lsblk /dev/path --output MODEL`
-  - osx:     via `df /data/path` & `diskutil info /dev/disk1`
+## Issues & Contributing
 
-### v0.3
-- persist recent run with embedded derby db
-- remove "transfer mark number" from graph
-- changed graph background to dark gray
-- resizing main frame stretches tabbed pane instead of empty panel
+Bug reports and pull requests are welcome on [GitHub Issues](https://github.com/JDiskMark/jdm-java/issues).
 
-### v0.2
-- auto generate zip release ie. `jdiskmark-v0.2.zip`
-- added tabbed pane near bottom to organize new controls
-- format excessive decimal places
-- show recent runs (not persisted)
-- default to nimbus look and feel
-
-### v0.1
-- initial release
-
-### Proposed Features
-- upload benchmarks to jdiskmark.net portal (anonymous/w login)
-- local app log for remote diagnostics
-- selecting a drive location displays detected drive information below
-- speed curves w rw at different tx sizes
-- response time histogram > distribution of IO
-- IOPS charts, review potential charts
-- help that describes features and controls
-
-## Windows Paths Examples for Building
-
-For ant builds
-
-`C:\apache-ant-1.10.15\bin`
-
-For maven builds
-
-`C:\apache-maven-3.9.10\bin`
-
-For code signing
-
-`C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x86\`
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.

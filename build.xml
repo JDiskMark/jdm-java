@@ -335,8 +335,8 @@ exec java ${jvm.run.options} -cp "$CLASSPATH" jdiskmark.App "$@"
 
         <echo file="${deb.dir}/usr/share/applications/jdiskmark.desktop">[Desktop Entry]
 Type=Application
-Name=jDiskMark
-Comment=Disk Benchmark Utility
+Name=JDiskMark
+Comment=Java Disk Benchmark Utility
 Exec=jdiskmark
 Icon=jdiskmark
 Terminal=false

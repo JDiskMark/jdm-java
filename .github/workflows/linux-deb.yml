@@ -1,0 +1,119 @@
+name: Linux DEB Build
+
+on:
+  push:
+    branches: [ "**" ]
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+      - 'docs/**'
+  pull_request:
+    branches: [ "dev", "release/**" ]
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+jobs:
+  # --- LINUX DEBIAN FAT BUILD (jpackage, bundled JRE) ---
+  # Builds once on ubuntu-22.04 (older LTS = wider install compatibility).
+  build-deb-fat:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build Fat Debian Package
+        # -pl targets jdm-core and jdm-deb. -am also builds upstream dependencies.
+        # Explicitly activating the linux-deb profile to ensure jpackage runs.
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am -Plinux-deb --no-transfer-progress
+
+      - name: Upload Fat DEB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jdiskmark-deb-fat
+          path: jdm-dist/jdm-deb/target/*.deb
+          if-no-files-found: error
+
+      - name: Smoke test — install DEB and run --help
+        # jpackage post-install registers a desktop menu entry via xdg-desktop-menu,
+        # which fails on headless CI runners (no display). Allow dpkg to fail on the
+        # post-install hook, then invoke the binary directly from its install path.
+        run: |
+          sudo dpkg -i jdm-dist/jdm-deb/target/*.deb || true
+          /opt/jdiskmark/bin/jdiskmark --help
+
+  # --- FAT DEB COMPAT CHECK — verify the artifact installs on ubuntu-24.04 ---
+  # Downloads the artifact built above and smoke tests it on 24.04.
+  # This confirms the single .deb works across both active Ubuntu LTS versions.
+  smoke-deb-fat-24:
+    needs: build-deb-fat
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download Fat DEB Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: jdiskmark-deb-fat
+
+      - name: Install and smoke test on Ubuntu 24.04
+        run: |
+          sudo dpkg -i *.deb || true
+          /opt/jdiskmark/bin/jdiskmark --help
+
+  # --- LINUX DEBIAN SLIM BUILD (jdeb plugin, system JRE dependency) ---
+  # Builds once on ubuntu-22.04; slim package is just a JAR + wrapper script,
+  # not OS-version-specific.
+  build-deb-slim:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build Slim Debian Package
+        # Builds jdm-core (shade fat jar) then assembles the slim .deb via jdeb.
+        # The slim package depends on the system JRE — no bundled runtime.
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb-slim -am -Plinux-deb-slim --no-transfer-progress
+
+      - name: Upload Slim DEB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jdiskmark-deb-slim
+          path: jdm-dist/jdm-deb-slim/target/*.deb
+          if-no-files-found: error
+
+  # --- SLIM DEB COMPAT CHECK — verify the artifact installs on ubuntu-24.04 ---
+  smoke-deb-slim-24:
+    needs: build-deb-slim
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download Slim DEB Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: jdiskmark-deb-slim
+
+      - name: Set up JDK 25
+        # The slim jar is compiled for Java 25 (class file version 69). The
+        # system default-jre on Ubuntu 24.04 is Java 21, which cannot run it.
+        # setup-java prepends temurin-25 to PATH so the launcher wrapper's
+        # fallback 'java' resolves to Java 25, not the apt-installed Java 21.
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Install and smoke test on Ubuntu 24.04
+        run: |
+          sudo apt-get update -q
+          sudo apt install -y ./*.deb
+          jdiskmark --help

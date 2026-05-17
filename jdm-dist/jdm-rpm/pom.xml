@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>jdiskmark</groupId>
+        <artifactId>jdm-dist</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>jdm-rpm</artifactId>
+    <packaging>pom</packaging>
+
+    <profiles>
+        <profile>
+            <id>linux-rpm</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.2.0</version>
+                        <executions>
+                            <!--
+                                Render the spec template into target/rpm-resources/jdiskmark.spec.
+                                Substitutes @VERSION@ and @LICENSE_PATH@ via sed, mirroring the
+                                Ant build. The spec file creates the /usr/bin/jdiskmark symlink
+                                so users can run jdiskmark from the command line after install.
+                            -->
+                            <execution>
+                                <id>render-rpm-spec</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>-c</argument>
+                                        <argument>mkdir -p "${project.build.directory}/rpm-resources" &amp;&amp; sed -e "s|@VERSION@|${rpm.version}|g" -e "s|@LICENSE_PATH@|${project.basedir}/../../LICENSE.md|g" "${project.basedir}/resources/jdiskmark.spec.template" &gt; "${project.build.directory}/rpm-resources/jdiskmark.spec"</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+
+                            <!--
+                                Build the RPM with jpackage.
+                                The resource-dir argument points jpackage at the rendered spec so
+                                it installs the /usr/bin/jdiskmark symlink, putting jdiskmark on
+                                the user's PATH after rpm install.
+                            -->
+                            <execution>
+                                <id>build-rpm</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>jpackage</executable>
+                                    <arguments>
+                                        <argument>--type</argument><argument>rpm</argument>
+                                        <argument>--dest</argument><argument>${project.build.directory}</argument>
+                                        <argument>--name</argument><argument>${pkg.name}</argument>
+                                        <!-- RPM supports numeric versions without hyphens. -->
+                                        <argument>--app-version</argument><argument>${rpm.version}</argument>
+                                        <argument>--vendor</argument><argument>${app.name} Maintainers</argument>
+                                        <argument>--description</argument><argument>Java disk benchmark utility for read/write performance testing</argument>
+                                        <argument>--input</argument><argument>${project.basedir}/../../jdm-core/target</argument>
+                                        <argument>--main-jar</argument><argument>jdm-core-${project.version}.jar</argument>
+                                        <argument>--main-class</argument><argument>jdiskmark.App</argument>
+                                        <argument>--java-options</argument><argument>${jvm.run.options}</argument>
+                                        <argument>--linux-rpm-license-type</argument><argument>Apache-2.0</argument>
+                                        <argument>--linux-shortcut</argument>
+                                        <argument>--linux-menu-group</argument><argument>Utility</argument>
+                                        <!-- Rendered spec dir; jpackage uses jdiskmark.spec from here. -->
+                                        <argument>--resource-dir</argument><argument>${project.build.directory}/rpm-resources</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

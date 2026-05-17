@@ -1,0 +1,44 @@
+name: Linux RPM Build
+
+on:
+  push:
+    branches: [ "**" ]
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+      - 'docs/**'
+  pull_request:
+    branches: [ "dev", "release/**" ]
+  workflow_dispatch:
+
+jobs:
+  build-linux-rpm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Install rpmbuild
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm
+
+      - name: Build RPM Package
+        # Explicitly activating the linux-rpm profile to ensure jpackage runs.
+        run: mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm --no-transfer-progress
+
+      - name: Upload RPM Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: jdiskmark-rpm-pkg
+          path: jdm-dist/jdm-rpm/target/*.rpm
+          if-no-files-found: error
+          # Disable zipping so it can be downloaded raw from the Actions tab
+          archive: false

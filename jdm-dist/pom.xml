@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>jdiskmark</groupId>
+        <artifactId>jdm-java</artifactId>
+        <version>0.8.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>jdm-dist</artifactId>
+    <packaging>pom</packaging>
+
+    <modules>
+        <!-- jdm-zip is the legacy Ant-based zip/deb packager — disabled while jdm-deb (jpackage) is being validated -->
+        <!-- <module>jdm-zip</module> -->
+        <module>jdm-deb</module>
+        <module>jdm-deb-slim</module>
+        <module>jdm-msi</module>
+        <module>jdm-rpm</module>
+        <module>jdm-flatpak</module>
+        <module>jdm-pkg</module>
+    </modules>
+
+    <dependencies>
+        <dependency>
+            <groupId>jdiskmark</groupId>
+            <artifactId>jdm-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+</project>
