@@ -2,11 +2,11 @@
 # JDiskMark launcher
 # Installed by the jdiskmark Debian package to /usr/bin/jdiskmark
 
-# Prefer Java 25 for full feature support; fall back to system default.
+# Requires Java 25+ (class file version 69). Java 21 cannot run this jar.
+# Check the standard apt-installed path first; fall back to PATH's java
+# (e.g. when temurin-25 is installed via SDKMAN, setup-java, etc.).
 if [ -x "/usr/lib/jvm/java-25-openjdk-amd64/bin/java" ]; then
     JAVA_CMD="/usr/lib/jvm/java-25-openjdk-amd64/bin/java"
-elif [ -x "/usr/lib/jvm/java-21-openjdk-amd64/bin/java" ]; then
-    JAVA_CMD="/usr/lib/jvm/java-21-openjdk-amd64/bin/java"
 else
     JAVA_CMD="java"
 fi
