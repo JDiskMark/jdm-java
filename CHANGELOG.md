@@ -5,10 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased] — v0.8.0
 
-### In Progress
+### Added
 - [#16](https://github.com/JDiskMark/jdm-java/issues/16) macOS PKG installer — tyler
+
+### Changed
+- [#33](https://github.com/JDiskMark/jdm-java/issues/33) Maven build — lane/james
+
+### In Progress
 - [#70](https://github.com/JDiskMark/jdm-java/issues/70) app icon — ian
-- [#33](https://github.com/JDiskMark/jdm-java/issues/33) Maven build — lane
 - [#78](https://github.com/JDiskMark/jdm-java/issues/78) throttle graphics render — val
 - [#95](https://github.com/JDiskMark/jdm-java/issues/95) disk cache purging — val
 - [#67](https://github.com/JDiskMark/jdm-java/issues/67) test portal uploads (no auth)

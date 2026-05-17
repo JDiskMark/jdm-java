@@ -15,17 +15,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Portal {
-    // rotocols
+
+    // protocols
     static public final String HTTP = "http://";
     static public final String HTTPS = "https://";
     // resource locators
     static public final String PRODUCTION_UPLOAD_LOCATOR = "www.jdiskmark.net:5000/api/benchmarks/upload";
     static public final String TEST_UPLOAD_LOCATOR = "test.jdiskmark.net:5000/api/benchmarks/upload";
     static public final String LOCAL_UPLOAD_LOCATOR = "localhost:5000/api/benchmarks/upload";
-    // port
 
-    static public String uploadResourceLocator = LOCAL_UPLOAD_LOCATOR;
-    static public String uploadProtocol = HTTP;
+    static public String uploadResourceLocator = TEST_UPLOAD_LOCATOR;
+    static public String uploadProtocol = HTTPS;
 
     static String getUploadUrl() {
         return uploadProtocol + uploadResourceLocator;
@@ -42,7 +42,6 @@ public class Portal {
             return false; // Host unreachable or port closed
         }
     }
-
 
     static void upload(Benchmark benchmark) {
         String uploadUrl = getUploadUrl();
