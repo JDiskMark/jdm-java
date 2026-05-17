@@ -1,0 +1,35 @@
+# ---------------------------------------------------------------------------
+# WORK IN PROGRESS — produces a self-contained ZIP for PC repair shops and
+# portable installs that do not use a platform-specific package manager.
+#
+# The jdm-zip module is currently disabled in the Maven reactor.
+# This workflow is manual-trigger only until the module is re-enabled.
+# See: jdm-dist/jdm-zip
+# ---------------------------------------------------------------------------
+name: Generic ZIP Build
+
+on:
+  workflow_dispatch: # Manual trigger only — WIP, not yet part of CI
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v6
+
+    - name: Set up JDK 25
+      uses: actions/setup-java@v5
+      with:
+        distribution: 'temurin'
+        java-version: '25'
+
+    - name: Build with Maven
+      run: mvn clean install -pl jdm-core,jdm-dist/jdm-zip -am --no-transfer-progress
+
+    - name: Archive ZIP Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: jdm-zip-distribution
+        path: jdm-dist/jdm-zip/target/*.zip
