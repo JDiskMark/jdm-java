@@ -25,7 +25,7 @@ public class Portal {
     static public final String LOCAL_UPLOAD_LOCATOR = "localhost:5000/api/benchmarks/upload";
 
     static public String uploadResourceLocator = TEST_UPLOAD_LOCATOR;
-    static public String uploadProtocol = HTTPS;
+    static public String uploadProtocol = HTTP;
 
     static String getUploadUrl() {
         return uploadProtocol + uploadResourceLocator;
