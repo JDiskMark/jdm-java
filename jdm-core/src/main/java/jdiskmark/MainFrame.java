@@ -201,6 +201,7 @@ public final class MainFrame extends javax.swing.JFrame {
         }
         gcHintsCbMenuItem.setSelected(GcDetector.gcHintsEnabled);
         gcRetryCbMenuItem.setSelected(GcDetector.gcRetryEnabled);
+        smartCbMenuItem.setSelected(Smart.smartEnable);
         exportMenu.setEnabled(App.benchmark != null);
     }
     
@@ -1129,7 +1130,7 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_httpsProtoRbMenuItemActionPerformed
 
     private void smartCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_smartCbMenuItemActionPerformed
-        Smart.enableSmart = this.smartCbMenuItem.isSelected();
+        Smart.smartEnable = this.smartCbMenuItem.isSelected();
         App.saveConfig();
         
     }//GEN-LAST:event_smartCbMenuItemActionPerformed

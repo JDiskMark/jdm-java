@@ -121,7 +121,7 @@ public class BenchmarkRunner {
             GcDetector.triggerAndWait(); // Initial cleanup
         }
         
-        if (Smart.enableSmart && App.isLinux()) {
+        if (Smart.smartEnable && App.isLinux()) {
 //            privilege escallation
             String testDir = config.getTestDir();
             String partition = UtilOs.getPartitionFromFilePathLinux(Path.of(testDir));

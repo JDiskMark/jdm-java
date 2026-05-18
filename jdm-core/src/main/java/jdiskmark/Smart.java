@@ -44,7 +44,7 @@ public class Smart {
     // -------------------------------------------------------------------------
 
     /** Whether SMART data collection is enabled. Persisted in app.properties. */
-    public static boolean enableSmart = false;
+    public static boolean smartEnable = false;
 
     // -------------------------------------------------------------------------
     // Fields
