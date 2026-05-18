@@ -3,8 +3,16 @@ package jdiskmark;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Parses the JSON output of {@code smartctl --json -a /dev/&lt;device&gt;}.
@@ -45,7 +53,148 @@ public class Smart {
 
     /** Whether SMART data collection is enabled. Persisted in app.properties. */
     public static boolean smartEnable = false;
+    
+    /** The long-lived privileged bash shell process, started once via pkexec. */
+    public static Process process;
+    /** Writer attached to the bash shell's stdin for sending commands. */
+    public static BufferedWriter shellWriter;
+    /** Reader attached to the bash shell's stdout for reading command output. */
+    public static BufferedReader shellReader;
+    public static Thread hbThread;
+    public static final Object pLock = new Object();
 
+    private static final Logger LOGGER = Logger.getLogger(Smart.class.getName());
+
+    /**
+     * Launches a single {@code pkexec bash} process and wires up the
+     * shared {@link #shellWriter} / {@link #shellReader}.  The user is
+     * prompted for their password exactly once; subsequent SMART queries
+     * reuse this shell without re-escalating privileges.
+     *
+     * <p>Safe to call multiple times — a no-op if the shell is already alive.
+     *
+     * @throws IOException if the process cannot be started
+     */
+    public static void startPrivilegedShell() throws IOException {
+        synchronized (pLock) {
+            if (process != null && process.isAlive()) {
+                return; // already running
+            }
+            LOGGER.info("Starting privileged bash shell via pkexec...");
+            ProcessBuilder pb = new ProcessBuilder("pkexec", "bash");
+            pb.redirectErrorStream(false); // keep stderr separate from stdout
+            process = pb.start();
+            shellWriter = new BufferedWriter(
+                new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
+            shellReader = new BufferedReader(
+                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+            LOGGER.info("Privileged shell started (pid reuse enabled).");
+        }
+    }
+
+    /**
+     * Starts a background keepalive thread that pings the privileged bash
+     * shell every 5 minutes with a no-op echo so the process stays alive.
+     * Only one thread is started; subsequent calls are ignored.
+     */
+    public static void startHeartbeat() {
+        if (hbThread != null && hbThread.isAlive()) return;
+        hbThread = new Thread(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    TimeUnit.MINUTES.sleep(5);
+                    synchronized (pLock) {
+                        if (process != null && process.isAlive() && shellWriter != null) {
+                            shellWriter.write("echo heartbeat\n");
+                            shellWriter.flush();
+                            // Drain the echo reply so it doesn't pollute the next getSmart() read
+                            shellReader.readLine();
+                        }
+                    }
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                } catch (IOException ex) {
+                    LOGGER.log(Level.WARNING, "Heartbeat write failed; shell may have died", ex);
+                }
+            }
+        }, "smart-heartbeat");
+        hbThread.setDaemon(true);
+        hbThread.start();
+    }
+    
+    /**
+     * Queries SMART data for the given device by writing a {@code smartctl}
+     * command to the persistent privileged shell and reading back its output
+     * up to a unique sentinel line.  Logs the key fields at INFO level.
+     *
+     * <p>{@link #startPrivilegedShell()} must have been called before this.
+     *
+     * @param deviceName bare device name, e.g. {@code nvme0n1}
+     * @return a populated {@link Smart} instance, or {@code null} on error
+     */
+    public static Smart getSmart(String deviceName) {
+        final String sentinel = "---SMART_DONE---";
+        try {
+            synchronized (pLock) {
+                // Write the smartctl command followed by an echo of the sentinel
+                // so we know exactly where the JSON output ends.
+                shellWriter.write("/usr/sbin/smartctl --json -a /dev/" + deviceName + "\n");
+                shellWriter.write("echo '" + sentinel + "'\n");
+                shellWriter.flush();
+
+                // Accumulate lines until the sentinel appears
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = shellReader.readLine()) != null) {
+                    if (sentinel.equals(line)) break;
+                    sb.append(line).append('\n');
+                }
+
+                String result = sb.toString().trim();
+                if (result.isEmpty()) {
+                    LOGGER.severe("getSmart: empty response from shell for device " + deviceName);
+                    return null;
+                }
+
+                Smart smart = fromJson(result);
+                logSmart(smart);
+                return smart;
+            }
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, "getSmart failed for device: " + deviceName, ex);
+        }
+        return null;
+    }
+
+    /** Logs the key SMART fields at INFO level. */
+    public static void logSmart(Smart smart) {
+        if (smart == null) return;
+        LOGGER.log(Level.INFO, "SMART model      : {0}", smart.getModelName());
+        LOGGER.log(Level.INFO, "SMART serial     : {0}", smart.getSerialNumber());
+        LOGGER.log(Level.INFO, "SMART firmware   : {0}", smart.getFirmwareVersion());
+        if (smart.getSmartStatus() != null) {
+            LOGGER.log(Level.INFO, "SMART status     : {0}",
+                smart.getSmartStatus().isPassed() ? "PASSED" : "FAILED");
+        }
+        if (smart.getTemperature() != null) {
+            LOGGER.log(Level.INFO, "SMART temp       : {0} C", smart.getTemperature().getCurrent());
+        }
+        if (smart.getPowerOnTime() != null) {
+            LOGGER.log(Level.INFO, "SMART power-on   : {0} hours", smart.getPowerOnTime().getHours());
+        }
+        if (smart.getNvmeHealthLog() != null) {
+            NvmeHealthLog nvme = smart.getNvmeHealthLog();
+            LOGGER.log(Level.INFO, "NVMe avail spare : {0}%", nvme.getAvailableSpare());
+            LOGGER.log(Level.INFO, "NVMe used %      : {0}%", nvme.getPercentageUsed());
+            LOGGER.log(Level.INFO, "NVMe written     : {0} GB", nvme.getDataWrittenGb());
+            LOGGER.log(Level.INFO, "NVMe read        : {0} GB", nvme.getDataReadGb());
+            LOGGER.log(Level.INFO, "NVMe media errs  : {0}", nvme.getMediaErrors());
+            if (nvme.hasCriticalWarning()) {
+                LOGGER.log(Level.WARNING, "NVMe critical warning flag: {0}", nvme.getCriticalWarning());
+            }
+        }
+    }
+            
     // -------------------------------------------------------------------------
     // Fields
     // -------------------------------------------------------------------------
