@@ -839,8 +839,9 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_exitMenuItemActionPerformed
 
     private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
-        JOptionPane.showMessageDialog(Gui.mainFrame, 
-                "JDiskMark " + App.VERSION, "About...", JOptionPane.PLAIN_MESSAGE);
+        javax.swing.ImageIcon icon = App.activeIcon.load();
+        JOptionPane.showMessageDialog(Gui.mainFrame,
+                "JDiskMark " + App.VERSION, "About...", JOptionPane.PLAIN_MESSAGE, icon);
     }//GEN-LAST:event_aboutMenuItemActionPerformed
 
     private void openLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openLocButtonActionPerformed

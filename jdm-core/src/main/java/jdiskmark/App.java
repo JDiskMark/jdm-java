@@ -109,6 +109,50 @@ public class App {
         }
     }
 
+    /**
+     * Branding icon variants for the application window, taskbar, and installer.
+     * Change {@link #activeIcon} to switch the icon across all display contexts.
+     */
+    public enum AppIcon {
+        BETA("/icons/icon-jdm-beta.png"),
+        /** Custom JDiskMark turtle logo — the default project brand. */
+        TURTLE("/icons/icon-jdm-turtle.png"),
+        /** Duke, the BSD-licensed Java mascot from the OpenJDK project. */
+        DUKE("/icons/icon-duke.png");
+
+        public final String resourcePath;
+
+        AppIcon(String resourcePath) {
+            this.resourcePath = resourcePath;
+        }
+
+        /**
+         * Load this icon as an ImageIcon, or {@code null} if the resource
+         * is not found on the classpath.
+         */
+        public javax.swing.ImageIcon load() {
+            java.io.InputStream is = App.class.getResourceAsStream(resourcePath);
+            if (is == null) {
+                java.util.logging.Logger.getLogger(App.class.getName()).warning(
+                        "Icon resource not found: " + resourcePath);
+                return null;
+            }
+            try (is) {
+                return new javax.swing.ImageIcon(is.readAllBytes());
+            } catch (java.io.IOException e) {
+                java.util.logging.Logger.getLogger(App.class.getName()).log(
+                        java.util.logging.Level.WARNING, "Could not load icon: " + resourcePath, e);
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Active branding icon — change this single line to switch the icon
+     * used for the window title bar, taskbar, and About dialog.
+     */
+    public static AppIcon activeIcon = AppIcon.TURTLE;
+
     // application mode
     public static Mode mode = Mode.CLI;
     // elevated priviledges

@@ -228,6 +228,13 @@ public final class Gui {
         }
         
         mainFrame = new MainFrame();
+
+        // Apply branding icon to the window title bar and taskbar
+        javax.swing.ImageIcon icon = App.activeIcon.load();
+        if (icon != null) {
+            mainFrame.setIconImage(icon.getImage());
+        }
+
         if (runPanel != null) {
             runPanel.hideFirstColumn();
         }
