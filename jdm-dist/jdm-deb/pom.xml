@@ -74,7 +74,13 @@
                                         <argument>-c</argument>
                                         <argument><![CDATA[
 set -e
-DEB="${project.build.directory}/jdiskmark_${project.version}_amd64.deb"
+mapfile -t DEBS < <(find "${project.build.directory}" -maxdepth 1 -type f -name "*.deb" | sort)
+if [ "${#DEBS[@]}" -ne 1 ]; then
+    echo "[patch] Expected exactly one .deb in ${project.build.directory}, found ${#DEBS[@]}" >&2
+    printf '  %s\n' "${DEBS[@]}" >&2
+    exit 1
+fi
+DEB="${DEBS[0]}"
 WORK="${project.build.directory}/deb-repack"
 echo "[patch] Patching desktop entry in $DEB"
 rm -rf "$WORK" && mkdir -p "$WORK/pkg"

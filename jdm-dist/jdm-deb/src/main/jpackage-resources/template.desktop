@@ -8,5 +8,5 @@ Terminal=false
 Type=Application
 Categories=DEPLOY_BUNDLE_CATEGORY
 Keywords=disk;benchmark;performance;storage;speed;
-StartupWMClass=jdiskmark
+StartupWMClass=jdiskmark-App
 DESKTOP_MIMES
