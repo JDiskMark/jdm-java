@@ -82,7 +82,7 @@ dpkg-deb -R "$DEB" "$WORK/pkg"
 DESKTOP=$(find "$WORK/pkg/opt" -name "*.desktop" | grep -v runtime | head -1)
 if [ -n "$DESKTOP" ]; then
     sed -i 's|^Name=jdiskmark$|Name=JDiskMark|' "$DESKTOP"
-    sed -i 's|^Categories=\(.*\)|GenericName=Disk Benchmark\nCategories=\1\nKeywords=disk;benchmark;performance;storage;speed;\nStartupWMClass=jdiskmark|' "$DESKTOP"
+    sed -i 's|^Categories=\(.*\)|GenericName=Disk Benchmark\nCategories=\1\nKeywords=disk;benchmark;performance;storage;speed;\nStartupWMClass=jdiskmark-App|' "$DESKTOP"
     echo "[patch] Result ($(basename $DESKTOP)):"
     cat "$DESKTOP"
 fi

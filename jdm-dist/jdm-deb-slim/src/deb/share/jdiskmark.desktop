@@ -9,4 +9,4 @@ Icon=jdiskmark
 Terminal=false
 Categories=Utility;System;
 Keywords=disk;benchmark;performance;storage;speed;
-StartupWMClass=jdiskmark
+StartupWMClass=jdiskmark-App

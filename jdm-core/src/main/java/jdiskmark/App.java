@@ -1,9 +1,5 @@
 package jdiskmark;
 
-import static jdiskmark.Benchmark.BenchmarkType;
-import static jdiskmark.Benchmark.BlockSequence;
-import static jdiskmark.Benchmark.IOMode.READ;
-import static jdiskmark.Benchmark.IOMode.WRITE;
 import static jdiskmark.DriveAccessChecker.validateTargetDirectory;
 
 import picocli.CommandLine;
