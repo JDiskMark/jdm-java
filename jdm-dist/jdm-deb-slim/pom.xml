@@ -103,7 +103,7 @@
                                         </data>
                                         <!-- App icon — installed to /usr/share/pixmaps for XDG icon resolution -->
                                         <data>
-                                            <src>${project.basedir}/../../jdm-core/src/main/resources/icons/icon-jdm-turtle.png</src>
+                                            <src>${project.basedir}/../../jdm-core/src/main/resources/icons/${app.icon.linux}</src>
                                             <type>file</type>
                                             <dst>/usr/share/pixmaps/jdiskmark.png</dst>
                                             <mapper>

@@ -50,7 +50,8 @@
                                         <argument>--java-options</argument><argument>${jvm.run.options}</argument>
                                         <argument>--linux-shortcut</argument>
                                         <argument>--linux-menu-group</argument><argument>Utility</argument>
-                                        <argument>--icon</argument><argument>${project.basedir}/../../jdm-core/src/main/resources/icons/icon-jdm-turtle.png</argument>
+                                        <argument>--icon</argument>
+                                        <argument>${project.basedir}/../../jdm-core/src/main/resources/icons/${app.icon.linux}</argument>
                                         <argument>--resource-dir</argument><argument>${project.basedir}/src/main/jpackage-resources</argument>
                                     </arguments>
                                 </configuration>

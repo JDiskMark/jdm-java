@@ -73,6 +73,8 @@
                                         <argument>--linux-rpm-license-type</argument><argument>Apache-2.0</argument>
                                         <argument>--linux-shortcut</argument>
                                         <argument>--linux-menu-group</argument><argument>Utility</argument>
+                                        <argument>--icon</argument>
+                                        <argument>${project.basedir}/../../jdm-core/src/main/resources/icons/${app.icon.linux}</argument>
                                         <!-- Rendered spec dir; jpackage uses jdiskmark.spec from here. -->
                                         <argument>--resource-dir</argument><argument>${project.build.directory}/rpm-resources</argument>
                                     </arguments>
