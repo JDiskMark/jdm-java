@@ -839,15 +839,8 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_exitMenuItemActionPerformed
 
     private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
-        javax.swing.ImageIcon rawIcon = App.activeIcon.load();
-        javax.swing.ImageIcon icon = rawIcon;
-        if (rawIcon != null) {
-            int w = rawIcon.getIconWidth() / 2;
-            int h = rawIcon.getIconHeight() / 2;
-            java.awt.Image scaled = rawIcon.getImage()
-                    .getScaledInstance(w, h, java.awt.Image.SCALE_SMOOTH);
-            icon = new javax.swing.ImageIcon(scaled);
-        }
+        // Load the 256px size directly — 1/4 of the 1024px source, no runtime scaling needed.
+        javax.swing.ImageIcon icon = App.activeIcon.loadSize(256);
         JOptionPane.showMessageDialog(Gui.mainFrame,
                 "JDiskMark " + App.VERSION, "About...", JOptionPane.PLAIN_MESSAGE, icon);
     }//GEN-LAST:event_aboutMenuItemActionPerformed

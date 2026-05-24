@@ -107,37 +107,113 @@ public class App {
 
     /**
      * Branding icon variants for the application window, taskbar, and installer.
+     * Each variant declares the PNG sizes available in jdm-core resources.
      * Change {@link #activeIcon} to switch the icon across all display contexts.
      */
     public enum AppIcon {
-        BETA("/icons/icon-jdm-beta.png"),
+        /** Blue/orange circle — the beta brand. Single resolution. */
+        BETA(new String[]{"/icons/icon-jdm-beta.png"}),
         /** Custom JDiskMark turtle logo — the default project brand. */
-        TURTLE("/icons/icon-jdm-turtle.png"),
+        TURTLE(new String[]{
+            "/icons/jdm-turtle-logo-16x16.png",
+            "/icons/jdm-turtle-logo-20x20.png",
+            "/icons/jdm-turtle-logo-24x24.png",
+            "/icons/jdm-turtle-logo-32x32.png",
+            "/icons/jdm-turtle-logo-40x40.png",
+            "/icons/jdm-turtle-logo-48x48.png",
+            "/icons/jdm-turtle-logo-64x64.png",
+            "/icons/jdm-turtle-logo-96x96.png",
+            "/icons/jdm-turtle-logo-128x128.png",
+            "/icons/jdm-turtle-logo-256x256.png",
+            "/icons/jdm-turtle-logo-512x512.png",
+            "/icons/jdm-turtle-logo-1024x1024.png"
+        }),
         /** Duke, the BSD-licensed Java mascot from the OpenJDK project. */
-        DUKE("/icons/icon-duke.png");
+        DUKE(new String[]{"/icons/icon-duke.png"});
 
-        public final String resourcePath;
+        /** All resource paths for this icon variant, from smallest to largest. */
+        public final String[] resourcePaths;
 
-        AppIcon(String resourcePath) {
-            this.resourcePath = resourcePath;
+        AppIcon(String[] resourcePaths) {
+            this.resourcePaths = resourcePaths;
         }
 
         /**
-         * Load this icon as an ImageIcon, or {@code null} if the resource
-         * is not found on the classpath.
+         * Load all available sizes as a list of Images for use with
+         * {@link java.awt.Window#setIconImages(java.util.List)}.
+         * Java picks the best-fit size per display context (title bar, taskbar, Alt+Tab).
+         * Missing resources are silently skipped.
+         */
+        public java.util.List<java.awt.Image> loadAll() {
+            java.util.List<java.awt.Image> images = new java.util.ArrayList<>();
+            for (String path : resourcePaths) {
+                try (java.io.InputStream is = App.class.getResourceAsStream(path)) {
+                    if (is != null) {
+                        images.add(new javax.swing.ImageIcon(is.readAllBytes()).getImage());
+                    }
+                } catch (java.io.IOException e) {
+                    java.util.logging.Logger.getLogger(App.class.getName()).log(
+                            java.util.logging.Level.WARNING, "Could not load icon: " + path, e);
+                }
+            }
+            return images;
+        }
+
+        /**
+         * Load the largest available size as an ImageIcon (used by the About dialog).
+         * Returns {@code null} if no resource is found.
          */
         public javax.swing.ImageIcon load() {
-            java.io.InputStream is = App.class.getResourceAsStream(resourcePath);
-            if (is == null) {
-                java.util.logging.Logger.getLogger(App.class.getName()).warning(
-                        "Icon resource not found: " + resourcePath);
-                return null;
-            }
-            try (is) {
+            String path = resourcePaths[resourcePaths.length - 1];
+            try (java.io.InputStream is = App.class.getResourceAsStream(path)) {
+                if (is == null) {
+                    java.util.logging.Logger.getLogger(App.class.getName()).warning(
+                            "Icon resource not found: " + path);
+                    return null;
+                }
                 return new javax.swing.ImageIcon(is.readAllBytes());
             } catch (java.io.IOException e) {
                 java.util.logging.Logger.getLogger(App.class.getName()).log(
-                        java.util.logging.Level.WARNING, "Could not load icon: " + resourcePath, e);
+                        java.util.logging.Level.WARNING, "Could not load icon: " + path, e);
+                return null;
+            }
+        }
+
+        /**
+         * Load the best pre-rendered PNG at or nearest to {@code targetSize} pixels.
+         * Prefers the smallest size that is &gt;= targetSize; falls back to the largest
+         * available. For single-resolution variants the only image is returned as-is.
+         * Returns {@code null} if no resource is found.
+         */
+        public javax.swing.ImageIcon loadSize(int targetSize) {
+            // Parse pixel widths from filenames like "/icons/jdm-turtle-logo-256x256.png".
+            // For paths without a size suffix (e.g. "/icons/icon-jdm-beta.png") the regex
+            // won't match and the path is treated as an unknown size.
+            java.util.regex.Pattern sizePattern = java.util.regex.Pattern.compile("-(\\d+)x\\d+\\.png$");
+            String bestPath = resourcePaths[resourcePaths.length - 1]; // default: largest
+            int bestDiff = Integer.MAX_VALUE;
+            for (String path : resourcePaths) {
+                java.util.regex.Matcher m = sizePattern.matcher(path);
+                if (m.find()) {
+                    int size = Integer.parseInt(m.group(1));
+                    int diff = size - targetSize;
+                    // Prefer smallest size >= targetSize; accept smaller only if nothing larger found.
+                    if (diff >= 0 && diff < bestDiff) {
+                        bestDiff = diff;
+                        bestPath = path;
+                    }
+                }
+            }
+            try (java.io.InputStream is = App.class.getResourceAsStream(bestPath)) {
+                if (is == null) {
+                    java.util.logging.Logger.getLogger(App.class.getName()).warning(
+                            "Icon resource not found: " + bestPath);
+                    return null;
+                }
+                return new javax.swing.ImageIcon(is.readAllBytes());
+            } catch (java.io.IOException e) {
+                java.util.logging.Logger.getLogger(App.class.getName()).log(
+                        java.util.logging.Level.WARNING, "Could not load icon: " + bestPath, e);
                 return null;
             }
         }
