@@ -109,6 +109,9 @@ public final class Gui {
             } else if (App.os.contains("Linux")) {
                 UIManager.setLookAndFeel(new FlatDarkLaf());
             }
+            // Enable FlatLaf custom window decorations (unified title bar + menu bar)
+            javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
+            javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
         } catch (UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
             /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -126,6 +129,8 @@ public final class Gui {
     public static void configureDarculaLaf() {
         try {
             UIManager.setLookAndFeel(new FlatDarculaLaf());
+            javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
+            javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
         } catch (UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
             /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -149,6 +154,8 @@ public final class Gui {
             } else if (App.os.contains("Linux")) {
                 UIManager.setLookAndFeel(new FlatLightLaf());
             }
+            javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
+            javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
         } catch (UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
             /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -228,6 +235,17 @@ public final class Gui {
         }
         
         mainFrame = new MainFrame();
+
+        // Embed the menu bar into the FlatLaf custom title bar (VS Code style)
+        mainFrame.getRootPane().putClientProperty(
+                com.formdev.flatlaf.FlatClientProperties.MENU_BAR_EMBEDDED, true);
+
+        // Apply branding icon to the window title bar and taskbar
+        javax.swing.ImageIcon icon = App.activeIcon.load();
+        if (icon != null) {
+            mainFrame.setIconImage(icon.getImage());
+        }
+
         if (runPanel != null) {
             runPanel.hideFirstColumn();
         }

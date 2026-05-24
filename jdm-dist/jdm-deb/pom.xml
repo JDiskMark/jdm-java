@@ -50,9 +50,55 @@
                                         <argument>--java-options</argument><argument>${jvm.run.options}</argument>
                                         <argument>--linux-shortcut</argument>
                                         <argument>--linux-menu-group</argument><argument>Utility</argument>
+                                        <argument>--icon</argument><argument>${project.basedir}/../../jdm-core/src/main/resources/icons/icon-jdm-turtle.png</argument>
+                                        <argument>--resource-dir</argument><argument>${project.basedir}/src/main/jpackage-resources</argument>
                                     </arguments>
                                 </configuration>
                             </execution>
+
+                            <!-- Inject fields that jpackage does not generate into the desktop
+                                 entry inside the DEB: Name=JDiskMark (display name),
+                                 StartupWMClass (for GNOME taskbar icon matching),
+                                 GenericName, and Keywords.
+                                 The file is patched in-place; no renaming is done so that
+                                 xdg-desktop-menu's vendor-prefix requirement is satisfied. -->
+                            <execution>
+                                <id>patch-deb-desktop</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>-c</argument>
+                                        <argument><![CDATA[
+set -e
+mapfile -t DEBS < <(find "${project.build.directory}" -maxdepth 1 -type f -name "*.deb" | sort)
+if [ "${#DEBS[@]}" -ne 1 ]; then
+    echo "[patch] Expected exactly one .deb in ${project.build.directory}, found ${#DEBS[@]}" >&2
+    printf '  %s\n' "${DEBS[@]}" >&2
+    exit 1
+fi
+DEB="${DEBS[0]}"
+WORK="${project.build.directory}/deb-repack"
+echo "[patch] Patching desktop entry in $DEB"
+rm -rf "$WORK" && mkdir -p "$WORK/pkg"
+dpkg-deb -R "$DEB" "$WORK/pkg"
+DESKTOP=$(find "$WORK/pkg/opt" -name "*.desktop" | grep -v runtime | head -1)
+if [ -n "$DESKTOP" ]; then
+    sed -i 's|^Name=jdiskmark$|Name=JDiskMark|' "$DESKTOP"
+    sed -i 's|^Categories=\(.*\)|GenericName=Disk Benchmark\nCategories=\1\nKeywords=disk;benchmark;performance;storage;speed;\nStartupWMClass=jdiskmark-App|' "$DESKTOP"
+    echo "[patch] Result ($(basename $DESKTOP)):"
+    cat "$DESKTOP"
+fi
+dpkg-deb -b "$WORK/pkg" "$DEB"
+echo "[patch] Done."
+                                        ]]></argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+
                         </executions>
                     </plugin>
                 </plugins>

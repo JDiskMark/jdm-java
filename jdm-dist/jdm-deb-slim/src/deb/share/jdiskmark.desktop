@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=JDiskMark
+GenericName=Disk Benchmark
+Comment=Java disk benchmark utility for read/write performance testing
+Exec=/usr/bin/jdiskmark
+Icon=jdiskmark
+Terminal=false
+Categories=Utility;System;
+Keywords=disk;benchmark;performance;storage;speed;
+StartupWMClass=jdiskmark-App

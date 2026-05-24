@@ -1,6 +1,8 @@
 package jdiskmark;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -22,5 +24,17 @@ class AppTest {
     void sharePortal_onStartup_isFalse() {
         assertFalse(App.sharePortal,
                 "sharePortal must default to false — network activity requires explicit user opt-in each session");
+    }
+
+    /**
+     * Every AppIcon enum entry must resolve to an actual classpath resource.
+     * This guards against icon renames or path typos that would cause the
+     * About dialog (and taskbar/title-bar) to silently display no icon.
+     */
+    @ParameterizedTest
+    @EnumSource(App.AppIcon.class)
+    void appIcon_load_isNonNull(App.AppIcon icon) {
+        assertNotNull(icon.load(),
+                "Icon resource not found on classpath: " + icon.resourcePath);
     }
 }
