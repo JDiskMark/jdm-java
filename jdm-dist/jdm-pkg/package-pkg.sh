@@ -27,18 +27,24 @@ FINAL_PKG="${DIST_DIR}/${PKG_NAME}-${VERSION}.pkg"
 # Step 1: Sign FlatLaf native dylibs (Optional)
 if [ -n "$SIGNING_IDENTITY" ]; then
     echo "Step 1: Signing FlatLaf dylibs..."
-    FLATLAF_JAR=$(find "$INPUT_DIR/lib" -name "flatlaf-*.jar" | head -n 1)
-    if [ -n "$FLATLAF_JAR" ]; then
+    # Check for standalone FlatLaf jar (non-shaded build) first, then fall back
+    # to the shaded main jar (Maven fat-jar build embeds FlatLaf dylibs inside it)
+    FLATLAF_JAR=$(find "$INPUT_DIR/lib" -name "flatlaf-*.jar" 2>/dev/null | head -n 1)
+    if [ -z "$FLATLAF_JAR" ]; then
+        FLATLAF_JAR="$INPUT_DIR/jdm-core-$VERSION.jar"
+    fi
+    if [ -f "$FLATLAF_JAR" ]; then
         TEMP_DIR=$(mktemp -d)
         unzip -q "$FLATLAF_JAR" -d "$TEMP_DIR"
-        
-        # Sign dylibs
-        find "$TEMP_DIR" -name "*.dylib" | while read f; do
-            codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign "$SIGNING_IDENTITY" "$f"
-        done
-        
-        # Repack
-        jar uf "$FLATLAF_JAR" -C "$TEMP_DIR" .
+
+        DYLIBS=$(find "$TEMP_DIR" -name "*.dylib")
+        if [ -n "$DYLIBS" ]; then
+            echo "$DYLIBS" | while read f; do
+                codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign "$SIGNING_IDENTITY" "$f"
+            done
+            # Repack signed dylibs back into the jar
+            jar uf "$FLATLAF_JAR" -C "$TEMP_DIR" .
+        fi
         rm -rf "$TEMP_DIR"
     fi
 fi
