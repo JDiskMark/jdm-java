@@ -148,7 +148,7 @@ public class SmartPanel extends javax.swing.JPanel {
         nvmeSection.add(warnTempValueLabel,  "growx");
         nvmeSection.add(label("Critical Comp Time:"));
         nvmeSection.add(critCompValueLabel,  "growx");
-        nvmeSection.setVisible(false);
+        nvmeSection.setVisible(true);  // shown by default with dash placeholders; populated after auth
         add(nvmeSection, "growx, wrap");
 
         // --- ATA Attributes section (hidden until populated) ---
@@ -202,7 +202,7 @@ public class SmartPanel extends javax.swing.JPanel {
                 l.setForeground(null);
             }
             ataModel.setRowCount(0);
-            nvmeSection.setVisible(false);
+            nvmeSection.setVisible(true);  // keep visible so placeholders remain shown
             ataSection.setVisible(false);
             revalidate();
             repaint();
