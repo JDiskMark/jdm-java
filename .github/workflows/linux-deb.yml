@@ -38,7 +38,7 @@ jobs:
           name: jdiskmark-deb-fat
           path: jdm-dist/jdm-deb/target/*.deb
           if-no-files-found: error
-          # Disable zipping so it can be downloaded raw from the Actions tab
+          # archive:false uploads the raw .deb (no zip wrapper) from the Actions tab
           archive: false
 
       - name: Smoke test — install DEB and run --help
@@ -57,9 +57,12 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download Fat DEB Artifact
+        # archive:false stores the artifact under the actual filename, not the name
+        # parameter — use a pattern to find it regardless of the versioned filename.
         uses: actions/download-artifact@v8
         with:
-          name: jdiskmark-deb-fat
+          pattern: jdiskmark*.deb
+          merge-multiple: true
 
       - name: Install and smoke test on Ubuntu 24.04
         run: |
@@ -93,7 +96,7 @@ jobs:
           name: jdiskmark-deb-slim
           path: jdm-dist/jdm-deb-slim/target/*.deb
           if-no-files-found: error
-          # Disable zipping so it can be downloaded raw from the Actions tab
+          # archive:false uploads the raw .deb (no zip wrapper) from the Actions tab
           archive: false
 
   # --- SLIM DEB COMPAT CHECK — verify the artifact installs on ubuntu-24.04 ---
@@ -102,9 +105,12 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download Slim DEB Artifact
+        # archive:false stores the artifact under the actual filename, not the name
+        # parameter — use a pattern to find it regardless of the versioned filename.
         uses: actions/download-artifact@v8
         with:
-          name: jdiskmark-deb-slim
+          pattern: jdiskmark*.deb
+          merge-multiple: true
 
       - name: Set up JDK 25
         # The slim jar is compiled for Java 25 (class file version 69). The
