@@ -58,10 +58,10 @@ jobs:
     steps:
       - name: Download Fat DEB Artifact
         # archive:false stores the artifact under the actual filename, not the name
-        # parameter — use a pattern to find it regardless of the versioned filename.
+        # parameter — match by architecture suffix to avoid pulling the slim _all.deb.
         uses: actions/download-artifact@v8
         with:
-          pattern: jdiskmark*.deb
+          pattern: jdiskmark*_amd64.deb
           merge-multiple: true
 
       - name: Install and smoke test on Ubuntu 24.04
@@ -106,10 +106,10 @@ jobs:
     steps:
       - name: Download Slim DEB Artifact
         # archive:false stores the artifact under the actual filename, not the name
-        # parameter — use a pattern to find it regardless of the versioned filename.
+        # parameter — match by _all suffix to avoid pulling the fat _amd64.deb.
         uses: actions/download-artifact@v8
         with:
-          pattern: jdiskmark*.deb
+          pattern: jdiskmark*_all.deb
           merge-multiple: true
 
       - name: Set up JDK 25
