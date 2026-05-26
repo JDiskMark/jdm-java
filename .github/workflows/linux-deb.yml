@@ -33,11 +33,13 @@ jobs:
         run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am -Plinux-deb --no-transfer-progress
 
       - name: Upload Fat DEB Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jdiskmark-deb-fat
           path: jdm-dist/jdm-deb/target/*.deb
           if-no-files-found: error
+          # Disable zipping so it can be downloaded raw from the Actions tab
+          archive: false
 
       - name: Smoke test — install DEB and run --help
         # jpackage post-install registers a desktop menu entry via xdg-desktop-menu,
@@ -55,7 +57,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download Fat DEB Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: jdiskmark-deb-fat
 
@@ -86,11 +88,13 @@ jobs:
         run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb-slim -am -Plinux-deb-slim --no-transfer-progress
 
       - name: Upload Slim DEB Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jdiskmark-deb-slim
           path: jdm-dist/jdm-deb-slim/target/*.deb
           if-no-files-found: error
+          # Disable zipping so it can be downloaded raw from the Actions tab
+          archive: false
 
   # --- SLIM DEB COMPAT CHECK — verify the artifact installs on ubuntu-24.04 ---
   smoke-deb-slim-24:
@@ -98,7 +102,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download Slim DEB Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: jdiskmark-deb-slim
 
