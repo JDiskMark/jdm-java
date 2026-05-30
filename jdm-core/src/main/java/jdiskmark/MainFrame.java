@@ -839,8 +839,8 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_exitMenuItemActionPerformed
 
     private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
-        // Load the 256px size directly — 1/4 of the 1024px source, no runtime scaling needed.
-        javax.swing.ImageIcon icon = App.activeIcon.loadSize(256);
+        // Load the pre-rendered 128px size for the About dialog.
+        javax.swing.ImageIcon icon = App.activeIcon.loadSize(128);
         JOptionPane.showMessageDialog(Gui.mainFrame,
                 "JDiskMark " + App.VERSION, "About...", JOptionPane.PLAIN_MESSAGE, icon);
     }//GEN-LAST:event_aboutMenuItemActionPerformed
