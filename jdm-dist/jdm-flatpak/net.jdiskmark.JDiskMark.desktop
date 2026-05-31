@@ -8,3 +8,7 @@ Icon=net.jdiskmark.JDiskMark
 Terminal=false
 Categories=Utility;System;
 Keywords=disk;benchmark;performance;storage;speed;
+# Flatpak apps are presented to the compositor with WM_CLASS set to the
+# Flatpak app ID. This entry tells GNOME/KDE which desktop file matches
+# the running window so the taskbar shows the correct icon.
+StartupWMClass=net.jdiskmark.JDiskMark
