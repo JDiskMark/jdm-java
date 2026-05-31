@@ -43,38 +43,6 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Diagnose rpmbuild (render spec + run directly)
-        run: |
-          # Render the spec template directly with sed — same logic as the
-          # Maven render-rpm-spec exec, without requiring jdm-core to be built.
-          RPM_VERSION=$(grep -m1 '<rpm.version>' pom.xml | sed 's|.*<rpm.version>\(.*\)</rpm.version>.*|\1|')
-          LICENSE_PATH="$(pwd)/LICENSE.md"
-          mkdir -p jdm-dist/jdm-rpm/target/rpm-resources
-          sed -e "s|@VERSION@|${RPM_VERSION}|g" \
-              -e "s|@LICENSE_PATH@|${LICENSE_PATH}|g" \
-              jdm-dist/jdm-rpm/resources/jdiskmark.spec.template \
-              > /tmp/jdiskmark-diag.spec
-          echo "=== Rendered spec ===" && cat /tmp/jdiskmark-diag.spec
-
-          # Build a minimal image tree that mirrors what jpackage creates so we
-          # can run rpmbuild directly and see its error output.
-          TMPDIR=$(mktemp -d)
-          mkdir -p "$TMPDIR"/{SPECS,BUILD,BUILDROOT,RPMS,SRPMS}
-          mkdir -p "$TMPDIR/image/opt/jdiskmark/bin"
-          mkdir -p "$TMPDIR/image/opt/jdiskmark/lib"
-          echo '#!/bin/sh' > "$TMPDIR/image/opt/jdiskmark/bin/jdiskmark"
-          chmod +x "$TMPDIR/image/opt/jdiskmark/bin/jdiskmark"
-          printf '[Desktop Entry]\nName=jdiskmark\nComment=Test\nExec=/opt/jdiskmark/bin/jdiskmark\nIcon=/opt/jdiskmark/lib/jdiskmark.png\nTerminal=false\nType=Application\nCategories=Utility\nMimeType=\n' \
-            > "$TMPDIR/image/opt/jdiskmark/lib/jdiskmark-jdiskmark.desktop"
-          cp /tmp/jdiskmark-diag.spec "$TMPDIR/SPECS/jdiskmark.spec"
-
-          echo "=== rpmbuild direct run ==="
-          rpmbuild -bb "$TMPDIR/SPECS/jdiskmark.spec" \
-            --define "_sourcedir $TMPDIR/image" \
-            --define "_rpmdir /tmp/rpmout" \
-            --define "_topdir $TMPDIR" \
-            --define "_rpmfilename jdiskmark-diag.x86_64.rpm" \
-            2>&1 || echo "rpmbuild exited: $?"
 
       - name: Build RPM Package
         # Explicitly activating the linux-rpm profile to ensure jpackage runs.
