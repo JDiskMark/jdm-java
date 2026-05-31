@@ -8,7 +8,8 @@ Icon=net.jdiskmark.JDiskMark
 Terminal=false
 Categories=Utility;System;
 Keywords=disk;benchmark;performance;storage;speed;
-# Flatpak apps are presented to the compositor with WM_CLASS set to the
-# Flatpak app ID. This entry tells GNOME/KDE which desktop file matches
-# the running window so the taskbar shows the correct icon.
-StartupWMClass=net.jdiskmark.JDiskMark
+# JDiskMark is a Java Swing app — it runs through XWayland on Wayland
+# compositors. The Flatpak sandbox does NOT rewrite WM_CLASS for X11/XWayland
+# apps, so the compositor sees the value jpackage sets: jdiskmark-App.
+# (The Flatpak app-id net.jdiskmark.JDiskMark is only used for native Wayland.)
+StartupWMClass=jdiskmark-App
