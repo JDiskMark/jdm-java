@@ -70,17 +70,23 @@ fi
 # Patch the desktop entry — jpackage does not support StartupWMClass or
 # a display Name via its Linux desktop integration, so we inject them here
 # in the buildroot before rpmbuild packages the files.
-#   Name          — proper display name (jpackage writes the package name in lowercase)
-#   GenericName   — subtitle shown in GNOME app grid
-#   Keywords      — improves app search results
+#   Name           — proper display name (jpackage writes the package name in lowercase)
+#   GenericName    — subtitle shown in GNOME app grid
+#   Keywords       — improves app search results
 #   StartupWMClass — CRITICAL: tells the desktop shell which .desktop entry
 #                    matches the running window so the taskbar shows the
 #                    turtle icon instead of the generic Java gear icon.
+#
+# Use sed 'a' (append-after) rather than \n substitution — the latter is
+# unreliable inside rpmbuild's /bin/sh wrapper on Debian/Ubuntu systems.
 DESKTOP_FILE=$(find %{buildroot}/opt -name "*.desktop" 2>/dev/null | head -1)
 if [ -n "$DESKTOP_FILE" ]; then
   sed -i 's|^Name=jdiskmark$|Name=JDiskMark|' "$DESKTOP_FILE"
-  sed -i 's|^Categories=\(.*\)|GenericName=Disk Benchmark\nCategories=\1\nKeywords=disk;benchmark;performance;storage;speed;\nStartupWMClass=jdiskmark-App|' "$DESKTOP_FILE"
+  sed -i '/^Categories=/a StartupWMClass=jdiskmark-App' "$DESKTOP_FILE"
+  sed -i '/^Categories=/a Keywords=disk;benchmark;performance;storage;speed;' "$DESKTOP_FILE"
+  sed -i '/^Categories=/a GenericName=Disk Benchmark' "$DESKTOP_FILE"
 fi
+
 
 (cd %{buildroot} && find . -path ./lib/systemd -prune -o -type d -print) | sed -e 's/^\.//' -e '/^$/d' | sort > %{app_filelist}
 { rpm -ql filesystem || echo %{default_filesystem}; } | sort > %{filesystem_filelist}
