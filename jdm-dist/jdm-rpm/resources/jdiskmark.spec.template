@@ -67,27 +67,6 @@ fi
   install -m 644 "@LICENSE_PATH@" "%{buildroot}%{license_install_file}"
 %endif
 
-# Patch the desktop entry - jpackage does not support StartupWMClass or
-# a display Name via its Linux desktop integration, so we inject them here
-# in the buildroot before rpmbuild packages the files.
-#   Name           - proper display name (jpackage writes the package name in lowercase)
-#   GenericName    - subtitle shown in GNOME app grid
-#   Keywords       - improves app search results
-#   StartupWMClass - CRITICAL: tells the desktop shell which .desktop entry
-#                    matches the running window so the taskbar shows the
-#                    turtle icon instead of the generic Java gear icon.
-#
-# Use sed 'a' (append-after) rather than \n substitution - the latter is
-# unreliable inside rpmbuild's /bin/sh wrapper on Debian/Ubuntu systems.
-DESKTOP_FILE=$(find %{buildroot}/opt -name "*.desktop" 2>/dev/null | head -1)
-if [ -n "$DESKTOP_FILE" ]; then
-  sed -i 's|^Name=jdiskmark$|Name=JDiskMark|' "$DESKTOP_FILE"
-  sed -i '/^Categories=/a StartupWMClass=jdiskmark-App' "$DESKTOP_FILE"
-  sed -i '/^Categories=/a Keywords=disk;benchmark;performance;storage;speed;' "$DESKTOP_FILE"
-  sed -i '/^Categories=/a GenericName=Disk Benchmark' "$DESKTOP_FILE"
-fi
-
-
 (cd %{buildroot} && find . -path ./lib/systemd -prune -o -type d -print) | sed -e 's/^\.//' -e '/^$/d' | sort > %{app_filelist}
 { rpm -ql filesystem || echo %{default_filesystem}; } | sort > %{filesystem_filelist}
 comm -23 %{app_filelist} %{filesystem_filelist} > %{package_filelist}
@@ -105,7 +84,24 @@ sed -i -e 's/.*/%dir "&"/' %{package_filelist}
 %post
 package_type=rpm
 
-xdg-desktop-menu install /opt/jdiskmark/lib/jdiskmark-jdiskmark.desktop
+# Patch the desktop entry at install time.
+# jpackage cannot inject these fields at build time, so we add them here.
+# The file is on disk at its final path, so patching is straightforward.
+#   Name           - proper display name
+#   GenericName    - subtitle shown in GNOME app grid
+#   Keywords       - improves app search results
+#   StartupWMClass - tells the desktop shell which entry matches the running
+#                    window, so the taskbar shows the app icon instead of the
+#                    generic Java gear icon.
+DESKTOP=/opt/jdiskmark/lib/jdiskmark-jdiskmark.desktop
+if [ -f "$DESKTOP" ]; then
+  sed -i 's|^Name=jdiskmark$|Name=JDiskMark|' "$DESKTOP"
+  sed -i '/^Categories=/a StartupWMClass=jdiskmark-App' "$DESKTOP"
+  sed -i '/^Categories=/a Keywords=disk;benchmark;performance;storage;speed;' "$DESKTOP"
+  sed -i '/^Categories=/a GenericName=Disk Benchmark' "$DESKTOP"
+fi
+
+xdg-desktop-menu install "$DESKTOP"
 
 
 %pre
