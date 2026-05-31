@@ -43,6 +43,42 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Diagnose rpmbuild (render spec + run directly)
+        run: |
+          # Render the spec template (substitutes @VERSION@ and @LICENSE_PATH@)
+          mvn generate-resources -pl jdm-dist/jdm-rpm -Plinux-rpm --no-transfer-progress -q
+          SPEC="jdm-dist/jdm-rpm/target/rpm-resources/jdiskmark.spec"
+          echo "=== Rendered spec ===" && cat "$SPEC"
+
+          # Build a minimal image tree that mirrors what jpackage creates so we
+          # can run rpmbuild directly and see its error output.
+          TMPDIR=$(mktemp -d)
+          mkdir -p "$TMPDIR"/{SPECS,BUILD,BUILDROOT,RPMS,SRPMS}
+          mkdir -p "$TMPDIR/image/opt/jdiskmark/bin"
+          mkdir -p "$TMPDIR/image/opt/jdiskmark/lib"
+          echo '#!/bin/sh' > "$TMPDIR/image/opt/jdiskmark/bin/jdiskmark"
+          chmod +x "$TMPDIR/image/opt/jdiskmark/bin/jdiskmark"
+          cat > "$TMPDIR/image/opt/jdiskmark/lib/jdiskmark-jdiskmark.desktop" <<'DEOF'
+          [Desktop Entry]
+          Name=jdiskmark
+          Comment=Java disk benchmark utility for read/write performance testing
+          Exec=/opt/jdiskmark/bin/jdiskmark
+          Icon=/opt/jdiskmark/lib/jdiskmark.png
+          Terminal=false
+          Type=Application
+          Categories=Utility
+          MimeType=
+          DEOF
+          cp "$SPEC" "$TMPDIR/SPECS/jdiskmark.spec"
+
+          echo "=== rpmbuild direct run ===" 
+          rpmbuild -bb "$TMPDIR/SPECS/jdiskmark.spec" \
+            --define "_sourcedir $TMPDIR/image" \
+            --define "_rpmdir /tmp/rpmout" \
+            --define "_topdir $TMPDIR" \
+            --define "_rpmfilename jdiskmark-diag.x86_64.rpm" \
+            2>&1 || echo "rpmbuild exited: $?"
+
       - name: Build RPM Package
         # Explicitly activating the linux-rpm profile to ensure jpackage runs.
         run: mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm --no-transfer-progress
