@@ -45,10 +45,16 @@ jobs:
 
       - name: Diagnose rpmbuild (render spec + run directly)
         run: |
-          # Render the spec template (substitutes @VERSION@ and @LICENSE_PATH@)
-          mvn generate-resources -pl jdm-dist/jdm-rpm -Plinux-rpm --no-transfer-progress -q
-          SPEC="jdm-dist/jdm-rpm/target/rpm-resources/jdiskmark.spec"
-          echo "=== Rendered spec ===" && cat "$SPEC"
+          # Render the spec template directly with sed — same logic as the
+          # Maven render-rpm-spec exec, without requiring jdm-core to be built.
+          RPM_VERSION=$(grep -m1 '<rpm.version>' pom.xml | sed 's|.*<rpm.version>\(.*\)</rpm.version>.*|\1|')
+          LICENSE_PATH="$(pwd)/LICENSE.md"
+          mkdir -p jdm-dist/jdm-rpm/target/rpm-resources
+          sed -e "s|@VERSION@|${RPM_VERSION}|g" \
+              -e "s|@LICENSE_PATH@|${LICENSE_PATH}|g" \
+              jdm-dist/jdm-rpm/resources/jdiskmark.spec.template \
+              > /tmp/jdiskmark-diag.spec
+          echo "=== Rendered spec ===" && cat /tmp/jdiskmark-diag.spec
 
           # Build a minimal image tree that mirrors what jpackage creates so we
           # can run rpmbuild directly and see its error output.
@@ -58,20 +64,11 @@ jobs:
           mkdir -p "$TMPDIR/image/opt/jdiskmark/lib"
           echo '#!/bin/sh' > "$TMPDIR/image/opt/jdiskmark/bin/jdiskmark"
           chmod +x "$TMPDIR/image/opt/jdiskmark/bin/jdiskmark"
-          cat > "$TMPDIR/image/opt/jdiskmark/lib/jdiskmark-jdiskmark.desktop" <<'DEOF'
-          [Desktop Entry]
-          Name=jdiskmark
-          Comment=Java disk benchmark utility for read/write performance testing
-          Exec=/opt/jdiskmark/bin/jdiskmark
-          Icon=/opt/jdiskmark/lib/jdiskmark.png
-          Terminal=false
-          Type=Application
-          Categories=Utility
-          MimeType=
-          DEOF
-          cp "$SPEC" "$TMPDIR/SPECS/jdiskmark.spec"
+          printf '[Desktop Entry]\nName=jdiskmark\nComment=Test\nExec=/opt/jdiskmark/bin/jdiskmark\nIcon=/opt/jdiskmark/lib/jdiskmark.png\nTerminal=false\nType=Application\nCategories=Utility\nMimeType=\n' \
+            > "$TMPDIR/image/opt/jdiskmark/lib/jdiskmark-jdiskmark.desktop"
+          cp /tmp/jdiskmark-diag.spec "$TMPDIR/SPECS/jdiskmark.spec"
 
-          echo "=== rpmbuild direct run ===" 
+          echo "=== rpmbuild direct run ==="
           rpmbuild -bb "$TMPDIR/SPECS/jdiskmark.spec" \
             --define "_sourcedir $TMPDIR/image" \
             --define "_rpmdir /tmp/rpmout" \
