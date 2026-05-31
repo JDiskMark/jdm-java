@@ -67,17 +67,17 @@ fi
   install -m 644 "@LICENSE_PATH@" "%{buildroot}%{license_install_file}"
 %endif
 
-# Patch the desktop entry — jpackage does not support StartupWMClass or
+# Patch the desktop entry - jpackage does not support StartupWMClass or
 # a display Name via its Linux desktop integration, so we inject them here
 # in the buildroot before rpmbuild packages the files.
-#   Name           — proper display name (jpackage writes the package name in lowercase)
-#   GenericName    — subtitle shown in GNOME app grid
-#   Keywords       — improves app search results
-#   StartupWMClass — CRITICAL: tells the desktop shell which .desktop entry
+#   Name           - proper display name (jpackage writes the package name in lowercase)
+#   GenericName    - subtitle shown in GNOME app grid
+#   Keywords       - improves app search results
+#   StartupWMClass - CRITICAL: tells the desktop shell which .desktop entry
 #                    matches the running window so the taskbar shows the
 #                    turtle icon instead of the generic Java gear icon.
 #
-# Use sed 'a' (append-after) rather than \n substitution — the latter is
+# Use sed 'a' (append-after) rather than \n substitution - the latter is
 # unreliable inside rpmbuild's /bin/sh wrapper on Debian/Ubuntu systems.
 DESKTOP_FILE=$(find %{buildroot}/opt -name "*.desktop" 2>/dev/null | head -1)
 if [ -n "$DESKTOP_FILE" ]; then

@@ -65,6 +65,7 @@
                                     <executable>jpackage</executable>
                                     <arguments>
                                         <argument>--type</argument><argument>rpm</argument>
+                                        <argument>--verbose</argument>
                                         <argument>--dest</argument><argument>${project.build.directory}</argument>
                                         <argument>--name</argument><argument>${pkg.name}</argument>
                                         <!-- RPM supports numeric versions without hyphens. -->
