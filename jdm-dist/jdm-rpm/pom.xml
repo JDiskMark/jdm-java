@@ -28,6 +28,8 @@
                                 Substitutes @VERSION@ and @LICENSE_PATH@ via sed, mirroring the
                                 Ant build. The spec file creates the /usr/bin/jdiskmark symlink
                                 so users can run jdiskmark from the command line after install.
+                                The %install section of the spec also patches the generated
+                                desktop entry to add StartupWMClass, Name, GenericName, Keywords.
                             -->
                             <execution>
                                 <id>render-rpm-spec</id>
@@ -49,6 +51,9 @@
                                 The resource-dir argument points jpackage at the rendered spec so
                                 it installs the /usr/bin/jdiskmark symlink, putting jdiskmark on
                                 the user's PATH after rpm install.
+                                The spec's %install section patches the .desktop file in the
+                                buildroot before rpmbuild packages it, so StartupWMClass is set
+                                and GNOME shows the turtle icon in the taskbar.
                             -->
                             <execution>
                                 <id>build-rpm</id>
@@ -73,6 +78,8 @@
                                         <argument>--linux-rpm-license-type</argument><argument>Apache-2.0</argument>
                                         <argument>--linux-shortcut</argument>
                                         <argument>--linux-menu-group</argument><argument>Utility</argument>
+                                        <argument>--icon</argument>
+                                        <argument>${project.basedir}/../../jdm-core/src/main/resources/icons/${app.icon.linux}</argument>
                                         <!-- Rendered spec dir; jpackage uses jdiskmark.spec from here. -->
                                         <argument>--resource-dir</argument><argument>${project.build.directory}/rpm-resources</argument>
                                     </arguments>

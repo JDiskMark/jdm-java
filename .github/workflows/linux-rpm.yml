@@ -14,21 +14,35 @@ on:
 jobs:
   build-linux-rpm:
     runs-on: ubuntu-latest
+    # Run inside a Fedora container so rpmbuild, macros, and spec behaviour
+    # match a native RPM platform. Building RPMs inside Ubuntu/Debian runners
+    # uses a foreign rpmbuild whose macro paths, defaults, and shell behaviour
+    # differ enough to break spec %install sections that work on Fedora.
+    container: fedora:latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
 
+      - name: Install rpm-build and Maven
+        run: |
+          dnf install -y --setopt=install_weak_deps=False \
+            rpm-build \
+            maven \
+            findutils \
+            which
+          rpmbuild --version
+          mvn --version
+
       - name: Set up JDK 25
+        # setup-java works inside containers; it downloads Temurin directly.
+        # Fedora's own repos may not yet ship java-25-openjdk-devel, so we
+        # use Temurin to guarantee the same JDK version as the DEB builds.
         uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
 
-      - name: Install rpmbuild
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y rpm
 
       - name: Build RPM Package
         # Explicitly activating the linux-rpm profile to ensure jpackage runs.

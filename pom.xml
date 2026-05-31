@@ -43,6 +43,15 @@
         <!-- JVM options passed to jpackage for all installer types -->
         <jvm.run.options>-XX:+UseZGC</jvm.run.options>
 
+        <!-- App icon selection — one file per platform, relative to each dist module.
+             Override at build time to switch icons, e.g.:
+               mvn install -Pwindows-msi -Dapp.icon.win=jdm-beta-logo.ico
+               mvn install -Plinux-deb   -Dapp.icon.linux=jdm-beta-logo-256x256.png
+             Candidates: jdm-turtle-logo, jdm-beta-logo, jdm-duke-logo -->
+        <app.icon.win>jdm-turtle-logo.ico</app.icon.win>
+        <app.icon.mac>jdm-turtle-logo.icns</app.icon.mac>
+        <app.icon.linux>jdm-turtle-logo-256x256.png</app.icon.linux>
+
         <!-- RPM version must not contain hyphens -->
         <rpm.version>0.8.0</rpm.version>
 
