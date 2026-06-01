@@ -204,11 +204,17 @@ jobs:
             -Dapple.password="$APPLE_APP_SPECIFIC_PASSWORD" \
             -Dapple.team.id="$APPLE_TEAM_ID"
 
+      - name: Get PKG filename
+        id: pkg-filename
+        run: |
+          PKG_PATH=$(ls jdm-dist/jdm-pkg/target/*.pkg | head -n 1)
+          echo "pkg_path=$PKG_PATH" >> "$GITHUB_OUTPUT"
+
       - name: Upload PKG Artifact
         uses: actions/upload-artifact@v7
         with:
           name: macos-pkg
-          path: jdm-dist/jdm-pkg/target/*.pkg
+          path: ${{ steps.pkg-filename.outputs.pkg_path }}
           if-no-files-found: error
           archive: false
 
