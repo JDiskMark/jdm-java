@@ -169,9 +169,13 @@ jobs:
           cache: maven
 
       - name: Update Version
+        id: get-version
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
+          PKG_NAME=$(mvn help:evaluate -pl jdm-dist/jdm-pkg -Dexpression=pkg.name -q -DforceStdout)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "pkg_name=$PKG_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Build macOS PKG
         run: mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am -Pmacos-pkg --no-transfer-progress
@@ -208,11 +212,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: macos-pkg
-          # WARNING: Do NOT use a dynamic step/environment variable (e.g. ${{ steps... }})
-          # for the path here. Statically evaluated paths (including wildcards resolving to a
-          # single file) are required for 'archive: false' to work. Using a dynamic variable
-          # prevents static evaluation and forces the action to fallback to zipped folder mode.
-          path: jdm-dist/jdm-pkg/target/*.pkg
+          # Exact <pkg_name>-<version>.pkg path resolved from Maven properties.
+          # This avoids both hardcoding and the ambiguous *.pkg glob.
+          path: jdm-dist/jdm-pkg/target/${{ steps.get-version.outputs.pkg_name }}-${{ steps.get-version.outputs.version }}.pkg
           if-no-files-found: error
           archive: false
 
