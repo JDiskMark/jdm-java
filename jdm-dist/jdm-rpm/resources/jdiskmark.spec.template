@@ -84,9 +84,10 @@ sed -i -e 's/.*/%dir "&"/' %{package_filelist}
 %post
 package_type=rpm
 
-# Patch the desktop entry at install time.
-# jpackage cannot inject these fields at build time, so we add them here.
-# The file is on disk at its final path, so patching is straightforward.
+# Desktop entry customisation is done here via sed at install time rather than
+# by supplying a template.desktop in --resource-dir. jpackage does not support
+# substituting arbitrary fields into a custom .desktop template for RPM builds,
+# so patching the generated file post-install is the correct approach.
 #   Name           - proper display name
 #   GenericName    - subtitle shown in GNOME app grid
 #   Keywords       - improves app search results
