@@ -61,12 +61,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download Fat DEB Artifact
-        # archive:false stores the artifact under the actual filename, not the name
-        # parameter — match by architecture suffix to avoid pulling the slim _all.deb.
         uses: actions/download-artifact@v8
         with:
-          pattern: jdiskmark*_amd64.deb
-          merge-multiple: true
+          name: jdiskmark-deb-fat
 
       - name: Install and smoke test on Ubuntu 24.04
         run: |
