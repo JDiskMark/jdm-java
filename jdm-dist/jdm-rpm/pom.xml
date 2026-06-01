@@ -30,6 +30,7 @@
                                 so users can run jdiskmark from the command line after install.
                                 The %post section of the spec patches the generated desktop entry
                                 to add StartupWMClass, Name, GenericName, Keywords.
+                            -->
                             <execution>
                                 <id>render-rpm-spec</id>
                                 <phase>generate-resources</phase>
