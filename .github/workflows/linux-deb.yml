@@ -61,9 +61,12 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download Fat DEB Artifact
+        # archive:false stores the artifact under the actual filename, not the name
+        # parameter — match by architecture suffix to avoid pulling the slim _all.deb.
         uses: actions/download-artifact@v8
         with:
-          name: jdiskmark-deb-fat
+          pattern: jdiskmark*_amd64.deb
+          merge-multiple: true
 
       - name: Install and smoke test on Ubuntu 24.04
         run: |
@@ -106,9 +109,12 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download Slim DEB Artifact
+        # archive:false stores the artifact under the actual filename, not the name
+        # parameter — match by _all suffix to avoid pulling the fat _amd64.deb.
         uses: actions/download-artifact@v8
         with:
-          name: jdiskmark-deb-slim
+          pattern: jdiskmark*_all.deb
+          merge-multiple: true
 
       - name: Set up JDK 25
         # The slim jar is compiled for Java 25 (class file version 69). The
