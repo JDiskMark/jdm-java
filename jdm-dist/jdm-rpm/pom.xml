@@ -50,9 +50,8 @@
                                 The resource-dir argument points jpackage at the rendered spec so
                                 it installs the /usr/bin/jdiskmark symlink, putting jdiskmark on
                                 the user's PATH after rpm install.
-                                The spec's %install section patches the .desktop file in the
-                                buildroot before rpmbuild packages it, so StartupWMClass is set
-                                and GNOME shows the turtle icon in the taskbar.
+                                The spec's %post section patches the installed .desktop file so
+                                StartupWMClass is set and GNOME shows the correct icon in the taskbar.
                             -->
                             <execution>
                                 <id>build-rpm</id>
