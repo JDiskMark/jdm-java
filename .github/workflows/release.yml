@@ -169,13 +169,9 @@ jobs:
           cache: maven
 
       - name: Update Version
-        id: get-version
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
-          PKG_NAME=$(mvn help:evaluate -pl jdm-dist/jdm-pkg -Dexpression=pkg.name -q -DforceStdout)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "pkg_name=$PKG_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Build macOS PKG
         run: mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am -Pmacos-pkg --no-transfer-progress
@@ -212,9 +208,11 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: macos-pkg
-          # Exact <pkg_name>-<version>.pkg path resolved from Maven properties.
-          # This avoids both hardcoding and the ambiguous *.pkg glob.
-          path: jdm-dist/jdm-pkg/target/${{ steps.get-version.outputs.pkg_name }}-${{ steps.get-version.outputs.version }}.pkg
+          # plain wildcard — package-pkg.sh deletes all intermediate *.pkg files
+          # (component, unsigned) so exactly one file matches at upload time.
+          # NOTE: do NOT replace this with a step output variable — doing so breaks
+          # 'archive: false' and causes the action to fall back to zip mode.
+          path: jdm-dist/jdm-pkg/target/*.pkg
           if-no-files-found: error
           archive: false
 

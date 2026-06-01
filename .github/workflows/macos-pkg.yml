@@ -60,23 +60,15 @@ jobs:
             -Dapple.password="$APPLE_APP_SPECIFIC_PASSWORD" \
             -Dapple.team.id="$APPLE_TEAM_ID"
 
-      - name: Get PKG filename
-        id: pkg-info
-        # Read pkg.name and project.version from Maven so the upload path is
-        # exact (<pkg_name>-<version>.pkg) without hardcoding either value.
-        run: |
-          PKG_NAME=$(mvn help:evaluate -pl jdm-dist/jdm-pkg -Dexpression=pkg.name -q -DforceStdout)
-          VERSION=$(mvn help:evaluate -pl jdm-dist/jdm-pkg -Dexpression=project.version -q -DforceStdout)
-          echo "path=jdm-dist/jdm-pkg/target/${PKG_NAME}-${VERSION}.pkg" >> "$GITHUB_OUTPUT"
-          echo "Uploading: ${PKG_NAME}-${VERSION}.pkg"
-
       - name: Upload PKG Artifact
         uses: actions/upload-artifact@v7
         with:
           name: jdiskmark-macos-pkg
-          # Exact <pkg_name>-<version>.pkg filename composed from Maven properties
-          # in the 'Get PKG filename' step above — no wildcards, no hardcoded values.
-          path: ${{ steps.pkg-info.outputs.path }}
+          # plain wildcard — package-pkg.sh deletes all intermediate *.pkg files
+          # (component, unsigned) so exactly one file matches at upload time.
+          # NOTE: do NOT replace this with a step output variable — doing so breaks
+          # 'archive: false' and causes the action to fall back to zip mode.
+          path: jdm-dist/jdm-pkg/target/*.pkg
           if-no-files-found: error
           # Disable zipping so it can be downloaded raw from the Actions tab
           archive: false
