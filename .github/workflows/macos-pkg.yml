@@ -51,7 +51,7 @@ jobs:
           security import /tmp/build_certificate.p12 -P "$MACOS_CERTIFICATE_PWD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH"
-          
+
           # Run signed build
           mvn install -pl jdm-dist/jdm-pkg -Psign \
             -Dsigning.identity="Developer ID Application: Tyler Lui (232JY57U23)" \
@@ -74,8 +74,8 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: jdiskmark-macos-pkg
-          # Exact <pkg_name>-<version>.pkg path resolved from Maven properties.
-          # This avoids both hardcoding and the ambiguous *.pkg glob.
+          # Exact <pkg_name>-<version>.pkg filename composed from Maven properties
+          # in the 'Get PKG filename' step above — no wildcards, no hardcoded values.
           path: ${{ steps.pkg-info.outputs.path }}
           if-no-files-found: error
           # Disable zipping so it can be downloaded raw from the Actions tab
