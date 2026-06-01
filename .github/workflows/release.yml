@@ -208,6 +208,10 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: macos-pkg
+          # plain wildcard — package-pkg.sh deletes all intermediate *.pkg files
+          # (component, unsigned) so exactly one file matches at upload time.
+          # NOTE: do NOT replace this with a step output variable — doing so breaks
+          # 'archive: false' and causes the action to fall back to zip mode.
           path: jdm-dist/jdm-pkg/target/*.pkg
           if-no-files-found: error
           archive: false

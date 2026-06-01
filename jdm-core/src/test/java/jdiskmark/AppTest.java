@@ -35,6 +35,6 @@ class AppTest {
     @EnumSource(App.AppIcon.class)
     void appIcon_load_isNonNull(App.AppIcon icon) {
         assertNotNull(icon.load(),
-                "Icon resource not found on classpath: " + icon.resourcePath);
+                "Icon resource not found on classpath: " + java.util.Arrays.toString(icon.resourcePaths));
     }
 }

@@ -240,10 +240,12 @@ public final class Gui {
         mainFrame.getRootPane().putClientProperty(
                 com.formdev.flatlaf.FlatClientProperties.MENU_BAR_EMBEDDED, true);
 
-        // Apply branding icon to the window title bar and taskbar
-        javax.swing.ImageIcon icon = App.activeIcon.load();
-        if (icon != null) {
-            mainFrame.setIconImage(icon.getImage());
+        // Apply branding icon to the window title bar and taskbar.
+        // setIconImages supplies all available sizes so Java picks the best
+        // fit per display context (16px title bar, 32/48px taskbar, etc.).
+        java.util.List<java.awt.Image> icons = App.activeIcon.loadAll();
+        if (!icons.isEmpty()) {
+            mainFrame.setIconImages(icons);
         }
 
         if (runPanel != null) {

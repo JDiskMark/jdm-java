@@ -16,11 +16,11 @@
     <category>Utility</category>
     <category>System</category>
   </categories>
-  <url type="homepage">https://github.com/jDiskMark/jdm-java</url>
-  <url type="bugtracker">https://github.com/jDiskMark/jdm-java/issues</url>
+  <url type="homepage">https://github.com/JDiskMark/jdm-java</url>
+  <url type="bugtracker">https://github.com/JDiskMark/jdm-java/issues</url>
   <content_rating type="oars-1.1"/>
   <releases>
-    <release version="0.7.0" date="2025-01-01"/>
+    <release version="@project.version@" date="@release.date@"/>
   </releases>
   <provides>
     <binary>jdiskmark</binary>

@@ -11,6 +11,10 @@ on:
     branches: [ "dev", "release/**" ]
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   build-msi:
     runs-on: windows-latest  # Windows runner auto-activates the windows-msi Maven profile

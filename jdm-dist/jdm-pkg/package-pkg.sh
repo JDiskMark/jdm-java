@@ -14,6 +14,8 @@ APPLE_PASSWORD=$9
 APPLE_TEAM_ID=${10}
 IDENTIFIER=${11}
 
+ICON_FILE="${12:-$(dirname "$0")/images/JDiskMark-turtle.icns}"
+
 echo "Building macOS PKG for $APP_NAME version $VERSION..."
 
 APP_IMAGE_DIR="${DIST_DIR}/${PKG_NAME}-${VERSION}-app-image"
@@ -60,6 +62,7 @@ jpackage --type app-image \
          --app-version "1.0.0" \
          --vendor "jdiskmark" \
          --dest "$APP_IMAGE_DIR" \
+         --icon "$ICON_FILE" \
          --resource-dir "images" \
          --mac-package-identifier "$IDENTIFIER" \
          --mac-package-name "$APP_NAME" \
