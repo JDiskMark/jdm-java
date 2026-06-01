@@ -204,17 +204,15 @@ jobs:
             -Dapple.password="$APPLE_APP_SPECIFIC_PASSWORD" \
             -Dapple.team.id="$APPLE_TEAM_ID"
 
-      - name: Get PKG filename
-        id: pkg-filename
-        run: |
-          PKG_PATH=$(ls jdm-dist/jdm-pkg/target/*.pkg | head -n 1)
-          echo "pkg_path=$PKG_PATH" >> "$GITHUB_OUTPUT"
-
       - name: Upload PKG Artifact
         uses: actions/upload-artifact@v7
         with:
           name: macos-pkg
-          path: ${{ steps.pkg-filename.outputs.pkg_path }}
+          # WARNING: Do NOT use a dynamic step/environment variable (e.g. ${{ steps... }})
+          # for the path here. Statically evaluated paths (including wildcards resolving to a
+          # single file) are required for 'archive: false' to work. Using a dynamic variable
+          # prevents static evaluation and forces the action to fallback to zipped folder mode.
+          path: jdm-dist/jdm-pkg/target/*.pkg
           if-no-files-found: error
           archive: false
 
