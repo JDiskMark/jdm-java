@@ -99,10 +99,10 @@ if [ -f "$DESKTOP" ]; then
   sed -i '/^Categories=/a StartupWMClass=jdiskmark-App' "$DESKTOP"
   sed -i '/^Categories=/a Keywords=disk;benchmark;performance;storage;speed;' "$DESKTOP"
   sed -i '/^Categories=/a GenericName=Disk Benchmark' "$DESKTOP"
+  xdg-desktop-menu install "$DESKTOP"
+else
+  echo "[post] Desktop entry not found: $DESKTOP (skipping xdg-desktop-menu)" >&2
 fi
-
-xdg-desktop-menu install "$DESKTOP"
-
 
 %pre
 package_type=rpm
