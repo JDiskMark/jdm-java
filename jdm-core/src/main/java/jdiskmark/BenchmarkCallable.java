@@ -122,7 +122,18 @@ public class BenchmarkCallable implements Callable<Benchmark> {
                 logger.log(Level.SEVERE, "export error", ex);
             }
         }
-        
+
+        // Remove test data after save/export are complete so no results are lost.
+        // Mirrors BenchmarkWorker.done() for the CLI execution path.
+        if (App.autoRemoveData && App.dataDir != null) {
+            boolean removed = Util.deleteDirectory(App.dataDir);
+            if (App.verbose || !removed) {
+                App.msg(removed
+                        ? "Data dir removed: " + App.dataDir
+                        : "Unable to remove data dir: " + App.dataDir);
+            }
+        }
+
         App.nextSampleNumber += App.numOfSamples;
     }
 }
