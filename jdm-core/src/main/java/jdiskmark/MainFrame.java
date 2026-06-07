@@ -605,7 +605,6 @@ public final class MainFrame extends javax.swing.JFrame {
         optionMenu.add(gcRetryCbMenuItem);
         optionMenu.add(jSeparator3);
 
-        autoRemoveCheckBoxMenuItem.setSelected(true);
         autoRemoveCheckBoxMenuItem.setText("Auto Delete Test Files");
         autoRemoveCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {

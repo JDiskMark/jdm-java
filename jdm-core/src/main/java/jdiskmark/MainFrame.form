@@ -298,7 +298,6 @@
             </MenuItem>
             <MenuItem class="javax.swing.JCheckBoxMenuItem" name="autoRemoveCheckBoxMenuItem">
               <Properties>
-                <Property name="selected" type="boolean" value="true"/>
                 <Property name="text" type="java.lang.String" value="Auto Delete Test Files"/>
               </Properties>
               <Events>
