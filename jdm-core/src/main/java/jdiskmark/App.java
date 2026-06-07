@@ -257,7 +257,7 @@ public class App {
     public static boolean sharePortalPreviouslyEnabled = false;
     public static boolean verbose = false; // affects cli output
     public static boolean multiFile = true;
-    public static boolean autoRemoveData = false;
+    public static boolean autoRemoveData = true;
     public static boolean autoReset = true;
     public static boolean directEnable = false;
     public static boolean writeSyncEnable = false;
@@ -882,14 +882,15 @@ public class App {
         // 4. create data dir reference
         dataDir = new File(locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
 
-        // 5. remove existing test data if exist
+        // 5. remove existing test data if present (recursive — File.delete() only removes empty dirs)
         if (autoRemoveData && dataDir.exists()) {
-            if (dataDir.delete()) {
-                if (verbose) {
-                    msg("removed existing data dir");
-                }
-            } else {
-                msg("unable to remove existing data dir");
+            boolean removed = Util.deleteDirectory(dataDir);
+            if (verbose) {
+                msg(removed
+                        ? "Removed existing data dir: " + dataDir
+                        : "Unable to remove existing data dir: " + dataDir);
+            } else if (!removed) {
+                msg("Unable to remove existing data dir: " + dataDir);
             }
         }
 
