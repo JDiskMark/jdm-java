@@ -22,7 +22,26 @@ import java.util.logging.Logger;
 public class UtilOs {
     
     public static final Logger LOGGER = Logger.getLogger(UtilOs.class.getName());
-    
+
+    // --- OS detection primitives ---
+    // Accept an explicit osName string so these can be used before App.os is
+    // populated (e.g. in CLI mode or very early in main()).
+
+    /** Returns {@code true} when {@code osName} identifies macOS. */
+    public static boolean isMacOs(String osName) {
+        return osName != null && osName.contains("Mac OS");
+    }
+
+    /** Returns {@code true} when {@code osName} identifies Windows. */
+    public static boolean isWindows(String osName) {
+        return osName != null && osName.startsWith("Windows");
+    }
+
+    /** Returns {@code true} when {@code osName} identifies Linux. */
+    public static boolean isLinux(String osName) {
+        return osName != null && osName.contains("Linux");
+    }
+
     /** The disk model power shell utility. */
     public static final String DISK_MODEL_PS_FILENAME = "disk-model.ps1";
     
