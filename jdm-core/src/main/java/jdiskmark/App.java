@@ -180,6 +180,11 @@ public class App {
 
         // no arguments = gui mode, otherwise cmd line interface
         mode = (args.length == 0) ? Mode.GUI : Mode.CLI;
+
+        // Initialise file-based logging before anything else so that all
+        // java.util.logging output (including Hibernate, Derby, etc.) is
+        // captured to the rotating log file from the very first log call.
+        Logging.init(mode);
         int exitCode = 0;
 
         switch (mode) {
@@ -292,6 +297,14 @@ public class App {
             if (sharePortalPreviouslyEnabled) {
                 javax.swing.SwingUtilities.invokeLater(App::promptResumePortalUpload);
             }
+
+            // --- Event: app started (session header) ---
+            // Logged after the window is shown so it appears as the first visible entry.
+            java.nio.file.Path logDir = Logging.getLogDir();
+            msg(String.format(
+                    "JDiskMark %s started — OS: %s | JDK: %s | CPU: %s | logs: %s",
+                    VERSION, os, jdk, processorName,
+                    logDir != null ? logDir.toAbsolutePath() : "(console only)"));
         }
     }
 
@@ -888,11 +901,13 @@ public class App {
 
     /**
      * This sets the location directory and configures the data directory within it.
-     * 
+     *
      * @param directory the dir to store
      */
     static public void setLocationDir(File directory) {
         locationDir = directory;
         dataDir = new File(locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
+        // --- Event: drive location changed ---
+        msg("Drive location set to: " + locationDir.getAbsolutePath());
     }
 }

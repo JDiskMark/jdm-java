@@ -37,6 +37,16 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
     @Override
     protected Benchmark doInBackground() throws Exception {
 
+        // --- Event: benchmark started ---
+        msg(String.format("Benchmark started — %s | %s | %d samples × %d blocks × %d KB | %d thread(s) | drive: %s",
+                App.benchmarkType,
+                App.activeProfile + (App.profileModified ? "*" : ""),
+                App.numOfSamples,
+                App.numOfBlocks,
+                App.blockSizeKb,
+                App.numOfThreads,
+                App.locationDir != null ? App.locationDir.getAbsolutePath() : "(none)"));
+
         if (App.verbose) {
             msg("*** starting new worker thread");
             msg("Running readTest " + App.hasReadOperation() + "   writeTest " + App.hasWriteOperation());
@@ -55,6 +65,30 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
         BenchmarkRunner bRunner = new BenchmarkRunner(listener, App.getConfig());
         Benchmark benchmark = bRunner.execute();
+
+        // --- Event: benchmark completed or cancelled ---
+        if (isCancelled()) {
+            msg("Benchmark cancelled.");
+        } else {
+            // Build a concise result line covering whichever operations ran.
+            StringBuilder result = new StringBuilder("Benchmark completed");
+            for (BenchmarkOperation op : benchmark.getOperations()) {
+                switch (op.ioMode) {
+                    case WRITE -> result.append(String.format(
+                            " | Write avg=%.2f max=%.2f min=%.2f MB/s  IOPS=%d",
+                            op.bwAvg, op.bwMax, op.bwMin, op.iops));
+                    case READ -> result.append(String.format(
+                            " | Read avg=%.2f max=%.2f min=%.2f MB/s  IOPS=%d",
+                            op.bwAvg, op.bwMax, op.bwMin, op.iops));
+                }
+            }
+            // Elapsed time
+            if (benchmark.startTime != null && benchmark.endTime != null) {
+                long elapsedSec = java.time.Duration.between(benchmark.startTime, benchmark.endTime).getSeconds();
+                result.append(String.format(" | duration=%ds", elapsedSec));
+            }
+            msg(result.toString());
+        }
         
         // update gui title
         Gui.chart.getTitle().setText(benchmark.getDriveInfoDisplay());
@@ -103,10 +137,11 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         try {
             get();
         } catch (CancellationException e) {
-            // Normal cancellation path — no error to report
+            // Normal cancellation path — cancellation event already logged in doInBackground
         } catch (ExecutionException e) {
+            // --- Event: benchmark IO error ---
             Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, "Benchmark failed", e.getCause());
-            App.err("Benchmark failed: " + e.getCause().getMessage());
+            App.err("Benchmark error: " + e.getCause().getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
