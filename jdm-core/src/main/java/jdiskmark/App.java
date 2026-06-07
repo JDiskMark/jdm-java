@@ -309,6 +309,11 @@ public class App {
             case Mode.GUI -> {
                 App.autoSave = true;
                 // App.verbose = true; // force verbose to true
+                // On macOS, redirect the menu bar to the native system menu bar at the
+                // top of the screen (standard macOS HIG). Must be set before AWT initialises.
+                if (System.getProperty("os.name", "").contains("Mac OS")) {
+                    System.setProperty("apple.laf.useScreenMenuBar", "true");
+                }
                 if (!acquireInstanceLock()) {
                     return; // another instance is already running — exit
                 }

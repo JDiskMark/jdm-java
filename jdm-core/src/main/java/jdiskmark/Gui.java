@@ -109,9 +109,13 @@ public final class Gui {
             } else if (App.os.contains("Linux")) {
                 UIManager.setLookAndFeel(new FlatDarkLaf());
             }
-            // Enable FlatLaf custom window decorations (unified title bar + menu bar)
-            javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
-            javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+            // Use FlatLaf custom window decorations (unified title bar + menu bar) on
+            // non-macOS only. On macOS the native title bar is kept so the system menu
+            // bar at the top of the screen works correctly.
+            if (!App.os.contains("Mac OS")) {
+                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
+                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+            }
         } catch (UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
             /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -129,8 +133,10 @@ public final class Gui {
     public static void configureDarculaLaf() {
         try {
             UIManager.setLookAndFeel(new FlatDarculaLaf());
-            javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
-            javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+            if (!App.os.contains("Mac OS")) {
+                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
+                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+            }
         } catch (UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
             /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -154,8 +160,10 @@ public final class Gui {
             } else if (App.os.contains("Linux")) {
                 UIManager.setLookAndFeel(new FlatLightLaf());
             }
-            javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
-            javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+            if (!App.os.contains("Mac OS")) {
+                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
+                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+            }
         } catch (UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
             /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -236,9 +244,13 @@ public final class Gui {
         
         mainFrame = new MainFrame();
 
-        // Embed the menu bar into the FlatLaf custom title bar (VS Code style)
-        mainFrame.getRootPane().putClientProperty(
-                com.formdev.flatlaf.FlatClientProperties.MENU_BAR_EMBEDDED, true);
+        // Embed the menu bar into the FlatLaf custom title bar (VS Code style) on
+        // non-macOS only. On macOS the menu bar lives in the native system menu bar
+        // at the top of the screen; embedding it here would conflict.
+        if (!App.os.contains("Mac OS")) {
+            mainFrame.getRootPane().putClientProperty(
+                    com.formdev.flatlaf.FlatClientProperties.MENU_BAR_EMBEDDED, true);
+        }
 
         // Apply branding icon to the window title bar and taskbar.
         // setIconImages supplies all available sizes so Java picks the best
