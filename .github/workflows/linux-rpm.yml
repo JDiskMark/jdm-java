@@ -2,7 +2,7 @@ name: Linux RPM Build
 
 on:
   push:
-    branches: [ "**" ]
+    branches-ignore: [ "tune-pkg" ]
     paths-ignore:
       - 'README.md'
       - 'LICENSE'
