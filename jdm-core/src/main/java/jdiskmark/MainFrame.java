@@ -647,8 +647,7 @@ public final class MainFrame extends javax.swing.JFrame {
         optionMenu.add(gcRetryCbMenuItem);
         optionMenu.add(jSeparator3);
 
-        autoRemoveCheckBoxMenuItem.setSelected(true);
-        autoRemoveCheckBoxMenuItem.setText("Auto Remove Data Dir");
+        autoRemoveCheckBoxMenuItem.setText("Auto Delete Test Files");
         autoRemoveCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 autoRemoveCheckBoxMenuItemActionPerformed(evt);
@@ -881,8 +880,7 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_exitMenuItemActionPerformed
 
     private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
-        JOptionPane.showMessageDialog(Gui.mainFrame, 
-                "JDiskMark " + App.VERSION, "About...", JOptionPane.PLAIN_MESSAGE);
+        Gui.showAboutDialog();
     }//GEN-LAST:event_aboutMenuItemActionPerformed
 
     private void openLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openLocButtonActionPerformed

@@ -1,7 +1,5 @@
 package jdiskmark;
 
-import static jdiskmark.Benchmark.BenchmarkType;
-import static jdiskmark.Benchmark.BlockSequence;
 import static jdiskmark.DriveAccessChecker.validateTargetDirectory;
 
 import picocli.CommandLine;
@@ -27,12 +25,21 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.swing.SwingUtilities;
+
+import jdiskmark.App.IoEngine;
+import jdiskmark.App.SectorAlignment;
+import jdiskmark.Benchmark.BenchmarkType;
+import jdiskmark.Benchmark.BlockSequence;
+
 /**
  * Primary class for global variables.
  */
 public class App {
+    public static final String APP_NAME = "JDiskMark";
     public static final String VERSION = getVersion();
-    public static final String APP_CACHE_DIR_NAME = System.getProperty("user.home") + File.separator + ".jdm" + File.separator + VERSION;
+    public static final String APP_CACHE_DIR_NAME = System.getProperty("user.home") + File.separator + ".jdm"
+            + File.separator + VERSION;
     public static final File APP_CACHE_DIR = new File(APP_CACHE_DIR_NAME);
     public static final String PROPERTIES_FILENAME = "jdm.properties";
     public static final File PROPERTIES_FILE = new File(APP_CACHE_DIR_NAME + File.separator + PROPERTIES_FILENAME);
@@ -49,22 +56,34 @@ public class App {
     // numeric constants
     public static final int IDLE_STATE = 0;
     public static final int DISK_TEST_STATE = 1;
-    
+
     // command line or graphical mode
-    public enum Mode { CLI, GUI }
-    
+    public enum Mode {
+        CLI, GUI
+    }
+
     // benchmark state
-    public static enum State { IDLE_STATE, DISK_TEST_STATE };
-    
+    public static enum State {
+        IDLE_STATE, DISK_TEST_STATE
+    };
+
     // io api, modern introduced w jdk 25 lts
     public enum IoEngine {
         MODERN("Modern (FFM API)"),
         LEGACY("Legacy (RandomAccessFile)");
+
         private final String display;
-        IoEngine(String label) { this.display = label; }
-        @Override public String toString() { return display; }
+
+        IoEngine(String label) {
+            this.display = label;
+        }
+
+        @Override
+        public String toString() {
+            return display;
+        }
     }
-    
+
     public enum SectorAlignment {
         NONE(-1, "None (OS Default)"),
         ALIGN_512(512, "512 B (Legacy)"),
@@ -72,18 +91,150 @@ public class App {
         ALIGN_8K(8192, "8 KB (Enterprise)"),
         ALIGN_16K(16384, "16 KB (High-End)"),
         ALIGN_64K(65536, "64 KB (RAID/Stripe)");
+
         public final int bytes;
         public final String display;
+
         SectorAlignment(int bytes, String label) {
             this.bytes = bytes;
             this.display = label;
         }
+
         @Override
-        public String toString() { return display; }
+        public String toString() {
+            return display;
+        }
     }
-    
+
+    /**
+     * Branding icon variants for the application window, taskbar, and installer.
+     * Each variant declares the PNG sizes available in jdm-core resources.
+     * Change {@link #activeIcon} to switch the icon across all display contexts.
+     */
+    public enum AppIcon {
+        /** Blue/orange circle — the beta brand. Single resolution. */
+        BETA(new String[]{"/icons/icon-jdm-beta.png"}),
+        /** Custom JDiskMark turtle logo — the default project brand. */
+        TURTLE(new String[]{
+            "/icons/jdm-turtle-logo-16x16.png",
+            "/icons/jdm-turtle-logo-20x20.png",
+            "/icons/jdm-turtle-logo-24x24.png",
+            "/icons/jdm-turtle-logo-32x32.png",
+            "/icons/jdm-turtle-logo-40x40.png",
+            "/icons/jdm-turtle-logo-48x48.png",
+            "/icons/jdm-turtle-logo-64x64.png",
+            "/icons/jdm-turtle-logo-96x96.png",
+            "/icons/jdm-turtle-logo-128x128.png",
+            "/icons/jdm-turtle-logo-256x256.png",
+            "/icons/jdm-turtle-logo-512x512.png",
+            "/icons/jdm-turtle-logo-1024x1024.png"
+        }),
+        /** Duke, the BSD-licensed Java mascot from the OpenJDK project. */
+        DUKE(new String[]{"/icons/icon-duke.png"});
+
+        /** All resource paths for this icon variant, from smallest to largest. */
+        public final String[] resourcePaths;
+
+        AppIcon(String[] resourcePaths) {
+            this.resourcePaths = resourcePaths;
+        }
+
+        /**
+         * Load all available sizes as a list of Images for use with
+         * {@link java.awt.Window#setIconImages(java.util.List)}.
+         * Java picks the best-fit size per display context (title bar, taskbar, Alt+Tab).
+         * Missing resources are silently skipped.
+         */
+        public java.util.List<java.awt.Image> loadAll() {
+            java.util.List<java.awt.Image> images = new java.util.ArrayList<>();
+            for (String path : resourcePaths) {
+                try (java.io.InputStream is = App.class.getResourceAsStream(path)) {
+                    if (is != null) {
+                        images.add(new javax.swing.ImageIcon(is.readAllBytes()).getImage());
+                    }
+                } catch (java.io.IOException e) {
+                    java.util.logging.Logger.getLogger(App.class.getName()).log(
+                            java.util.logging.Level.WARNING, "Could not load icon: " + path, e);
+                }
+            }
+            return images;
+        }
+
+        /**
+         * Load the largest available size as an ImageIcon (used by the About dialog).
+         * Returns {@code null} if no resource is found.
+         */
+        public javax.swing.ImageIcon load() {
+            String path = resourcePaths[resourcePaths.length - 1];
+            try (java.io.InputStream is = App.class.getResourceAsStream(path)) {
+                if (is == null) {
+                    java.util.logging.Logger.getLogger(App.class.getName()).warning(
+                            "Icon resource not found: " + path);
+                    return null;
+                }
+                return new javax.swing.ImageIcon(is.readAllBytes());
+            } catch (java.io.IOException e) {
+                java.util.logging.Logger.getLogger(App.class.getName()).log(
+                        java.util.logging.Level.WARNING, "Could not load icon: " + path, e);
+                return null;
+            }
+        }
+
+        /**
+         * Load the best pre-rendered PNG at or nearest to {@code targetSize} pixels.
+         * Prefers the smallest size that is &gt;= targetSize; falls back to the largest
+         * available. For single-resolution variants the only image is returned as-is.
+         * Returns {@code null} if no resource is found.
+         */
+        public javax.swing.ImageIcon loadSize(int targetSize) {
+            // Parse pixel widths from filenames like "/icons/jdm-turtle-logo-256x256.png".
+            // For paths without a size suffix (e.g. "/icons/icon-jdm-beta.png") the regex
+            // won't match and the path is treated as an unknown size.
+            java.util.regex.Pattern sizePattern = java.util.regex.Pattern.compile("-(\\d+)x\\d+\\.png$");
+            String bestPath = resourcePaths[resourcePaths.length - 1]; // default: largest
+            int bestDiff = Integer.MAX_VALUE;
+            for (String path : resourcePaths) {
+                java.util.regex.Matcher m = sizePattern.matcher(path);
+                if (m.find()) {
+                    int size = Integer.parseInt(m.group(1));
+                    int diff = size - targetSize;
+                    // Prefer smallest size >= targetSize; accept smaller only if nothing larger found.
+                    if (diff >= 0 && diff < bestDiff) {
+                        bestDiff = diff;
+                        bestPath = path;
+                    }
+                }
+            }
+            try (java.io.InputStream is = App.class.getResourceAsStream(bestPath)) {
+                if (is == null) {
+                    java.util.logging.Logger.getLogger(App.class.getName()).warning(
+                            "Icon resource not found: " + bestPath);
+                    return null;
+                }
+                return new javax.swing.ImageIcon(is.readAllBytes());
+            } catch (java.io.IOException e) {
+                java.util.logging.Logger.getLogger(App.class.getName()).log(
+                        java.util.logging.Level.WARNING, "Could not load icon: " + bestPath, e);
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Active branding icon — change this single line to switch the icon
+     * used for the window title bar, taskbar, and About dialog.
+     */
+    public static AppIcon activeIcon = AppIcon.TURTLE;
+
     // application mode
     public static Mode mode = Mode.CLI;
+
+    // Single-instance enforcement via NIO FileLock.
+    // The OS releases this lock automatically when the JVM exits by any means
+    // (normal, exception, SIGKILL, OOM crash) — stale locks are impossible.
+    // Kept as static fields so GC never closes the channel while the app runs.
+    private static java.nio.channels.FileChannel instanceLockChannel;
+    private static java.nio.channels.FileLock instanceLock;
     // elevated priviledges
     public static boolean isRoot = false;
     public static boolean isAdmin = false;
@@ -93,6 +244,22 @@ public class App {
     public static String processorName;
     public static String jdk;
     public static String username;
+
+    // --- OS convenience helpers ---
+    // Delegate to UtilOs primitives. Safe to call before init() (e.g. early in
+    // main() or in CLI mode where App.os is never populated).
+
+    /** Returns {@code true} when running on macOS. */
+    public static boolean isMacOs() { return UtilOs.isMacOs(osName()); }
+    /** Returns {@code true} when running on Windows. */
+    public static boolean isWindows() { return UtilOs.isWindows(osName()); }
+    /** Returns {@code true} when running on Linux. */
+    public static boolean isLinux() { return UtilOs.isLinux(osName()); }
+    /** Resolves the OS name, falling back to the system property when {@link #os} is not yet set.
+     *  Safe to call before {@link #init()} and in CLI mode. */
+    public static String osName() {
+        return (os != null) ? os : System.getProperty("os.name", "");
+    }
     // benchmark options
     public static Properties p;
     public static File locationDir = null;
@@ -101,12 +268,13 @@ public class App {
     public static File testFile = null; // still used for cli
     public static boolean autoSave = false;
     public static boolean sharePortal = false;
-    // True if sharePortal was enabled in the last session; used to offer a one-click
+    // True if sharePortal was enabled in the last session; used to offer a
+    // one-click
     // re-enable prompt at startup rather than silently resuming network activity.
     public static boolean sharePortalPreviouslyEnabled = false;
     public static boolean verbose = false; // affects cli output
     public static boolean multiFile = true;
-    public static boolean autoRemoveData = false;
+    public static boolean autoRemoveData = true;
     public static boolean autoReset = true;
     public static boolean directEnable = false;
     public static boolean writeSyncEnable = false;
@@ -119,13 +287,13 @@ public class App {
     public static boolean profileModified = false;
     public static BenchmarkType benchmarkType = BenchmarkType.WRITE;
     public static BlockSequence blockSequence = BlockSequence.SEQUENTIAL;
-    public static int numOfSamples = 200;   // desired number of samples
-    public static int numOfBlocks = 32;     // desired number of blocks
-    public static int blockSizeKb = 512;    // size of a block in KBs
-    public static int numOfThreads = 1;     // number of threads
+    public static int numOfSamples = 200; // desired number of samples
+    public static int numOfBlocks = 32; // desired number of blocks
+    public static int blockSizeKb = 512; // size of a block in KBs
+    public static int numOfThreads = 1; // number of threads
     // active benchmark state
     public static State state = State.IDLE_STATE;
-    public static int nextSampleNumber = 1;   // number of the next sample
+    public static int nextSampleNumber = 1; // number of the next sample
     public static double wMax = -1, wMin = -1, wAvg = -1, wAcc = -1;
     public static double rMax = -1, rMin = -1, rAvg = -1, rAcc = -1;
     public static long wIops = -1;
@@ -138,14 +306,13 @@ public class App {
     public static BenchmarkOperation operation; // last loaded operation
     public static HashMap<String, Benchmark> benchmarks = new LinkedHashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new LinkedHashMap<>();
-    
-    private static final DateTimeFormatter DATE_FORMATTER = 
-        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
     private static String formatWithTimestamp(String message) {
         return DATE_FORMATTER.format(LocalDateTime.now()) + ": " + message;
     }
-    
+
     /**
      * @param args the command line arguments
      */
@@ -154,11 +321,22 @@ public class App {
         // no arguments = gui mode, otherwise cmd line interface
         mode = (args.length == 0) ? Mode.GUI : Mode.CLI;
         int exitCode = 0;
-        
+
         switch (mode) {
             case Mode.GUI -> {
                 App.autoSave = true;
-                //App.verbose = true; // force verbose to true
+                // App.verbose = true; // force verbose to true
+                // On macOS, redirect the menu bar to the native system menu bar at the
+                // top of the screen (standard macOS HIG). Must be set before AWT initialises.
+                if (App.isMacOs()) {
+                    // The app name shown in the macOS menu bar and in Dock menus.
+                    // Must be set before AWT initialises (same requirement as useScreenMenuBar).
+                    System.setProperty("apple.awt.application.name", APP_NAME);
+                    System.setProperty("apple.laf.useScreenMenuBar", "true");
+                }
+                if (!acquireInstanceLock()) {
+                    return; // another instance is already running — exit
+                }
                 java.awt.EventQueue.invokeLater(App::init);
                 return;
             }
@@ -172,10 +350,11 @@ public class App {
         // If execution completes, exit the process.
         System.exit(exitCode);
     }
-    
+
     /**
      * Get the version from the build properties. Defaults to 0.0 if not found.
-     * @return 
+     * 
+     * @return
      */
     public static String getVersion() {
         Properties bp = new Properties();
@@ -187,14 +366,14 @@ public class App {
             } catch (IOException e) {
                 Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
             }
-        } else if (Files.exists(Paths.get(BUILD_TOKEN_FILENAME))) {            // ide and zip release
+        } else if (Files.exists(Paths.get(BUILD_TOKEN_FILENAME))) { // ide and zip release
             try {
                 bp.load(new FileInputStream(BUILD_TOKEN_FILENAME));
             } catch (IOException ex) {
                 System.err.println("If in NetBeans please do a "
                         + "Clean and Build Project from the Run Menu or press F11");
                 Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
-            }            
+            }
         } else {
             // GH-14 jpackage windows environment
             try {
@@ -203,44 +382,44 @@ public class App {
                 Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        version = bp.getProperty("version", version);        
+        version = bp.getProperty("version", version);
         return version;
     }
-    
+
     /**
      * Initialize the GUI Application.
      */
     public static void init() {
 
         GcDetector.printActive();
-        
+
         username = System.getProperty("user.name");
-        
+
         os = System.getProperty("os.name");
         arch = System.getProperty("os.arch");
         processorName = Util.getProcessorName();
         jdk = Util.getJvmInfo();
-        
+
         checkPermission();
         if (!APP_CACHE_DIR.exists()) {
             APP_CACHE_DIR.mkdirs();
         }
-        
+
         if (mode == Mode.GUI) {
             loadConfig();
         }
-        
+
         // initialize data dir if necessary
         if (locationDir == null) {
             locationDir = new File(System.getProperty("user.home"));
             dataDir = new File(locationDir.getAbsolutePath()
                     + File.separator + DATADIRNAME);
         }
-        
+
         if (mode == Mode.GUI) {
             Gui.init();
         }
-        
+
         if (App.autoSave) {
             // configure the embedded DB in .jdm
             System.setProperty("derby.system.home", APP_CACHE_DIR_NAME);
@@ -254,30 +433,94 @@ public class App {
             // save configuration on exit...
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 @Override
-                public void run() { App.saveConfig(); }
+                public void run() {
+                    App.saveConfig();
+                }
             });
             // If portal upload was active last session, offer a one-click re-enable.
-            // This avoids silent outbound network activity while keeping dev workflow smooth.
+            // This avoids silent outbound network activity while keeping dev workflow
+            // smooth.
             if (sharePortalPreviouslyEnabled) {
                 javax.swing.SwingUtilities.invokeLater(App::promptResumePortalUpload);
             }
         }
     }
-    
+
+    /**
+     * Attempts to acquire an OS-level advisory lock on a file in the per-version
+     * cache directory. Called once at startup in GUI mode, before {@link #init()}.
+     *
+     * <p>The lock is held by a {@link java.nio.channels.FileLock} whose lifecycle
+     * is tied to the JVM process: the OS kernel releases it automatically when the
+     * process exits by <em>any</em> means (normal exit, uncaught exception,
+     * {@code SIGKILL}, OOM crash). Stale lock files left behind after a crash are
+     * therefore impossible — the next launch will always succeed.
+     *
+     * <p>If another instance already holds the lock a user-friendly dialog is shown
+     * and the method returns {@code false}, allowing {@code main()} to exit cleanly
+     * without opening any window or touching the Derby database.
+     *
+     * @return {@code true} if the lock was acquired and this instance may continue;
+     *         {@code false} if another instance is running (caller should exit).
+     */
+    public static boolean acquireInstanceLock() {
+        // Ensure the cache directory exists before we try to create the lock file.
+        if (!APP_CACHE_DIR.exists()) {
+            APP_CACHE_DIR.mkdirs();
+        }
+        java.io.File lockFile = new java.io.File(APP_CACHE_DIR, "jdm.lock");
+        try {
+            // Open (or create) the lock file. StandardOpenOption.CREATE ensures the
+            // file exists; WRITE is required for FileLock.
+            instanceLockChannel = java.nio.channels.FileChannel.open(
+                    lockFile.toPath(),
+                    java.nio.file.StandardOpenOption.CREATE,
+                    java.nio.file.StandardOpenOption.WRITE);
+            // tryLock() returns null (non-blocking) if another process holds the lock.
+            instanceLock = instanceLockChannel.tryLock();
+        } catch (java.io.IOException e) {
+            Logger.getLogger(App.class.getName()).log(Level.WARNING,
+                    "Could not open instance lock file: " + lockFile, e);
+            // If we cannot even open the file (e.g. permissions), allow the app to
+            // start rather than refusing to run on a technicality.
+            return true;
+        }
+
+        if (instanceLock == null) {
+            // Lock is held by another process — show a concise dialog, then bail.
+            try {
+                instanceLockChannel.close();
+            } catch (java.io.IOException ignored) {}
+            instanceLockChannel = null;
+
+            // Show the dialog on the EDT (we have no window yet, so null parent is fine).
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                javax.swing.JOptionPane.showMessageDialog(
+                        null,
+                        "JDiskMark is already running.\n"
+                        + "Only one instance can be open at a time.",
+                        "JDiskMark — Already Running",
+                        javax.swing.JOptionPane.WARNING_MESSAGE);
+                System.exit(0);
+            });
+            return false;
+        }
+        return true;
+    }
+
     public static void checkPermission() {
-        String osName = System.getProperty("os.name");
-        if (osName.contains("Linux")) {
+        if (App.isLinux()) {
             isRoot = UtilOs.isRunningAsRootLinux();
-        } else if (osName.contains("Mac OS")) {
+        } else if (App.isMacOs()) {
             isRoot = UtilOs.isRunningAsRootMacOs();
-        } else if (osName.contains("Windows")) {
+        } else if (App.isWindows()) {
             isAdmin = UtilOs.isRunningAsAdminWindows();
         }
         if (isRoot || isAdmin) {
             System.out.println("Running w elevated priviledges");
         }
     }
-    
+
     /**
      * Offers a one-click prompt to re-enable portal upload when it was active
      * in the previous session. Called after the main window is visible so the
@@ -286,12 +529,12 @@ public class App {
      */
     public static void promptResumePortalUpload() {
         int choice = javax.swing.JOptionPane.showConfirmDialog(
-            Gui.mainFrame,
-            "Portal upload was enabled in your last session.\nResume uploading benchmarks to " + Portal.getUploadUrl() + "?",
-            "Resume Portal Upload?",
-            javax.swing.JOptionPane.YES_NO_OPTION,
-            javax.swing.JOptionPane.QUESTION_MESSAGE
-        );
+                Gui.mainFrame,
+                "Portal upload was enabled in your last session.\nResume uploading benchmarks to "
+                        + Portal.getUploadUrl() + "?",
+                "Resume Portal Upload?",
+                javax.swing.JOptionPane.YES_NO_OPTION,
+                javax.swing.JOptionPane.QUESTION_MESSAGE);
         if (choice == javax.swing.JOptionPane.YES_OPTION) {
             sharePortal = true;
             msg("Portal upload resumed.");
@@ -306,7 +549,7 @@ public class App {
             Gui.mainFrame.loadPropertiesConfig();
         }
     }
-    
+
     public static void loadProfile(BenchmarkProfile profile) {
         try {
             activeProfile = profile;
@@ -329,7 +572,7 @@ public class App {
             saveConfig();
         }
     }
-    
+
     public static void loadConfig() {
         if (PROPERTIES_FILE.exists()) {
             System.out.println("loading: " + PROPERTIES_FILE.getAbsolutePath());
@@ -340,7 +583,9 @@ public class App {
         }
 
         // read properties file
-        if (p == null) { p = new Properties(); }
+        if (p == null) {
+            p = new Properties();
+        }
         try {
             InputStream in = new FileInputStream(PROPERTIES_FILE);
             p.load(in);
@@ -357,10 +602,10 @@ public class App {
         value = p.getProperty("sharePortal", "false");
         sharePortalPreviouslyEnabled = Boolean.parseBoolean(value);
         sharePortal = false; // always start disabled; prompt offered after window visible
-        
+
         Portal.uploadResourceLocator = p.getProperty("uploadResourceLocator", Portal.uploadResourceLocator);
         Portal.uploadProtocol = p.getProperty("uploadProtocol", Portal.uploadProtocol);
-        
+
         value = p.getProperty("activeProfile", activeProfile.name());
         BenchmarkProfile previousActiveProfile = activeProfile;
         try {
@@ -369,16 +614,16 @@ public class App {
             Logger.getLogger(App.class.getName()).log(
                     Level.WARNING,
                     "Invalid activeProfile value in properties file: \"{0}\". Falling back to default: {1}",
-                    new Object[]{value, previousActiveProfile.name()});
+                    new Object[] { value, previousActiveProfile.name() });
             activeProfile = previousActiveProfile;
         }
-        
+
         value = p.getProperty("profileModified", String.valueOf(profileModified));
         profileModified = Boolean.parseBoolean(value);
-        
+
         value = p.getProperty("benchmarkType", String.valueOf(benchmarkType));
         benchmarkType = BenchmarkType.valueOf(value.toUpperCase());
-        
+
         value = p.getProperty("multiFile", String.valueOf(multiFile));
         multiFile = Boolean.parseBoolean(value);
         
@@ -413,16 +658,15 @@ public class App {
             Logger.getLogger(App.class.getName()).log(
                     Level.WARNING,
                     "Invalid ioEngine value in properties: " + value + ", using default: " + ioEngine.name(),
-                    e
-            );
+                    e);
         }
-        
+
         value = p.getProperty("writeSyncEnable", String.valueOf(writeSyncEnable));
         writeSyncEnable = Boolean.parseBoolean(value);
-        
+
         value = p.getProperty("directEnable", String.valueOf(directEnable));
         directEnable = Boolean.parseBoolean(value);
-        
+
         value = p.getProperty("sectorAlignment", sectorAlignment.name());
         try {
             sectorAlignment = SectorAlignment.valueOf(value.toUpperCase());
@@ -430,16 +674,15 @@ public class App {
             Logger.getLogger(App.class.getName()).log(
                     Level.WARNING,
                     "Invalid sectorAlignment value in properties: \"{0}\", using default: {1}",
-                    new Object[] { value, sectorAlignment.name() }
-            );
+                    new Object[] { value, sectorAlignment.name() });
         }
-        
+
         value = p.getProperty("gcRetryEnabled", String.valueOf(GcDetector.gcRetryEnabled));
         GcDetector.gcRetryEnabled = Boolean.parseBoolean(value);
 
         value = p.getProperty("gcHintsEnabled", String.valueOf(GcDetector.gcHintsEnabled));
         GcDetector.gcHintsEnabled = Boolean.parseBoolean(value);
-        
+
         value = p.getProperty("theme", Gui.theme.name());
         try {
             Gui.theme = Gui.Theme.valueOf(value);
@@ -447,13 +690,12 @@ public class App {
             Logger.getLogger(App.class.getName()).log(
                     Level.WARNING,
                     "Invalid theme value in properties: \"{0}\", using default: {1}",
-                    new Object[] { value, Gui.theme.name() }
-            );
+                    new Object[] { value, Gui.theme.name() });
         }
-        
+
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
-        
+
         value = p.getProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
         Gui.showMaxMin = Boolean.parseBoolean(value);
 
@@ -461,12 +703,14 @@ public class App {
         Gui.showDriveAccess = Boolean.parseBoolean(value);
 
         value = p.getProperty("showSingleOp", String.valueOf(Gui.showSingleOp));
-        Gui.showSingleOp = Boolean.parseBoolean(value);        
+        Gui.showSingleOp = Boolean.parseBoolean(value);
     }
-    
+
     public static void saveConfig() {
-        if (p == null) { p = new Properties(); }
-        
+        if (p == null) {
+            p = new Properties();
+        }
+
         // configure properties
         p.setProperty("sharePortal", String.valueOf(sharePortal));
         p.setProperty("uploadResourceLocator", Portal.uploadResourceLocator);
@@ -495,7 +739,7 @@ public class App {
         p.setProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
         p.setProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
         p.setProperty("showSingleOp", String.valueOf(Gui.showSingleOp));
-        
+
         // write properties file
         try {
             OutputStream out = new FileOutputStream(PROPERTIES_FILE);
@@ -504,9 +748,10 @@ public class App {
             Logger.getLogger(SelectDriveFrame.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     /**
      * Creates a point-in-time snapshot of the current settings.
+     * 
      * @return the configuration for benchmarking
      */
     public static BenchmarkConfig getConfig() {
@@ -532,7 +777,7 @@ public class App {
         config.testDir = dataDir.getAbsolutePath();
         return config;
     }
-    
+
     public static boolean hasReadOperation() {
         return benchmarkType == BenchmarkType.READ || benchmarkType == BenchmarkType.READ_WRITE;
     }
@@ -540,7 +785,7 @@ public class App {
     public static boolean hasWriteOperation() {
         return benchmarkType == BenchmarkType.WRITE || benchmarkType == BenchmarkType.READ_WRITE;
     }
-    
+
     public static String getConfigString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Config for JDiskMark ").append(VERSION).append('\n');
@@ -564,7 +809,7 @@ public class App {
         sb.append("showMaxMin: ").append(Gui.showMaxMin).append('\n');
         return sb.toString();
     }
-    
+
     public static void loadBenchmarks() {
         if (verbose) {
             System.out.println("loading benchmarks");
@@ -588,27 +833,27 @@ public class App {
             }
         }
     }
-    
+
     public static void deleteAllBenchmarks() {
         Benchmark.deleteAll();
         benchmarks.clear();
         loadBenchmarks();
     }
-    
+
     // only tested for single delete but should work
     public static void deleteBenchmarks(List<UUID> benchmarkIds) {
         Benchmark.delete(benchmarkIds);
-        benchmarks.clear();  // clear the cache
+        benchmarks.clear(); // clear the cache
         loadBenchmarks();
     }
-    
+
     public static void err(String message) {
         String formattedMsg = formatWithTimestamp(message);
-        switch(mode) {
+        switch (mode) {
             case GUI -> {
                 System.err.println(formattedMsg);
                 if (Gui.mainFrame != null) {
-                    Gui.mainFrame.msg(formattedMsg);
+                    SwingUtilities.invokeLater(() -> Gui.mainFrame.msg(formattedMsg));
                 }
             }
             case CLI -> System.err.println(formattedMsg);
@@ -617,7 +862,7 @@ public class App {
 
     public static void msg(String message) {
         String formattedMsg = formatWithTimestamp(message);
-        switch(mode) {
+        switch (mode) {
             case GUI -> {
                 if (Gui.mainFrame != null) {
                     Gui.mainFrame.msg(formattedMsg);
@@ -630,56 +875,61 @@ public class App {
     }
 
     public static void cancelBenchmark() {
-        if (worker == null) { 
-            msg("worker is null abort..."); 
+        if (worker == null) {
+            msg("worker is null abort...");
             return;
         }
         worker.cancel(true);
     }
-    
+
     public static void startBenchmark() {
 
         // clear the selected benchmark and operation
         App.benchmark = null;
         App.operation = null;
-        
-        if (!validateTargetDirectory(locationDir, false))  { return; }
-        
+
+        if (!validateTargetDirectory(locationDir, false)) {
+            return;
+        }
+
         // 1. check that there isn't already a worker in progress
         if (state == State.DISK_TEST_STATE) {
             msg("Test in progress, aborting...");
             return;
         }
-        
+
         // 2. check can write to location
         if (locationDir.canWrite() == false) {
             msg("Selected directory can not be written to... aborting");
             return;
         }
-        
+
         // 3. update state
         state = State.DISK_TEST_STATE;
         if (mode == Mode.GUI) {
             Gui.mainFrame.adjustSensitivity();
         }
-        
+
         // 4. create data dir reference
-        dataDir = new File (locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
-        
-        // 5. remove existing test data if exist
+        dataDir = new File(locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
+
+        // 5. remove existing test data if present (recursive — File.delete() only removes empty dirs)
         if (autoRemoveData && dataDir.exists()) {
-            if (dataDir.delete()) {
-                if (verbose) {
-                    msg("removed existing data dir");
-                }
-            } else {
-                msg("unable to remove existing data dir");
+            boolean removed = Util.deleteDirectory(dataDir);
+            if (verbose) {
+                msg(removed
+                        ? "Removed existing data dir: " + dataDir
+                        : "Unable to remove existing data dir: " + dataDir);
+            } else if (!removed) {
+                msg("Unable to remove existing data dir: " + dataDir);
             }
         }
-        
+
         // 6. create data dir if not already present
-        if (dataDir.exists() == false) { dataDir.mkdirs(); }
-        
+        if (dataDir.exists() == false) {
+            dataDir.mkdirs();
+        }
+
         // 7. start benchmark job thread
         switch (mode) {
             case GUI -> {
@@ -694,7 +944,7 @@ public class App {
             }
         }
     }
-    
+
     // currently only used by cli implementation, assess if gui switch should
     // be removed or a common blocking pattern is recommended
     public static void waitBenchmarkDone() {
@@ -718,24 +968,28 @@ public class App {
             msg(benchmark.toResultString());
         }
     }
-    
+
     public static long targetSampleSizeKb() {
-        return (long)blockSizeKb * numOfBlocks;
+        return (long) blockSizeKb * numOfBlocks;
     }
 
     public static long targetOperationTxSizeKb() {
-        return (long)blockSizeKb * numOfBlocks * numOfSamples;
+        return (long) blockSizeKb * numOfBlocks * numOfSamples;
     }
-    
+
     public static long targetBenchmarkTxSizeKb() {
         long operationTxSize = targetOperationTxSizeKb();
         switch (benchmarkType) {
-            case WRITE -> { return operationTxSize; }
-            case READ, READ_WRITE -> { return 2L * operationTxSize; }
+            case WRITE -> {
+                return operationTxSize;
+            }
+            case READ, READ_WRITE -> {
+                return 2L * operationTxSize;
+            }
             default -> throw new IllegalStateException("Unexpected value: " + benchmarkType);
         }
     }
-    
+
     public static void updateMetrics(Sample s) {
         if (s.type == Sample.Type.WRITE) {
             if (wMax == -1 || wMax < s.bwMbSec) {
@@ -749,14 +1003,14 @@ public class App {
                 wAvg = s.bwMbSec;
             } else {
                 int n = s.sampleNum;
-                wAvg = (((double)(n - 1) * wAvg) + s.bwMbSec) / (double)n;
+                wAvg = (((double) (n - 1) * wAvg) + s.bwMbSec) / (double) n;
             }
             // cumulative access time
             if (wAcc == -1) {
                 wAcc = s.accessTimeMs;
             } else {
                 int n = s.sampleNum;
-                wAcc = (((double)(n - 1) * wAcc) + s.accessTimeMs) / (double)n;
+                wAcc = (((double) (n - 1) * wAcc) + s.accessTimeMs) / (double) n;
             }
             // update sample
             s.cumAvg = wAvg;
@@ -775,14 +1029,14 @@ public class App {
                 rAvg = s.bwMbSec;
             } else {
                 int n = s.sampleNum;
-                rAvg = (((double)(n-1) * rAvg) + s.bwMbSec) / (double)n;
+                rAvg = (((double) (n - 1) * rAvg) + s.bwMbSec) / (double) n;
             }
             // cumulative access time
             if (rAcc == -1) {
                 rAcc = s.accessTimeMs;
             } else {
                 int n = s.sampleNum;
-                rAcc = (((double)(n - 1) * rAcc) + s.accessTimeMs) / (double)n;
+                rAcc = (((double) (n - 1) * rAcc) + s.accessTimeMs) / (double) n;
             }
             // update sample
             s.cumAvg = rAvg;
@@ -791,11 +1045,11 @@ public class App {
             s.cumAccTimeMs = rAcc;
         }
     }
-    
+
     static public void resetSequence() {
         nextSampleNumber = 1;
     }
-    
+
     static public void resetTestData() {
         nextSampleNumber = 1;
         wAvg = -1;
@@ -809,9 +1063,10 @@ public class App {
         rAcc = -1;
         rIops = -1;
     }
-    
+
     /**
      * Get a string summary of current drive capacity info
+     * 
      * @return String summarizing the drive information.
      */
     static public String getDriveInfo() {
@@ -829,14 +1084,14 @@ public class App {
         }
         return driveModel + " - " + partitionId + ": " + usageInfo.getUsageTitleDisplay();
     }
-    
+
     static public String getDriveModel() {
         if (locationDir == null) {
             return LOCATION_NOT_SELECTED_ERROR;
         }
         return Util.getDriveModel(locationDir);
     }
-    
+
     static public String getDriveCapacity() {
         if (locationDir == null) {
             return LOCATION_NOT_SELECTED_ERROR;
@@ -850,14 +1105,15 @@ public class App {
         }
         return usageInfo.getUsageTitleDisplay();
     }
-    
+
     /**
      * This sets the location directory and configures the data directory within it.
-     * @param directory the dir to store 
+     * 
+     * @param directory the dir to store
      */
     static public void setLocationDir(File directory) {
         locationDir = directory;
-        dataDir = new File (locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
+        dataDir = new File(locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
     }
     
     static public boolean isLinux() {

@@ -15,16 +15,16 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Portal {
-    // rotocols
+
+    // protocols
     static public final String HTTP = "http://";
     static public final String HTTPS = "https://";
     // resource locators
     static public final String PRODUCTION_UPLOAD_LOCATOR = "www.jdiskmark.net:5000/api/benchmarks/upload";
     static public final String TEST_UPLOAD_LOCATOR = "test.jdiskmark.net:5000/api/benchmarks/upload";
     static public final String LOCAL_UPLOAD_LOCATOR = "localhost:5000/api/benchmarks/upload";
-    // port
 
-    static public String uploadResourceLocator = LOCAL_UPLOAD_LOCATOR;
+    static public String uploadResourceLocator = TEST_UPLOAD_LOCATOR;
     static public String uploadProtocol = HTTP;
 
     static String getUploadUrl() {
@@ -42,7 +42,6 @@ public class Portal {
             return false; // Host unreachable or port closed
         }
     }
-
 
     static void upload(Benchmark benchmark) {
         String uploadUrl = getUploadUrl();
@@ -86,14 +85,14 @@ public class Portal {
             if (response.statusCode() == 201 || response.statusCode() == 200) {
                 App.msg("Benchmark uploaded successfully to " + uploadUrl);
             } else {
+                App.err("Error uploading to " + uploadUrl);
                 App.err("Upload failed. Status: " + response.statusCode());
                 App.err("Server Response: " + response.body());
             }
         } catch (IOException | InterruptedException ex) {
-            App.err("Upload failed. Error: " + ex.getMessage());
+            App.err("Error uploading to " + uploadUrl);
+            App.err("Error message: " + ex.getMessage());
             Logger.getLogger(Portal.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
         }
-
-        App.msg("done uploading to " + uploadUrl);
     }
 }

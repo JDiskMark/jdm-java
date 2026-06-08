@@ -18,7 +18,7 @@ jpackage --input JDiskMark.app/Contents/MacOS \
          --main-class jdiskmark.App \
          --type dmg \
          --app-version "$VERSION" \
-         --icon JDiskMark.app/Contents/Resources/JDM.icns
+         --icon JDiskMark.app/Contents/Resources/JDiskMark-beta.icns
 
 if [ $? -eq 0 ]; then
   echo "DMG build completed successfully."

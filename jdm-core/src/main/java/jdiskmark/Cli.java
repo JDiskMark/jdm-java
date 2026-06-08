@@ -12,8 +12,7 @@ import picocli.CommandLine.Command;
         })
 public class Cli {
     static public void dropCache() {
-        String osName = System.getProperty("os.name");
-        if (osName.contains("Linux")) {
+        if (App.isLinux()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
                 UtilOs.flushDataToDriveLinux();
@@ -35,7 +34,7 @@ public class Cli {
                     System.err.println("Input stream closed unexpectedly.");
                 }
             }
-        } else if (osName.contains("Mac OS")) {
+        } else if (App.isMacOs()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
                 UtilOs.flushDataToDriveMacOs();
@@ -57,7 +56,7 @@ public class Cli {
                     System.err.println("Input stream closed unexpectedly.");
                 }
             }
-        } else if (osName.contains("Windows")) {
+        } else if (App.isWindows()) {
             File emptyStandbyListExe = new File(".\\" + App.ESBL_EXE);
             if (!emptyStandbyListExe.exists()) {
                 // jpackage windows relative environment
@@ -106,7 +105,7 @@ public class Cli {
                 }
             }
         } else {
-            String message = "\nUnrecognized OS: " + osName + "\n" +
+            String message = "\nUnrecognized OS: " + App.osName() + "\n" +
                     """
                     For valid READ benchmarks please clear the disk cache now.
 

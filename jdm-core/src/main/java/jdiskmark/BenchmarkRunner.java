@@ -156,10 +156,9 @@ public class BenchmarkRunner {
         // 1. not cancelled
         // 2. read operation
         // 3. !directIo || (directIo & macOs)
-        boolean isMacOs = App.os.toLowerCase().contains("mac");
         if (!listener.isCancelled() && config.hasReadOperation() &&
                 (!config.getDirectIoEnabled() || 
-                (config.getDirectIoEnabled() && isMacOs))) {    
+                (config.getDirectIoEnabled() && App.isMacOs()))) {    
             listener.attemptCacheDrop();
         }
         

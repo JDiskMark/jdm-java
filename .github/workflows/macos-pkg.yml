@@ -2,14 +2,18 @@ name: MacOS PKG Build
 
 on:
   push:
-    branches: [ "**" ]
+    branches: [ "dev", "release/**" ]
     paths-ignore:
       - 'README.md'
       - 'LICENSE'
       - 'docs/**'
   pull_request:
-    branches: [ "dev", "release/**" ]
+    branches: [ "**" ]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   build-pkg:
@@ -47,9 +51,9 @@ jobs:
           security import /tmp/build_certificate.p12 -P "$MACOS_CERTIFICATE_PWD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH"
-          
+
           # Run signed build
-          mvn install -pl jdm-dist/jdm-pkg -Psign \
+          mvn install -pl jdm-dist/jdm-pkg -Pmacos-pkg \
             -Dsigning.identity="Developer ID Application: Tyler Lui (232JY57U23)" \
             -Dmac.installer.signing.identity="Developer ID Installer: Tyler Lui (232JY57U23)" \
             -Dapple.id="$APPLE_ID" \
@@ -60,7 +64,13 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: jdiskmark-macos-pkg
+          # plain wildcard — package-pkg.sh deletes all intermediate *.pkg files
+          # (component, unsigned) so exactly one file matches at upload time.
+          # NOTE: do NOT replace this with a step output variable — doing so breaks
+          # 'archive: false' and causes the action to fall back to zip mode.
           path: jdm-dist/jdm-pkg/target/*.pkg
           if-no-files-found: error
-          # Disable zipping so it can be downloaded raw from the Actions tab
+          # archive: false — upload the raw .pkg without zipping it.
+          # Requires upload-artifact@v7+. Do NOT downgrade to @v4 or below;
+          # older versions always zip and will break raw download behaviour.
           archive: false
