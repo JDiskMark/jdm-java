@@ -1115,11 +1115,4 @@ public class App {
         locationDir = directory;
         dataDir = new File(locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
     }
-    
-    static public boolean isLinux() {
-        if (os == null) {
-            os = System.getProperty("os.name");
-        }
-        return os.contains("Linux");
-    }
 }
