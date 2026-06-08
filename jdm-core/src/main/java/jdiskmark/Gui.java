@@ -61,7 +61,7 @@ public final class Gui {
         }
 
         public String getLafClassName() {
-            boolean isMac = System.getProperty("os.name").toLowerCase().contains("mac");
+            boolean isMac = App.isMacOs();
 
             return switch (this) {
                 case DARK -> isMac ? "com.formdev.flatlaf.themes.FlatMacDarkLaf" 
@@ -102,16 +102,20 @@ public final class Gui {
     
     public static void configureDarkLaf() {
         try {
-            if (App.os.contains("Windows")) {
+            if (App.isWindows()) {
                 UIManager.setLookAndFeel(new FlatDarkLaf());
-            } else if (App.os.contains("Mac OS")) {
+            } else if (App.isMacOs()) {
                 UIManager.setLookAndFeel(new FlatMacDarkLaf());
-            } else if (App.os.contains("Linux")) {
+            } else if (App.isLinux()) {
                 UIManager.setLookAndFeel(new FlatDarkLaf());
             }
-            // Enable FlatLaf custom window decorations (unified title bar + menu bar)
-            javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
-            javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+            // Use FlatLaf custom window decorations (unified title bar + menu bar) on
+            // non-macOS only. On macOS the native title bar is kept so the system menu
+            // bar at the top of the screen works correctly.
+            if (!App.isMacOs()) {
+                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
+                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+            }
         } catch (UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
             /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -129,8 +133,10 @@ public final class Gui {
     public static void configureDarculaLaf() {
         try {
             UIManager.setLookAndFeel(new FlatDarculaLaf());
-            javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
-            javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+            if (!App.isMacOs()) {
+                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
+                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+            }
         } catch (UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
             /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -147,15 +153,17 @@ public final class Gui {
     
     public static void configureLightLaf() {
         try {
-            if (App.os.contains("Windows")) {
+            if (App.isWindows()) {
                 UIManager.setLookAndFeel(new FlatLightLaf());
-            } else if (App.os.contains("Mac OS")) {
+            } else if (App.isMacOs()) {
                 UIManager.setLookAndFeel(new FlatMacLightLaf());
-            } else if (App.os.contains("Linux")) {
+            } else if (App.isLinux()) {
                 UIManager.setLookAndFeel(new FlatLightLaf());
             }
-            javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
-            javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+            if (!App.isMacOs()) {
+                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
+                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+            }
         } catch (UnsupportedLookAndFeelException e) {
             //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
             /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -236,9 +244,13 @@ public final class Gui {
         
         mainFrame = new MainFrame();
 
-        // Embed the menu bar into the FlatLaf custom title bar (VS Code style)
-        mainFrame.getRootPane().putClientProperty(
-                com.formdev.flatlaf.FlatClientProperties.MENU_BAR_EMBEDDED, true);
+        // Embed the menu bar into the FlatLaf custom title bar (VS Code style) on
+        // non-macOS only. On macOS the menu bar lives in the native system menu bar
+        // at the top of the screen; embedding it here would conflict.
+        if (!App.isMacOs()) {
+            mainFrame.getRootPane().putClientProperty(
+                    com.formdev.flatlaf.FlatClientProperties.MENU_BAR_EMBEDDED, true);
+        }
 
         // Apply branding icon to the window title bar and taskbar.
         // setIconImages supplies all available sizes so Java picks the best
@@ -255,6 +267,31 @@ public final class Gui {
         mainFrame.loadPropertiesConfig();
         mainFrame.setLocationRelativeTo(null);
         progressBar = mainFrame.getProgressBar();
+
+        // On macOS, replace the default system-provided About dialog (which shows
+        // the Java runtime info) with our own branded dialog.
+        if (App.isMacOs() && java.awt.Desktop.isDesktopSupported()) {
+            var desktop = java.awt.Desktop.getDesktop();
+            if (desktop.isSupported(java.awt.Desktop.Action.APP_ABOUT)) {
+                desktop.setAboutHandler(e ->
+                        javax.swing.SwingUtilities.invokeLater(Gui::showAboutDialog));
+            }
+        }
+    }
+
+    /**
+     * Shows the JDiskMark About dialog.
+     * Called from the Help menu on all platforms, and from the macOS
+     * system menu bar About handler registered in {@link #init()}.
+     */
+    public static void showAboutDialog() {
+        javax.swing.ImageIcon icon = App.activeIcon.loadSize(128);
+        String message = App.APP_NAME + " " + App.VERSION + "\n" +
+                "JVM: " + App.jdk + "\n" +
+                "OS:  " + App.os;
+        javax.swing.JOptionPane.showMessageDialog(
+                mainFrame, message, "About " + App.APP_NAME,
+                javax.swing.JOptionPane.PLAIN_MESSAGE, icon);
     }
     
     public static void updateChartPanelStyle() {
@@ -532,8 +569,7 @@ public final class Gui {
      * GH-2 need solution for dropping catch
      */
     static public void dropCache() {
-        String osName = System.getProperty("os.name");
-        if (osName.contains("Linux")) {
+        if (App.isLinux()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
                 UtilOs.flushDataToDriveLinux();
@@ -551,7 +587,7 @@ public final class Gui {
                         message, "Clear Disk Cache Now",
                         JOptionPane.PLAIN_MESSAGE);
             }
-        } else if (osName.contains("Mac OS")) {
+        } else if (App.isMacOs()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
                 UtilOs.flushDataToDriveMacOs();
@@ -569,7 +605,7 @@ public final class Gui {
                         message, "Clear Disk Cache Now",
                         JOptionPane.PLAIN_MESSAGE);
             }
-        } else if (osName.contains("Windows")) {
+        } else if (App.isWindows()) {
             File emptyStandbyListExe = new File(".\\" + App.ESBL_EXE);
             if (!emptyStandbyListExe.exists()) {
                 // jpackage windows relative environment
@@ -611,7 +647,7 @@ public final class Gui {
                         JOptionPane.PLAIN_MESSAGE);
             }
         } else {
-            String message = "Unrecognized OS: " + osName + "\n" +
+            String message = "Unrecognized OS: " + App.osName() + "\n" +
                     """
                     For valid READ benchmarks please clear the disk cache now.
 

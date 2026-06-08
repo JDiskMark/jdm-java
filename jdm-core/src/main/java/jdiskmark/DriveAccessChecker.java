@@ -9,7 +9,7 @@ public class DriveAccessChecker {
 
     /**
      * Validates a target directory for benchmarking.
-     * by checking if "JDiskMarkData" folder is missing and
+     * by checking if "jdm-data" folder is missing and
      * checking read/write permissions.
      */
 
@@ -23,8 +23,7 @@ public class DriveAccessChecker {
                 JOptionPane.showMessageDialog(
                         Gui.mainFrame, msg,
                         "Target location access error",
-                        JOptionPane.ERROR_MESSAGE
-                );
+                        JOptionPane.ERROR_MESSAGE);
             }
             return false;
         }
@@ -45,10 +44,10 @@ public class DriveAccessChecker {
         if (!dataDir.canRead() || !dataDir.canWrite()) {
 
             String msg = """
-                        Target location does not allow drive access.
-                        Read Permission : %b
-                        Write Permission : %b
-                      """.formatted(dataDir.canRead(), dataDir.canWrite());
+                      Target location does not allow drive access.
+                      Read Permission : %b
+                      Write Permission : %b
+                    """.formatted(dataDir.canRead(), dataDir.canWrite());
 
             Logger.getLogger(DriveAccessChecker.class.getName()).log(Level.SEVERE, msg);
             if (showPopup) {

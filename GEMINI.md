@@ -16,7 +16,7 @@ These rules apply to all AI agents working in this repository.
 
 - **Do NOT run `git push` without explicit user instruction.**
 
-- **Do NOT amend, rebase, or force-push** without explicit instruction.
+- **Do NOT merge, amend, rebase, or force-push** without explicit instruction.
 
 - When resolving merge conflicts, stage the resolution with `git add` but do
   not commit the merge. Summarize what was resolved and wait for approval.

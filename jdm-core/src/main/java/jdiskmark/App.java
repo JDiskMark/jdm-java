@@ -36,6 +36,7 @@ import jdiskmark.Benchmark.BlockSequence;
  * Primary class for global variables.
  */
 public class App {
+    public static final String APP_NAME = "JDiskMark";
     public static final String VERSION = getVersion();
     public static final String APP_CACHE_DIR_NAME = System.getProperty("user.home") + File.separator + ".jdm"
             + File.separator + VERSION;
@@ -243,6 +244,22 @@ public class App {
     public static String processorName;
     public static String jdk;
     public static String username;
+
+    // --- OS convenience helpers ---
+    // Delegate to UtilOs primitives. Safe to call before init() (e.g. early in
+    // main() or in CLI mode where App.os is never populated).
+
+    /** Returns {@code true} when running on macOS. */
+    public static boolean isMacOs() { return UtilOs.isMacOs(osName()); }
+    /** Returns {@code true} when running on Windows. */
+    public static boolean isWindows() { return UtilOs.isWindows(osName()); }
+    /** Returns {@code true} when running on Linux. */
+    public static boolean isLinux() { return UtilOs.isLinux(osName()); }
+    /** Resolves the OS name, falling back to the system property when {@link #os} is not yet set.
+     *  Safe to call before {@link #init()} and in CLI mode. */
+    public static String osName() {
+        return (os != null) ? os : System.getProperty("os.name", "");
+    }
     // benchmark options
     public static Properties p;
     public static File locationDir = null;
@@ -309,6 +326,14 @@ public class App {
             case Mode.GUI -> {
                 App.autoSave = true;
                 // App.verbose = true; // force verbose to true
+                // On macOS, redirect the menu bar to the native system menu bar at the
+                // top of the screen (standard macOS HIG). Must be set before AWT initialises.
+                if (App.isMacOs()) {
+                    // The app name shown in the macOS menu bar and in Dock menus.
+                    // Must be set before AWT initialises (same requirement as useScreenMenuBar).
+                    System.setProperty("apple.awt.application.name", APP_NAME);
+                    System.setProperty("apple.laf.useScreenMenuBar", "true");
+                }
                 if (!acquireInstanceLock()) {
                     return; // another instance is already running — exit
                 }
@@ -484,12 +509,11 @@ public class App {
     }
 
     public static void checkPermission() {
-        String osName = System.getProperty("os.name");
-        if (osName.contains("Linux")) {
+        if (App.isLinux()) {
             isRoot = UtilOs.isRunningAsRootLinux();
-        } else if (osName.contains("Mac OS")) {
+        } else if (App.isMacOs()) {
             isRoot = UtilOs.isRunningAsRootMacOs();
-        } else if (osName.contains("Windows")) {
+        } else if (App.isWindows()) {
             isAdmin = UtilOs.isRunningAsAdminWindows();
         }
         if (isRoot || isAdmin) {
