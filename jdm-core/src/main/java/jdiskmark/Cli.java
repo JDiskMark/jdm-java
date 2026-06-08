@@ -105,7 +105,7 @@ public class Cli {
                 }
             }
         } else {
-            String message = "\nUnrecognized OS: " + App.os + "\n" +
+            String message = "\nUnrecognized OS: " + App.osName() + "\n" +
                     """
                     For valid READ benchmarks please clear the disk cache now.
 

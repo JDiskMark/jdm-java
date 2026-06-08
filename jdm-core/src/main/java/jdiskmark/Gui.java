@@ -270,7 +270,7 @@ public final class Gui {
 
         // On macOS, replace the default system-provided About dialog (which shows
         // the Java runtime info) with our own branded dialog.
-        if (App.isMacOs()) {
+        if (App.isMacOs() && java.awt.Desktop.isDesktopSupported()) {
             var desktop = java.awt.Desktop.getDesktop();
             if (desktop.isSupported(java.awt.Desktop.Action.APP_ABOUT)) {
                 desktop.setAboutHandler(e ->
@@ -647,7 +647,7 @@ public final class Gui {
                         JOptionPane.PLAIN_MESSAGE);
             }
         } else {
-            String message = "Unrecognized OS: " + App.os + "\n" +
+            String message = "Unrecognized OS: " + App.osName() + "\n" +
                     """
                     For valid READ benchmarks please clear the disk cache now.
 

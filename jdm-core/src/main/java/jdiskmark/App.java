@@ -255,8 +255,9 @@ public class App {
     public static boolean isWindows() { return UtilOs.isWindows(osName()); }
     /** Returns {@code true} when running on Linux. */
     public static boolean isLinux() { return UtilOs.isLinux(osName()); }
-    /** Resolves the OS name, falling back to the system property when {@link #os} is not yet set. */
-    private static String osName() {
+    /** Resolves the OS name, falling back to the system property when {@link #os} is not yet set.
+     *  Safe to call before {@link #init()} and in CLI mode. */
+    public static String osName() {
         return (os != null) ? os : System.getProperty("os.name", "");
     }
     // benchmark options
