@@ -91,6 +91,7 @@ public final class Gui {
     public static SelectDriveFrame selFrame = null;
     public static BenchmarkPanel runPanel = null;
     public static SmartPanel smartPanel = null;
+    public static DrivesPanel drivesPanel = null;
     public static JProgressBar progressBar = null;
     // graph component
     public static JFreeChart chart;
@@ -564,6 +565,9 @@ public final class Gui {
     static public void updateDiskInfo() {
         mainFrame.setLocation(App.locationDir.getAbsolutePath());
         chart.getTitle().setText(App.getDriveInfo());
+        if (drivesPanel != null) {
+            drivesPanel.refresh();
+        }
     }
     
     /**
@@ -848,6 +852,7 @@ public final class Gui {
     }
     
     public static void browseLocation() {
+        selFrame = new SelectDriveFrame();
         if (App.locationDir != null && App.locationDir.exists()) {
             selFrame.setInitDir(App.locationDir);
         }

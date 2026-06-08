@@ -29,6 +29,11 @@ public final class MainFrame extends javax.swing.JFrame {
     public MainFrame() {
         initComponents();
         
+        // The Drive Location tab is superseded by the Drives tab in the main
+        // navigation pane — remove it from the bottom tabbed pane at runtime.
+        // The NetBeans-generated field (locationPanel) is kept intact in the form.
+        tabbedPane.remove(locationPanel);
+        
         //for diagnostics
         //controlsPanel.setBackground(Color.blue);
         
@@ -72,32 +77,36 @@ public final class MainFrame extends javax.swing.JFrame {
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         
         
+        // Build the left-side main navigation tab pane on all platforms.
+        // The Benchmark tab contains the control panel (left) + chart (right).
+        // The bottom tabbedPane (Benchmark Operations / Events / Drive Location) stays below.
+        javax.swing.JTabbedPane mainTabPane = new javax.swing.JTabbedPane(javax.swing.JTabbedPane.LEFT);
+        mainTabPane.putClientProperty("JTabbedPane.tabRotation", "auto");
+
+        // Drives tab — always visible on all platforms, shown first
+        Gui.drivesPanel = new DrivesPanel();
+        mainTabPane.addTab("Drives", Gui.drivesPanel);
+
+        JPanel benchTab = new JPanel(new BorderLayout());
+        benchTab.add(bControlMountPanel, BorderLayout.WEST);
+        benchTab.add(cResultMountPanel, BorderLayout.CENTER);
+        mainTabPane.addTab("Benchmark", benchTab);
+
+        // SMART tab — Linux only (requires smartctl / NVMe kernel support)
         if (App.isLinux()) {
-            // Build new left-side main navigation tab pane wrapping the top content area.
-            // The Benchmark tab contains the control panel (left) + chart (right).
-            // The bottom tabbedPane (Benchmark Operations / Events / Drive Location) stays below.
-            javax.swing.JTabbedPane mainTabPane = new javax.swing.JTabbedPane(javax.swing.JTabbedPane.LEFT);
-            mainTabPane.putClientProperty("JTabbedPane.tabRotation", "auto");
-
-            JPanel benchTab = new JPanel(new BorderLayout());
-            benchTab.add(bControlMountPanel, BorderLayout.WEST);
-            benchTab.add(cResultMountPanel, BorderLayout.CENTER);
-            mainTabPane.addTab("Benchmark", benchTab);
-
-            // SMART tab placeholder — ready for SMART data panel
             mainTabPane.addTab("SMART", Gui.smartPanel);
-
-            // Rebuild the content pane: mainTabPane fills the center;
-            // the original bottom tabs + progress bar go in a south panel.
-            getContentPane().removeAll();
-            getContentPane().setLayout(new BorderLayout());
-            getContentPane().add(mainTabPane, BorderLayout.CENTER);
-
-            JPanel southPanel = new JPanel(new BorderLayout());
-            southPanel.add(tabbedPane, BorderLayout.CENTER);
-            southPanel.add(progressPanel, BorderLayout.SOUTH);
-            getContentPane().add(southPanel, BorderLayout.SOUTH);
         }
+
+        // Rebuild the content pane: mainTabPane fills the center;
+        // the original bottom tabs + progress bar go in a south panel.
+        getContentPane().removeAll();
+        getContentPane().setLayout(new BorderLayout());
+        getContentPane().add(mainTabPane, BorderLayout.CENTER);
+
+        JPanel southPanel = new JPanel(new BorderLayout());
+        southPanel.add(tabbedPane, BorderLayout.CENTER);
+        southPanel.add(progressPanel, BorderLayout.SOUTH);
+        getContentPane().add(southPanel, BorderLayout.SOUTH);
     }
 
     
