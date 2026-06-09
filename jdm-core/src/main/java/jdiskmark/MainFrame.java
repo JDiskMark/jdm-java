@@ -261,6 +261,7 @@ public final class MainFrame extends javax.swing.JFrame {
         testEndpointRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         prodEndpointRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         jMenuItem2 = new javax.swing.JMenuItem();
+        advancedOptionsMenuItem = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("JDiskMark");
@@ -724,10 +725,10 @@ public final class MainFrame extends javax.swing.JFrame {
 
         optionMenu.add(colorPaletteMenu);
 
-        javax.swing.JMenuItem advancedOptionsMenuItem = new javax.swing.JMenuItem("Advanced Options\u2026");
+        advancedOptionsMenuItem.setText("Advanced Options\u2026");
         advancedOptionsMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                Gui.getAdvancedFrame().setVisible(true);
+                advancedOptionsMenuItemActionPerformed(evt);
             }
         });
         optionMenu.add(advancedOptionsMenuItem);
@@ -1093,7 +1094,12 @@ public final class MainFrame extends javax.swing.JFrame {
         App.saveConfig();
     }//GEN-LAST:event_httpsProtoRbMenuItemActionPerformed
 
+    private void advancedOptionsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_advancedOptionsMenuItemActionPerformed
+        Gui.getAdvancedFrame().setVisible(true);
+    }//GEN-LAST:event_advancedOptionsMenuItemActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JMenuItem advancedOptionsMenuItem;
     private javax.swing.JMenu actionMenu;
     private javax.swing.JRadioButtonMenuItem align16KRbMenuItem;
     private javax.swing.JRadioButtonMenuItem align4KRbMenuItem;
