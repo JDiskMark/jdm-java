@@ -724,6 +724,14 @@ public final class MainFrame extends javax.swing.JFrame {
 
         optionMenu.add(colorPaletteMenu);
 
+        javax.swing.JMenuItem advancedOptionsMenuItem = new javax.swing.JMenuItem("Advanced Options\u2026");
+        advancedOptionsMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                Gui.getAdvancedFrame().setVisible(true);
+            }
+        });
+        optionMenu.add(advancedOptionsMenuItem);
+
         menuBar.add(optionMenu);
 
         helpMenu.setText("Help");

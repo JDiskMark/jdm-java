@@ -110,6 +110,8 @@ public class BenchmarkRunner {
         
         Benchmark benchmark = new Benchmark(config);
         mapEnvironment(benchmark, driveModel, partitionId, usageInfo);
+        // capture the render mode chosen at the time this run starts
+        benchmark.setRenderMode(App.rmOption);
 
         int startingSample = App.nextSampleNumber;
         int endingSample = App.nextSampleNumber + config.numSamples;

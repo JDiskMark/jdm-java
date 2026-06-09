@@ -91,6 +91,23 @@ public final class Gui {
     public static SelectDriveFrame selFrame = null;
     public static BenchmarkPanel runPanel = null;
     public static JProgressBar progressBar = null;
+    // status label shown in Options > Render Mode menu
+    public static javax.swing.JLabel renderModeLabel = null;
+    // lazy-init singleton — created on first access after the LAF is applied
+    private static AdvancedOptionsFrame advancedFrame = null;
+
+    /**
+     * Returns the Advanced Options dialog, creating it on the first call.
+     * The singleton is initialised lazily so the Look-and-Feel is fully applied
+     * before any Swing components are constructed.
+     */
+    public static AdvancedOptionsFrame getAdvancedFrame() {
+        if (advancedFrame == null) {
+            advancedFrame = new AdvancedOptionsFrame();
+        }
+        return advancedFrame;
+    }
+
     // graph component
     public static JFreeChart chart;
     public static NumberAxis msAxis, bwAxis, sampleAxis;

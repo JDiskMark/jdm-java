@@ -20,9 +20,37 @@ import javax.swing.SwingWorker;
  * once.
  */
 public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
+    /** Render mode snapshot — captured once when the worker is created. */
+    private final RenderFrequencyMode renderMode = App.rmOption;
+
+    // Buffers for non-PER_SAMPLE modes
+    private final java.util.List<Sample> operationBuffer = new java.util.ArrayList<>();
+    private final java.util.List<Sample> intervalBuffer  = new java.util.ArrayList<>();
+    private long nextPublishTime = 0;
+
     BenchmarkRunner.BenchmarkListener listener = new BenchmarkRunner.BenchmarkListener() {
         @Override
-        public void onSampleComplete(Sample s) { publish(s); }
+        public void onSampleComplete(Sample s) {
+            switch (renderMode) {
+                case PER_SAMPLE -> publish(s);
+                case PER_OPERATION -> {
+                    synchronized (operationBuffer) { operationBuffer.add(s); }
+                }
+                case PER_100MS, PER_500MS, PER_1000MS -> {
+                    long interval = renderMode.getIntervalMillis();
+                    long now = System.currentTimeMillis();
+                    synchronized (intervalBuffer) {
+                        intervalBuffer.add(s);
+                        if (now >= nextPublishTime) {
+                            // flush all buffered samples
+                            for (Sample buffered : intervalBuffer) { publish(buffered); }
+                            intervalBuffer.clear();
+                            nextPublishTime = now + interval;
+                        }
+                    }
+                }
+            }
+        }
 
         @Override
         public void onProgressUpdate(long completed, long total) { setProgress((int) completed); }
@@ -55,6 +83,25 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
         BenchmarkRunner bRunner = new BenchmarkRunner(listener, App.getConfig());
         Benchmark benchmark = bRunner.execute();
+
+        // Flush any samples that were buffered by non-PER_SAMPLE render modes.
+        // This ensures all samples appear in the UI even if the last interval
+        // or operation ended with data still in the buffer.
+        switch (renderMode) {
+            case PER_OPERATION -> {
+                synchronized (operationBuffer) {
+                    operationBuffer.forEach(this::publish);
+                    operationBuffer.clear();
+                }
+            }
+            case PER_100MS, PER_500MS, PER_1000MS -> {
+                synchronized (intervalBuffer) {
+                    intervalBuffer.forEach(this::publish);
+                    intervalBuffer.clear();
+                }
+            }
+            default -> {} // PER_SAMPLE — nothing to flush
+        }
         
         // update gui title
         Gui.chart.getTitle().setText(benchmark.getDriveInfoDisplay());

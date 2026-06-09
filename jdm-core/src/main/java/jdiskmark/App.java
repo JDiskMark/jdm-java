@@ -291,6 +291,8 @@ public class App {
     public static int numOfBlocks = 32; // desired number of blocks
     public static int blockSizeKb = 512; // size of a block in KBs
     public static int numOfThreads = 1; // number of threads
+    // render / display options
+    public static RenderFrequencyMode rmOption = RenderFrequencyMode.PER_SAMPLE;
     // active benchmark state
     public static State state = State.IDLE_STATE;
     public static int nextSampleNumber = 1; // number of the next sample
@@ -692,6 +694,16 @@ public class App {
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
 
+        value = p.getProperty("renderMode", rmOption.name());
+        try {
+            rmOption = RenderFrequencyMode.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid renderMode value in properties: \"{0}\", using default: {1}",
+                    new Object[] { value, rmOption.name() });
+        }
+
         value = p.getProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
         Gui.showMaxMin = Boolean.parseBoolean(value);
 
@@ -731,6 +743,7 @@ public class App {
         // display properties
         p.setProperty("theme", Gui.theme.name());
         p.setProperty("palette", Gui.palette.name());
+        p.setProperty("renderMode", rmOption.name());
         p.setProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
         p.setProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
         p.setProperty("showSingleOp", String.valueOf(Gui.showSingleOp));

@@ -12,6 +12,8 @@ import jakarta.persistence.Convert;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -157,7 +159,20 @@ public class Benchmark implements Serializable {
     @OneToMany(mappedBy = "benchmark", cascade = CascadeType.ALL, orphanRemoval = true)
     List<BenchmarkOperation> operations = new ArrayList<>();
     public List<BenchmarkOperation> getOperations() { return operations; }
-    
+
+    // render mode recorded at benchmark start time (persisted as string for readability)
+    @Enumerated(EnumType.STRING)
+    @Column
+    private RenderFrequencyMode renderMode = RenderFrequencyMode.PER_SAMPLE;
+
+    public RenderFrequencyMode getRenderMode() {
+        return renderMode != null ? renderMode : RenderFrequencyMode.PER_SAMPLE;
+    }
+
+    public void setRenderMode(RenderFrequencyMode renderMode) {
+        this.renderMode = renderMode;
+    }
+
     // get the first operation of that type
     public BenchmarkOperation getOperation(IOMode mode) {
         for (BenchmarkOperation operation : operations) {
