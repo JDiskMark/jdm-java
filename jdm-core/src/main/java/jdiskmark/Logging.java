@@ -29,8 +29,8 @@ import java.util.logging.Logger;
  * </ul>
  *
  * <h2>Rotation policy</h2>
- * 5 MB per file, 5 files max (~25 MB ceiling). Files are named
- * {@code jdiskmark-0.log} through {@code jdiskmark-4.log}.
+ * 5 MB per file, 3 files max (~15 MB ceiling). Files are named
+ * {@code jdiskmark-0.log} through {@code jdiskmark-2.log}.
  *
  * <h2>Console handler</h2>
  * Removed from the root logger in GUI mode so no output leaks to a hidden
@@ -39,9 +39,9 @@ import java.util.logging.Logger;
  */
 public final class Logging {
 
-    /** ~25 MB ceiling: 5 files × 5 MB each. */
+    /** ~15 MB ceiling: 3 files × 5 MB each. */
     private static final int  LOG_FILE_SIZE_BYTES = 5 * 1024 * 1024;
-    private static final int  LOG_FILE_COUNT      = 5;
+    private static final int  LOG_FILE_COUNT      = 3;
     private static final String LOG_FILE_PATTERN  = "jdiskmark-%g.log";
 
     private static Path resolvedLogDir = null;
