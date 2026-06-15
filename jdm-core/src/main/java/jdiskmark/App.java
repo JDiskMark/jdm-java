@@ -592,7 +592,7 @@ public class App {
             msg("Portal upload enabled — thank you for sharing!");
         } else {
             sharePortal = false;
-            msg("Portal upload declined. You can enable it later via Help \u203a Portal Upload.");
+            msg("Portal upload declined. You can enable it later via the Sharing tab.");
         }
         saveConfig(); // persist consent flag and choice immediately
         // sync the Sharing tab to reflect the resolved state
