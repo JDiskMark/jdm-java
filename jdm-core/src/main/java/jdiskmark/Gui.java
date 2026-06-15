@@ -323,11 +323,11 @@ public final class Gui {
     public static void promptFirstRunPortalConsent() {
         String message = "<html><body style='width:380px'>"
                 + "<b>Help the community make smarter hardware decisions!</b><br><br>"
-                + "Your benchmark results, combined with others', help users compare real-world storage "
+                + "Your benchmark data, combined with others', help users compare real-world storage "
                 + "performance and identify reliability trends across drives and platforms.<br><br>"
                 + "Would you like to share your results with the jdiskmark.net community portal?<br><br>"
                 + "<ul>"
-                + "<li>Benchmark results (speeds, IOPS, latency) and hardware context (CPU, drive, OS) used to validate results.</li>"
+                + "<li>Performance metrics (speeds, IOPS, latency) and hardware context (CPU, drive, OS).</li>"
                 + "<li>A non-reversible system identifier — no name or account required.</li>"
                 + "<li>You can change this at any time via the <i>Sharing</i> tab.</li>"
                 + "</ul>"
