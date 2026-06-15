@@ -241,6 +241,32 @@ public class Smart {
     @JsonProperty("nvme_smart_health_information_log")
     private NvmeHealthLog nvmeHealthLog;
 
+    // ── NVMe-specific info-section fields ──────────────────────────────────
+
+    @JsonProperty("nvme_pci_vendor")
+    private NvmePciVendor nvmePciVendor;
+
+    @JsonProperty("nvme_ieee_oui_identifier")
+    private Long nvmeIeeeOuiIdentifier;
+
+    @JsonProperty("nvme_total_capacity")
+    private Long nvmeTotalCapacity;
+
+    @JsonProperty("nvme_unallocated_capacity")
+    private Long nvmeUnallocatedCapacity;
+
+    @JsonProperty("nvme_controller_id")
+    private Integer nvmeControllerId;
+
+    @JsonProperty("nvme_version")
+    private NvmeVersionInfo nvmeVersion;
+
+    @JsonProperty("nvme_number_of_namespaces")
+    private Integer nvmeNumberOfNamespaces;
+
+    @JsonProperty("local_time")
+    private LocalTimeInfo localTime;
+
     // -------------------------------------------------------------------------
     // Factory / parsing
     // -------------------------------------------------------------------------
@@ -306,9 +332,109 @@ public class Smart {
     public NvmeHealthLog getNvmeHealthLog() { return nvmeHealthLog; }
     public void setNvmeHealthLog(NvmeHealthLog nvmeHealthLog) { this.nvmeHealthLog = nvmeHealthLog; }
 
+    public NvmePciVendor getNvmePciVendor() { return nvmePciVendor; }
+    public void setNvmePciVendor(NvmePciVendor nvmePciVendor) { this.nvmePciVendor = nvmePciVendor; }
+
+    public Long getNvmeIeeeOuiIdentifier() { return nvmeIeeeOuiIdentifier; }
+    public void setNvmeIeeeOuiIdentifier(Long nvmeIeeeOuiIdentifier) { this.nvmeIeeeOuiIdentifier = nvmeIeeeOuiIdentifier; }
+
+    public Long getNvmeTotalCapacity() { return nvmeTotalCapacity; }
+    public void setNvmeTotalCapacity(Long nvmeTotalCapacity) { this.nvmeTotalCapacity = nvmeTotalCapacity; }
+
+    public Long getNvmeUnallocatedCapacity() { return nvmeUnallocatedCapacity; }
+    public void setNvmeUnallocatedCapacity(Long nvmeUnallocatedCapacity) { this.nvmeUnallocatedCapacity = nvmeUnallocatedCapacity; }
+
+    public Integer getNvmeControllerId() { return nvmeControllerId; }
+    public void setNvmeControllerId(Integer nvmeControllerId) { this.nvmeControllerId = nvmeControllerId; }
+
+    public NvmeVersionInfo getNvmeVersion() { return nvmeVersion; }
+    public void setNvmeVersion(NvmeVersionInfo nvmeVersion) { this.nvmeVersion = nvmeVersion; }
+
+    public Integer getNvmeNumberOfNamespaces() { return nvmeNumberOfNamespaces; }
+    public void setNvmeNumberOfNamespaces(Integer nvmeNumberOfNamespaces) { this.nvmeNumberOfNamespaces = nvmeNumberOfNamespaces; }
+
+    public LocalTimeInfo getLocalTime() { return localTime; }
+    public void setLocalTime(LocalTimeInfo localTime) { this.localTime = localTime; }
+
     // =========================================================================
     // Nested classes
     // =========================================================================
+
+    // -------------------------------------------------------------------------
+    // NVMe PCI Vendor
+    // -------------------------------------------------------------------------
+
+    /** Represents the {@code nvme_pci_vendor} block (id, subsystem_id). */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class NvmePciVendor {
+
+        @JsonProperty("id")
+        private Integer id;
+
+        @JsonProperty("subsystem_id")
+        private Integer subsystemId;
+
+        public NvmePciVendor() {}
+
+        public Integer getId() { return id; }
+        public void setId(Integer id) { this.id = id; }
+
+        public Integer getSubsystemId() { return subsystemId; }
+        public void setSubsystemId(Integer subsystemId) { this.subsystemId = subsystemId; }
+
+        /** Returns a human-readable {@code "0x1234 / 0x5678"} string, or {@code null}. */
+        public String getDisplayString() {
+            if (id == null) return null;
+            String sub = subsystemId != null ? " / 0x" + Integer.toHexString(subsystemId).toUpperCase() : "";
+            return "0x" + Integer.toHexString(id).toUpperCase() + sub;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // NVMe version
+    // -------------------------------------------------------------------------
+
+    /** Represents the {@code nvme_version} block. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class NvmeVersionInfo {
+
+        @JsonProperty("string")
+        private String string;
+
+        @JsonProperty("value")
+        private Integer value;
+
+        public NvmeVersionInfo() {}
+
+        public String getString() { return string; }
+        public void setString(String string) { this.string = string; }
+
+        public Integer getValue() { return value; }
+        public void setValue(Integer value) { this.value = value; }
+    }
+
+    // -------------------------------------------------------------------------
+    // Local time
+    // -------------------------------------------------------------------------
+
+    /** Represents the {@code local_time} block. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class LocalTimeInfo {
+
+        @JsonProperty("time_t")
+        private Long timeT;
+
+        @JsonProperty("asctime")
+        private String asctime;
+
+        public LocalTimeInfo() {}
+
+        public Long getTimeT() { return timeT; }
+        public void setTimeT(Long timeT) { this.timeT = timeT; }
+
+        public String getAsctime() { return asctime; }
+        public void setAsctime(String asctime) { this.asctime = asctime; }
+    }
 
     // -------------------------------------------------------------------------
     // smartctl tool info
@@ -745,6 +871,12 @@ public class Smart {
         @JsonProperty("critical_comp_time")
         private Long criticalCompTime;
 
+        @JsonProperty("temperature_sensor_1")
+        private Integer temperatureSensor1;
+
+        @JsonProperty("temperature_sensor_2")
+        private Integer temperatureSensor2;
+
         public NvmeHealthLog() {}
 
         public Integer getCriticalWarning() { return criticalWarning; }
@@ -797,6 +929,12 @@ public class Smart {
 
         public Long getCriticalCompTime() { return criticalCompTime; }
         public void setCriticalCompTime(Long criticalCompTime) { this.criticalCompTime = criticalCompTime; }
+
+        public Integer getTemperatureSensor1() { return temperatureSensor1; }
+        public void setTemperatureSensor1(Integer temperatureSensor1) { this.temperatureSensor1 = temperatureSensor1; }
+
+        public Integer getTemperatureSensor2() { return temperatureSensor2; }
+        public void setTemperatureSensor2(Integer temperatureSensor2) { this.temperatureSensor2 = temperatureSensor2; }
 
         /**
          * Returns {@code true} if {@code critical_warning} is non-zero,

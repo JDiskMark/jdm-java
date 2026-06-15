@@ -97,6 +97,15 @@ public final class MainFrame extends javax.swing.JFrame {
             mainTabPane.addTab("SMART", Gui.smartPanel);
         }
 
+        // Fetch SMART data only when the user selects the SMART tab.
+        // This keeps the pkexec password dialog from appearing at startup.
+        mainTabPane.addChangeListener(e -> {
+            int sel = mainTabPane.getSelectedIndex();
+            if (sel >= 0 && "SMART".equals(mainTabPane.getTitleAt(sel))) {
+                Gui.refreshSmartTab();
+            }
+        });
+
         // Rebuild the content pane: mainTabPane fills the center;
         // the original bottom tabs + progress bar go in a south panel.
         getContentPane().removeAll();

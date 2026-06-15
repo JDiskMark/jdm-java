@@ -17,8 +17,12 @@ import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import javax.swing.SwingWorker.StateValue;
@@ -562,12 +566,69 @@ public final class Gui {
         msAxis.setVisible(showDriveAccess);
     }
     
+    private static final Logger SMART_LOG = Logger.getLogger(Gui.class.getName());
+
     static public void updateDiskInfo() {
         mainFrame.setLocation(App.locationDir.getAbsolutePath());
         chart.getTitle().setText(App.getDriveInfo());
         if (drivesPanel != null) {
             drivesPanel.refresh();
         }
+        // SMART data is fetched lazily via refreshSmartTab(), which is called
+        // by the tab-change listener in MainFrame only when the user selects
+        // the SMART tab.  This prevents the pkexec password dialog from
+        // appearing before the application window is visible.
+    }
+
+    /**
+     * Fetches fresh SMART data for the current drive in a background thread
+     * and populates the SMART panel when done.  Triggers the pkexec password
+     * prompt on the very first call (or after the privileged shell dies).
+     *
+     * <p>Safe to call from the EDT; the privileged I/O runs off-thread.
+     * No-op if SMART is disabled, the OS is not Linux, or the panel is null.
+     */
+    static public void refreshSmartTab() {
+        if (!Smart.smartEnable || !App.isLinux() || smartPanel == null
+                || App.locationDir == null) {
+            return;
+        }
+        final File locDir = App.locationDir;
+        new javax.swing.SwingWorker<Smart, Void>() {
+            @Override
+            protected Smart doInBackground() {
+                try {
+                    Path path = locDir.toPath();
+                    String partition = UtilOs.getPartitionFromFilePathLinux(path);
+                    List<String> devices =
+                            UtilOs.getDeviceNamesFromPartitionLinux(partition);
+                    if (devices == null || devices.isEmpty()) {
+                        SMART_LOG.warning("refreshSmartTab: no device for " + locDir);
+                        return null;
+                    }
+                    String deviceName = devices.get(0);
+                    if (Smart.process == null || !Smart.process.isAlive()) {
+                        Smart.startPrivilegedShell();
+                        Smart.startHeartbeat();
+                    }
+                    return Smart.getSmart(deviceName);
+                } catch (Exception ex) {
+                    SMART_LOG.log(Level.WARNING, "refreshSmartTab: SMART fetch failed", ex);
+                    return null;
+                }
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    Smart data = get();
+                    if (data != null) smartPanel.populate(data);
+                    else smartPanel.clear();
+                } catch (Exception ex) {
+                    SMART_LOG.log(Level.WARNING, "refreshSmartTab: panel update failed", ex);
+                }
+            }
+        }.execute();
     }
     
     /**
