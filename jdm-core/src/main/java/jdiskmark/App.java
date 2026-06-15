@@ -566,9 +566,9 @@ public class App {
 
     /**
      * Shows the one-time first-run consent dialog for anonymous portal upload
-     * (issue #117). Fires only when the production endpoint is configured and
-     * {@link #portalConsentAsked} is {@code false}. After the user responds the
-     * flag is set to {@code true} and persisted so the dialog never appears again.
+     * (issue #117). Fires when {@link #portalConsentAsked} is {@code false}.
+     * After the user responds the flag is set to {@code true} and persisted so
+     * the dialog never appears again.
      */
     public static void promptFirstRunPortalConsent() {
         String message = "<html><body style='width:380px'>"
