@@ -126,8 +126,7 @@ public class Benchmark implements Serializable {
     @JsonSerialize(using = UuidToMongoIdSerializer.class)
     private UUID id;
     
-    // PII: username field disabled (#117). Defaults to "anonymous" for portal upload.
-    // Restore (or replace with a non-PII device/machine id) when needed.
+    // PII: #117 set only after a user elects to login to access their profile
     // @Column
     String username = "anonymous"; // "user" is reserved in Derby
     // public String getUsername() { return username; }

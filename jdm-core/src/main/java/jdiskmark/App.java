@@ -472,7 +472,7 @@ public class App {
             // This runs before the re-enable check so a brand-new install shows
             // the consent dialog rather than nothing.
             if (!portalConsentAsked) {
-                javax.swing.SwingUtilities.invokeLater(App::promptFirstRunPortalConsent);
+                javax.swing.SwingUtilities.invokeLater(Gui::promptFirstRunPortalConsent);
             } else if (sharePortalPreviouslyEnabled) {
                 // Consent was already given and upload was active last session —
                 // silently restore it. No need to ask again once consent is on record.
@@ -564,72 +564,6 @@ public class App {
         }
     }
 
-    /**
-     * Shows the one-time first-run consent dialog for anonymous portal upload
-     * (issue #117). Fires when {@link #portalConsentAsked} is {@code false}.
-     * After the user responds the flag is set to {@code true} and persisted so
-     * the dialog never appears again.
-     */
-    public static void promptFirstRunPortalConsent() {
-        String message = "<html><body style='width:380px'>"
-                + "<b>Help improve JDiskMark by sharing your results!</b><br><br>"
-                + "Would you like to share your benchmark results with "
-                + "the JDiskMark community portal?<br><br>"
-                + "<ul>"
-                + "<li>Only benchmark metrics (speeds, block sizes, OS) are submitted.</li>"
-                + "<li>You can change this at any time via the <i>Sharing</i> tab.</li>"
-                + "</ul>"
-                + "</body></html>";
-        int choice = javax.swing.JOptionPane.showConfirmDialog(
-                Gui.mainFrame,
-                new javax.swing.JLabel(message),
-                "Share Benchmark Results?",
-                javax.swing.JOptionPane.YES_NO_OPTION,
-                javax.swing.JOptionPane.QUESTION_MESSAGE);
-        portalConsentAsked = true; // mark as answered regardless of choice
-        if (choice == javax.swing.JOptionPane.YES_OPTION) {
-            sharePortal = true;
-            msg("Portal upload enabled — thank you for sharing!");
-        } else {
-            sharePortal = false;
-            msg("Portal upload declined. You can enable it later via the Sharing tab.");
-        }
-        saveConfig(); // persist consent flag and choice immediately
-        // sync the Sharing tab to reflect the resolved state
-        if (Gui.mainFrame != null) {
-            Gui.mainFrame.loadPropertiesConfig();
-        }
-    }
-
-    /**
-     * Offers a one-click prompt to re-enable portal upload when it was active
-     * in the previous session. Called after the main window is visible so the
-     * dialog has a proper parent. This avoids silent outbound network activity
-     * while keeping the dev workflow convenient (no password re-entry required).
-     */
-    public static void promptResumePortalUpload() {
-        int choice = javax.swing.JOptionPane.showConfirmDialog(
-                Gui.mainFrame,
-                "Portal upload was enabled in your last session.\nResume uploading benchmarks to "
-                        + Portal.getUploadUrl() + "?",
-                "Resume Portal Upload?",
-                javax.swing.JOptionPane.YES_NO_OPTION,
-                javax.swing.JOptionPane.QUESTION_MESSAGE);
-        if (choice == javax.swing.JOptionPane.YES_OPTION) {
-            sharePortal = true;
-            msg("Portal upload resumed.");
-        } else {
-            sharePortal = false;
-            sharePortalPreviouslyEnabled = false; // clear so we don't prompt again next launch
-            msg("Portal upload not resumed.");
-            saveConfig(); // persist the cleared state
-        }
-        // sync the menu checkbox to reflect the resolved state
-        if (Gui.mainFrame != null) {
-            Gui.mainFrame.loadPropertiesConfig();
-        }
-    }
-
     public static void loadProfile(BenchmarkProfile profile) {
         try {
             activeProfile = profile;
@@ -675,9 +609,7 @@ public class App {
         // configure settings from properties
         String value;
 
-        // Never silently re-enable portal upload on startup — network activity must
-        // always be explicitly user-confirmed each session. We remember the previous
-        // state only to offer a convenient one-click re-enable prompt.
+        // Remember previous state only to offer convenient one-click re-enable prompt.
         value = p.getProperty("sharePortal", "false");
         sharePortalPreviouslyEnabled = Boolean.parseBoolean(value);
         sharePortal = false; // always start disabled; prompt offered after window visible
