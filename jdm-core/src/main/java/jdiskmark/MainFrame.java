@@ -21,6 +21,12 @@ import net.miginfocom.swing.MigLayout;
 public final class MainFrame extends javax.swing.JFrame {
 
     public static final DecimalFormat DF = new DecimalFormat("###.##");
+
+    /**
+     * Sharing tab panel — built programmatically, added to tabbedPane in the
+     * constructor.
+     */
+    public SharingPanel sharingPanel;
     
     /**
      * Creates new form MainFrame
@@ -45,8 +51,8 @@ public final class MainFrame extends javax.swing.JFrame {
         totalTxProgBar.setString("");
         
         StringBuilder titleSb = new StringBuilder();
-        titleSb.append(getTitle()).append(" ").append(App.VERSION);    
-
+        titleSb.append(getTitle()).append(" ").append(App.VERSION);
+        
         refreshConfig();
         bcPanel.configChangeDetection();
         
@@ -69,12 +75,21 @@ public final class MainFrame extends javax.swing.JFrame {
         // auto scroll the text area.
         DefaultCaret caret = (DefaultCaret)msgTextArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+        
+        // #117 Sharing tab — added programmatically so the NetBeans form is untouched.
+        sharingPanel = new SharingPanel();
+        tabbedPane.addTab("Sharing", sharingPanel);
+        
+        // Hide the now-redundant Help-menu portal items; all controls live in the tab.
+        portalUploadMenuItem.setVisible(false);
+        portalEndpointMenu.setVisible(false);
+        portalProtocolMenu.setVisible(false);
     }
 
     public JPanel getMountPanel() {
         return cResultMountPanel;
     }
-    
+
     /**
      * This method is called when the gui needs to be updated after a new config
      * has been loaded.
@@ -85,24 +100,9 @@ public final class MainFrame extends javax.swing.JFrame {
             setLocation(App.locationDir.getAbsolutePath());
         }
         
-        // test portal settings
-        portalUploadMenuItem.setSelected(App.sharePortal);
-        portalEndpointMenu.setEnabled(App.sharePortal);
-        if (Portal.uploadResourceLocator.equalsIgnoreCase(Portal.LOCAL_UPLOAD_LOCATOR)) {
-            localEndpointRbMenuItem.setSelected(true);
-        }
-        if (Portal.uploadResourceLocator.equalsIgnoreCase(Portal.TEST_UPLOAD_LOCATOR)) {
-            testEndpointRbMenuItem.setSelected(true);
-        }
-        if (Portal.uploadResourceLocator.equalsIgnoreCase(Portal.PRODUCTION_UPLOAD_LOCATOR)) {
-            prodEndpointRbMenuItem.setSelected(true);
-        }
-        portalProtocolMenu.setEnabled(App.sharePortal);
-        if (Portal.uploadProtocol.equalsIgnoreCase(Portal.HTTP)) {
-            httpProtoRbMenuItem.setSelected(true);
-        }
-        if (Portal.uploadProtocol.equalsIgnoreCase(Portal.HTTPS)) {
-            httpsProtoRbMenuItem.setSelected(true);
+        // Sharing tab reflects the current portal state.
+        if (sharingPanel != null) {
+            sharingPanel.refresh();
         }
         
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
@@ -946,15 +946,6 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_resetBenchmarkItemActionPerformed
 
     private void portalUploadMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_portalUploadMenuItemActionPerformed
-        if (portalUploadMenuItem.getState() == true) {
-            PortalEnableDialog dialog = new PortalEnableDialog(this);
-            dialog.setVisible(true); // Execution pauses here because it's modal
-            if (!dialog.isAuthorized()) {
-                App.msg("test passcode required to upload benchmarks");
-                portalUploadMenuItem.setSelected(false);
-                return;
-            }
-        }
         App.sharePortal = portalUploadMenuItem.getState();
         App.saveConfig();
         if (App.sharePortal) {
@@ -1167,14 +1158,14 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JCheckBoxMenuItem writeSyncCheckBoxMenuItem;
     // End of variables declaration//GEN-END:variables
 
-    public void setLocation(String path ) {
+    public void setLocation(String path) {
         locationText.setText(path);
     }
     
     public void msg(String message) {
-        msgTextArea.append(message+'\n');
+        msgTextArea.append(message + '\n');
     }
-  
+    
     public void applyTestParams() {
         if (Gui.controlPanel != null) {
             Gui.controlPanel.applySettings();

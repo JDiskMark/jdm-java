@@ -27,6 +27,16 @@ class AppTest {
     }
 
     /**
+     * The first-run consent flag must default to false so that a brand-new
+     * installation always presents the portal-upload consent dialog (issue #117).
+     */
+    @Test
+    void portalConsentAsked_onStartup_isFalse() {
+        assertFalse(App.portalConsentAsked,
+                "portalConsentAsked must default to false so first-run consent dialog is shown on a new install");
+    }
+
+    /**
      * Every AppIcon enum entry must resolve to an actual classpath resource.
      * This guards against icon renames or path typos that would cause the
      * About dialog (and taskbar/title-bar) to silently display no icon.
