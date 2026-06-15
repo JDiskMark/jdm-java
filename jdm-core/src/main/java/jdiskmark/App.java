@@ -113,24 +113,24 @@ public class App {
      */
     public enum AppIcon {
         /** Blue/orange circle — the beta brand. Single resolution. */
-        BETA(new String[]{"/icons/icon-jdm-beta.png"}),
+        BETA(new String[] { "/icons/icon-jdm-beta.png" }),
         /** Custom JDiskMark turtle logo — the default project brand. */
-        TURTLE(new String[]{
-            "/icons/jdm-turtle-logo-16x16.png",
-            "/icons/jdm-turtle-logo-20x20.png",
-            "/icons/jdm-turtle-logo-24x24.png",
-            "/icons/jdm-turtle-logo-32x32.png",
-            "/icons/jdm-turtle-logo-40x40.png",
-            "/icons/jdm-turtle-logo-48x48.png",
-            "/icons/jdm-turtle-logo-64x64.png",
-            "/icons/jdm-turtle-logo-96x96.png",
-            "/icons/jdm-turtle-logo-128x128.png",
-            "/icons/jdm-turtle-logo-256x256.png",
-            "/icons/jdm-turtle-logo-512x512.png",
-            "/icons/jdm-turtle-logo-1024x1024.png"
+        TURTLE(new String[] {
+                "/icons/jdm-turtle-logo-16x16.png",
+                "/icons/jdm-turtle-logo-20x20.png",
+                "/icons/jdm-turtle-logo-24x24.png",
+                "/icons/jdm-turtle-logo-32x32.png",
+                "/icons/jdm-turtle-logo-40x40.png",
+                "/icons/jdm-turtle-logo-48x48.png",
+                "/icons/jdm-turtle-logo-64x64.png",
+                "/icons/jdm-turtle-logo-96x96.png",
+                "/icons/jdm-turtle-logo-128x128.png",
+                "/icons/jdm-turtle-logo-256x256.png",
+                "/icons/jdm-turtle-logo-512x512.png",
+                "/icons/jdm-turtle-logo-1024x1024.png"
         }),
         /** Duke, the BSD-licensed Java mascot from the OpenJDK project. */
-        DUKE(new String[]{"/icons/icon-duke.png"});
+        DUKE(new String[] { "/icons/icon-duke.png" });
 
         /** All resource paths for this icon variant, from smallest to largest. */
         public final String[] resourcePaths;
@@ -243,23 +243,44 @@ public class App {
     public static String arch;
     public static String processorName;
     public static String jdk;
-    public static String username;
+    // PII: OS username collection removed (#117 — use anonymous or a non-PII system id instead).
+    // public static String username;
+
+    /**
+     * Stable, non-PII system identifier (32-char SHA-256 hex derived from the
+     * OS machine GUID / machine-id). Persisted in {@code jdm.properties} so
+     * it survives app restarts. See {@link UtilOs#getMachineSystemId}.
+     */
+    public static String systemId;
 
     // --- OS convenience helpers ---
     // Delegate to UtilOs primitives. Safe to call before init() (e.g. early in
     // main() or in CLI mode where App.os is never populated).
 
     /** Returns {@code true} when running on macOS. */
-    public static boolean isMacOs() { return UtilOs.isMacOs(osName()); }
+    public static boolean isMacOs() {
+        return UtilOs.isMacOs(osName());
+    }
+
     /** Returns {@code true} when running on Windows. */
-    public static boolean isWindows() { return UtilOs.isWindows(osName()); }
+    public static boolean isWindows() {
+        return UtilOs.isWindows(osName());
+    }
+
     /** Returns {@code true} when running on Linux. */
-    public static boolean isLinux() { return UtilOs.isLinux(osName()); }
-    /** Resolves the OS name, falling back to the system property when {@link #os} is not yet set.
-     *  Safe to call before {@link #init()} and in CLI mode. */
+    public static boolean isLinux() {
+        return UtilOs.isLinux(osName());
+    }
+
+    /**
+     * Resolves the OS name, falling back to the system property when {@link #os} is
+     * not yet set.
+     * Safe to call before {@link #init()} and in CLI mode.
+     */
     public static String osName() {
         return (os != null) ? os : System.getProperty("os.name", "");
     }
+
     // benchmark options
     public static Properties p;
     public static File locationDir = null;
@@ -269,9 +290,11 @@ public class App {
     public static boolean autoSave = false;
     public static boolean sharePortal = false;
     // True if sharePortal was enabled in the last session; used to offer a
-    // one-click
-    // re-enable prompt at startup rather than silently resuming network activity.
+    // one-click re-enable prompt at startup rather than silently resuming network activity.
     public static boolean sharePortalPreviouslyEnabled = false;
+    // True once the user has answered the first-run portal-consent prompt.
+    // Persisted so the prompt is shown exactly once (issue #117).
+    public static boolean portalConsentAsked = false;
     public static boolean verbose = false; // affects cli output
     public static boolean multiFile = true;
     public static boolean autoRemoveData = true;
@@ -393,13 +416,11 @@ public class App {
 
         GcDetector.printActive();
 
-        username = System.getProperty("user.name");
-
         os = System.getProperty("os.name");
         arch = System.getProperty("os.arch");
         processorName = Util.getProcessorName();
         jdk = Util.getJvmInfo();
-
+        
         checkPermission();
         if (!APP_CACHE_DIR.exists()) {
             APP_CACHE_DIR.mkdirs();
@@ -408,6 +429,14 @@ public class App {
         if (mode == Mode.GUI) {
             loadConfig();
         }
+
+        // Derive the stable, non-PII machine identifier now that loadConfig() has
+        // populated the persisted fallback value (if any). Resolved after loadConfig
+        // so we never clobber portalConsentAsked or other flags with a premature
+        // saveConfig() call.
+        String fallbackSystemId = (systemId != null && !systemId.isBlank()) ? systemId : "";
+        systemId = UtilOs.getMachineSystemId(os, fallbackSystemId);
+        // systemId persisted by the shutdown-hook saveConfig() and other normal save paths.
 
         // initialize data dir if necessary
         if (locationDir == null) {
@@ -437,11 +466,23 @@ public class App {
                     App.saveConfig();
                 }
             });
-            // If portal upload was active last session, offer a one-click re-enable.
-            // This avoids silent outbound network activity while keeping dev workflow
-            // smooth.
-            if (sharePortalPreviouslyEnabled) {
-                javax.swing.SwingUtilities.invokeLater(App::promptResumePortalUpload);
+            // #117 First-run consent: ask once if the user has never been asked.
+            // Fires for both test and production endpoints so the dialog can be
+            // exercised from the IDE without any config changes.
+            // This runs before the re-enable check so a brand-new install shows
+            // the consent dialog rather than nothing.
+            if (!portalConsentAsked) {
+                javax.swing.SwingUtilities.invokeLater(App::promptFirstRunPortalConsent);
+            } else if (sharePortalPreviouslyEnabled) {
+                // Consent was already given and upload was active last session —
+                // silently restore it. No need to ask again once consent is on record.
+                sharePortal = true;
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    msg("Portal upload active — disable via the Sharing tab.");
+                    if (Gui.mainFrame != null) {
+                        Gui.mainFrame.loadPropertiesConfig();
+                    }
+                });
             }
         }
     }
@@ -450,13 +491,15 @@ public class App {
      * Attempts to acquire an OS-level advisory lock on a file in the per-version
      * cache directory. Called once at startup in GUI mode, before {@link #init()}.
      *
-     * <p>The lock is held by a {@link java.nio.channels.FileLock} whose lifecycle
+     * <p>
+     * The lock is held by a {@link java.nio.channels.FileLock} whose lifecycle
      * is tied to the JVM process: the OS kernel releases it automatically when the
      * process exits by <em>any</em> means (normal exit, uncaught exception,
      * {@code SIGKILL}, OOM crash). Stale lock files left behind after a crash are
      * therefore impossible — the next launch will always succeed.
      *
-     * <p>If another instance already holds the lock a user-friendly dialog is shown
+     * <p>
+     * If another instance already holds the lock a user-friendly dialog is shown
      * and the method returns {@code false}, allowing {@code main()} to exit cleanly
      * without opening any window or touching the Derby database.
      *
@@ -498,7 +541,7 @@ public class App {
                 javax.swing.JOptionPane.showMessageDialog(
                         null,
                         "JDiskMark is already running.\n"
-                        + "Only one instance can be open at a time.",
+                                + "Only one instance can be open at a time.",
                         "JDiskMark — Already Running",
                         javax.swing.JOptionPane.WARNING_MESSAGE);
                 System.exit(0);
@@ -518,6 +561,43 @@ public class App {
         }
         if (isRoot || isAdmin) {
             System.out.println("Running w elevated priviledges");
+        }
+    }
+
+    /**
+     * Shows the one-time first-run consent dialog for anonymous portal upload
+     * (issue #117). Fires only when the production endpoint is configured and
+     * {@link #portalConsentAsked} is {@code false}. After the user responds the
+     * flag is set to {@code true} and persisted so the dialog never appears again.
+     */
+    public static void promptFirstRunPortalConsent() {
+        String message = "<html><body style='width:380px'>"
+                + "<b>Help improve JDiskMark by sharing your results!</b><br><br>"
+                + "Would you like to share your benchmark results with "
+                + "the JDiskMark community portal?<br><br>"
+                + "<ul>"
+                + "<li>Only benchmark metrics (speeds, block sizes, OS) are submitted.</li>"
+                + "<li>You can change this at any time via the <i>Sharing</i> tab.</li>"
+                + "</ul>"
+                + "</body></html>";
+        int choice = javax.swing.JOptionPane.showConfirmDialog(
+                Gui.mainFrame,
+                new javax.swing.JLabel(message),
+                "Share Benchmark Results?",
+                javax.swing.JOptionPane.YES_NO_OPTION,
+                javax.swing.JOptionPane.QUESTION_MESSAGE);
+        portalConsentAsked = true; // mark as answered regardless of choice
+        if (choice == javax.swing.JOptionPane.YES_OPTION) {
+            sharePortal = true;
+            msg("Portal upload enabled — thank you for sharing!");
+        } else {
+            sharePortal = false;
+            msg("Portal upload declined. You can enable it later via Help \u203a Portal Upload.");
+        }
+        saveConfig(); // persist consent flag and choice immediately
+        // sync the Sharing tab to reflect the resolved state
+        if (Gui.mainFrame != null) {
+            Gui.mainFrame.loadPropertiesConfig();
         }
     }
 
@@ -601,6 +681,13 @@ public class App {
         value = p.getProperty("sharePortal", "false");
         sharePortalPreviouslyEnabled = Boolean.parseBoolean(value);
         sharePortal = false; // always start disabled; prompt offered after window visible
+
+        // #117 one-time first-run consent flag
+        value = p.getProperty("portalConsentAsked", "false");
+        portalConsentAsked = Boolean.parseBoolean(value);
+
+        // Non-PII system identifier (blank on very first run; resolved in init())
+        systemId = p.getProperty("systemId", "");
 
         Portal.uploadResourceLocator = p.getProperty("uploadResourceLocator", Portal.uploadResourceLocator);
         Portal.uploadProtocol = p.getProperty("uploadProtocol", Portal.uploadProtocol);
@@ -709,8 +796,16 @@ public class App {
 
         // configure properties
         p.setProperty("sharePortal", String.valueOf(sharePortal));
-        p.setProperty("uploadResourceLocator", Portal.uploadResourceLocator);
-        p.setProperty("uploadProtocol", Portal.uploadProtocol);
+        p.setProperty("portalConsentAsked", String.valueOf(portalConsentAsked)); // #117
+        if (systemId != null && !systemId.isBlank()) {
+            p.setProperty("systemId", systemId);
+        }
+        if (Portal.uploadResourceLocator != null) {
+            p.setProperty("uploadResourceLocator", Portal.uploadResourceLocator);
+        }
+        if (Portal.uploadProtocol != null) {
+            p.setProperty("uploadProtocol", Portal.uploadProtocol);
+        }
         p.setProperty("activeProfile", activeProfile.name());
         p.setProperty("profileModified", String.valueOf(profileModified));
         p.setProperty("benchmarkType", benchmarkType.name());

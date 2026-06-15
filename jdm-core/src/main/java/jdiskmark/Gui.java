@@ -286,11 +286,31 @@ public final class Gui {
      */
     public static void showAboutDialog() {
         javax.swing.ImageIcon icon = App.activeIcon.loadSize(128);
-        String message = App.APP_NAME + " " + App.VERSION + "\n" +
-                "JVM: " + App.jdk + "\n" +
-                "OS:  " + App.os;
+
+        // Build an HTML panel so the website URL is a clickable hyperlink.
+        String url = "https://www.jdiskmark.net";
+        String html = "<html><body style='font-family:sans-serif;font-size:11px'>"
+                + "<b>" + App.APP_NAME + " " + App.VERSION + "</b><br>"
+                + "JVM: " + App.jdk + "<br>"
+                + "OS:&nbsp; " + App.os + "<br><br>"
+                + "<a href='" + url + "'>" + url + "</a>"
+                + "</body></html>";
+
+        javax.swing.JEditorPane msgPane = new javax.swing.JEditorPane("text/html", html);
+        msgPane.setEditable(false);
+        msgPane.setOpaque(false);
+        msgPane.addHyperlinkListener(e -> {
+            if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
+                try {
+                    java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+                } catch (Exception ex) {
+                    App.msg("Could not open browser: " + ex.getMessage());
+                }
+            }
+        });
+
         javax.swing.JOptionPane.showMessageDialog(
-                mainFrame, message, "About " + App.APP_NAME,
+                mainFrame, msgPane, "About " + App.APP_NAME,
                 javax.swing.JOptionPane.PLAIN_MESSAGE, icon);
     }
     
