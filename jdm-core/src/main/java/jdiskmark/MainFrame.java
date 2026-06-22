@@ -95,27 +95,50 @@ public final class MainFrame extends javax.swing.JFrame {
         // SMART tab — Linux only (requires smartctl / NVMe kernel support)
         if (App.isLinux()) {
             mainTabPane.addTab("SMART", Gui.smartPanel);
+            Gui.smartReportsPanel = new SmartReportsPanel();
+            // SMART Reports lives in the bottom tabbedPane alongside Benchmark Operations + Events
+            tabbedPane.addTab("SMART Reports", Gui.smartReportsPanel);
         }
 
-        // Fetch SMART data only when the user selects the SMART tab.
-        // This keeps the pkexec password dialog from appearing at startup.
-        mainTabPane.addChangeListener(e -> {
-            int sel = mainTabPane.getSelectedIndex();
-            if (sel >= 0 && "SMART".equals(mainTabPane.getTitleAt(sel))) {
-                Gui.refreshSmartTab();
+        // Store reference so SmartReportsPanel can switch to the SMART tab on row selection.
+        Gui.mainTabPane = mainTabPane;
+
+        // Refresh SMART Reports when its bottom-pane tab is selected.
+        tabbedPane.addChangeListener(e -> {
+            int sel = tabbedPane.getSelectedIndex();
+            if (sel >= 0 && "SMART Reports".equals(tabbedPane.getTitleAt(sel))) {
+                if (Gui.smartReportsPanel != null) Gui.smartReportsPanel.refresh();
             }
         });
 
-        // Rebuild the content pane: mainTabPane fills the center;
-        // the original bottom tabs + progress bar go in a south panel.
+        // Rebuild the content pane: mainTabPane (top) and the bottom panel (tabbedPane +
+        // progress bar) are separated by a draggable vertical JSplitPane divider.
         getContentPane().removeAll();
         getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(mainTabPane, BorderLayout.CENTER);
 
         JPanel southPanel = new JPanel(new BorderLayout());
         southPanel.add(tabbedPane, BorderLayout.CENTER);
         southPanel.add(progressPanel, BorderLayout.SOUTH);
-        getContentPane().add(southPanel, BorderLayout.SOUTH);
+
+        javax.swing.JSplitPane splitPane = new javax.swing.JSplitPane(
+                javax.swing.JSplitPane.VERTICAL_SPLIT, mainTabPane, southPanel);
+        splitPane.setResizeWeight(0.75);   // 75% of space goes to the top pane
+        splitPane.setDividerSize(6);
+        splitPane.setContinuousLayout(true);
+
+        // Set pixel divider position once the frame is realised (height is known)
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            private boolean initialised = false;
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                if (!initialised) {
+                    initialised = true;
+                    splitPane.setDividerLocation(0.75);
+                }
+            }
+        });
+
+        getContentPane().add(splitPane, BorderLayout.CENTER);
     }
 
     

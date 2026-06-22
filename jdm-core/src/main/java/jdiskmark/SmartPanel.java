@@ -2,13 +2,17 @@ package jdiskmark;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Rectangle;
 import java.util.List;
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.Scrollable;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import net.miginfocom.swing.MigLayout;
@@ -61,10 +65,11 @@ public class SmartPanel extends JPanel {
     // -------------------------------------------------------------------------
     // Health labels
     // -------------------------------------------------------------------------
-    private final JLabel statusValueLabel       = value("-");
-    private final JLabel tempValueLabel         = value("-");
-    private final JLabel powerOnValueLabel      = value("-");
-    private final JLabel powerCyclesValueLabel  = value("-");
+    private final JLabel statusValueLabel         = value("-");
+    private final JLabel tempValueLabel           = value("-");
+    private final JLabel powerOnValueLabel        = value("-");
+    private final JLabel powerCyclesValueLabel    = value("-");
+    private final JLabel remainingLifeValueLabel  = value("-");
 
     // -------------------------------------------------------------------------
     // NVMe Health Log labels
@@ -80,6 +85,24 @@ public class SmartPanel extends JPanel {
     private final JLabel tempSensor1ValueLabel  = value("-");
     private final JLabel tempSensor2ValueLabel  = value("-");
     private       JPanel nvmeSection;
+
+    // -------------------------------------------------------------------------
+    // Drive Endurance labels
+    // -------------------------------------------------------------------------
+    private final JLabel wearLevelingValueLabel  = value("-");
+    private final JLabel badBlockValueLabel      = value("-");
+    private final JLabel programFailValueLabel   = value("-");
+    private final JLabel eraseFailValueLabel     = value("-");
+    private final JLabel eccErrorValueLabel      = value("-");
+    private final JLabel uncorrErrorValueLabel   = value("-");
+    private       JPanel enduranceSection;
+
+    // -------------------------------------------------------------------------
+    // Toolbar controls
+    // -------------------------------------------------------------------------
+    private JButton runButton;
+    private JButton saveButton;
+    private JLabel  statusLabel;
 
     // -------------------------------------------------------------------------
     // ATA Attributes table
@@ -112,8 +135,9 @@ public class SmartPanel extends JPanel {
         ataTable.getColumnModel().getColumn(5).setPreferredWidth(80);
         ataTable.getColumnModel().getColumn(6).setPreferredWidth(60);
 
-        // Inner content panel — sections are added here
-        JPanel contentPanel = new JPanel();
+        // Inner content panel — implements Scrollable so the scroll pane uses
+        // the panel's natural preferred height instead of stretching to fill the viewport.
+        ContentPanel contentPanel = new ContentPanel();
         contentPanel.setLayout(new MigLayout("insets 12, fillx", "[grow]", "[]8[]8[]8[]8[]"));
 
         buildLayout(contentPanel);
@@ -125,6 +149,33 @@ public class SmartPanel extends JPanel {
         scroller.setBorder(null);
         scroller.getVerticalScrollBar().setUnitIncrement(16);
         add(scroller, BorderLayout.CENTER);
+
+        // Toolbar with Run and Save buttons (NORTH — above scroll pane)
+        add(buildToolbar(), BorderLayout.NORTH);
+    }
+
+    // -------------------------------------------------------------------------
+    // Toolbar
+    // -------------------------------------------------------------------------
+
+    private JPanel buildToolbar() {
+        JPanel bar = new JPanel(new MigLayout("insets 8 12 8 12", "[][][grow]", "[]"));
+        bar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(80, 80, 80)));
+
+        runButton  = new JButton("Run SMART");
+        saveButton = new JButton("Save Snapshot");
+        saveButton.setEnabled(false);
+
+        statusLabel = new JLabel("Click \u2018Run SMART\u2019 to fetch live data.");
+        statusLabel.setFont(statusLabel.getFont().deriveFont(Font.ITALIC));
+
+        runButton.addActionListener(e -> Gui.refreshSmartTab());
+        saveButton.addActionListener(e -> Gui.saveCurrentSmartData());
+
+        bar.add(runButton);
+        bar.add(saveButton);
+        bar.add(statusLabel, "growx");
+        return bar;
     }
 
     // -------------------------------------------------------------------------
@@ -176,13 +227,15 @@ public class SmartPanel extends JPanel {
         JPanel healthSection = section("Health");
         healthSection.setLayout(new MigLayout("insets 8, wrap 4", COL_SPEC));
         healthSection.add(label("SMART Status:"));
-        healthSection.add(statusValueLabel,      "growx");
+        healthSection.add(statusValueLabel,        "growx");
         healthSection.add(label("Temperature:"));
-        healthSection.add(tempValueLabel,        "growx");
+        healthSection.add(tempValueLabel,          "growx");
         healthSection.add(label("Power-On Hours:"));
-        healthSection.add(powerOnValueLabel,     "growx");
+        healthSection.add(powerOnValueLabel,       "growx");
         healthSection.add(label("Power Cycles:"));
-        healthSection.add(powerCyclesValueLabel, "growx");
+        healthSection.add(powerCyclesValueLabel,   "growx");
+        healthSection.add(label("Remaining Life:"));
+        healthSection.add(remainingLifeValueLabel, "growx, span 3");
         p.add(healthSection, "growx, wrap");
 
         // --- NVMe Health Log section ---
@@ -210,6 +263,24 @@ public class SmartPanel extends JPanel {
         nvmeSection.add(tempSensor2ValueLabel, "growx");
         nvmeSection.setVisible(true);
         p.add(nvmeSection, "growx, wrap");
+
+        // --- Drive Endurance section ---
+        enduranceSection = section("Drive Endurance");
+        enduranceSection.setLayout(new MigLayout("insets 8, wrap 4", COL_SPEC));
+        enduranceSection.add(label("Wear Leveling Count:"));
+        enduranceSection.add(wearLevelingValueLabel, "growx");
+        enduranceSection.add(label("Bad Block Count:"));
+        enduranceSection.add(badBlockValueLabel,     "growx");
+        enduranceSection.add(label("Program Fail Count:"));
+        enduranceSection.add(programFailValueLabel,  "growx");
+        enduranceSection.add(label("Erase Fail Count:"));
+        enduranceSection.add(eraseFailValueLabel,    "growx");
+        enduranceSection.add(label("ECC Error Rate:"));
+        enduranceSection.add(eccErrorValueLabel,     "growx");
+        enduranceSection.add(label("Uncorrectable Errors:"));
+        enduranceSection.add(uncorrErrorValueLabel,  "growx");
+        enduranceSection.setVisible(false);
+        p.add(enduranceSection, "growx, wrap");
 
         // --- ATA Attributes section (hidden until ATA data is present) ---
         ataSection = section("ATA SMART Attributes");
@@ -241,6 +312,7 @@ public class SmartPanel extends JPanel {
             fillNvmeDevDetails(data);
             fillHealth(data);
             fillNvme(data.getNvmeHealthLog());
+            fillEndurance(data);
             fillAtaAttributes(data.getAtaSmartAttributes());
             revalidate();
             repaint();
@@ -259,10 +331,14 @@ public class SmartPanel extends JPanel {
                 nvmeNsCountValueLabel, localTimeValueLabel,
                 statusValueLabel, tempValueLabel,
                 powerOnValueLabel, powerCyclesValueLabel,
+                remainingLifeValueLabel,
                 spareValueLabel, usedPctValueLabel, writtenValueLabel,
                 readValueLabel, mediaErrValueLabel, errLogValueLabel,
                 warnTempValueLabel, critCompValueLabel,
-                tempSensor1ValueLabel, tempSensor2ValueLabel
+                tempSensor1ValueLabel, tempSensor2ValueLabel,
+                wearLevelingValueLabel, badBlockValueLabel,
+                programFailValueLabel, eraseFailValueLabel,
+                eccErrorValueLabel, uncorrErrorValueLabel
             }) {
                 l.setText("-");
                 l.setForeground(null);
@@ -270,7 +346,168 @@ public class SmartPanel extends JPanel {
             ataModel.setRowCount(0);
             nvmeDevSection.setVisible(true);   // keep visible with dashes
             nvmeSection.setVisible(true);
+            enduranceSection.setVisible(false);
             ataSection.setVisible(false);
+            // Reset toolbar state
+            saveButton.setEnabled(false);
+            statusLabel.setText("Click \u2018Run SMART\u2019 to fetch live data.");
+            revalidate();
+            repaint();
+        });
+    }
+
+    /**
+     * Called after SMART data has been successfully loaded.
+     * Enables the Save Snapshot button and updates the status label.
+     *
+     * @param deviceName the device name that was queried (e.g. {@code nvme0n1})
+     */
+    public void onDataLoaded(String deviceName) {
+        SwingUtilities.invokeLater(() -> {
+            saveButton.setEnabled(true);
+            statusLabel.setText("Data loaded for /dev/" + deviceName
+                    + ". Click \u2018Save Snapshot\u2019 to store.");
+        });
+    }
+
+    /**
+     * Called after a snapshot has been successfully saved to the database.
+     * Disables the Save button so the same data cannot be saved twice —
+     * the button is only re-enabled by {@link #onDataLoaded(String)} when a
+     * fresh {@code Run SMART} query completes.
+     */
+    public void onDataSaved() {
+        SwingUtilities.invokeLater(() -> {
+            saveButton.setEnabled(false);
+            statusLabel.setText("Snapshot saved \u2714 \u2014 click \u2018Run SMART\u2019 to fetch new data.");
+        });
+    }
+
+    /**
+     * Called after the SMART tab has been populated from a stored
+     * {@link SmartSnapshot} (via the SMART Reports table).
+     *
+     * <p>Disables the Save button (this is a read-only historical view) and
+     * updates the status label with the snapshot's capture timestamp.
+     * Safe to call from any thread.
+     *
+     * @param snap the snapshot that is currently being displayed
+     */
+    public void onSnapshotLoaded(SmartSnapshot snap) {
+        SwingUtilities.invokeLater(() -> {
+            saveButton.setEnabled(false);
+            String ts = snap.getCapturedAt() != null
+                    ? snap.getCapturedAt().format(
+                        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                    : "unknown";
+            statusLabel.setText("Viewing stored snapshot from " + ts
+                    + " \u2014 click \u2018Run SMART\u2019 to fetch live data.");
+        });
+    }
+
+    /**
+     * Populates the panel from a stored {@link SmartSnapshot}.
+     * Only the fields that are persisted in the DB are shown; sections that
+     * require a live {@code smartctl} query (NVMe device details, ATA
+     * attributes, endurance) are hidden.
+     *
+     * <p>Safe to call from any thread.
+     *
+     * @param snap the snapshot to display (must not be null)
+     */
+    public void populateFromSnapshot(SmartSnapshot snap) {
+        SwingUtilities.invokeLater(() -> {
+            // Reset all value labels to dash
+            for (JLabel l : new JLabel[]{
+                modelValueLabel, serialValueLabel, firmwareValueLabel,
+                capacityValueLabel, protocolValueLabel,
+                nvmeVersionValueLabel, nvmeControllerIdValueLabel,
+                nvmeOuiValueLabel, nvmeVendorValueLabel,
+                nvmeTotalCapValueLabel, nvmeUnallocCapValueLabel,
+                nvmeNsCountValueLabel, localTimeValueLabel,
+                statusValueLabel, tempValueLabel,
+                powerOnValueLabel, powerCyclesValueLabel,
+                remainingLifeValueLabel,
+                spareValueLabel, usedPctValueLabel, writtenValueLabel,
+                readValueLabel, mediaErrValueLabel, errLogValueLabel,
+                warnTempValueLabel, critCompValueLabel,
+                tempSensor1ValueLabel, tempSensor2ValueLabel,
+                wearLevelingValueLabel, badBlockValueLabel,
+                programFailValueLabel, eraseFailValueLabel,
+                eccErrorValueLabel, uncorrErrorValueLabel
+            }) { l.setText("-"); l.setForeground(null); }
+            ataModel.setRowCount(0);
+
+            // Drive Info
+            modelValueLabel.setText(orDash(snap.getModelName()));
+            serialValueLabel.setText(orDash(snap.getSerialNumber()));
+            firmwareValueLabel.setText(orDash(snap.getFirmwareVersion()));
+            protocolValueLabel.setText(orDash(snap.getProtocol()));
+            if (snap.getCapacityGb() != null) {
+                capacityValueLabel.setText(snap.getCapacityGb() + " GB");
+            }
+
+            // Health
+            if (snap.getSmartPassed() != null) {
+                boolean passed = Boolean.TRUE.equals(snap.getSmartPassed());
+                statusValueLabel.setText(passed ? "PASSED \u2714" : "FAILED \u2718");
+                statusValueLabel.setForeground(passed ? new Color(0x4CAF50) : new Color(0xF44336));
+            }
+            if (snap.getTempC() != null) {
+                int t = snap.getTempC();
+                tempValueLabel.setText(t + " \u00b0C");
+                tempValueLabel.setForeground(tempColor(t));
+            }
+            if (snap.getPowerOnHours() != null) {
+                powerOnValueLabel.setText(snap.getPowerOnHours() + " h");
+            }
+            if (snap.getPowerCycles() != null) {
+                powerCyclesValueLabel.setText(String.valueOf(snap.getPowerCycles()));
+            }
+            if (snap.getPercentageUsed() != null) {
+                int remaining = Math.max(0, 100 - snap.getPercentageUsed());
+                remainingLifeValueLabel.setText(remaining + "%");
+                if (remaining > 50)      remainingLifeValueLabel.setForeground(new Color(0x4CAF50));
+                else if (remaining > 20) remainingLifeValueLabel.setForeground(new Color(0xFF9800));
+                else                     remainingLifeValueLabel.setForeground(new Color(0xF44336));
+            }
+
+            // NVMe health log — show only if we have any stored NVMe field
+            boolean hasNvme = snap.getAvailableSpare() != null
+                    || snap.getPercentageUsed() != null
+                    || snap.getMediaErrors() != null
+                    || snap.getDataWrittenGb() != null;
+            nvmeSection.setVisible(hasNvme);
+            if (hasNvme) {
+                if (snap.getAvailableSpare() != null)
+                    spareValueLabel.setText(snap.getAvailableSpare() + "%");
+                if (snap.getPercentageUsed() != null)
+                    usedPctValueLabel.setText(snap.getPercentageUsed() + "%");
+                if (snap.getDataWrittenGb() != null)
+                    writtenValueLabel.setText(snap.getDataWrittenGb() + " GB");
+                if (snap.getDataReadGb() != null)
+                    readValueLabel.setText(snap.getDataReadGb() + " GB");
+                if (snap.getMediaErrors() != null) {
+                    long me = snap.getMediaErrors();
+                    mediaErrValueLabel.setText(String.valueOf(me));
+                    mediaErrValueLabel.setForeground(me > 0 ? new Color(0xF44336) : null);
+                }
+            }
+
+            // Hide sections not stored in snapshots
+            nvmeDevSection.setVisible(false);
+            enduranceSection.setVisible(false);
+            ataSection.setVisible(false);
+
+            // Toolbar: disable Save (this is a read-only view), show snapshot timestamp
+            saveButton.setEnabled(false);
+            String ts = snap.getCapturedAt() != null
+                    ? snap.getCapturedAt().format(
+                        java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                    : "unknown";
+            statusLabel.setText("Viewing stored snapshot from " + ts
+                    + " \u2014 click \u2018Run SMART\u2019 to fetch live data.");
+
             revalidate();
             repaint();
         });
@@ -373,6 +610,16 @@ public class SmartPanel extends JPanel {
         } else if (d.getNvmeHealthLog() != null && d.getNvmeHealthLog().getPowerCycles() != null) {
             powerCyclesValueLabel.setText(String.valueOf(d.getNvmeHealthLog().getPowerCycles()));
         }
+
+        // Remaining Life — derived from NVMe percentage_used (100 - used)
+        if (d.getNvmeHealthLog() != null && d.getNvmeHealthLog().getPercentageUsed() != null) {
+            int used      = d.getNvmeHealthLog().getPercentageUsed();
+            int remaining = Math.max(0, 100 - used);
+            remainingLifeValueLabel.setText(remaining + "%");
+            if (remaining > 50)       remainingLifeValueLabel.setForeground(new Color(0x4CAF50)); // green
+            else if (remaining > 20)  remainingLifeValueLabel.setForeground(new Color(0xFF9800)); // orange
+            else                      remainingLifeValueLabel.setForeground(new Color(0xF44336)); // red
+        }
     }
 
     private void fillNvme(Smart.NvmeHealthLog nvme) {
@@ -406,6 +653,62 @@ public class SmartPanel extends JPanel {
             statusValueLabel.setText("CRITICAL WARNING (" + nvme.getCriticalWarning() + ") ✘");
             statusValueLabel.setForeground(new Color(0xF44336));
         }
+    }
+
+    private void fillEndurance(Smart d) {
+        Smart.AtaSmartAttributes ata = d.getAtaSmartAttributes();
+        Smart.NvmeHealthLog nvme     = d.getNvmeHealthLog();
+
+        boolean hasAta  = ata != null && ata.getTable() != null && !ata.getTable().isEmpty();
+        boolean hasNvme = nvme != null;
+
+        if (!hasAta && !hasNvme) { enduranceSection.setVisible(false); return; }
+        enduranceSection.setVisible(true);
+
+        if (hasAta) {
+            // Wear Leveling Count   — attr 177 (0xB1) or 231 (0xE7)
+            setAtaAttrField(wearLevelingValueLabel, ata.findByIdAny(177, 231));
+            // Bad Block / Reallocated Sectors — attr 5 (0x05), 181 (0xB5),
+            //   197 (0xC5 Current Pending), 198 (0xC6 Uncorrectable)
+            setAtaAttrField(badBlockValueLabel,     ata.findByIdAny(5, 181, 197, 198));
+            // Program Fail Count    — attr 181 (0xB5)
+            setAtaAttrField(programFailValueLabel,  ata.findById(181));
+            // Erase Fail Count      — attr 182 (0xB6)
+            setAtaAttrField(eraseFailValueLabel,    ata.findById(182));
+            // Raw Read Error Rate   — attr 1  (0x01)
+            setAtaAttrField(eccErrorValueLabel,     ata.findById(1));
+            // Uncorrectable Errors  — attr 187 (0xBB)
+            setAtaAttrField(uncorrErrorValueLabel,  ata.findById(187));
+        } else {
+            // NVMe: map to nearest equivalent health-log fields
+            // Wear Leveling → percentage_used (endurance consumed)
+            if (nvme.getPercentageUsed() != null) {
+                wearLevelingValueLabel.setText(nvme.getPercentageUsed() + "% used");
+                wearLevelingValueLabel.setForeground(
+                    nvme.getPercentageUsed() < 80 ? new Color(0x4CAF50) : new Color(0xF44336));
+            }
+            // Bad Block Count → media_errors
+            if (nvme.getMediaErrors() != null) {
+                long me = nvme.getMediaErrors();
+                badBlockValueLabel.setText(String.valueOf(me));
+                badBlockValueLabel.setForeground(me > 0 ? new Color(0xF44336) : null);
+            }
+            // Remaining fields not present in standard NVMe health log
+            programFailValueLabel.setText("N/A");
+            eraseFailValueLabel.setText("N/A");
+            eccErrorValueLabel.setText("N/A");
+            uncorrErrorValueLabel.setText("N/A");
+        }
+    }
+
+    /** Populates {@code lbl} from an ATA attribute's raw string, or "N/A" if absent. */
+    private void setAtaAttrField(JLabel lbl, Smart.AtaAttribute attr) {
+        if (attr == null) { lbl.setText("N/A"); return; }
+        String raw = (attr.getRaw() != null && attr.getRaw().getString() != null)
+                ? attr.getRaw().getString()
+                : (attr.getValue() != null ? String.valueOf(attr.getValue()) : "-");
+        lbl.setText(raw);
+        if (attr.isFailing()) lbl.setForeground(new Color(0xF44336));
     }
 
     private void fillAtaAttributes(Smart.AtaSmartAttributes ata) {
@@ -476,5 +779,38 @@ public class SmartPanel extends JPanel {
         p.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createEtchedBorder(), title));
         return p;
+    }
+
+    // -------------------------------------------------------------------------
+    // Scrollable content panel
+    // -------------------------------------------------------------------------
+
+    /**
+     * A JPanel that implements {@link Scrollable} to prevent the enclosing
+     * {@link JScrollPane} from stretching it to fill the viewport height.
+     * The panel will only be as tall as its content, eliminating blank space
+     * below the last section.
+     */
+    private static class ContentPanel extends JPanel implements Scrollable {
+        ContentPanel() { super(); }
+
+        @Override
+        public Dimension getPreferredScrollableViewportSize() { return getPreferredSize(); }
+
+        @Override
+        public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) { return 16; }
+
+        @Override
+        public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return visibleRect.height;
+        }
+
+        /** Fill the viewport width so content stretches horizontally. */
+        @Override
+        public boolean getScrollableTracksViewportWidth() { return true; }
+
+        /** Do NOT fill viewport height — use natural content height to avoid blank space. */
+        @Override
+        public boolean getScrollableTracksViewportHeight() { return false; }
     }
 }

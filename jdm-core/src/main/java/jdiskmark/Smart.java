@@ -199,6 +199,9 @@ public class Smart {
     // Fields
     // -------------------------------------------------------------------------
 
+    /** The raw JSON string this object was parsed from. Set by {@link #fromJson}; not a JSON property. */
+    private String rawJson;
+
     @JsonProperty("json_format_version")
     private List<Integer> jsonFormatVersion;
 
@@ -283,8 +286,13 @@ public class Smart {
      */
     public static Smart fromJson(String json) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(json, Smart.class);
+        Smart smart = mapper.readValue(json, Smart.class);
+        smart.rawJson = json;   // preserve original for snapshot replay
+        return smart;
     }
+
+    /** Returns the raw JSON string this object was parsed from, or {@code null} if not set. */
+    public String getRawJson() { return rawJson; }
 
     // -------------------------------------------------------------------------
     // Top-level getters & setters
@@ -661,6 +669,27 @@ public class Smart {
 
         public List<AtaAttribute> getTable() { return table; }
         public void setTable(List<AtaAttribute> table) { this.table = table; }
+
+        /** Finds the first attribute with the given {@code id}, or {@code null} if absent. */
+        public AtaAttribute findById(int id) {
+            if (table == null) return null;
+            for (AtaAttribute a : table) {
+                if (Integer.valueOf(id).equals(a.getId())) return a;
+            }
+            return null;
+        }
+
+        /**
+         * Returns the first attribute matching any of the given IDs (checked in
+         * priority order), or {@code null} if none are present.
+         */
+        public AtaAttribute findByIdAny(int... ids) {
+            for (int id : ids) {
+                AtaAttribute a = findById(id);
+                if (a != null) return a;
+            }
+            return null;
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -871,11 +900,8 @@ public class Smart {
         @JsonProperty("critical_comp_time")
         private Long criticalCompTime;
 
-        @JsonProperty("temperature_sensor_1")
-        private Integer temperatureSensor1;
-
-        @JsonProperty("temperature_sensor_2")
-        private Integer temperatureSensor2;
+        @JsonProperty("temperature_sensors")
+        private List<Integer> temperatureSensors;
 
         public NvmeHealthLog() {}
 
@@ -930,11 +956,20 @@ public class Smart {
         public Long getCriticalCompTime() { return criticalCompTime; }
         public void setCriticalCompTime(Long criticalCompTime) { this.criticalCompTime = criticalCompTime; }
 
-        public Integer getTemperatureSensor1() { return temperatureSensor1; }
-        public void setTemperatureSensor1(Integer temperatureSensor1) { this.temperatureSensor1 = temperatureSensor1; }
+        public List<Integer> getTemperatureSensors() { return temperatureSensors; }
+        public void setTemperatureSensors(List<Integer> temperatureSensors) { this.temperatureSensors = temperatureSensors; }
 
-        public Integer getTemperatureSensor2() { return temperatureSensor2; }
-        public void setTemperatureSensor2(Integer temperatureSensor2) { this.temperatureSensor2 = temperatureSensor2; }
+        /** Returns the first temperature sensor value, or {@code null} if absent. */
+        public Integer getTemperatureSensor1() {
+            return (temperatureSensors != null && temperatureSensors.size() >= 1)
+                    ? temperatureSensors.get(0) : null;
+        }
+
+        /** Returns the second temperature sensor value, or {@code null} if absent. */
+        public Integer getTemperatureSensor2() {
+            return (temperatureSensors != null && temperatureSensors.size() >= 2)
+                    ? temperatureSensors.get(1) : null;
+        }
 
         /**
          * Returns {@code true} if {@code critical_warning} is non-zero,
