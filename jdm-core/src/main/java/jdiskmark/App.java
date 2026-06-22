@@ -114,7 +114,7 @@ public class App {
     public enum AppIcon {
         /** Blue/orange circle — the beta brand. Single resolution. */
         BETA(new String[] { "/icons/icon-jdm-beta.png" }),
-        /** Custom JDiskMark turtle logo — the default project brand. */
+        /** Custom JDiskMark turtle logo — optimized for Ubuntu. */
         TURTLE(new String[] {
                 "/icons/jdm-turtle-logo-16x16.png",
                 "/icons/jdm-turtle-logo-20x20.png",
@@ -144,6 +144,7 @@ public class App {
          * {@link java.awt.Window#setIconImages(java.util.List)}.
          * Java picks the best-fit size per display context (title bar, taskbar, Alt+Tab).
          * Missing resources are silently skipped.
+         * @return 
          */
         public java.util.List<java.awt.Image> loadAll() {
             java.util.List<java.awt.Image> images = new java.util.ArrayList<>();
@@ -163,13 +164,13 @@ public class App {
         /**
          * Load the largest available size as an ImageIcon (used by the About dialog).
          * Returns {@code null} if no resource is found.
+         * @return
          */
         public javax.swing.ImageIcon load() {
             String path = resourcePaths[resourcePaths.length - 1];
             try (java.io.InputStream is = App.class.getResourceAsStream(path)) {
                 if (is == null) {
-                    java.util.logging.Logger.getLogger(App.class.getName()).warning(
-                            "Icon resource not found: " + path);
+                    java.util.logging.Logger.getLogger(App.class.getName()).log(Level.WARNING, "Icon resource not found: {0}", path);
                     return null;
                 }
                 return new javax.swing.ImageIcon(is.readAllBytes());
@@ -181,10 +182,13 @@ public class App {
         }
 
         /**
-         * Load the best pre-rendered PNG at or nearest to {@code targetSize} pixels.
-         * Prefers the smallest size that is &gt;= targetSize; falls back to the largest
-         * available. For single-resolution variants the only image is returned as-is.
-         * Returns {@code null} if no resource is found.
+         * Load the best pre-rendered PNG at or nearest to {@code targetSize} 
+         * pixels. Prefers the smallest size that is &gt;= targetSize; falls 
+         * back to the largest available. For single-resolution variants the 
+         * only image is returned as-is. Returns {@code null} if no resource is 
+         * found.
+         * @param targetSize
+         * @return 
          */
         public javax.swing.ImageIcon loadSize(int targetSize) {
             // Parse pixel widths from filenames like "/icons/jdm-turtle-logo-256x256.png".
@@ -207,8 +211,7 @@ public class App {
             }
             try (java.io.InputStream is = App.class.getResourceAsStream(bestPath)) {
                 if (is == null) {
-                    java.util.logging.Logger.getLogger(App.class.getName()).warning(
-                            "Icon resource not found: " + bestPath);
+                    java.util.logging.Logger.getLogger(App.class.getName()).log(Level.WARNING, "Icon resource not found: {0}", bestPath);
                     return null;
                 }
                 return new javax.swing.ImageIcon(is.readAllBytes());
@@ -257,25 +260,28 @@ public class App {
     // Delegate to UtilOs primitives. Safe to call before init() (e.g. early in
     // main() or in CLI mode where App.os is never populated).
 
-    /** Returns {@code true} when running on macOS. */
+    /** Returns {@code true} when running on macOS.
+     * @return  */
     public static boolean isMacOs() {
         return UtilOs.isMacOs(osName());
     }
 
-    /** Returns {@code true} when running on Windows. */
+    /** Returns {@code true} when running on Windows.
+     * @return  */
     public static boolean isWindows() {
         return UtilOs.isWindows(osName());
     }
 
-    /** Returns {@code true} when running on Linux. */
+    /** Returns {@code true} when running on Linux.
+     * @return  */
     public static boolean isLinux() {
         return UtilOs.isLinux(osName());
     }
 
     /**
      * Resolves the OS name, falling back to the system property when {@link #os} is
-     * not yet set.
-     * Safe to call before {@link #init()} and in CLI mode.
+     * not yet set.Safe to call before {@link #init()} and in CLI mode.
+     * @return
      */
     public static String osName() {
         return (os != null) ? os : System.getProperty("os.name", "");
@@ -308,7 +314,7 @@ public class App {
     // benchmark configuration
     public static BenchmarkProfile activeProfile = BenchmarkProfile.QUICK_TEST;
     public static boolean profileModified = false;
-    public static BenchmarkType benchmarkType = BenchmarkType.WRITE;
+    public static BenchmarkType benchmarkType = BenchmarkType.READ_WRITE;
     public static BlockSequence blockSequence = BlockSequence.SEQUENTIAL;
     public static int numOfSamples = 200; // desired number of samples
     public static int numOfBlocks = 32; // desired number of blocks
@@ -540,8 +546,10 @@ public class App {
             javax.swing.SwingUtilities.invokeLater(() -> {
                 javax.swing.JOptionPane.showMessageDialog(
                         null,
-                        "JDiskMark is already running.\n"
-                                + "Only one instance can be open at a time.",
+                        """
+                        JDiskMark is already running.
+                        Only one instance can be open at a time.
+                        """,
                         "JDiskMark — Already Running",
                         javax.swing.JOptionPane.WARNING_MESSAGE);
                 System.exit(0);
