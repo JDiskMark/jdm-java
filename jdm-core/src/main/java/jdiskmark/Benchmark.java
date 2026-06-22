@@ -126,10 +126,21 @@ public class Benchmark implements Serializable {
     @JsonSerialize(using = UuidToMongoIdSerializer.class)
     private UUID id;
     
-    // user account
-    @Column
+    // PII: #117 set only after a user elects to login to access their profile
+    // @Column
     String username = "anonymous"; // "user" is reserved in Derby
-    public String getUsername() { return username; }
+    // public String getUsername() { return username; }
+    public String getUsername() { return "anonymous"; }
+
+    /**
+     * Non-PII stable system identifier derived from the OS machine GUID / machine-id.
+     * 32-char lowercase SHA-256 hex.  Set from {@link App#systemId} at benchmark
+     * creation time and included in every portal upload payload.
+     * See {@link UtilOs#getMachineSystemId} for the derivation strategy.
+     */
+    @Column
+    String systemId = "";
+    public String getSystemId() { return systemId; }
     
     // system info
     @Embedded

@@ -337,8 +337,8 @@ public class BenchmarkRunner {
     }
     
     private void mapEnvironment(Benchmark b, String model, String partId, DiskUsageInfo u) {
-        b.username = App.username;
-        
+        b.systemId = (App.systemId != null) ? App.systemId : "";
+
         b.systemInfo.processorName = App.processorName;
         b.systemInfo.os = App.os;
         b.systemInfo.arch = App.arch;

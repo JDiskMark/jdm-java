@@ -303,14 +303,99 @@ public final class Gui {
      */
     public static void showAboutDialog() {
         javax.swing.ImageIcon icon = App.activeIcon.loadSize(128);
-        String message = App.APP_NAME + " " + App.VERSION + "\n" +
-                "JVM: " + App.jdk + "\n" +
-                "OS:  " + App.os;
+
+        // Build an HTML panel so the website URL is a clickable hyperlink.
+        String url = "https://www.jdiskmark.net";
+        String html = "<html><body style='font-family:sans-serif;font-size:11px'>"
+                + "<b>" + App.APP_NAME + " " + App.VERSION + "</b><br>"
+                + "JVM: " + App.jdk + "<br>"
+                + "OS:&nbsp; " + App.os + "<br><br>"
+                + "<a href='" + url + "'>" + url + "</a>"
+                + "</body></html>";
+
+        javax.swing.JEditorPane msgPane = new javax.swing.JEditorPane("text/html", html);
+        msgPane.setEditable(false);
+        msgPane.setOpaque(false);
+        msgPane.addHyperlinkListener(e -> {
+            if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
+                try {
+                    java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+                } catch (Exception ex) {
+                    App.msg("Could not open browser: " + ex.getMessage());
+                }
+            }
+        });
+
         javax.swing.JOptionPane.showMessageDialog(
-                mainFrame, message, "About " + App.APP_NAME,
+                mainFrame, msgPane, "About " + App.APP_NAME,
                 javax.swing.JOptionPane.PLAIN_MESSAGE, icon);
     }
-    
+
+    /**
+     * #117 Shows the one-time first-run consent dialog for portal sharing.
+     * Fires when {@link App#portalConsentAsked} is {@code false}. After the user
+     * responds the flag is set to {@code true} and persisted so the dialog
+     * never appears again.
+     */
+    public static void promptFirstRunPortalConsent() {
+        String message = "<html><body style='width:380px'>"
+                + "<b>Help the community make smarter hardware decisions!</b><br><br>"
+                + "Your benchmark data, combined with others', help users compare real-world storage "
+                + "performance and identify reliability trends across drives and platforms.<br><br>"
+                + "Would you like to share your results with the jdiskmark.net community portal?<br><br>"
+                + "<ul>"
+                + "<li>Performance metrics (speeds, IOPS, latency) and hardware context (CPU, drive, OS).</li>"
+                + "<li>A non-reversible system identifier — no name or account required.</li>"
+                + "<li>You can change this at any time via the <i>Sharing</i> tab.</li>"
+                + "</ul>"
+                + "</body></html>";
+        int choice = javax.swing.JOptionPane.showConfirmDialog(
+                mainFrame,
+                new javax.swing.JLabel(message),
+                "Share Benchmark Results?",
+                javax.swing.JOptionPane.YES_NO_OPTION,
+                javax.swing.JOptionPane.QUESTION_MESSAGE);
+        App.portalConsentAsked = true; // mark as answered regardless of choice
+        if (choice == javax.swing.JOptionPane.YES_OPTION) {
+            App.sharePortal = true;
+            App.msg("Portal upload enabled — thank you for sharing!");
+        } else {
+            App.sharePortal = false;
+            App.msg("Portal upload declined. You can enable it later via the Sharing tab.");
+        }
+        App.saveConfig(); // persist consent flag and choice immediately
+        if (mainFrame != null) {
+            mainFrame.loadPropertiesConfig();
+        }
+    }
+
+    /**
+     * Offers a one-click prompt to re-enable portal upload when it was active
+     * in the previous session. Called after the main window is visible so the
+     * dialog has a proper parent.
+     */
+    public static void promptResumePortalUpload() {
+        int choice = javax.swing.JOptionPane.showConfirmDialog(
+                mainFrame,
+                "Portal upload was enabled in your last session.\nResume uploading benchmarks to "
+                        + Portal.getUploadUrl() + "?",
+                "Resume Portal Upload?",
+                javax.swing.JOptionPane.YES_NO_OPTION,
+                javax.swing.JOptionPane.QUESTION_MESSAGE);
+        if (choice == javax.swing.JOptionPane.YES_OPTION) {
+            App.sharePortal = true;
+            App.msg("Portal upload resumed.");
+        } else {
+            App.sharePortal = false;
+            App.sharePortalPreviouslyEnabled = false;
+            App.msg("Portal upload not resumed.");
+            App.saveConfig();
+        }
+        if (mainFrame != null) {
+            mainFrame.loadPropertiesConfig();
+        }
+    }
+
     public static void updateChartPanelStyle() {
         // correct the parenthesis from being below vertical centering
         chart.getTitle().setFont(new Font("Verdana", Font.BOLD, 17));
