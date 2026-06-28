@@ -24,9 +24,16 @@ case "$1" in
     configure)
 DESKTOP_COMMANDS_INSTALL
 LAUNCHER_AS_SERVICE_COMMANDS_INSTALL
+        # Install the polkit action file so pkexec shows a branded JDiskMark
+        # prompt when the app requests SMART data access, rather than the
+        # generic "unknown application wants to run as root" dialog.
+        install -D -m 644 \
+            /opt/jdiskmark/net.jdiskmark.smartctl.policy \
+            /usr/share/polkit-1/actions/net.jdiskmark.smartctl.policy || true
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
+        rm -f /usr/share/polkit-1/actions/net.jdiskmark.smartctl.policy
     ;;
 
     *)

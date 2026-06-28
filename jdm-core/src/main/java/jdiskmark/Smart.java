@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -64,6 +66,43 @@ public class Smart {
     public static final Object pLock = new Object();
 
     private static final Logger LOGGER = Logger.getLogger(Smart.class.getName());
+
+    /**
+     * Resolves the path to the {@code smartctl} binary, preferring a bundled
+     * copy shipped with the JDiskMark fat installer over the system installation.
+     *
+     * <p>Resolution order:
+     * <ol>
+     *   <li>{@code $APPDIR/../smartctl/smartctl} — jpackage sets {@code APPDIR}
+     *       at runtime, pointing to the {@code app/} subdirectory of the
+     *       install root (e.g. {@code /opt/jdiskmark/app}). The bundled binary
+     *       lands one level up at {@code /opt/jdiskmark/smartctl/smartctl}.</li>
+     *   <li>{@code /opt/jdiskmark/smartctl/smartctl} — well-known absolute path
+     *       for the fat DEB install, used when APPDIR is not set.</li>
+     *   <li>{@code /usr/sbin/smartctl} — system fallback for dev environments
+     *       and slim-DEB users who have smartmontools installed system-wide.</li>
+     * </ol>
+     */
+    static String resolveSmartctlPath() {
+        // 1. Bundled copy: jpackage sets APPDIR → …/opt/jdiskmark/app
+        String appDir = System.getenv("APPDIR");
+        if (appDir != null) {
+            Path bundled = Path.of(appDir).getParent().resolve("smartctl/smartctl");
+            if (Files.isExecutable(bundled)) {
+                LOGGER.info("Using bundled smartctl (APPDIR): " + bundled);
+                return bundled.toString();
+            }
+        }
+        // 2. Well-known absolute path (fat DEB install without APPDIR in env)
+        Path installed = Path.of("/opt/jdiskmark/smartctl/smartctl");
+        if (Files.isExecutable(installed)) {
+            LOGGER.info("Using installed smartctl: " + installed);
+            return installed.toString();
+        }
+        // 3. System fallback — dev machines, slim DEB with apt smartmontools
+        LOGGER.info("Using system smartctl: /usr/sbin/smartctl");
+        return "/usr/sbin/smartctl";
+    }
 
     /**
      * Launches a single {@code pkexec bash} process and wires up the
@@ -138,7 +177,7 @@ public class Smart {
             synchronized (pLock) {
                 // Write the smartctl command followed by an echo of the sentinel
                 // so we know exactly where the JSON output ends.
-                shellWriter.write("/usr/sbin/smartctl --json -a /dev/" + deviceName + "\n");
+                shellWriter.write(resolveSmartctlPath() + " --json -a /dev/" + deviceName + "\n");
                 shellWriter.write("echo '" + sentinel + "'\n");
                 shellWriter.flush();
 

@@ -1,0 +1,4 @@
+# CI-populated content — not tracked in source control.
+# The linux-deb.yml workflow downloads and extracts the smartctl binary here
+# before the Maven build runs jpackage --app-content against this directory.
+src/main/app-content/
