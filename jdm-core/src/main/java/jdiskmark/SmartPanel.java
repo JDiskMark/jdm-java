@@ -169,7 +169,7 @@ public class SmartPanel extends JPanel {
         statusLabel = new JLabel("Click \u2018Run SMART\u2019 to fetch live data.");
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.ITALIC));
 
-        runButton.addActionListener(e -> Gui.refreshSmartTab());
+        runButton.addActionListener(e -> Gui.runSmart());
         saveButton.addActionListener(e -> Gui.saveCurrentSmartData());
 
         bar.add(runButton);

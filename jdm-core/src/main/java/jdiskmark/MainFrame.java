@@ -660,7 +660,7 @@ public final class MainFrame extends javax.swing.JFrame {
         optionMenu.add(multiFileCheckBoxMenuItem);
 
         smartCbMenuItem.setSelected(true);
-        smartCbMenuItem.setText("S.M.A.R.T.");
+        smartCbMenuItem.setText("Run SMART with Benchmark");
         smartCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 smartCbMenuItemActionPerformed(evt);

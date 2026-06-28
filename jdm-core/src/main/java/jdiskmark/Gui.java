@@ -17,10 +17,12 @@ import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
@@ -99,12 +101,12 @@ public final class Gui {
     public static SmartReportsPanel smartReportsPanel = null;
     public static javax.swing.JTabbedPane mainTabPane = null;
     public static JProgressBar progressBar = null;
-    // last SMART data captured via refreshSmartTab() — used by Save Snapshot button
+    // last SMART data captured via runSmart() — used by Save Snapshot button
     public static Smart lastSmartData = null;
     public static String lastSmartDeviceName = null;
     /**
      * {@code true} while the SMART tab is displaying a stored {@link SmartSnapshot}
-     * rather than freshly fetched live data.  Cleared when {@link #refreshSmartTab()}
+     * rather than freshly fetched live data.  Cleared when {@link #runSmart()}
      * starts a new live query; set by {@link #loadSnapshot(SmartSnapshot)}.
      */
     public static boolean viewingSnapshot = false;
@@ -670,24 +672,29 @@ public final class Gui {
         if (drivesPanel != null) {
             drivesPanel.refresh();
         }
-        // SMART data is fetched lazily via refreshSmartTab(), which is called
-        // by the tab-change listener in MainFrame only when the user selects
-        // the SMART tab.  This prevents the pkexec password dialog from
-        // appearing before the application window is visible.
+        // SMART data is fetched lazily via runSmart(), which is called
+        // by the "Run SMART" button in SmartPanel and optionally after each
+        // benchmark when "Run SMART with Benchmark" is enabled.
     }
 
     /**
      * Fetches fresh SMART data for the current drive in a background thread
-     * and populates the SMART panel when done.  Triggers the pkexec password
+     * and populates the SMART panel when done. Triggers the pkexec password
      * prompt on the very first call (or after the privileged shell dies).
      *
      * <p>Safe to call from the EDT; the privileged I/O runs off-thread.
-     * No-op if SMART is disabled, the OS is not Linux, or the panel is null.
-     * Called by the "Run SMART" button in {@link SmartPanel}.
+     * Called by the "Run SMART" button in {@link SmartPanel} and by
+     * {@link jdiskmark.BenchmarkRunner} when "Run SMART with Benchmark" is enabled.
      */
-    static public void refreshSmartTab() {
-        if (!Smart.smartEnable || !App.isLinux() || smartPanel == null
-                || App.locationDir == null) {
+    static public void runSmart() {
+        
+        if (!App.isLinux()) { 
+            App.msg("SMART is only available in linux");
+            return;
+        }
+        
+        if (smartPanel == null || App.locationDir == null) {
+            App.msg("smartPanel and locationDir must first be initialized");
             return;
         }
         // A live query is starting — we are no longer viewing a stored snapshot.
@@ -705,7 +712,7 @@ public final class Gui {
                     List<String> devices =
                             UtilOs.getDeviceNamesFromPartitionLinux(partition);
                     if (devices == null || devices.isEmpty()) {
-                        SMART_LOG.warning("refreshSmartTab: no device for " + locDir);
+                        SMART_LOG.log(Level.WARNING, "runSmart: no device for {0}", locDir);
                         return null;
                     }
                     deviceRef[0] = devices.get(0);
@@ -714,8 +721,8 @@ public final class Gui {
                         Smart.startHeartbeat();
                     }
                     return Smart.getSmart(deviceRef[0]);
-                } catch (Exception ex) {
-                    SMART_LOG.log(Level.WARNING, "refreshSmartTab: SMART fetch failed", ex);
+                } catch (IOException ex) {
+                    SMART_LOG.log(Level.WARNING, "runSmart: SMART fetch failed", ex);
                     return null;
                 }
             }
@@ -736,8 +743,8 @@ public final class Gui {
                         lastSmartDeviceName = null;
                         smartPanel.clear();
                     }
-                } catch (Exception ex) {
-                    SMART_LOG.log(Level.WARNING, "refreshSmartTab: panel update failed", ex);
+                } catch (InterruptedException | ExecutionException ex) {
+                    SMART_LOG.log(Level.WARNING, "runSmart: panel update failed", ex);
                 }
             }
         }.execute();
