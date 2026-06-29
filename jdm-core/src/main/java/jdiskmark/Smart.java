@@ -193,9 +193,17 @@ public class Smart {
      * @return a populated {@link Smart} instance, or {@code null} on error
      */
     public static Smart getSmart(String deviceName) {
+        if (deviceName == null || !deviceName.matches("[A-Za-z0-9._-]+")) {
+            LOGGER.severe("getSmart: invalid device name: " + deviceName);
+            return null;
+        }
         final String sentinel = "---SMART_DONE---";
         try {
             synchronized (pLock) {
+                if (shellWriter == null || shellReader == null) {
+                    LOGGER.severe("getSmart: privileged shell not initialised");
+                    return null;
+                }
                 // Write the smartctl command followed by an echo of the sentinel
                 // so we know exactly where the JSON output ends.
                 shellWriter.write(resolveSmartctlPath() + " --json -a /dev/" + deviceName + "\n");
