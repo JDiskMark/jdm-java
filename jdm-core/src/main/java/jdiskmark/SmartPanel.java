@@ -633,10 +633,18 @@ public class SmartPanel extends JPanel {
                 nvme.getAvailableSpareThreshold(), true);
         setNvmeField(usedPctValueLabel, nvme.getPercentageUsed(), "%", null, false);
 
-        writtenValueLabel.setText(nvme.getDataWrittenGb()
-                + " GB  (" + nvme.getDataUnitsWritten() + " units)");
-        readValueLabel.setText(nvme.getDataReadGb()
-                + " GB  (" + nvme.getDataUnitsRead() + " units)");
+         if (nvme.getDataUnitsWritten() != null) {
+             writtenValueLabel.setText(nvme.getDataWrittenGb()
+                     + " GB  (" + nvme.getDataUnitsWritten() + " units)");
+         } else {
+             writtenValueLabel.setText("-");
+         }
+         if (nvme.getDataUnitsRead() != null) {
+             readValueLabel.setText(nvme.getDataReadGb()
+                     + " GB  (" + nvme.getDataUnitsRead() + " units)");
+         } else {
+             readValueLabel.setText("-");
+         }
 
         setCountField(mediaErrValueLabel, nvme.getMediaErrors());
         setCountField(errLogValueLabel,   nvme.getNumErrLogEntries());

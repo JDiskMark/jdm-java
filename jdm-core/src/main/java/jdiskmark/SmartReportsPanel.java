@@ -74,6 +74,7 @@ public class SmartReportsPanel extends JPanel {
 
         table = new JTable(model);
         table.setFillsViewportHeight(true);
+        table.setAutoCreateRowSorter(true);
         table.setRowHeight(22);
         table.getColumnModel().getColumn(0).setPreferredWidth(130);
         table.getColumnModel().getColumn(1).setPreferredWidth(90);
@@ -127,16 +128,17 @@ public class SmartReportsPanel extends JPanel {
         // Row selection — load the clicked snapshot into the SMART tab for full replay
         table.getSelectionModel().addListSelectionListener(e -> {
             if (e.getValueIsAdjusting()) return;
-            int row = table.getSelectedRow();
-            if (row < 0 || row >= lastLoaded.size()) return;
-            SmartSnapshot snap = lastLoaded.get(row);
+            int viewRow = table.getSelectedRow();
+            if (viewRow < 0 || viewRow >= lastLoaded.size()) return;
+            int modelRow = table.convertRowIndexToModel(viewRow);
+            SmartSnapshot snap = lastLoaded.get(modelRow);
             Gui.loadSnapshot(snap);
         });
 
         // Delete listeners — attached here so table/model are guaranteed initialized
         deleteSelectedBtn.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row < 0 || row >= lastLoaded.size()) {
+            int viewRow = table.getSelectedRow();
+            if (viewRow < 0 || viewRow >= lastLoaded.size()) {
                 javax.swing.JOptionPane.showMessageDialog(
                         Gui.mainFrame,
                         "Please select a row first.",
@@ -144,7 +146,8 @@ public class SmartReportsPanel extends JPanel {
                         javax.swing.JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            SmartSnapshot snap = lastLoaded.get(row);
+            int modelRow = table.convertRowIndexToModel(viewRow);
+            SmartSnapshot snap = lastLoaded.get(modelRow);
             String label = snap.getCapturedAt() != null
                     ? snap.getCapturedAt().format(FMT) : "unknown";
             int confirm = javax.swing.JOptionPane.showConfirmDialog(
