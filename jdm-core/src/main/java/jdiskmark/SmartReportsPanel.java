@@ -73,8 +73,8 @@ public class SmartReportsPanel extends JPanel {
         };
 
         table = new JTable(model);
-        table.setFillsViewportHeight(true);
         table.setAutoCreateRowSorter(true);
+        table.setFillsViewportHeight(true);
         table.setRowHeight(22);
         table.getColumnModel().getColumn(0).setPreferredWidth(130);
         table.getColumnModel().getColumn(1).setPreferredWidth(90);
