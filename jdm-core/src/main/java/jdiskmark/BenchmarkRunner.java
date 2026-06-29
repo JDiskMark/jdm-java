@@ -1,6 +1,5 @@
 package jdiskmark;
 
-import java.nio.file.Path;
 import static jdiskmark.GcDetector.MAX_GC_RETRIES;
 
 import java.util.logging.Level;
@@ -120,24 +119,11 @@ public class BenchmarkRunner {
             GcDetector.triggerAndWait(); // Initial cleanup
         }
         
+        // Fetch SMART data before the benchmark starts (Linux only, non-fatal if it fails).
+        // Gui.runSmart() handles null/missing locationDir, dead privileged shell, and
+        // device-resolution failures internally — no risk of crashing the benchmark.
         if (Smart.smartEnable && App.isLinux()) {
-            String testDir = config.getTestDir();
-            String partition = UtilOs.getPartitionFromFilePathLinux(Path.of(testDir));
-            String deviceName = UtilOs.getDeviceNamesFromPartitionLinux(partition).get(0);
-
-            // Ensure the privileged bash shell is alive (no-op if already running;
-            // pkexec prompts the user only on the very first benchmark run).
-            if (Smart.process == null || !Smart.process.isAlive()) {
-                Smart.startPrivilegedShell();
-                Smart.startHeartbeat();
-            }
-
-            Smart smart = Smart.getSmart(deviceName);
-
-            // Populate the SMART tab in the GUI
-            if (Gui.smartPanel != null && smart != null) {
-                Gui.smartPanel.populate(smart);
-            }
+            Gui.runSmart();
         }
         
         benchmark.recordStartTime();
