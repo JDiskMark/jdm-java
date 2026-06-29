@@ -382,9 +382,9 @@ public class DrivesPanel extends JPanel {
             protected void done() {
                 try {
                     String[] r = get();
-                    infoModelLabel.setText("Model: " + r[0]);
-                    infoPartitionLabel.setText("Partition: " + r[1]);
-                    infoUsageLabel.setText("Usage: " + r[2]);
+                    infoModelLabel.setText("Model: " + ((r[0] != null && !r[0].isBlank()) ? r[0] : "—"));
+                    infoPartitionLabel.setText("Partition: " + ((r[1] != null && !r[1].isBlank()) ? r[1] : "—"));
+                    infoUsageLabel.setText("Usage: " + ((r[2] != null && !r[2].isBlank()) ? r[2] : "—"));
 
                     int pct = 0;
                     try { pct = Integer.parseInt(r[3]); } catch (NumberFormatException ignore) {}
