@@ -209,18 +209,25 @@ public class SmartSnapshot implements Serializable {
         // Full JSON for lossless replay
         snap.rawJson = smart.getRawJson();
 
+        EntityManager em = EM.getEntityManager();
         try {
-            EntityManager em = EM.getEntityManager();
             em.getTransaction().begin();
             em.persist(snap);
             em.getTransaction().commit();
             LOGGER.info("SmartSnapshot saved: device=" + deviceName
                     + " model=" + snap.modelName + " passed=" + snap.smartPassed);
+            return snap;
         } catch (Exception ex) {
+            try {
+                if (em.getTransaction().isActive()) {
+                    em.getTransaction().rollback();
+                }
+            } catch (Exception rollbackEx) {
+                LOGGER.log(Level.WARNING, "SmartSnapshot.save: rollback failed", rollbackEx);
+            }
             LOGGER.log(Level.SEVERE, "Failed to persist SmartSnapshot", ex);
             return null;
         }
-        return snap;
     }
 
     /**
@@ -240,16 +247,23 @@ public class SmartSnapshot implements Serializable {
      * @return {@code true} if the record was found and deleted
      */
     public static boolean delete(Long id) {
+        EntityManager em = EM.getEntityManager();
+        SmartSnapshot snap = em.find(SmartSnapshot.class, id);
+        if (snap == null) return false;
         try {
-            EntityManager em = EM.getEntityManager();
-            SmartSnapshot snap = em.find(SmartSnapshot.class, id);
-            if (snap == null) return false;
             em.getTransaction().begin();
             em.remove(snap);
             em.getTransaction().commit();
             LOGGER.info("SmartSnapshot deleted: id=" + id);
             return true;
         } catch (Exception ex) {
+            try {
+                if (em.getTransaction().isActive()) {
+                    em.getTransaction().rollback();
+                }
+            } catch (Exception rollbackEx) {
+                LOGGER.log(Level.WARNING, "SmartSnapshot.delete: rollback failed", rollbackEx);
+            }
             LOGGER.log(Level.SEVERE, "Failed to delete SmartSnapshot id=" + id, ex);
             return false;
         }
@@ -261,14 +275,21 @@ public class SmartSnapshot implements Serializable {
      * @return the number of rows deleted
      */
     public static int deleteAll() {
+        EntityManager em = EM.getEntityManager();
         try {
-            EntityManager em = EM.getEntityManager();
             em.getTransaction().begin();
             int count = em.createNamedQuery("SmartSnapshot.deleteAll").executeUpdate();
             em.getTransaction().commit();
             LOGGER.info("SmartSnapshot.deleteAll: removed " + count + " row(s).");
             return count;
         } catch (Exception ex) {
+            try {
+                if (em.getTransaction().isActive()) {
+                    em.getTransaction().rollback();
+                }
+            } catch (Exception rollbackEx) {
+                LOGGER.log(Level.WARNING, "SmartSnapshot.deleteAll: rollback failed", rollbackEx);
+            }
             LOGGER.log(Level.SEVERE, "Failed to delete all SmartSnapshots", ex);
             return 0;
         }
