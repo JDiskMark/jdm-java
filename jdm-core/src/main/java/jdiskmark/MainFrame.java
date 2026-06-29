@@ -97,6 +97,8 @@ public final class MainFrame extends javax.swing.JFrame {
         benchTab.add(bControlMountPanel, BorderLayout.WEST);
         benchTab.add(cResultMountPanel, BorderLayout.CENTER);
         mainTabPane.addTab("Benchmark", benchTab);
+        // Start on the Benchmark tab — it's the primary interaction surface.
+        mainTabPane.setSelectedIndex(mainTabPane.getTabCount() - 1);
 
         // SMART tab — Linux only (requires smartctl / NVMe kernel support)
         if (App.isLinux()) {
@@ -137,18 +139,20 @@ public final class MainFrame extends javax.swing.JFrame {
 
         javax.swing.JSplitPane splitPane = new javax.swing.JSplitPane(
                 javax.swing.JSplitPane.VERTICAL_SPLIT, mainTabPane, southPanel);
-        splitPane.setResizeWeight(0.75);   // 75% of space goes to the top pane
+        splitPane.setResizeWeight(0.0);   // all new vertical space goes to the bottom pane
         splitPane.setDividerSize(6);
         splitPane.setContinuousLayout(true);
 
-        // Set pixel divider position once the frame is realised (height is known)
+        // Place the divider at the minimum position so the bottom panel gets
+        // maximum space on first launch. The user can drag it up to expose more
+        // of the top panel.
         addComponentListener(new java.awt.event.ComponentAdapter() {
             private boolean initialised = false;
             @Override
             public void componentResized(java.awt.event.ComponentEvent e) {
                 if (!initialised) {
                     initialised = true;
-                    splitPane.setDividerLocation(0.75);
+                    splitPane.setDividerLocation(splitPane.getMinimumDividerLocation());
                 }
             }
         });

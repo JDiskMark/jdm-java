@@ -678,6 +678,22 @@ public final class Gui {
     }
 
     /**
+     * Selects the first tab in {@link #mainTabPane} whose title equals
+     * {@code tabTitle}.  No-op if the pane is null or no matching tab exists.
+     *
+     * @param tabTitle the exact tab label to select, e.g. {@code "Benchmark"}
+     */
+    public static void selectMainTab(String tabTitle) {
+        if (mainTabPane == null) return;
+        for (int i = 0; i < mainTabPane.getTabCount(); i++) {
+            if (tabTitle.equals(mainTabPane.getTitleAt(i))) {
+                mainTabPane.setSelectedIndex(i);
+                return;
+            }
+        }
+    }
+
+    /**
      * Fetches fresh SMART data for the current drive in a background thread
      * and populates the SMART panel when done. Triggers the pkexec password
      * prompt on the very first call (or after the privileged shell dies).

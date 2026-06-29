@@ -145,10 +145,6 @@ public class Smart {
             errThread.start();
 
             LOGGER.info("Privileged shell started (pid reuse enabled).");
-                new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
-            shellReader = new BufferedReader(
-                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
-            LOGGER.info("Privileged shell started (pid reuse enabled).");
         }
     }
 
