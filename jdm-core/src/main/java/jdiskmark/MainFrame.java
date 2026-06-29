@@ -35,6 +35,11 @@ public final class MainFrame extends javax.swing.JFrame {
     public MainFrame() {
         initComponents();
         
+        // The Drive Location tab is superseded by the Drives tab in the main
+        // navigation pane — remove it from the bottom tabbed pane at runtime.
+        // The NetBeans-generated field (locationPanel) is kept intact in the form.
+        tabbedPane.remove(locationPanel);
+        
         //for diagnostics
         //controlsPanel.setBackground(Color.blue);
         
@@ -42,6 +47,7 @@ public final class MainFrame extends javax.swing.JFrame {
         cResultMountPanel.setLayout(new BorderLayout());
         Gui.chartPanel.setSize(cResultMountPanel.getSize());
         Gui.chartPanel.setSize(cResultMountPanel.getWidth(), 200);
+        Gui.smartPanel = new SmartPanel();
         cResultMountPanel.add(Gui.chartPanel);
         BenchmarkControlPanel bcPanel = Gui.createControlPanel();
         bControlMountPanel.setLayout(new MigLayout());
@@ -76,6 +82,31 @@ public final class MainFrame extends javax.swing.JFrame {
         DefaultCaret caret = (DefaultCaret)msgTextArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         
+        
+        // Build the left-side main navigation tab pane on all platforms.
+        // The Benchmark tab contains the control panel (left) + chart (right).
+        // The bottom tabbedPane (Benchmark Operations / Events / Drive Location) stays below.
+        javax.swing.JTabbedPane mainTabPane = new javax.swing.JTabbedPane(javax.swing.JTabbedPane.LEFT);
+        mainTabPane.putClientProperty("JTabbedPane.tabRotation", "auto");
+
+        // Drives tab — always visible on all platforms, shown first
+        Gui.drivesPanel = new DrivesPanel();
+        mainTabPane.addTab("Drives", Gui.drivesPanel);
+
+        JPanel benchTab = new JPanel(new BorderLayout());
+        benchTab.add(bControlMountPanel, BorderLayout.WEST);
+        benchTab.add(cResultMountPanel, BorderLayout.CENTER);
+        mainTabPane.addTab("Benchmark", benchTab);
+        // Start on the Benchmark tab — it's the primary interaction surface.
+        mainTabPane.setSelectedIndex(mainTabPane.getTabCount() - 1);
+
+        // SMART tab — Linux only (requires smartctl / NVMe kernel support)
+        if (App.isLinux()) {
+            mainTabPane.addTab("SMART", Gui.smartPanel);
+            Gui.smartReportsPanel = new SmartReportsPanel();
+            // SMART Reports lives in the bottom tabbedPane alongside Benchmark Operations + Events
+            tabbedPane.addTab("SMART Reports", Gui.smartReportsPanel);
+        }
         // #117 Sharing tab — added programmatically so the NetBeans form is untouched.
         sharingPanel = new SharingPanel();
         tabbedPane.addTab("Sharing", sharingPanel);
@@ -84,8 +115,51 @@ public final class MainFrame extends javax.swing.JFrame {
         portalUploadMenuItem.setVisible(false);
         portalEndpointMenu.setVisible(false);
         portalProtocolMenu.setVisible(false);
-    }
 
+
+        // Store reference so SmartReportsPanel can switch to the SMART tab on row selection.
+        Gui.mainTabPane = mainTabPane;
+
+        // Refresh SMART Reports when its bottom-pane tab is selected.
+        tabbedPane.addChangeListener(e -> {
+            int sel = tabbedPane.getSelectedIndex();
+            if (sel >= 0 && "SMART Reports".equals(tabbedPane.getTitleAt(sel))) {
+                if (Gui.smartReportsPanel != null) Gui.smartReportsPanel.refresh();
+            }
+        });
+
+        // Rebuild the content pane: mainTabPane (top) and the bottom panel (tabbedPane +
+        // progress bar) are separated by a draggable vertical JSplitPane divider.
+        getContentPane().removeAll();
+        getContentPane().setLayout(new BorderLayout());
+
+        JPanel southPanel = new JPanel(new BorderLayout());
+        southPanel.add(tabbedPane, BorderLayout.CENTER);
+        southPanel.add(progressPanel, BorderLayout.SOUTH);
+
+        javax.swing.JSplitPane splitPane = new javax.swing.JSplitPane(
+                javax.swing.JSplitPane.VERTICAL_SPLIT, mainTabPane, southPanel);
+        splitPane.setResizeWeight(0.0);   // all new vertical space goes to the bottom pane
+        splitPane.setDividerSize(6);
+        splitPane.setContinuousLayout(true);
+
+        // Place the divider at the minimum position so the bottom panel gets
+        // maximum space on first launch. The user can drag it up to expose more
+        // of the top panel.
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            private boolean initialised = false;
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                if (!initialised) {
+                    initialised = true;
+                    splitPane.setDividerLocation(splitPane.getMinimumDividerLocation());
+                }
+            }
+        });
+
+        getContentPane().add(splitPane, BorderLayout.CENTER);
+    }
+    
     public JPanel getMountPanel() {
         return cResultMountPanel;
     }
@@ -170,6 +244,7 @@ public final class MainFrame extends javax.swing.JFrame {
         }
         gcHintsCbMenuItem.setSelected(GcDetector.gcHintsEnabled);
         gcRetryCbMenuItem.setSelected(GcDetector.gcRetryEnabled);
+        smartCbMenuItem.setSelected(Smart.smartEnable);
         exportMenu.setEnabled(App.benchmark != null);
     }
     
@@ -231,6 +306,7 @@ public final class MainFrame extends javax.swing.JFrame {
         align16KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align64KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         multiFileCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
+        smartCbMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator4 = new javax.swing.JPopupMenu.Separator();
         gcHintsCbMenuItem = new javax.swing.JCheckBoxMenuItem();
         gcRetryCbMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -586,6 +662,15 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
         optionMenu.add(multiFileCheckBoxMenuItem);
+
+        smartCbMenuItem.setSelected(true);
+        smartCbMenuItem.setText("Run SMART with Benchmark");
+        smartCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                smartCbMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(smartCbMenuItem);
         optionMenu.add(jSeparator4);
 
         gcHintsCbMenuItem.setText("GC Hint Optimizing");
@@ -1076,6 +1161,12 @@ public final class MainFrame extends javax.swing.JFrame {
         App.saveConfig();
     }//GEN-LAST:event_httpsProtoRbMenuItemActionPerformed
 
+    private void smartCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_smartCbMenuItemActionPerformed
+        Smart.smartEnable = this.smartCbMenuItem.isSelected();
+        App.saveConfig();
+        
+    }//GEN-LAST:event_smartCbMenuItemActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
     private javax.swing.JRadioButtonMenuItem align16KRbMenuItem;
@@ -1150,6 +1241,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JCheckBoxMenuItem showAccessCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem showMaxMinCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem showSingleOpMenuItem;
+    private javax.swing.JCheckBoxMenuItem smartCbMenuItem;
     private javax.swing.JTabbedPane tabbedPane;
     private javax.swing.JRadioButtonMenuItem testEndpointRbMenuItem;
     private javax.swing.ButtonGroup themeButtonGroup;

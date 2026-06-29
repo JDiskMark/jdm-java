@@ -93,6 +93,26 @@ if [ -n "$DESKTOP" ]; then
     echo "[patch] Result ($(basename $DESKTOP)):"
     cat "$DESKTOP"
 fi
+
+# Inject bundled smartctl runtime (staged by linux-deb.yml before Maven runs).
+# --app-content is not reliable for the DEB format so we inject here instead.
+APP_CONTENT="${project.basedir}/src/main/app-content"
+if [ -d "$APP_CONTENT/smartctl" ]; then
+    cp -r "$APP_CONTENT/smartctl" "$WORK/pkg/opt/jdiskmark/smartctl"
+    chmod 755 "$WORK/pkg/opt/jdiskmark/smartctl/smartctl"
+    echo "[patch] Injected smartctl: $($WORK/pkg/opt/jdiskmark/smartctl/smartctl --version 2>&1 | head -1)"
+else
+    echo "[patch] WARNING: app-content/smartctl not found — skipping (slim build or local dev)"
+fi
+
+# Copy the polkit policy file so postinst can install it from the package root.
+POLICY="${project.basedir}/src/main/jpackage-resources/net.jdiskmark.smartctl.policy"
+if [ -f "$POLICY" ]; then
+    cp "$POLICY" "$WORK/pkg/opt/jdiskmark/net.jdiskmark.smartctl.policy"
+    chmod 644 "$WORK/pkg/opt/jdiskmark/net.jdiskmark.smartctl.policy"
+    echo "[patch] Included polkit policy file"
+fi
+
 dpkg-deb -b "$WORK/pkg" "$DEB"
 echo "[patch] Done."
                                         ]]></argument>

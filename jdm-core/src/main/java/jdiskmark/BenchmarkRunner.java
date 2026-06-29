@@ -119,6 +119,13 @@ public class BenchmarkRunner {
             GcDetector.triggerAndWait(); // Initial cleanup
         }
         
+        // Fetch SMART data before the benchmark starts (Linux only, non-fatal if it fails).
+        // Gui.runSmart() handles null/missing locationDir, dead privileged shell, and
+        // device-resolution failures internally — no risk of crashing the benchmark.
+        if (Smart.smartEnable && App.isLinux()) {
+            Gui.runSmart();
+        }
+        
         benchmark.recordStartTime();
         
         // Execution Loops

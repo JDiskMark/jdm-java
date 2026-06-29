@@ -82,7 +82,7 @@ sudo pkgutil --forget net.jdiskmark.JDiskMark
 ### Flatpak Installer (.flatpak)
 
 The flatpak installer is a universal linux package that can be used on many distributions.
-Some gaming-oriented distros such as Bazzite or SteamOS have Flatpak and Flathub 
+Some gaming-oriented distros such as Bazzite or SteamOS have Flatpak and Flathub
 pre-configured.
 
 #### 1. Add Flathub (if not already configured)
@@ -147,7 +147,7 @@ Java 25 to be installed separately.
 
 ## Launching as normal process
 
-Note: Running without sudo or a windows administrator will require manually 
+Note: Running without sudo or a windows administrator will require manually
 clearing the disk write cache before performing read benchmarks.
 
 1. Open a terminal or shell in the extracted directory.
@@ -166,7 +166,7 @@ clearing the disk write cache before performing read benchmarks.
 
 ## Launching gui with elevated privileges
 
-Note: Take advantage of automatic clearing of the disk cache for write read 
+Note: Take advantage of automatic clearing of the disk cache for write read
 benchmarks start with sudo or an administrator windows shell.
 
 - Linux: `sudo java -jar jdiskmark.jar`
@@ -294,6 +294,40 @@ JDiskMark is developed with [NetBeans 25](https://netbeans.apache.org/front/main
 | RPM (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm` |
 | Flatpak (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak` |
 | macOS PKG (macOS only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am -Pmacos-pkg` |
+
+### SMART Feature Development (Linux)
+
+The SMART tab uses `smartctl` to query drive health data via `pkexec` privilege
+escalation. Two setup tiers are available depending on what you are testing:
+
+**Tier 1 — Day-to-day development** (recommended for most contributors)
+
+Install `smartmontools` from your system package manager:
+
+```sh
+sudo apt install smartmontools   # Ubuntu / Debian
+sudo dnf install smartmontools   # Fedora / RHEL
+```
+
+The app will find `/usr/sbin/smartctl` automatically as a fallback.
+The system version may be older than the bundled binary (7.2 on Ubuntu 22.04,
+7.4 on Ubuntu 24.04) but is sufficient for testing all SMART code paths.
+
+**Tier 2 — Integration / packaging testing**
+
+Install the latest fat DEB artifact from CI
+(`jdiskmark_<version>_amd64.deb`):
+
+```sh
+sudo dpkg -i jdiskmark_<version>_amd64.deb
+```
+
+This places the bundled `smartctl 7.5` binary at
+`/opt/jdiskmark/smartctl/smartctl`. The app's path resolver
+(`Smart.resolveSmartctlPath()`) finds it at that well-known path and uses it
+automatically — even when running from the IDE. No `PATH` changes are needed.
+This tier lets you test the exact runtime users will have after installing the
+fat DEB.
 
 ### Pipeline triggered pre-release
 

@@ -35,6 +35,8 @@ public class OperationTableSelectionListener implements ListSelectionListener {
                 } else {
                     Gui.loadBenchmark(benchmark);
                 }
+                // Bring the Benchmark tab to the front so the chart updates are visible.
+                Gui.selectMainTab("Benchmark");
             }
         }
     }

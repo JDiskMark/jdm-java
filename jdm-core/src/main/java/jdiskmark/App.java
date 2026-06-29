@@ -589,6 +589,7 @@ public class App {
             writeSyncEnable = profile.isWriteSyncEnable();
             sectorAlignment = profile.getSectorAlignment();
             multiFile = profile.isMultiFile();
+//            Smart.smartEnable = profile.getEnableSmart();
         } finally {
             saveConfig();
         }
@@ -652,6 +653,9 @@ public class App {
 
         value = p.getProperty("multiFile", String.valueOf(multiFile));
         multiFile = Boolean.parseBoolean(value);
+        
+        value = p.getProperty("smartEnable", String.valueOf(Smart.smartEnable));
+        Smart.smartEnable = Boolean.parseBoolean(value);
 
         value = p.getProperty("autoRemoveData", String.valueOf(autoRemoveData));
         autoRemoveData = Boolean.parseBoolean(value);
@@ -750,6 +754,7 @@ public class App {
         p.setProperty("profileModified", String.valueOf(profileModified));
         p.setProperty("benchmarkType", benchmarkType.name());
         p.setProperty("multiFile", String.valueOf(multiFile));
+        p.setProperty("smartEnable", String.valueOf(Smart.smartEnable));
         p.setProperty("autoRemoveData", String.valueOf(autoRemoveData));
         p.setProperty("autoReset", String.valueOf(autoReset));
         p.setProperty("blockSequence", blockSequence.name());
@@ -822,6 +827,7 @@ public class App {
         sb.append("writeTest: ").append(hasWriteOperation()).append('\n');
         sb.append("locationDir: ").append(locationDir).append('\n');
         sb.append("multiFile: ").append(multiFile).append('\n');
+        
         sb.append("autoRemoveData: ").append(autoRemoveData).append('\n');
         sb.append("autoReset: ").append(autoReset).append('\n');
         sb.append("blockSequence: ").append(blockSequence).append('\n');
