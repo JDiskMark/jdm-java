@@ -756,11 +756,17 @@ public class SmartPanel extends JPanel {
 
     private void setNvmeField(JLabel lbl, Integer value, String suffix,
                               Integer threshold, boolean higherIsBetter) {
-        if (value == null) { lbl.setText("-"); return; }
+        if (value == null) {
+            lbl.setText("-");
+            lbl.setForeground(null);
+            return;
+        }
         lbl.setText(value + suffix);
         if (threshold != null) {
             boolean warn = higherIsBetter ? value <= threshold : value >= threshold;
             lbl.setForeground(warn ? new Color(0xF44336) : new Color(0x4CAF50));
+        } else {
+            lbl.setForeground(null);
         }
     }
 
