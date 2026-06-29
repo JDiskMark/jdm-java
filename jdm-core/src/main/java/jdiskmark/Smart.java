@@ -127,6 +127,27 @@ public class Smart {
                 new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
             shellReader = new BufferedReader(
                 new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+
+            // Drain stderr so the process can't deadlock if it emits output there.
+            final BufferedReader errReader = new BufferedReader(
+                    new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
+            Thread errThread = new Thread(() -> {
+                try {
+                    String l;
+                    while ((l = errReader.readLine()) != null) {
+                        LOGGER.warning("[smart-shell] " + l);
+                    }
+                } catch (IOException e) {
+                    LOGGER.log(Level.FINE, "smart-shell stderr reader stopped", e);
+                }
+            }, "smart-shell-stderr");
+            errThread.setDaemon(true);
+            errThread.start();
+
+            LOGGER.info("Privileged shell started (pid reuse enabled).");
+                new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
+            shellReader = new BufferedReader(
+                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
             LOGGER.info("Privileged shell started (pid reuse enabled).");
         }
     }
