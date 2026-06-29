@@ -800,7 +800,6 @@ public class App {
         config.gcRetryEnabled = GcDetector.gcRetryEnabled;
         config.gcHintsEnabled = GcDetector.gcHintsEnabled;
         config.multiFileEnabled = multiFile;
-//        config.enabledSmart = Smart.smartEnable; --- TODO in config ---
         config.testDir = dataDir.getAbsolutePath();
         return config;
     }
