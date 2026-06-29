@@ -151,6 +151,10 @@ public class SmartSnapshot implements Serializable {
      * @return the persisted snapshot, or {@code null} on error
      */
     public static SmartSnapshot save(Smart smart, String deviceName) {
+        if (smart == null) {
+            LOGGER.warning("SmartSnapshot.save: smart is null (device=" + deviceName + ")");
+            return null;
+        }
         SmartSnapshot snap = new SmartSnapshot();
         snap.capturedAt  = LocalDateTime.now();
         snap.deviceName  = deviceName;
