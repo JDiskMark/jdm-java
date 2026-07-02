@@ -39,6 +39,7 @@ public final class MainFrame extends javax.swing.JFrame {
         // navigation pane — remove it from the bottom tabbed pane at runtime.
         // The NetBeans-generated field (locationPanel) is kept intact in the form.
         tabbedPane.remove(locationPanel);
+        tabbedPane.setTitleAt(0, "Benchmark Reports");
         
         //for diagnostics
         //controlsPanel.setBackground(Color.blue);
@@ -104,8 +105,8 @@ public final class MainFrame extends javax.swing.JFrame {
         if (App.isLinux()) {
             mainTabPane.addTab("SMART", Gui.smartPanel);
             Gui.smartReportsPanel = new SmartReportsPanel();
-            // SMART Reports lives in the bottom tabbedPane alongside Benchmark Operations + Events
-            tabbedPane.addTab("SMART Reports", Gui.smartReportsPanel);
+            // SMART Reports is inserted at index 1: Benchmark Reports | SMART Reports | Events
+            tabbedPane.insertTab("SMART Reports", null, Gui.smartReportsPanel, null, 1);
         }
         // #117 Sharing tab — added programmatically so the NetBeans form is untouched.
         sharingPanel = new SharingPanel();
