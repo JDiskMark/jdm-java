@@ -106,8 +106,8 @@ public final class MainFrame extends javax.swing.JFrame {
         }
         
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
-        autoRemoveCheckBoxMenuItem.setSelected(App.autoRemoveData);
-        autoResetCheckBoxMenuItem.setSelected(App.autoReset);
+        autoRemoveCheckBoxMenuItem.setSelected(App.autoRemoveData); // kept in sync for generated menu item state
+        autoResetCheckBoxMenuItem.setSelected(App.autoReset);       // kept in sync for generated menu item state
         // display preferences
         showSingleOpMenuItem.setSelected(Gui.showSingleOp);
         showMaxMinCheckBoxMenuItem.setSelected(Gui.showMaxMin);
@@ -169,8 +169,8 @@ public final class MainFrame extends javax.swing.JFrame {
             case ALIGN_16K -> align16KRbMenuItem.setSelected(true);
             case ALIGN_64K -> align64KRbMenuItem.setSelected(true);
         }
-        gcHintsCbMenuItem.setSelected(GcDetector.gcHintsEnabled);
-        gcRetryCbMenuItem.setSelected(GcDetector.gcRetryEnabled);
+        gcHintsCbMenuItem.setSelected(GcDetector.gcHintsEnabled); // kept in sync for generated menu item state
+        gcRetryCbMenuItem.setSelected(GcDetector.gcRetryEnabled); // kept in sync for generated menu item state
         exportMenu.setEnabled(App.benchmark != null);
         Gui.refreshChartBadges();
     }
@@ -1115,7 +1115,9 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_httpsProtoRbMenuItemActionPerformed
 
     private void advancedOptionsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_advancedOptionsMenuItemActionPerformed
-        Gui.getAdvancedFrame().setVisible(true);
+        AdvancedOptionsFrame frame = Gui.getAdvancedFrame();
+        frame.syncFromModel(); // ensure controls reflect current state before showing
+        frame.setVisible(true);
     }//GEN-LAST:event_advancedOptionsMenuItemActionPerformed
 
     private void showBadgesCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showBadgesCbMenuItemActionPerformed
