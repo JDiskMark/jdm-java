@@ -9,12 +9,14 @@ import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 import jdiskmark.Benchmark.IOMode;
 
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Shape;
+import java.awt.Stroke;
 import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -55,7 +57,7 @@ import org.jfree.ui.RectangleInsets;
  */
 public final class Gui {
     
-    public enum Palette { CLASSIC, BLUE_GREEN, BARD_COOL, BARD_WARM };
+    public enum Palette { CLASSIC, BLUE_GREEN, BARD_COOL, BARD_WARM, BETA };
     
     public enum Theme {
         DARK("Dark"),
@@ -1218,6 +1220,7 @@ public final class Gui {
      */
     static void setClassicColorScheme() {
         palette = Palette.CLASSIC;
+        restoreDefaultPlotBackground();
         
         // configure the bw series colors
         bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
@@ -1242,6 +1245,7 @@ public final class Gui {
     static void setBlueGreenScheme() {
         System.out.println("setting blue green palette");
         palette = Palette.BLUE_GREEN;
+        restoreDefaultPlotBackground();
         
         // configure the bw series colors
         
@@ -1270,6 +1274,7 @@ public final class Gui {
     static void setCoolColorScheme() {
         System.out.println("setting cool palette");
         palette = Palette.BARD_COOL;
+        restoreDefaultPlotBackground();
         
         // configure the bw series colors
         bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
@@ -1292,6 +1297,7 @@ public final class Gui {
     static void setWarmColorScheme() {
         System.out.println("setting warm palette");
         palette = Palette.BARD_WARM;
+        restoreDefaultPlotBackground();
         
         // configure the bw series colors
         bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
@@ -1308,6 +1314,66 @@ public final class Gui {
         msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
         msRenderer.setSeriesPaint(0, new Color(0xFFC107)); // w acc
         msRenderer.setSeriesPaint(1, new Color(0xE91E63)); // r acc
+    }
+
+    /**
+     * Beta palette — matches the Python/matplotlib dark-background look.
+     * Dark plot area (#1c1c1c), orange write series, cyan read series.
+     */
+    static void setBetaColorScheme() {
+        System.out.println("setting beta palette");
+        palette = Palette.BETA;
+
+        XYPlot plot = (XYPlot) chart.getPlot();
+        plot.setBackgroundPaint(new Color(0x1C1C1C));
+        plot.setOutlinePaint(new Color(0x555555));
+        plot.setDomainGridlinePaint(new Color(0x3A3A3A));
+        plot.setRangeGridlinePaint(new Color(0x3A3A3A));
+
+        // JFreeChart 1.0.x resets the BasicStroke dash phase per segment (each segment is a
+        // separate Line2D draw call). At high sample density (~2.5 px/segment when 200 samples
+        // fill ~500 px) a long "8 on / 4 off" dash appears solid because the segment ends before
+        // the first gap. A short "on" phase (2 px) shorter than the segment length forces a
+        // visible break at the tail of every segment, producing a dotted appearance at any density.
+        Stroke avgDot = new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
+                10.0f, new float[]{2.0f, 6.0f}, 0.0f);
+
+        // configure the bw series colors
+        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        bwRenderer.setSeriesPaint(0, new Color(0xE07B39));            // write BW
+        bwRenderer.setSeriesPaint(1, new Color(189, 176, 138, 200)); // w avg — alpha-softened, dotted
+        bwRenderer.setSeriesStroke(1, avgDot);
+        bwRenderer.setSeriesPaint(2, new Color(0xF5A623));            // w max
+        bwRenderer.setSeriesPaint(3, new Color(0xC0623A));            // w min
+        bwRenderer.setSeriesPaint(4, new Color(0x4FC3F7));            // read BW
+        bwRenderer.setSeriesPaint(5, new Color(160, 216, 239, 200)); // r avg — alpha-softened, dotted
+        bwRenderer.setSeriesStroke(5, avgDot);
+        bwRenderer.setSeriesPaint(6, new Color(0x81D4FA));            // r max
+        bwRenderer.setSeriesPaint(7, new Color(0x0288D1));            // r min
+
+        // configure the access time ms colors
+        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        msRenderer.setSeriesPaint(0, new Color(0xE07B39)); // w acc
+        msRenderer.setSeriesPaint(1, new Color(0x4FC3F7)); // r acc
+    }
+
+    /**
+     * Restores plot background to the default LAF-driven style.
+     * Called when switching away from the Beta palette.
+     */
+    static void restoreDefaultPlotBackground() {
+        if (chart == null) return;
+        XYPlot plot = (XYPlot) chart.getPlot();
+        plot.setBackgroundPaint(Color.DARK_GRAY.darker());
+        plot.setOutlinePaint(Color.WHITE);
+        // JFreeChart 1.x does not accept null paint — restore to a neutral grid color
+        plot.setDomainGridlinePaint(new Color(80, 80, 80));
+        plot.setRangeGridlinePaint(new Color(80, 80, 80));
+        // clear any Beta-specific per-series dashed strokes on the avg lines
+        if (bwRenderer != null) {
+            bwRenderer.setSeriesStroke(1, null); // w avg — back to renderer default (solid)
+            bwRenderer.setSeriesStroke(5, null); // r avg — back to renderer default (solid)
+        }
     }
     
     public static void browseLocation() {
