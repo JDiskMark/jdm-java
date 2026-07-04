@@ -91,6 +91,8 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
         Object selected = renderModeCombo.getSelectedItem();
         if (selected instanceof RenderFrequencyMode mode) {
             App.rmOption = mode;
+            App.saveConfig();
+            Gui.refreshChartBadges();
         }
     }//GEN-LAST:event_renderModeComboActionPerformed
 

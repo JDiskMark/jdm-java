@@ -32,11 +32,11 @@ public final class MainFrame extends javax.swing.JFrame {
         //for diagnostics
         //controlsPanel.setBackground(Color.blue);
         
-        Gui.createChartPanel();
+        javax.swing.JPanel chartWrapper = Gui.createChartPanel();
         cResultMountPanel.setLayout(new BorderLayout());
         Gui.chartPanel.setSize(cResultMountPanel.getSize());
         Gui.chartPanel.setSize(cResultMountPanel.getWidth(), 200);
-        cResultMountPanel.add(Gui.chartPanel);
+        cResultMountPanel.add(chartWrapper);
         BenchmarkControlPanel bcPanel = Gui.createControlPanel();
         bControlMountPanel.setLayout(new MigLayout());
         bControlMountPanel.add(bcPanel);
@@ -171,6 +171,7 @@ public final class MainFrame extends javax.swing.JFrame {
         gcHintsCbMenuItem.setSelected(GcDetector.gcHintsEnabled);
         gcRetryCbMenuItem.setSelected(GcDetector.gcRetryEnabled);
         exportMenu.setEnabled(App.benchmark != null);
+        Gui.refreshChartBadges();
     }
     
     /**
@@ -894,6 +895,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private void writeSyncCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_writeSyncCheckBoxMenuItemActionPerformed
         App.writeSyncEnable = writeSyncCheckBoxMenuItem.getState();
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_writeSyncCheckBoxMenuItemActionPerformed
 
     private void deleteAllBenchmarksItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteAllBenchmarksItemActionPerformed
@@ -977,6 +979,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private void directIoCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_directIoCbMenuItemActionPerformed
         App.directEnable = directIoCbMenuItem.isSelected();
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_directIoCbMenuItemActionPerformed
 
     private void engModernRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_engModernRbMenuItemActionPerformed
@@ -996,26 +999,31 @@ public final class MainFrame extends javax.swing.JFrame {
     private void align512RbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align512RbMenuItemActionPerformed
         App.sectorAlignment = App.SectorAlignment.ALIGN_512;
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_align512RbMenuItemActionPerformed
 
     private void align4KRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align4KRbMenuItemActionPerformed
         App.sectorAlignment = App.SectorAlignment.ALIGN_4K;
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_align4KRbMenuItemActionPerformed
 
     private void align8KRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align8KRbMenuItemActionPerformed
         App.sectorAlignment = App.SectorAlignment.ALIGN_8K;
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_align8KRbMenuItemActionPerformed
 
     private void align16KRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align16KRbMenuItemActionPerformed
         App.sectorAlignment = App.SectorAlignment.ALIGN_16K;
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_align16KRbMenuItemActionPerformed
 
     private void align64KRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align64KRbMenuItemActionPerformed
         App.sectorAlignment = App.SectorAlignment.ALIGN_64K;
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_align64KRbMenuItemActionPerformed
 
     private void localEndpointRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_localEndpointRbMenuItemActionPerformed
@@ -1036,6 +1044,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private void alignNoneRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alignNoneRbMenuItemActionPerformed
         App.sectorAlignment = App.SectorAlignment.NONE;
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_alignNoneRbMenuItemActionPerformed
 
     private void darkThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_darkThemeRbMenuItemActionPerformed

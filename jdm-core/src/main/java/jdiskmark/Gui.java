@@ -9,8 +9,10 @@ import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 import jdiskmark.Benchmark.IOMode;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Shape;
 import java.awt.geom.Rectangle2D;
@@ -19,6 +21,7 @@ import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import javax.swing.SwingWorker.StateValue;
@@ -91,8 +94,15 @@ public final class Gui {
     public static SelectDriveFrame selFrame = null;
     public static BenchmarkPanel runPanel = null;
     public static JProgressBar progressBar = null;
-    // status label shown in Options > Render Mode menu
-    public static javax.swing.JLabel renderModeLabel = null;
+    // chart badge strip — declared null until createChartPanel() wires them up
+    public static javax.swing.JLabel directIoLabel    = null;
+    public static javax.swing.JLabel writeSyncLabel   = null;
+    public static javax.swing.JLabel sectorLabel      = null;
+    public static javax.swing.JLabel renderModeLabel  = null;
+    public static javax.swing.JLabel ioEngineLabel    = null;
+    public static javax.swing.JLabel multiFileLabel   = null;
+    /** Priority-ordered list used by the single-row truncation listener. */
+    private static List<javax.swing.JLabel> chartBadgeStrip = null;
     // lazy-init singleton — created on first access after the LAF is applied
     private static AdvancedOptionsFrame advancedFrame = null;
 
@@ -100,6 +110,7 @@ public final class Gui {
      * Returns the Advanced Options dialog, creating it on the first call.
      * The singleton is initialised lazily so the Look-and-Feel is fully applied
      * before any Swing components are constructed.
+     * @return reference to the Advanced Options Frame
      */
     public static AdvancedOptionsFrame getAdvancedFrame() {
         if (advancedFrame == null) {
@@ -351,7 +362,7 @@ public final class Gui {
         }
     }
     
-    public static ChartPanel createChartPanel() {
+    public static javax.swing.JPanel createChartPanel() {
         
         wSeries = new XYSeries("Write Sample");
         wAvgSeries = new XYSeries("Write Trend");
@@ -441,7 +452,7 @@ public final class Gui {
         
         updateChartPanelStyle();
         
-        chartPanel = new ChartPanel(chart) {
+        ChartPanel rawChartPanel = new ChartPanel(chart) {
             // Only way to set the size of chart panel
             // ref: http://www.jfree.org/phpBB2/viewtopic.php?p=75516
             @Override
@@ -450,7 +461,7 @@ public final class Gui {
             }
         };
         
-        chartPanel.addChartMouseListener(new ChartMouseListener() {
+        rawChartPanel.addChartMouseListener(new ChartMouseListener() {
             private long lastClickTime = 0;
             @Override
             public void chartMouseClicked(ChartMouseEvent event) {
@@ -473,7 +484,145 @@ public final class Gui {
             }
         });
         updateLegendAndAxis();
-        return chartPanel;
+
+        // chart badge strip (priority order: most → least interpretively important)
+        directIoLabel   = makeBadge();
+        writeSyncLabel  = makeBadge();
+        sectorLabel     = makeBadge();
+        ioEngineLabel   = makeBadge();
+        multiFileLabel  = makeBadge();
+        renderModeLabel = makeBadge();
+        refreshChartBadges();
+
+        // ordered list: priority order (most → least interpretively important)
+        chartBadgeStrip = new ArrayList<>(List.of(
+                directIoLabel, writeSyncLabel, sectorLabel,
+                ioEngineLabel, multiFileLabel, renderModeLabel));
+
+        // topPanel: override getPreferredSize() so the badge strip never drives the container
+        // wider than the chart panel below it. Width=0 means BorderLayout NORTH takes the
+        // container's width (set by CENTER) rather than expanding to fit all badges.
+        javax.swing.JPanel topPanel = new javax.swing.JPanel(new FlowLayout(FlowLayout.CENTER, 4, 2)) {
+            @Override
+            public java.awt.Dimension getPreferredSize() {
+                return new java.awt.Dimension(0, super.getPreferredSize().height);
+            }
+        };
+        topPanel.setOpaque(false);
+        for (javax.swing.JLabel badge : chartBadgeStrip) topPanel.add(badge);
+
+
+        // re-evaluate on every window resize
+        topPanel.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                fitBadgesToOneRow(topPanel);
+            }
+        });
+
+        javax.swing.JPanel chartWrapper = new javax.swing.JPanel(new BorderLayout());
+        chartWrapper.setOpaque(false);
+        chartWrapper.add(topPanel, BorderLayout.NORTH);
+        chartWrapper.add(rawChartPanel, BorderLayout.CENTER);
+
+        chartPanel = (ChartPanel) rawChartPanel;
+        return chartWrapper;
+    }
+
+    /**
+     * Shows badges left-to-right until the next one would overflow the panel width,
+     * then hides all remaining. Uses Toolkit FontMetrics so badge widths are correct
+     * even before the components have been painted for the first time.
+     */
+    private static void fitBadgesToOneRow(javax.swing.JPanel topPanel) {
+        if (chartBadgeStrip == null) return;
+        FlowLayout fl = (FlowLayout) topPanel.getLayout();
+        int hgap = fl.getHgap();
+        java.awt.Insets ins = topPanel.getInsets();
+        // Subtract panel insets AND FlowLayout's own leading margin (one hgap on the left)
+        int available = topPanel.getWidth() - ins.left - ins.right - hgap;
+        if (available <= 0) return; // not yet laid out — skip until a real width arrives
+        int used = 0;
+        boolean overflowed = false;
+        for (javax.swing.JLabel badge : chartBadgeStrip) {
+            if (overflowed) {
+                badge.setVisible(false);
+                continue;
+            }
+            // Measure text width without relying on a rendered peer.
+            // TextLayout uses the font's own metrics via a scratch FontRenderContext.
+            java.awt.font.FontRenderContext frc = new java.awt.font.FontRenderContext(null, false, false);
+            int textWidth = (badge.getText().isEmpty()) ? 0
+                    : (int) Math.ceil(new java.awt.font.TextLayout(badge.getText(), badge.getFont(), frc).getAdvance());
+            java.awt.Insets bi = badge.getInsets();
+            int badgeWidth = textWidth + bi.left + bi.right;
+            int needed = badgeWidth + (used > 0 ? hgap : 0);
+            if (used + needed <= available) {
+                badge.setVisible(true);
+                used += needed;
+            } else {
+                badge.setVisible(false);
+                overflowed = true;
+            }
+        }
+    }
+
+    /** Creates a badge label with shared styling. */
+    private static javax.swing.JLabel makeBadge() {
+        javax.swing.JLabel lbl = new javax.swing.JLabel();
+        lbl.setFont(new Font("SansSerif", Font.BOLD, 11));
+        lbl.setForeground(new Color(200, 200, 200));
+        lbl.setOpaque(true);
+        lbl.setBackground(new Color(40, 40, 40, 180));
+        lbl.setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6));
+        return lbl;
+    }
+
+    /**
+     * Refreshes all chart badge labels to reflect the current App settings.
+     * Safe to call from any thread — posts to the EDT if needed.
+     */
+    public static void refreshChartBadges() {
+        if (directIoLabel == null) return;
+        Runnable update = () -> {
+            directIoLabel.setText("Direct IO: "   + (App.directEnable    ? "On" : "Off"));
+            writeSyncLabel.setText("Write Sync: " + (App.writeSyncEnable  ? "On" : "Off"));
+            sectorLabel.setText("Sector: "        + App.sectorAlignment.display.split(" \\(")[0]);
+            ioEngineLabel.setText("Engine: "      + App.ioEngine.toString().split(" ")[0]);
+            multiFileLabel.setText("Multi-File: " + (App.multiFile ? "On" : "Off"));
+            renderModeLabel.setText("Render: "     + App.rmOption.toString());
+        };
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+            update.run();
+        } else {
+            javax.swing.SwingUtilities.invokeLater(update);
+        }
+    }
+
+    /**
+     * Refreshes badge labels from nullable stored values (e.g. a loaded benchmark).
+     * Any null value is rendered as "—" to indicate the data was not recorded.
+     * Safe to call from any thread.
+     */
+    public static void refreshChartBadges(Boolean directIo, Boolean writeSync,
+                                          App.SectorAlignment sector, RenderFrequencyMode renderMode,
+                                          App.IoEngine ioEngine, Boolean multiFile) {
+        if (directIoLabel == null) return;
+        Runnable update = () -> {
+            directIoLabel.setText("Direct IO: "   + (directIo  != null ? (directIo  ? "On" : "Off") : "—"));
+            writeSyncLabel.setText("Write Sync: " + (writeSync != null ? (writeSync ? "On" : "Off") : "—"));
+            String sectorText = sector != null ? sector.display.split(" \\(")[0] : "—";
+            sectorLabel.setText("Sector: " + sectorText);
+            String engineText = ioEngine != null ? ioEngine.toString().split(" ")[0] : "—";
+            ioEngineLabel.setText("Engine: " + engineText);
+            multiFileLabel.setText("Multi-File: " + (multiFile != null ? (multiFile ? "On" : "Off") : "—"));
+            renderModeLabel.setText("Render: " + (renderMode != null ? renderMode.toString() : "—"));
+        };
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+            update.run();
+        } else {
+            javax.swing.SwingUtilities.invokeLater(update);
+        }
     }
     
     public static BenchmarkControlPanel createControlPanel() {
@@ -693,6 +842,10 @@ public final class Gui {
         App.activeProfile = benchmark.config.profile;
         App.profileModified = benchmark.config.profileModified;
         mainFrame.refreshConfig();
+        // override badges with the values recorded at run time (— if absent in older records)
+        refreshChartBadges(benchmark.config.directIoEnabled, benchmark.config.writeSyncEnabled,
+                           benchmark.config.sectorAlignment, benchmark.getRenderMode(),
+                           benchmark.config.ioEngine, benchmark.config.multiFileEnabled);
         
         // operation data
         for (BenchmarkOperation operation : benchmark.operations) {
@@ -745,6 +898,10 @@ public final class Gui {
         App.blockSequence = operation.blockOrder;
         App.numOfThreads = operation.numThreads;
         mainFrame.refreshConfig();
+        // override badges with the values recorded at run time (— if absent in older records)
+        refreshChartBadges(benchmark.config.directIoEnabled, benchmark.config.writeSyncEnabled,
+                           benchmark.config.sectorAlignment, benchmark.getRenderMode(),
+                           benchmark.config.ioEngine, benchmark.config.multiFileEnabled);
         switch (operation.ioMode) {
             case READ -> {
                 App.rAvg = operation.bwAvg;
