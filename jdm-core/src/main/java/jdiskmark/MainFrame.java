@@ -27,6 +27,12 @@ public final class MainFrame extends javax.swing.JFrame {
      * constructor.
      */
     public SharingPanel sharingPanel;
+
+    /**
+     * Graph Palette submenu — built programmatically from the {@link Gui.Palette}
+     * enum so that adding a new palette never touches the NetBeans form.
+     */
+    private final GraphPaletteMenu graphPaletteMenu = new GraphPaletteMenu();
     
     /**
      * Creates new form MainFrame
@@ -39,6 +45,20 @@ public final class MainFrame extends javax.swing.JFrame {
         // navigation pane — remove it from the bottom tabbed pane at runtime.
         // The NetBeans-generated field (locationPanel) is kept intact in the form.
         tabbedPane.remove(locationPanel);
+
+        // Replace the NetBeans-generated colorPaletteMenu with our data-driven
+        // GraphPaletteMenu — inserted at the same menu position.
+        int paletteIndex = -1;
+        for (int i = 0; i < optionMenu.getMenuComponentCount(); i++) {
+            if (optionMenu.getMenuComponent(i) == colorPaletteMenu) {
+                paletteIndex = i;
+                break;
+            }
+        }
+        if (paletteIndex >= 0) {
+            optionMenu.remove(colorPaletteMenu);
+            optionMenu.add(graphPaletteMenu, paletteIndex);
+        }
         
         //for diagnostics
         //controlsPanel.setBackground(Color.blue);
@@ -184,28 +204,7 @@ public final class MainFrame extends javax.swing.JFrame {
             case LIGHT -> lightThemeRbMenuItem.setSelected(true);
             case DARCULA -> darculaThemeRbMenuItem.setSelected(true);
         }
-        switch (Gui.palette) {
-            case CLASSIC -> {
-                classicPaletteMenuItem.setSelected(true);
-                Gui.setClassicColorScheme();
-            }
-            case BLUE_GREEN -> {
-                blueGreenPaletteMenuItem.setSelected(true);
-                Gui.setBlueGreenScheme();
-            }
-            case BARD_COOL -> {
-                bardCoolPaletteMenuItem.setSelected(true);
-                Gui.setCoolColorScheme();
-            }
-            case BARD_WARM -> {
-                bardWarmPaletteMenuItem.setSelected(true);
-                Gui.setWarmColorScheme();
-            }
-            case BETA -> {
-                // betaPaletteMenuItem.setSelected(true); // uncomment after adding menu item in NetBeans
-                Gui.setBetaColorScheme();
-            }
-        }
+        graphPaletteMenu.syncFromModel();
     }
 
     public void refreshConfig() {
@@ -313,11 +312,6 @@ public final class MainFrame extends javax.swing.JFrame {
         darkThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         darculaThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         colorPaletteMenu = new javax.swing.JMenu();
-        classicPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
-        blueGreenPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
-        bardCoolPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
-        bardWarmPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
-        betaPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
         jSeparator3 = new javax.swing.JPopupMenu.Separator();
         smartCbMenuItem = new javax.swing.JCheckBoxMenuItem();
         advancedOptionsMenuItem = new javax.swing.JMenuItem();
@@ -721,52 +715,6 @@ public final class MainFrame extends javax.swing.JFrame {
 
         colorPaletteMenu.setText("Graph Palette");
         palettebuttonGroup.add(colorPaletteMenu);
-
-        palettebuttonGroup.add(classicPaletteMenuItem);
-        classicPaletteMenuItem.setText("Classic");
-        classicPaletteMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                classicPaletteMenuItemActionPerformed(evt);
-            }
-        });
-        colorPaletteMenu.add(classicPaletteMenuItem);
-
-        palettebuttonGroup.add(blueGreenPaletteMenuItem);
-        blueGreenPaletteMenuItem.setText("Blue Green");
-        blueGreenPaletteMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                blueGreenPaletteMenuItemActionPerformed(evt);
-            }
-        });
-        colorPaletteMenu.add(blueGreenPaletteMenuItem);
-
-        palettebuttonGroup.add(bardCoolPaletteMenuItem);
-        bardCoolPaletteMenuItem.setText("Bard Cool");
-        bardCoolPaletteMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                bardCoolPaletteMenuItemActionPerformed(evt);
-            }
-        });
-        colorPaletteMenu.add(bardCoolPaletteMenuItem);
-
-        palettebuttonGroup.add(bardWarmPaletteMenuItem);
-        bardWarmPaletteMenuItem.setText("Bard Warm");
-        bardWarmPaletteMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                bardWarmPaletteMenuItemActionPerformed(evt);
-            }
-        });
-        colorPaletteMenu.add(bardWarmPaletteMenuItem);
-
-        palettebuttonGroup.add(betaPaletteMenuItem);
-        betaPaletteMenuItem.setText("Beta");
-        betaPaletteMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                betaPaletteMenuItemActionPerformed(evt);
-            }
-        });
-        colorPaletteMenu.add(betaPaletteMenuItem);
-
         optionMenu.add(colorPaletteMenu);
         optionMenu.add(jSeparator3);
 
@@ -898,26 +846,6 @@ public final class MainFrame extends javax.swing.JFrame {
         App.saveConfig();
     }//GEN-LAST:event_showAccessCheckBoxMenuItemActionPerformed
 
-    private void blueGreenPaletteMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_blueGreenPaletteMenuItemActionPerformed
-        Gui.setBlueGreenScheme();
-        App.saveConfig();
-    }//GEN-LAST:event_blueGreenPaletteMenuItemActionPerformed
-
-    private void classicPaletteMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_classicPaletteMenuItemActionPerformed
-        Gui.setClassicColorScheme();
-        App.saveConfig();
-    }//GEN-LAST:event_classicPaletteMenuItemActionPerformed
-
-    private void bardCoolPaletteMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bardCoolPaletteMenuItemActionPerformed
-        Gui.setCoolColorScheme();
-        App.saveConfig();
-    }//GEN-LAST:event_bardCoolPaletteMenuItemActionPerformed
-
-    private void bardWarmPaletteMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bardWarmPaletteMenuItemActionPerformed
-        Gui.setWarmColorScheme();
-        App.saveConfig();
-    }//GEN-LAST:event_bardWarmPaletteMenuItemActionPerformed
-
     private void deleteSelBenchmarksItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteSelBenchmarksItemActionPerformed
         int result = JOptionPane.showConfirmDialog(this, 
             "Delete selected benchmarks?", 
@@ -1048,11 +976,6 @@ public final class MainFrame extends javax.swing.JFrame {
         
     }//GEN-LAST:event_smartCbMenuItemActionPerformed
 
-    private void betaPaletteMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_betaPaletteMenuItemActionPerformed
-        Gui.setBetaColorScheme();
-        App.saveConfig();
-    }//GEN-LAST:event_betaPaletteMenuItemActionPerformed
-
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
     private javax.swing.JMenuItem advancedOptionsMenuItem;
@@ -1063,13 +986,8 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JRadioButtonMenuItem align8KRbMenuItem;
     private javax.swing.JRadioButtonMenuItem alignNoneRbMenuItem;
     private javax.swing.JPanel bControlMountPanel;
-    private javax.swing.JRadioButtonMenuItem bardCoolPaletteMenuItem;
-    private javax.swing.JRadioButtonMenuItem bardWarmPaletteMenuItem;
-    private javax.swing.JRadioButtonMenuItem betaPaletteMenuItem;
-    private javax.swing.JRadioButtonMenuItem blueGreenPaletteMenuItem;
     private javax.swing.JPanel cResultMountPanel;
     private javax.swing.JButton chooseButton;
-    private javax.swing.JRadioButtonMenuItem classicPaletteMenuItem;
     private javax.swing.JMenuItem clearLogsItem;
     private javax.swing.JMenu colorPaletteMenu;
     private javax.swing.JRadioButtonMenuItem darculaThemeRbMenuItem;

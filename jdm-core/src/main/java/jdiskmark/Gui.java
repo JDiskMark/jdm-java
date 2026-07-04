@@ -57,7 +57,32 @@ import org.jfree.ui.RectangleInsets;
  */
 public final class Gui {
     
-    public enum Palette { CLASSIC, BLUE_GREEN, BARD_COOL, BARD_WARM, BETA };
+    public enum Palette {
+        CLASSIC("Classic"),
+        BLUE_GREEN("Blue Green"),
+        BARD_COOL("Bard Cool"),
+        BARD_WARM("Bard Warm"),
+        BETA("Beta");
+
+        private final String displayName;
+
+        Palette(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String displayName() { return displayName; }
+
+        /** Applies this palette's colour scheme to the chart renderers. */
+        public void apply() {
+            switch (this) {
+                case CLASSIC    -> setClassicColorScheme();
+                case BLUE_GREEN -> setBlueGreenScheme();
+                case BARD_COOL  -> setCoolColorScheme();
+                case BARD_WARM  -> setWarmColorScheme();
+                case BETA       -> setBetaColorScheme();
+            }
+        }
+    }
     
     public enum Theme {
         DARK("Dark"),
@@ -639,8 +664,9 @@ public final class Gui {
     }
 
     /**
-     * Shows or hides the chart badge strip. When hidden, BorderLayout reclaims
+     * Shows or hides the chart badge strip.When hidden, BorderLayout reclaims
      * the NORTH slot and the chart panel expands to fill the full height.
+     * @param visible show on UI
      */
     public static void setChartBadgesVisible(boolean visible) {
         if (chartBadgeTopPanel == null) return;
