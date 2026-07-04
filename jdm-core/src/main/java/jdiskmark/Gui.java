@@ -62,7 +62,8 @@ public final class Gui {
         BLUE_GREEN("Blue Green"),
         BARD_COOL("Bard Cool"),
         BARD_WARM("Bard Warm"),
-        BETA("Beta");
+        BETA("Beta"),
+        FOURTH_OF_JULY("4th of July");
 
         private final String displayName;
 
@@ -79,7 +80,8 @@ public final class Gui {
                 case BLUE_GREEN -> setBlueGreenScheme();
                 case BARD_COOL  -> setCoolColorScheme();
                 case BARD_WARM  -> setWarmColorScheme();
-                case BETA       -> setBetaColorScheme();
+                case BETA           -> setBetaColorScheme();
+                case FOURTH_OF_JULY -> setFourthOfJulyColorScheme();
             }
         }
     }
@@ -1384,6 +1386,44 @@ public final class Gui {
     }
 
     /**
+     * 4th of July palette — red, white &amp; blue on a dark navy plot.
+     * Write series in reds/white (fireworks), read series in blues (sky).
+     */
+    static void setFourthOfJulyColorScheme() {
+        System.out.println("setting 4th of July palette");
+        palette = Palette.FOURTH_OF_JULY;
+
+        XYPlot plot = (XYPlot) chart.getPlot();
+        plot.setBackgroundPaint(new Color(0x0A1628));   // deep navy night sky
+        plot.setOutlinePaint(new Color(0x334466));
+        plot.setDomainGridlinePaint(new Color(0x1A2D4A));
+        plot.setRangeGridlinePaint(new Color(0x1A2D4A));
+
+        // configure the bw series colors — reds & white (fireworks / stripes)
+        Stroke bold = new BasicStroke(2.5f);
+        Stroke dash = new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
+                10.0f, new float[]{2.0f, 6.0f}, 0.0f);
+        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        bwRenderer.setSeriesPaint(0, new Color(0xDC143C)); // write  — crimson
+        bwRenderer.setSeriesStroke(0, bold);
+        bwRenderer.setSeriesPaint(1, new Color(0xE8E8E8)); // w avg  — white/silver, dashed
+        bwRenderer.setSeriesStroke(1, dash);
+        bwRenderer.setSeriesPaint(2, new Color(0xFF6B6B)); // w max  — light red
+        bwRenderer.setSeriesPaint(3, new Color(0x8B0000)); // w min  — dark red
+        bwRenderer.setSeriesPaint(4, new Color(0x1E90FF)); // read   — dodger blue
+        bwRenderer.setSeriesStroke(4, bold);
+        bwRenderer.setSeriesPaint(5, new Color(0xB0C4DE)); // r avg  — light steel blue, dashed
+        bwRenderer.setSeriesStroke(5, dash);
+        bwRenderer.setSeriesPaint(6, new Color(0x87CEEB)); // r max  — sky blue
+        bwRenderer.setSeriesPaint(7, new Color(0x003366)); // r min  — navy
+
+        // configure the access time ms colors
+        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        msRenderer.setSeriesPaint(0, new Color(0xDC143C)); // w acc — crimson
+        msRenderer.setSeriesPaint(1, new Color(0x1E90FF)); // r acc — dodger blue
+    }
+
+    /**
      * Restores plot background to the default LAF-driven style.
      * Called when switching away from the Beta palette.
      */
@@ -1395,10 +1435,12 @@ public final class Gui {
         // JFreeChart 1.x does not accept null paint — restore to a neutral grid color
         plot.setDomainGridlinePaint(new Color(80, 80, 80));
         plot.setRangeGridlinePaint(new Color(80, 80, 80));
-        // clear any Beta-specific per-series dashed strokes on the avg lines
+        // clear any per-series custom strokes (Beta dashed avg, 4th of July bold sample)
         if (bwRenderer != null) {
-            bwRenderer.setSeriesStroke(1, null); // w avg — back to renderer default (solid)
-            bwRenderer.setSeriesStroke(5, null); // r avg — back to renderer default (solid)
+            bwRenderer.setSeriesStroke(0, null); // w sample — back to default
+            bwRenderer.setSeriesStroke(1, null); // w avg
+            bwRenderer.setSeriesStroke(4, null); // r sample — back to default
+            bwRenderer.setSeriesStroke(5, null); // r avg
         }
     }
     
