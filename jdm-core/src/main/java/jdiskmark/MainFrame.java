@@ -180,8 +180,6 @@ public final class MainFrame extends javax.swing.JFrame {
         }
         
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
-        autoRemoveCheckBoxMenuItem.setSelected(App.autoRemoveData); // kept in sync for generated menu item state
-        autoResetCheckBoxMenuItem.setSelected(App.autoReset);       // kept in sync for generated menu item state
         // display preferences
         showSingleOpMenuItem.setSelected(Gui.showSingleOp);
         showMaxMinCheckBoxMenuItem.setSelected(Gui.showMaxMin);
@@ -243,8 +241,6 @@ public final class MainFrame extends javax.swing.JFrame {
             case ALIGN_16K -> align16KRbMenuItem.setSelected(true);
             case ALIGN_64K -> align64KRbMenuItem.setSelected(true);
         }
-        gcHintsCbMenuItem.setSelected(GcDetector.gcHintsEnabled); // kept in sync for generated menu item state
-        gcRetryCbMenuItem.setSelected(GcDetector.gcRetryEnabled); // kept in sync for generated menu item state
         smartCbMenuItem.setSelected(Smart.smartEnable);
         exportMenu.setEnabled(App.benchmark != null);
         Gui.refreshChartBadges();
@@ -309,12 +305,6 @@ public final class MainFrame extends javax.swing.JFrame {
         align64KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         multiFileCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         smartCbMenuItem = new javax.swing.JCheckBoxMenuItem();
-        jSeparator4 = new javax.swing.JPopupMenu.Separator();
-        gcHintsCbMenuItem = new javax.swing.JCheckBoxMenuItem();
-        gcRetryCbMenuItem = new javax.swing.JCheckBoxMenuItem();
-        jSeparator3 = new javax.swing.JPopupMenu.Separator();
-        autoRemoveCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
-        autoResetCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator2 = new javax.swing.JPopupMenu.Separator();
         showBadgesCbMenuItem = new javax.swing.JCheckBoxMenuItem();
         showSingleOpMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -675,41 +665,6 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
         optionMenu.add(smartCbMenuItem);
-        optionMenu.add(jSeparator4);
-
-        gcHintsCbMenuItem.setText("GC Hint Optimizing");
-        gcHintsCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                gcHintsCbMenuItemActionPerformed(evt);
-            }
-        });
-        optionMenu.add(gcHintsCbMenuItem);
-
-        gcRetryCbMenuItem.setText("GC Sample Retries");
-        gcRetryCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                gcRetryCbMenuItemActionPerformed(evt);
-            }
-        });
-        optionMenu.add(gcRetryCbMenuItem);
-        optionMenu.add(jSeparator3);
-
-        autoRemoveCheckBoxMenuItem.setText("Auto Delete Test Files");
-        autoRemoveCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                autoRemoveCheckBoxMenuItemActionPerformed(evt);
-            }
-        });
-        optionMenu.add(autoRemoveCheckBoxMenuItem);
-
-        autoResetCheckBoxMenuItem.setSelected(true);
-        autoResetCheckBoxMenuItem.setText("Auto Reset");
-        autoResetCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                autoResetCheckBoxMenuItemActionPerformed(evt);
-            }
-        });
-        optionMenu.add(autoResetCheckBoxMenuItem);
         optionMenu.add(jSeparator2);
 
         showBadgesCbMenuItem.setSelected(true);
@@ -964,20 +919,10 @@ public final class MainFrame extends javax.swing.JFrame {
         App.saveConfig();
     }//GEN-LAST:event_multiFileCheckBoxMenuItemActionPerformed
 
-    private void autoRemoveCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_autoRemoveCheckBoxMenuItemActionPerformed
-        App.autoRemoveData = autoRemoveCheckBoxMenuItem.getState();
-        App.saveConfig();
-    }//GEN-LAST:event_autoRemoveCheckBoxMenuItemActionPerformed
-
     private void deleteDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteDataMenuItemActionPerformed
         Util.deleteDirectory(App.dataDir);
         App.msg("Data dir " + App.dataDir + " has been deleted.");
     }//GEN-LAST:event_deleteDataMenuItemActionPerformed
-
-    private void autoResetCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_autoResetCheckBoxMenuItemActionPerformed
-        App.autoReset = autoResetCheckBoxMenuItem.getState();
-        App.saveConfig();
-    }//GEN-LAST:event_autoResetCheckBoxMenuItemActionPerformed
 
     private void resetSequenceMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetSequenceMenuItemActionPerformed
         App.resetSequence();
@@ -1170,16 +1115,6 @@ public final class MainFrame extends javax.swing.JFrame {
         Exporter.exportBenchmarkAction(App.benchmark, ExportFormat.CSV);
     }//GEN-LAST:event_exportCsvMenuItemActionPerformed
 
-    private void gcHintsCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gcHintsCbMenuItemActionPerformed
-        GcDetector.gcHintsEnabled = gcHintsCbMenuItem.isSelected();
-        App.saveConfig();
-    }//GEN-LAST:event_gcHintsCbMenuItemActionPerformed
-
-    private void gcRetryCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gcRetryCbMenuItemActionPerformed
-        GcDetector.gcRetryEnabled = gcRetryCbMenuItem.isSelected();
-        App.saveConfig();
-    }//GEN-LAST:event_gcRetryCbMenuItemActionPerformed
-
     private void httpProtoRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_httpProtoRbMenuItemActionPerformed
         Portal.uploadProtocol = Portal.HTTP;
         App.saveConfig();
@@ -1217,8 +1152,6 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JRadioButtonMenuItem align64KRbMenuItem;
     private javax.swing.JRadioButtonMenuItem align8KRbMenuItem;
     private javax.swing.JRadioButtonMenuItem alignNoneRbMenuItem;
-    private javax.swing.JCheckBoxMenuItem autoRemoveCheckBoxMenuItem;
-    private javax.swing.JCheckBoxMenuItem autoResetCheckBoxMenuItem;
     private javax.swing.JPanel bControlMountPanel;
     private javax.swing.JRadioButtonMenuItem bardCoolPaletteMenuItem;
     private javax.swing.JRadioButtonMenuItem bardWarmPaletteMenuItem;
@@ -1244,8 +1177,6 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenu exportMenu;
     private javax.swing.JMenuItem exportYmlMenuItem;
     private javax.swing.JMenu fileMenu;
-    private javax.swing.JCheckBoxMenuItem gcHintsCbMenuItem;
-    private javax.swing.JCheckBoxMenuItem gcRetryCbMenuItem;
     private javax.swing.JMenu helpMenu;
     private javax.swing.JRadioButtonMenuItem httpProtoRbMenuItem;
     private javax.swing.JRadioButtonMenuItem httpsProtoRbMenuItem;
@@ -1256,8 +1187,6 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JPopupMenu.Separator jSeparator2;
-    private javax.swing.JPopupMenu.Separator jSeparator3;
-    private javax.swing.JPopupMenu.Separator jSeparator4;
     private javax.swing.JRadioButtonMenuItem lightThemeRbMenuItem;
     private javax.swing.JRadioButtonMenuItem localEndpointRbMenuItem;
     private javax.swing.JPanel locationPanel;
