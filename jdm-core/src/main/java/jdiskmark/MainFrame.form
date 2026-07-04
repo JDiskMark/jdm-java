@@ -315,6 +315,15 @@
             </MenuItem>
             <MenuItem class="javax.swing.JPopupMenu$Separator" name="jSeparator2">
             </MenuItem>
+            <MenuItem class="javax.swing.JCheckBoxMenuItem" name="showBadgesCbMenuItem">
+              <Properties>
+                <Property name="selected" type="boolean" value="true"/>
+                <Property name="text" type="java.lang.String" value="Show Chart Badges"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="showBadgesCbMenuItemActionPerformed"/>
+              </Events>
+            </MenuItem>
             <MenuItem class="javax.swing.JCheckBoxMenuItem" name="showSingleOpMenuItem">
               <Properties>
                 <Property name="selected" type="boolean" value="true"/>
@@ -441,7 +450,7 @@
             </Menu>
             <MenuItem class="javax.swing.JMenuItem" name="advancedOptionsMenuItem">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Advanced Options&#8230;"/>
+                <Property name="text" type="java.lang.String" value="Advanced Options&#x2026;"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="advancedOptionsMenuItemActionPerformed"/>

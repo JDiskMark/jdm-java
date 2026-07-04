@@ -112,6 +112,7 @@ public final class MainFrame extends javax.swing.JFrame {
         showSingleOpMenuItem.setSelected(Gui.showSingleOp);
         showMaxMinCheckBoxMenuItem.setSelected(Gui.showMaxMin);
         showAccessCheckBoxMenuItem.setSelected(Gui.showDriveAccess);
+        showBadgesCbMenuItem.setSelected(Gui.showBadges); // overrides initComponents() which hardcodes setSelected(true)
         switch (Gui.theme) {
             case DARK -> darkThemeRbMenuItem.setSelected(true);
             case LIGHT -> lightThemeRbMenuItem.setSelected(true);
@@ -239,6 +240,7 @@ public final class MainFrame extends javax.swing.JFrame {
         autoRemoveCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         autoResetCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator2 = new javax.swing.JPopupMenu.Separator();
+        showBadgesCbMenuItem = new javax.swing.JCheckBoxMenuItem();
         showSingleOpMenuItem = new javax.swing.JCheckBoxMenuItem();
         showMaxMinCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         showAccessCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -252,6 +254,7 @@ public final class MainFrame extends javax.swing.JFrame {
         blueGreenPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
         bardCoolPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
         bardWarmPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
+        advancedOptionsMenuItem = new javax.swing.JMenuItem();
         helpMenu = new javax.swing.JMenu();
         portalUploadMenuItem = new javax.swing.JCheckBoxMenuItem();
         portalProtocolMenu = new javax.swing.JMenu();
@@ -262,7 +265,6 @@ public final class MainFrame extends javax.swing.JFrame {
         testEndpointRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         prodEndpointRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         jMenuItem2 = new javax.swing.JMenuItem();
-        advancedOptionsMenuItem = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("JDiskMark");
@@ -625,6 +627,15 @@ public final class MainFrame extends javax.swing.JFrame {
         optionMenu.add(autoResetCheckBoxMenuItem);
         optionMenu.add(jSeparator2);
 
+        showBadgesCbMenuItem.setSelected(true);
+        showBadgesCbMenuItem.setText("Show Chart Badges");
+        showBadgesCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                showBadgesCbMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(showBadgesCbMenuItem);
+
         showSingleOpMenuItem.setSelected(true);
         showSingleOpMenuItem.setText("Show Single Operation");
         showSingleOpMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -726,7 +737,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
         optionMenu.add(colorPaletteMenu);
 
-        advancedOptionsMenuItem.setText("Advanced Options\u2026");
+        advancedOptionsMenuItem.setText("Advanced Options…");
         advancedOptionsMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 advancedOptionsMenuItemActionPerformed(evt);
@@ -1107,9 +1118,15 @@ public final class MainFrame extends javax.swing.JFrame {
         Gui.getAdvancedFrame().setVisible(true);
     }//GEN-LAST:event_advancedOptionsMenuItemActionPerformed
 
+    private void showBadgesCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showBadgesCbMenuItemActionPerformed
+        Gui.showBadges = showBadgesCbMenuItem.isSelected();
+        Gui.setChartBadgesVisible(Gui.showBadges);
+        App.saveConfig();
+    }//GEN-LAST:event_showBadgesCbMenuItemActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JMenuItem advancedOptionsMenuItem;
     private javax.swing.JMenu actionMenu;
+    private javax.swing.JMenuItem advancedOptionsMenuItem;
     private javax.swing.JRadioButtonMenuItem align16KRbMenuItem;
     private javax.swing.JRadioButtonMenuItem align4KRbMenuItem;
     private javax.swing.JRadioButtonMenuItem align512RbMenuItem;
@@ -1180,6 +1197,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.ButtonGroup sectorAlignbuttonGroup;
     private javax.swing.JMenu sectorAlignmentMenu;
     private javax.swing.JCheckBoxMenuItem showAccessCheckBoxMenuItem;
+    private javax.swing.JCheckBoxMenuItem showBadgesCbMenuItem;
     private javax.swing.JCheckBoxMenuItem showMaxMinCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem showSingleOpMenuItem;
     private javax.swing.JTabbedPane tabbedPane;

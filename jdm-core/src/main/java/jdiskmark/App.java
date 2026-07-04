@@ -707,6 +707,9 @@ public class App {
         value = p.getProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
         Gui.showMaxMin = Boolean.parseBoolean(value);
 
+        value = p.getProperty("showBadges", String.valueOf(Gui.showBadges));
+        Gui.showBadges = Boolean.parseBoolean(value);
+
         value = p.getProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
         Gui.showDriveAccess = Boolean.parseBoolean(value);
 
@@ -745,6 +748,7 @@ public class App {
         p.setProperty("palette", Gui.palette.name());
         p.setProperty("renderMode", rmOption.name());
         p.setProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
+        p.setProperty("showBadges", String.valueOf(Gui.showBadges));
         p.setProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
         p.setProperty("showSingleOp", String.valueOf(Gui.showSingleOp));
 
@@ -813,6 +817,7 @@ public class App {
         sb.append("directEnable: ").append(directEnable).append('\n');
         sb.append("palette: ").append(Gui.palette).append('\n');
         sb.append("showMaxMin: ").append(Gui.showMaxMin).append('\n');
+        sb.append("showBadges: ").append(Gui.showBadges).append('\n');
         return sb.toString();
     }
 

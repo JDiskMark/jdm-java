@@ -84,6 +84,7 @@ public final class Gui {
     // display settings
     public static Theme theme = Theme.DARK;
     public static Palette palette = Palette.CLASSIC;
+    public static boolean showBadges = true;
     public static boolean showMaxMin = true;
     public static boolean showDriveAccess = true;
     public static boolean showSingleOp = false;
@@ -95,14 +96,16 @@ public final class Gui {
     public static BenchmarkPanel runPanel = null;
     public static JProgressBar progressBar = null;
     // chart badge strip — declared null until createChartPanel() wires them up
-    public static javax.swing.JLabel directIoLabel    = null;
-    public static javax.swing.JLabel writeSyncLabel   = null;
-    public static javax.swing.JLabel sectorLabel      = null;
-    public static javax.swing.JLabel renderModeLabel  = null;
-    public static javax.swing.JLabel ioEngineLabel    = null;
-    public static javax.swing.JLabel multiFileLabel   = null;
+    public static javax.swing.JLabel directIoLabel = null;
+    public static javax.swing.JLabel writeSyncLabel = null;
+    public static javax.swing.JLabel sectorLabel = null;
+    public static javax.swing.JLabel renderModeLabel = null;
+    public static javax.swing.JLabel ioEngineLabel = null;
+    public static javax.swing.JLabel multiFileLabel = null;
     /** Priority-ordered list used by the single-row truncation listener. */
-    private static List<javax.swing.JLabel> chartBadgeStrip = null;
+    private static List<javax.swing.JLabel> chartBadgeList = null;
+    /** The badge strip panel — held so setChartBadgesVisible() can show/hide it. */
+    private static javax.swing.JPanel chartBadgeTopPanel = null;
     // lazy-init singleton — created on first access after the LAF is applied
     private static AdvancedOptionsFrame advancedFrame = null;
 
@@ -495,7 +498,7 @@ public final class Gui {
         refreshChartBadges();
 
         // ordered list: priority order (most → least interpretively important)
-        chartBadgeStrip = new ArrayList<>(List.of(
+        chartBadgeList = new ArrayList<>(List.of(
                 directIoLabel, writeSyncLabel, sectorLabel,
                 ioEngineLabel, multiFileLabel, renderModeLabel));
 
@@ -509,8 +512,9 @@ public final class Gui {
             }
         };
         topPanel.setOpaque(false);
-        for (javax.swing.JLabel badge : chartBadgeStrip) topPanel.add(badge);
-
+        for (javax.swing.JLabel badge : chartBadgeList) topPanel.add(badge);
+        chartBadgeTopPanel = topPanel;
+        topPanel.setVisible(showBadges); // apply persisted setting
 
         // re-evaluate on every window resize
         topPanel.addComponentListener(new java.awt.event.ComponentAdapter() {
@@ -530,12 +534,27 @@ public final class Gui {
     }
 
     /**
+     * Shows or hides the chart badge strip. When hidden, BorderLayout reclaims
+     * the NORTH slot and the chart panel expands to fill the full height.
+     */
+    public static void setChartBadgesVisible(boolean visible) {
+        if (chartBadgeTopPanel == null) return;
+        chartBadgeTopPanel.setVisible(visible);
+        // revalidate the parent so BorderLayout recalculates slot sizes
+        java.awt.Container parent = chartBadgeTopPanel.getParent();
+        if (parent != null) {
+            parent.revalidate();
+            parent.repaint();
+        }
+    }
+
+    /**
      * Shows badges left-to-right until the next one would overflow the panel width,
      * then hides all remaining. Uses Toolkit FontMetrics so badge widths are correct
      * even before the components have been painted for the first time.
      */
     private static void fitBadgesToOneRow(javax.swing.JPanel topPanel) {
-        if (chartBadgeStrip == null) return;
+        if (chartBadgeList == null) return;
         FlowLayout fl = (FlowLayout) topPanel.getLayout();
         int hgap = fl.getHgap();
         java.awt.Insets ins = topPanel.getInsets();
@@ -544,7 +563,7 @@ public final class Gui {
         if (available <= 0) return; // not yet laid out — skip until a real width arrives
         int used = 0;
         boolean overflowed = false;
-        for (javax.swing.JLabel badge : chartBadgeStrip) {
+        for (javax.swing.JLabel badge : chartBadgeList) {
             if (overflowed) {
                 badge.setVisible(false);
                 continue;
