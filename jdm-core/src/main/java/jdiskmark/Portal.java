@@ -23,6 +23,9 @@ public class Portal {
     static public final String PRODUCTION_UPLOAD_LOCATOR = "www.jdiskmark.net:5000/api/benchmarks/upload";
     static public final String TEST_UPLOAD_LOCATOR = "test.jdiskmark.net:5000/api/benchmarks/upload";
     static public final String LOCAL_UPLOAD_LOCATOR = "localhost:5000/api/benchmarks/upload";
+    // SMART upload path (substituted into the active locator at runtime)
+    static public final String SMART_UPLOAD_PATH = "/api/smart/upload";
+    static public final String BENCHMARK_UPLOAD_PATH = "/api/benchmarks/upload";
 
     static public String uploadResourceLocator = TEST_UPLOAD_LOCATOR;
     static public String uploadProtocol = HTTP;
@@ -91,6 +94,63 @@ public class Portal {
             }
         } catch (IOException | InterruptedException ex) {
             App.err("Error uploading to " + uploadUrl);
+            App.err("Error message: " + ex.getMessage());
+            Logger.getLogger(Portal.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
+        }
+    }
+
+    /** Returns the upload URL for SMART snapshots, derived from the active benchmark locator. */
+    static String getSmartUploadUrl() {
+        String locator = uploadResourceLocator.replace(BENCHMARK_UPLOAD_PATH, SMART_UPLOAD_PATH);
+        return uploadProtocol + locator;
+    }
+
+    static void uploadSmart(SmartSnapshot snap) {
+        String uploadUrl = getSmartUploadUrl();
+        URI uploadUri = URI.create(uploadUrl);
+        String host = uploadUri.getHost();
+        int port = uploadUri.getPort() != -1 ? uploadUri.getPort() : 80;
+
+        try {
+            if (InetAddress.getLocalHost() == null) {
+                App.err("No local network connection detected.");
+                return;
+            }
+            if (!isHostReachable(host, port)) {
+                App.err("Target host " + host + " is unreachable.");
+                return;
+            }
+        } catch (UnknownHostException e) {
+            App.err("Connectivity check failed: " + e.getMessage());
+            return;
+        } catch (SecurityException e) {
+            App.err("Security Error: Connection blocked by local system - " + e.getMessage());
+            return;
+        }
+
+        ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+        String jsonBody;
+        try {
+            jsonBody = mapper.writeValueAsString(snap);
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(uploadUrl))
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 201 || response.statusCode() == 200) {
+                App.msg("SMART snapshot uploaded successfully to " + uploadUrl);
+            } else {
+                App.err("Error uploading SMART snapshot to " + uploadUrl);
+                App.err("Upload failed. Status: " + response.statusCode());
+                App.err("Server Response: " + response.body());
+            }
+        } catch (IOException | InterruptedException ex) {
+            App.err("Error uploading SMART snapshot to " + uploadUrl);
             App.err("Error message: " + ex.getMessage());
             Logger.getLogger(Portal.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);
         }

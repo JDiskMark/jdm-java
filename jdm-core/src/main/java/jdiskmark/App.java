@@ -292,6 +292,7 @@ public class App {
     // True if sharePortal was enabled in the last session; used to offer a
     // one-click re-enable prompt at startup rather than silently resuming network activity.
     public static boolean sharePortalPreviouslyEnabled = false;
+    public static boolean shareSmartPortal = false;
     // True once the user has answered the first-run portal-consent prompt.
     // Persisted so the prompt is shown exactly once (issue #117).
     public static boolean portalConsentAsked = false;
@@ -615,6 +616,9 @@ public class App {
         sharePortalPreviouslyEnabled = Boolean.parseBoolean(value);
         sharePortal = false; // always start disabled; prompt offered after window visible
 
+        value = p.getProperty("shareSmartPortal", "false");
+        shareSmartPortal = Boolean.parseBoolean(value);
+
         // #117 one-time first-run consent flag
         value = p.getProperty("portalConsentAsked", "false");
         portalConsentAsked = Boolean.parseBoolean(value);
@@ -732,6 +736,7 @@ public class App {
 
         // configure properties
         p.setProperty("sharePortal", String.valueOf(sharePortal));
+        p.setProperty("shareSmartPortal", String.valueOf(shareSmartPortal));
         p.setProperty("portalConsentAsked", String.valueOf(portalConsentAsked)); // #117
         if (systemId != null && !systemId.isBlank()) {
             p.setProperty("systemId", systemId);

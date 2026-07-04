@@ -14,6 +14,7 @@ import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -216,6 +217,14 @@ public class SmartSnapshot implements Serializable {
             em.getTransaction().commit();
             LOGGER.info("SmartSnapshot saved: device=" + deviceName
                     + " model=" + snap.modelName + " passed=" + snap.smartPassed);
+            if (App.shareSmartPortal) {
+                final SmartSnapshot toUpload = snap;
+                CompletableFuture.runAsync(() -> Portal.uploadSmart(toUpload))
+                        .exceptionally(ex -> {
+                            App.err("SMART portal upload error: " + ex.getMessage());
+                            return null;
+                        });
+            }
             return snap;
         } catch (Exception ex) {
             try {
