@@ -19,9 +19,14 @@ import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import javax.swing.SwingWorker.StateValue;
@@ -94,6 +99,10 @@ public final class Gui {
     public static BenchmarkControlPanel controlPanel = null;
     public static SelectDriveFrame selFrame = null;
     public static BenchmarkPanel runPanel = null;
+    public static SmartPanel smartPanel = null;
+    public static DrivesPanel drivesPanel = null;
+    public static SmartReportsPanel smartReportsPanel = null;
+    public static javax.swing.JTabbedPane mainTabPane = null;
     public static JProgressBar progressBar = null;
     // chart badge strip — declared null until createChartPanel() wires them up
     public static javax.swing.JLabel directIoLabel = null;
@@ -122,6 +131,15 @@ public final class Gui {
         return advancedFrame;
     }
 
+    // last SMART data captured via runSmart() — used by Save Snapshot button
+    public static Smart lastSmartData = null;
+    public static String lastSmartDeviceName = null;
+    /**
+     * {@code true} while the SMART tab is displaying a stored {@link SmartSnapshot}
+     * rather than freshly fetched live data.  Cleared when {@link #runSmart()}
+     * starts a new live query; set by {@link #loadSnapshot(SmartSnapshot)}.
+     */
+    public static boolean viewingSnapshot = false;
     // graph component
     public static JFreeChart chart;
     public static NumberAxis msAxis, bwAxis, sampleAxis;
@@ -317,14 +335,99 @@ public final class Gui {
      */
     public static void showAboutDialog() {
         javax.swing.ImageIcon icon = App.activeIcon.loadSize(128);
-        String message = App.APP_NAME + " " + App.VERSION + "\n" +
-                "JVM: " + App.jdk + "\n" +
-                "OS:  " + App.os;
+
+        // Build an HTML panel so the website URL is a clickable hyperlink.
+        String url = "https://www.jdiskmark.net";
+        String html = "<html><body style='font-family:sans-serif;font-size:11px'>"
+                + "<b>" + App.APP_NAME + " " + App.VERSION + "</b><br>"
+                + "JVM: " + App.jdk + "<br>"
+                + "OS:&nbsp; " + App.os + "<br><br>"
+                + "<a href='" + url + "'>" + url + "</a>"
+                + "</body></html>";
+
+        javax.swing.JEditorPane msgPane = new javax.swing.JEditorPane("text/html", html);
+        msgPane.setEditable(false);
+        msgPane.setOpaque(false);
+        msgPane.addHyperlinkListener(e -> {
+            if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
+                try {
+                    java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+                } catch (Exception ex) {
+                    App.msg("Could not open browser: " + ex.getMessage());
+                }
+            }
+        });
+
         javax.swing.JOptionPane.showMessageDialog(
-                mainFrame, message, "About " + App.APP_NAME,
+                mainFrame, msgPane, "About " + App.APP_NAME,
                 javax.swing.JOptionPane.PLAIN_MESSAGE, icon);
     }
-    
+
+    /**
+     * #117 Shows the one-time first-run consent dialog for portal sharing.
+     * Fires when {@link App#portalConsentAsked} is {@code false}. After the user
+     * responds the flag is set to {@code true} and persisted so the dialog
+     * never appears again.
+     */
+    public static void promptFirstRunPortalConsent() {
+        String message = "<html><body style='width:380px'>"
+                + "<b>Help the community make smarter hardware decisions!</b><br><br>"
+                + "Your benchmark data, combined with others', help users compare real-world storage "
+                + "performance and identify reliability trends across drives and platforms.<br><br>"
+                + "Would you like to share your results with the jdiskmark.net community portal?<br><br>"
+                + "<ul>"
+                + "<li>Performance metrics (speeds, IOPS, latency) and hardware context (CPU, drive, OS).</li>"
+                + "<li>A non-reversible system identifier — no name or account required.</li>"
+                + "<li>You can change this at any time via the <i>Sharing</i> tab.</li>"
+                + "</ul>"
+                + "</body></html>";
+        int choice = javax.swing.JOptionPane.showConfirmDialog(
+                mainFrame,
+                new javax.swing.JLabel(message),
+                "Share Benchmark Results?",
+                javax.swing.JOptionPane.YES_NO_OPTION,
+                javax.swing.JOptionPane.QUESTION_MESSAGE);
+        App.portalConsentAsked = true; // mark as answered regardless of choice
+        if (choice == javax.swing.JOptionPane.YES_OPTION) {
+            App.sharePortal = true;
+            App.msg("Portal upload enabled — thank you for sharing!");
+        } else {
+            App.sharePortal = false;
+            App.msg("Portal upload declined. You can enable it later via the Sharing tab.");
+        }
+        App.saveConfig(); // persist consent flag and choice immediately
+        if (mainFrame != null) {
+            mainFrame.loadPropertiesConfig();
+        }
+    }
+
+    /**
+     * Offers a one-click prompt to re-enable portal upload when it was active
+     * in the previous session. Called after the main window is visible so the
+     * dialog has a proper parent.
+     */
+    public static void promptResumePortalUpload() {
+        int choice = javax.swing.JOptionPane.showConfirmDialog(
+                mainFrame,
+                "Portal upload was enabled in your last session.\nResume uploading benchmarks to "
+                        + Portal.getUploadUrl() + "?",
+                "Resume Portal Upload?",
+                javax.swing.JOptionPane.YES_NO_OPTION,
+                javax.swing.JOptionPane.QUESTION_MESSAGE);
+        if (choice == javax.swing.JOptionPane.YES_OPTION) {
+            App.sharePortal = true;
+            App.msg("Portal upload resumed.");
+        } else {
+            App.sharePortal = false;
+            App.sharePortalPreviouslyEnabled = false;
+            App.msg("Portal upload not resumed.");
+            App.saveConfig();
+        }
+        if (mainFrame != null) {
+            mainFrame.loadPropertiesConfig();
+        }
+    }
+
     public static void updateChartPanelStyle() {
         // correct the parenthesis from being below vertical centering
         chart.getTitle().setFont(new Font("Verdana", Font.BOLD, 17));
@@ -745,9 +848,177 @@ public final class Gui {
         msAxis.setVisible(showDriveAccess);
     }
     
+    private static final Logger SMART_LOG = Logger.getLogger(Gui.class.getName());
+
     static public void updateDiskInfo() {
         mainFrame.setLocation(App.locationDir.getAbsolutePath());
         chart.getTitle().setText(App.getDriveInfo());
+        if (drivesPanel != null) {
+            drivesPanel.refresh();
+        }
+        // SMART data is fetched lazily via runSmart(), which is called
+        // by the "Run SMART" button in SmartPanel and optionally after each
+        // benchmark when "Run SMART with Benchmark" is enabled.
+    }
+
+    /**
+     * Selects the first tab in {@link #mainTabPane} whose title equals
+     * {@code tabTitle}.  No-op if the pane is null or no matching tab exists.
+     *
+     * @param tabTitle the exact tab label to select, e.g. {@code "Benchmark"}
+     */
+    public static void selectMainTab(String tabTitle) {
+        if (mainTabPane == null) return;
+        for (int i = 0; i < mainTabPane.getTabCount(); i++) {
+            if (tabTitle.equals(mainTabPane.getTitleAt(i))) {
+                mainTabPane.setSelectedIndex(i);
+                return;
+            }
+        }
+    }
+
+    /**
+     * Fetches fresh SMART data for the current drive in a background thread
+     * and populates the SMART panel when done. Triggers the pkexec password
+     * prompt on the very first call (or after the privileged shell dies).
+     *
+     * <p>Safe to call from the EDT; the privileged I/O runs off-thread.
+     * Called by the "Run SMART" button in {@link SmartPanel} and by
+     * {@link jdiskmark.BenchmarkRunner} when "Run SMART with Benchmark" is enabled.
+     */
+    static public void runSmart() {
+        
+        if (!App.isLinux()) { 
+            App.msg("SMART is only available in linux");
+            return;
+        }
+        
+        if (smartPanel == null || App.locationDir == null) {
+            App.msg("smartPanel and locationDir must first be initialized");
+            return;
+        }
+        // A live query is starting — we are no longer viewing a stored snapshot.
+        viewingSnapshot = false;
+        final File locDir = App.locationDir;
+        // Single-element array so doInBackground() can share the device name
+        // with done() without a field (anonymous SwingWorker limitation).
+        final String[] deviceRef = {null};
+        new javax.swing.SwingWorker<Smart, Void>() {
+            @Override
+            protected Smart doInBackground() {
+                try {
+                    Path path = locDir.toPath();
+                    String partition = UtilOs.getPartitionFromFilePathLinux(path);
+                    List<String> devices =
+                            UtilOs.getDeviceNamesFromPartitionLinux(partition);
+                    if (devices == null || devices.isEmpty()) {
+                        SMART_LOG.log(Level.WARNING, "runSmart: no device for {0}", locDir);
+                        return null;
+                    }
+                    deviceRef[0] = devices.get(0);
+                    if (Smart.process == null || !Smart.process.isAlive()) {
+                        Smart.startPrivilegedShell();
+                        Smart.startHeartbeat();
+                    }
+                    return Smart.getSmart(deviceRef[0]);
+                } catch (IOException ex) {
+                    SMART_LOG.log(Level.WARNING, "runSmart: SMART fetch failed", ex);
+                    return null;
+                }
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    Smart data = get();
+                    String device = deviceRef[0];
+                    if (data != null) {
+                        // Store for the Save Snapshot button
+                        lastSmartData = data;
+                        lastSmartDeviceName = device;
+                        smartPanel.populate(data);
+                        smartPanel.onDataLoaded(device != null ? device : "unknown");
+                    } else {
+                        lastSmartData = null;
+                        lastSmartDeviceName = null;
+                        smartPanel.clear();
+                    }
+                } catch (InterruptedException | ExecutionException ex) {
+                    SMART_LOG.log(Level.WARNING, "runSmart: panel update failed", ex);
+                }
+            }
+        }.execute();
+    }
+
+    /**
+     * Loads a stored {@link SmartSnapshot} into the SMART tab and switches
+     * focus to it.  Sets {@link #viewingSnapshot} to {@code true}.
+     *
+     * <p>If the snapshot contains a {@code rawJson} CLOB (saved with the
+     * current schema), the full {@link Smart} object is re-parsed so that
+     * every section of the SMART tab (ATA attributes, NVMe device details,
+     * endurance, etc.) is replayed exactly as it appeared live.  For older
+     * snapshots without {@code rawJson}, the scalar-only fallback path is
+     * used instead.
+     *
+     * <p>Always disables the Save button and stamps the status label with the
+     * snapshot's capture timestamp via {@link SmartPanel#onSnapshotLoaded}.
+     *
+     * @param snap the snapshot to display (must not be null)
+     */
+    static public void loadSnapshot(SmartSnapshot snap) {
+        if (snap == null || smartPanel == null) return;
+        viewingSnapshot = true;
+
+        String rawJson = snap.getRawJson();
+        if (rawJson != null) {
+            // Full replay — re-parse the original smartctl JSON
+            try {
+                Smart smart = Smart.fromJson(rawJson);
+                smartPanel.populate(smart);
+            } catch (Exception ex) {
+                SMART_LOG.log(Level.WARNING,
+                        "loadSnapshot: rawJson parse failed, falling back to scalars", ex);
+                smartPanel.populateFromSnapshot(snap);
+            }
+        } else {
+            // Legacy snapshot — scalar fields only
+            smartPanel.populateFromSnapshot(snap);
+        }
+
+        // Always override toolbar state: read-only view, show capture time
+        smartPanel.onSnapshotLoaded(snap);
+
+        // Switch focus to the SMART tab
+        if (mainTabPane != null) {
+            for (int i = 0; i < mainTabPane.getTabCount(); i++) {
+                if ("SMART".equals(mainTabPane.getTitleAt(i))) {
+                    mainTabPane.setSelectedIndex(i);
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Saves the most recently fetched SMART data as a {@link SmartSnapshot}
+     * in the Derby database. Called by the "Save Snapshot" button in
+     * {@link SmartPanel}. No-op if no data has been loaded yet.
+     */
+    static public void saveCurrentSmartData() {
+        if (lastSmartData == null || lastSmartDeviceName == null) {
+            App.msg("No SMART data to save — run a SMART session first.");
+            return;
+        }
+        try {
+            SmartSnapshot.save(lastSmartData, lastSmartDeviceName);
+            if (smartPanel != null) smartPanel.onDataSaved();
+            if (smartReportsPanel != null) smartReportsPanel.refresh();
+            App.msg("SMART snapshot saved for /dev/" + lastSmartDeviceName + ".");
+        } catch (Exception ex) {
+            SMART_LOG.log(Level.WARNING, "saveCurrentSmartData: failed", ex);
+            App.err("Failed to save SMART snapshot: " + ex.getMessage());
+        }
     }
     
     /**
@@ -1040,6 +1311,7 @@ public final class Gui {
     }
     
     public static void browseLocation() {
+        selFrame = new SelectDriveFrame();
         if (App.locationDir != null && App.locationDir.exists()) {
             selFrame.setInitDir(App.locationDir);
         }

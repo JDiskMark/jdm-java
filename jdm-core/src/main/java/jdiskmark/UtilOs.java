@@ -869,4 +869,126 @@ public class UtilOs {
 
         return ""; // Return an empty string if no processor name was found
     }
-}
+
+    // ─── System ID ────────────────────────────────────────────────────────────
+
+    /**
+     * Returns a stable, non-PII system identifier suitable for anonymous
+     * benchmark attribution.
+     *
+     * <p>Strategy (first successful source wins):
+     * <ol>
+     *   <li>Windows &mdash; {@code MachineGuid} from the Cryptography registry key
+     *       (readable without admin)</li>
+     *   <li>Linux   &mdash; {@code /etc/machine-id} (world-readable)</li>
+     *   <li>macOS   &mdash; {@code IOPlatformUUID} via {@code ioreg} (no admin)</li>
+     *   <li>Fallback &mdash; the previously persisted {@code systemId} from
+     *       {@code jdm.properties}, or a freshly generated {@link java.util.UUID}</li>
+     * </ol>
+     *
+     * <p>The raw OS value is SHA-256 hashed and the first 32 hex characters are
+     * returned, so the original system identifier is never stored or transmitted.
+     *
+     * @param osName      the value of {@code System.getProperty("os.name")}
+     * @param persistedId the value already stored in {@code jdm.properties}
+     *                    (may be {@code null} or blank on first run)
+     * @return a 32-character lowercase hex string identifying this system
+     */
+    public static String getMachineSystemId(String osName, String persistedId) {
+        String raw = null;
+        try {
+            if (isWindows(osName)) {
+                raw = readWindowsMachineGuid();
+            } else if (isLinux(osName)) {
+                raw = readLinuxMachineId();
+            } else if (isMacOs(osName)) {
+                raw = readMacOsPlatformUuid();
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "getMachineSystemId: OS source failed, using fallback", e);
+        }
+
+        if (raw != null && !raw.isBlank()) {
+            return sha256Hex32(raw);
+        }
+
+        // Fallback: reuse persisted id (survives across sessions) or generate once.
+        if (persistedId != null && !persistedId.isBlank()) {
+            return persistedId;
+        }
+        LOGGER.warning("getMachineSystemId: all sources failed, generating a random id");
+        return java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 32);
+    }
+
+    /** Reads HKLM\SOFTWARE\Microsoft\Cryptography\MachineGuid (no admin required). */
+    private static String readWindowsMachineGuid() throws IOException, InterruptedException {
+        Process p = new ProcessBuilder(
+                "reg", "query",
+                "HKLM\\SOFTWARE\\Microsoft\\Cryptography",
+                "/v", "MachineGuid")
+                .redirectErrorStream(true)
+                .start();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.contains("MachineGuid")) {
+                    String[] parts = line.trim().split("\\s+");
+                    if (parts.length >= 3) {
+                        return parts[parts.length - 1].trim();
+                    }
+                }
+            }
+        }
+        p.waitFor();
+        return null;
+    }
+
+    /** Reads /etc/machine-id (world-readable on all mainstream Linux distros). */
+    private static String readLinuxMachineId() throws IOException {
+        java.nio.file.Path mid = java.nio.file.Paths.get("/etc/machine-id");
+        if (java.nio.file.Files.exists(mid)) {
+            return java.nio.file.Files.readString(mid).trim();
+        }
+        java.nio.file.Path dbus = java.nio.file.Paths.get("/var/lib/dbus/machine-id");
+        if (java.nio.file.Files.exists(dbus)) {
+            return java.nio.file.Files.readString(dbus).trim();
+        }
+        return null;
+    }
+
+    /** Reads IOPlatformUUID via ioreg (no admin required on macOS). */
+    private static String readMacOsPlatformUuid() throws IOException, InterruptedException {
+        Process p = new ProcessBuilder(
+                "ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
+                .redirectErrorStream(true)
+                .start();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.contains("IOPlatformUUID")) {
+                    int eq = line.indexOf('=');
+                    if (eq >= 0) {
+                        return line.substring(eq + 1).trim().replace("\"", "");
+                    }
+                }
+            }
+        }
+        p.waitFor();
+        return null;
+    }
+
+    /** Returns the first 32 hex characters of the SHA-256 hash of {@code input}. */
+    private static String sha256Hex32(String input) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(64);
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.substring(0, 32);
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new RuntimeException(e); // SHA-256 is mandatory in every JVM
+        }
+    }
+}
