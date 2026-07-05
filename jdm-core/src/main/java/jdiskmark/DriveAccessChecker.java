@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 public class DriveAccessChecker {
 
     /**
-     * Validates a target directory for benchmarking.by checking if "jdm-data" 
+     * Validates a target directory for benchmarking by checking if "jdm-data" 
      * folder is missing and checking read/write permissions.
      * @param targetLocation location to validate
      * @param showPopup use dialog popup

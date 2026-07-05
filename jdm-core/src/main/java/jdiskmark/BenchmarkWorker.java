@@ -7,12 +7,15 @@ import static jdiskmark.App.msg;
 import static jdiskmark.App.dataDir;
 
 import jakarta.persistence.EntityManager;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
 /**
@@ -60,6 +63,34 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
         @Override
         public void attemptCacheDrop() { Gui.dropCache(); }
+
+        @Override
+        public void onOperationComplete() {
+            if (renderMode == RenderFrequencyMode.PER_OPERATION) {
+                // Copy and clear the buffer under the lock, then render
+                // synchronously on the EDT so I/O and graphing never overlap.
+                List<Sample> toFlush;
+                synchronized (operationBuffer) {
+                    toFlush = new ArrayList<>(operationBuffer);
+                    operationBuffer.clear();
+                }
+                try {
+                    SwingUtilities.invokeAndWait(() -> {
+                        for (Sample s : toFlush) {
+                            switch (s.type) {
+                                case WRITE -> Gui.addWriteSample(s);
+                                case READ  -> Gui.addReadSample(s);
+                            }
+                        }
+                    });
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (InvocationTargetException e) {
+                    Logger.getLogger(BenchmarkWorker.class.getName())
+                            .log(Level.WARNING, "Chart update failed", e);
+                }
+            }
+        }
     };
     
     @Override
@@ -84,23 +115,15 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         BenchmarkRunner bRunner = new BenchmarkRunner(listener, App.getConfig());
         Benchmark benchmark = bRunner.execute();
 
-        // Flush any samples that were buffered by non-PER_SAMPLE render modes.
-        // This ensures all samples appear in the UI even if the last interval
-        // or operation ended with data still in the buffer.
-        switch (renderMode) {
-            case PER_OPERATION -> {
-                synchronized (operationBuffer) {
-                    operationBuffer.forEach(this::publish);
-                    operationBuffer.clear();
-                }
+        // Flush any samples still in the interval buffer for timed render modes.
+        // PER_OPERATION is handled by onOperationComplete(); PER_SAMPLE needs no flush.
+        if (renderMode == RenderFrequencyMode.PER_100MS
+                || renderMode == RenderFrequencyMode.PER_500MS
+                || renderMode == RenderFrequencyMode.PER_1000MS) {
+            synchronized (intervalBuffer) {
+                intervalBuffer.forEach(this::publish);
+                intervalBuffer.clear();
             }
-            case PER_100MS, PER_500MS, PER_1000MS -> {
-                synchronized (intervalBuffer) {
-                    intervalBuffer.forEach(this::publish);
-                    intervalBuffer.clear();
-                }
-            }
-            default -> {} // PER_SAMPLE — nothing to flush
         }
         
         // update gui title
