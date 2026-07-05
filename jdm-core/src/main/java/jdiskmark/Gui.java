@@ -666,7 +666,7 @@ public final class Gui {
     }
 
     /**
-     * Shows or hides the chart badge strip.When hidden, BorderLayout reclaims
+     * Shows or hides the chart badge strip. When hidden, BorderLayout reclaims
      * the NORTH slot and the chart panel expands to fill the full height.
      * @param visible show on UI
      */
