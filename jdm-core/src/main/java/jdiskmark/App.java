@@ -334,7 +334,9 @@ public class App {
     public static Future<Benchmark> cliResult = null;
     // completed benchmarks and operations
     public static Benchmark benchmark; // last or loaded benchmark
-    public static BenchmarkOperation operation; // last loaded operation
+
+    public static BenchmarkOperation operation; // last loaded operation - not sure this is actively used
+    // saved benchmarks for loading
     public static HashMap<String, Benchmark> benchmarks = new LinkedHashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new LinkedHashMap<>();
 

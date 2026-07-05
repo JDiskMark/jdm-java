@@ -187,7 +187,7 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
         App.saveConfig();
         // delegate back to MainFrame so it can update its own menu item states
         if (Gui.mainFrame != null) {
-            Gui.mainFrame.refreshConfig();
+            Gui.mainFrame.syncFromModel();
         }
     }
 

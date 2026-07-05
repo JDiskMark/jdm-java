@@ -79,8 +79,7 @@ public final class MainFrame extends javax.swing.JFrame {
         StringBuilder titleSb = new StringBuilder();
         titleSb.append(getTitle()).append(" ").append(App.VERSION);
         
-        refreshConfig();
-        bcPanel.configChangeDetection();
+        syncFromModel();
         
         // architecture
         if (App.arch != null && !App.arch.isEmpty()) {
@@ -183,7 +182,7 @@ public final class MainFrame extends javax.swing.JFrame {
      * has been loaded.
      */
     public void loadPropertiesConfig() {
-        refreshConfig();
+        syncFromModel();
         if (App.locationDir != null) { // set the location dir if not null
             setLocation(App.locationDir.getAbsolutePath());
         }
@@ -207,7 +206,7 @@ public final class MainFrame extends javax.swing.JFrame {
         graphPaletteMenu.syncFromModel();
     }
 
-    public void refreshConfig() {
+    public void syncFromModel() {
         // basic benchmark config
         if (Gui.controlPanel != null) {
             Gui.controlPanel.refreshSettings();

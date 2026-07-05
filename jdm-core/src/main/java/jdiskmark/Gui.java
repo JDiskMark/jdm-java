@@ -48,8 +48,11 @@ import org.jfree.chart.block.BlockBorder;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.ui.HorizontalAlignment;
+import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.RectangleInsets;
 
 /**
@@ -144,6 +147,67 @@ public final class Gui {
     private static List<javax.swing.JLabel> chartBadgeList = null;
     /** The badge strip panel — held so setChartBadgesVisible() can show/hide it. */
     private static javax.swing.JPanel chartBadgeTopPanel = null;
+
+    // --- Stale-badge tracking ---
+    /** Amber used when a badge value differs from the last-run config. */
+    static final Color BADGE_AMBER_BG   = new Color(0xC8, 0x78, 0x00); // deep amber
+    static final Color BADGE_DEFAULT_BG = new Color(40, 40, 40, 180);
+
+    /** Chart subtitle shown when current settings diverge from the displayed benchmark. */
+    private static TextTitle modifiedSubtitle = null;
+
+    /**
+     * Shows or hides the "⚠ Settings modified" subtitle on the chart. Safe to 
+     * call from any thread.
+     * @param visible
+     */
+    public static void setChartModifiedIndicator(boolean visible) {
+        if (chart == null) return;
+        Runnable r = () -> {
+            if (visible) {
+                if (modifiedSubtitle == null) {
+                    modifiedSubtitle = new TextTitle(
+                            "⚠  Settings modified — results shown reflect prior configuration",
+                            new Font("SansSerif", Font.BOLD, 11));
+                    modifiedSubtitle.setPaint(new Color(0xC8, 0x78, 0x00));
+                    modifiedSubtitle.setPosition(RectangleEdge.BOTTOM);
+                    modifiedSubtitle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+                    modifiedSubtitle.setPadding(new RectangleInsets(0, 0, 4, 0));
+                }
+                // Only add if not already present
+                if (!chart.getSubtitles().contains(modifiedSubtitle)) {
+                    chart.addSubtitle(modifiedSubtitle);
+                }
+            } else {
+                if (modifiedSubtitle != null) {
+                    chart.removeSubtitle(modifiedSubtitle);
+                }
+            }
+        };
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) r.run();
+        else javax.swing.SwingUtilities.invokeLater(r);
+    }
+    
+    public static void updateProgress() {
+        if (progressBar == null) return;
+        progressBar.setString(String.valueOf(App.targetBenchmarkTxSizeKb()));
+    }
+
+    /**
+     * Clears all badge and control-panel highlights at the start of a new run or load.
+     * The comparison baseline is App.benchmark.config (set at end of prior run / on load).
+     */
+    public static void clearAllStaleHighlights() {
+        clearBadgeHighlights();
+        setChartModifiedIndicator(false);
+        if (controlPanel != null) controlPanel.clearRowHighlights();
+    }
+
+    /** Resets all badge backgrounds to the default dark style. */
+    public static void clearBadgeHighlights() {
+        if (chartBadgeList == null) return;
+        for (javax.swing.JLabel b : chartBadgeList) b.setBackground(BADGE_DEFAULT_BG);
+    }
     // lazy-init singleton — created on first access after the LAF is applied
     private static AdvancedOptionsFrame advancedFrame = null;
 
@@ -732,6 +796,7 @@ public final class Gui {
 
     /**
      * Refreshes all chart badge labels to reflect the current App settings.
+     * Badges that differ from the last-run config are highlighted amber.
      * Safe to call from any thread — posts to the EDT if needed.
      */
     public static void refreshChartBadges() {
@@ -743,12 +808,58 @@ public final class Gui {
             ioEngineLabel.setText("Engine: "      + App.ioEngine.toString().split(" ")[0]);
             multiFileLabel.setText("Multi-File: " + (App.multiFile ? "On" : "Off"));
             renderModeLabel.setText("Render: "     + App.rmOption.toString());
+            applyBadgeHighlights();
         };
         if (javax.swing.SwingUtilities.isEventDispatchThread()) {
             update.run();
         } else {
             javax.swing.SwingUtilities.invokeLater(update);
         }
+    }
+
+    /**
+     * Compares each badge field against App.benchmark.config (the last completed run)
+     * and sets amber background on any badge whose current value differs.
+     * Also drives the chart subtitle and control-panel row highlights.
+     * Must be called on the EDT.
+     */
+    private static void applyBadgeHighlights() {
+        BenchmarkConfig lr = (App.benchmark != null) ? App.benchmark.config : null;
+        if (lr == null) return; // no run yet — nothing to compare
+        boolean anyStale = false;
+        anyStale |= setBadgeStaleReturn(directIoLabel,   App.directEnable    != Boolean.TRUE.equals(lr.directIoEnabled));
+        anyStale |= setBadgeStaleReturn(writeSyncLabel,  App.writeSyncEnable != Boolean.TRUE.equals(lr.writeSyncEnabled));
+        anyStale |= setBadgeStaleReturn(sectorLabel,     App.sectorAlignment != lr.sectorAlignment);
+        anyStale |= setBadgeStaleReturn(ioEngineLabel,   App.ioEngine        != lr.ioEngine);
+        anyStale |= setBadgeStaleReturn(multiFileLabel,  App.multiFile       != Boolean.TRUE.equals(lr.multiFileEnabled));
+        anyStale |= setBadgeStaleReturn(renderModeLabel, App.rmOption        != App.benchmark.getRenderMode());
+        setChartModifiedIndicator(anyStale);
+        // sync control-panel row highlights too
+        if (controlPanel != null) controlPanel.showSettingsDrift();
+    }
+
+    private static void setBadgeStale(javax.swing.JLabel badge, boolean stale) {
+        badge.setBackground(stale ? BADGE_AMBER_BG : BADGE_DEFAULT_BG);
+    }
+
+    private static boolean setBadgeStaleReturn(javax.swing.JLabel badge, boolean stale) {
+        badge.setBackground(stale ? BADGE_AMBER_BG : BADGE_DEFAULT_BG);
+        return stale;
+    }
+
+    /**
+     * Returns true if any badge setting differs from App.benchmark.config.
+     * Used by BenchmarkControlPanel to combine badge + row staleness for the subtitle.
+     */
+    static boolean isAnyBadgeStale() {
+        if (App.benchmark == null) return false;
+        BenchmarkConfig lr = App.benchmark.config;
+        return App.directEnable    != Boolean.TRUE.equals(lr.directIoEnabled)
+            || App.writeSyncEnable != Boolean.TRUE.equals(lr.writeSyncEnabled)
+            || App.sectorAlignment != lr.sectorAlignment
+            || App.ioEngine        != lr.ioEngine
+            || App.multiFile       != Boolean.TRUE.equals(lr.multiFileEnabled)
+            || App.rmOption        != App.benchmark.getRenderMode();
     }
 
     /**
@@ -1161,7 +1272,21 @@ public final class Gui {
         App.numOfThreads = benchmark.config.numThreads;
         App.activeProfile = benchmark.config.profile;
         App.profileModified = benchmark.config.profileModified;
-        mainFrame.refreshConfig();
+        // IO engine / options settings (mirrors what the badges already display)
+        if (benchmark.config.ioEngine != null) App.ioEngine = benchmark.config.ioEngine;
+        if (benchmark.config.sectorAlignment != null) App.sectorAlignment = benchmark.config.sectorAlignment;
+        if (benchmark.config.writeSyncEnabled != null) App.writeSyncEnable = Boolean.TRUE.equals(benchmark.config.writeSyncEnabled);
+        if (benchmark.config.directIoEnabled != null) App.directEnable = Boolean.TRUE.equals(benchmark.config.directIoEnabled);
+        if (benchmark.config.multiFileEnabled != null) App.multiFile = Boolean.TRUE.equals(benchmark.config.multiFileEnabled);
+        // render mode is stored on the Benchmark itself, not in BenchmarkConfig
+        App.rmOption = benchmark.getRenderMode();
+        mainFrame.syncFromModel();
+        // sync AdvancedOptionsFrame if it has already been opened (preserve lazy-init)
+        if (advancedFrame != null) advancedFrame.syncFromModel();
+        // set as the active benchmark so stale-badge comparisons have a baseline
+        App.benchmark = benchmark;
+        // clear any stale highlights — the newly loaded benchmark IS the current baseline
+        clearAllStaleHighlights();
         // override badges with the values recorded at run time (— if absent in older records)
         refreshChartBadges(benchmark.config.directIoEnabled, benchmark.config.writeSyncEnabled,
                            benchmark.config.sectorAlignment, benchmark.getRenderMode(),
@@ -1217,7 +1342,21 @@ public final class Gui {
         App.blockSizeKb = (int)(operation.blockSize / App.KILOBYTE);
         App.blockSequence = operation.blockOrder;
         App.numOfThreads = operation.numThreads;
-        mainFrame.refreshConfig();
+        // IO engine / options settings (mirrors what the badges already display)
+        if (benchmark.config.ioEngine != null) App.ioEngine = benchmark.config.ioEngine;
+        if (benchmark.config.sectorAlignment != null) App.sectorAlignment = benchmark.config.sectorAlignment;
+        if (benchmark.config.writeSyncEnabled != null) App.writeSyncEnable = Boolean.TRUE.equals(benchmark.config.writeSyncEnabled);
+        if (benchmark.config.directIoEnabled != null) App.directEnable = Boolean.TRUE.equals(benchmark.config.directIoEnabled);
+        if (benchmark.config.multiFileEnabled != null) App.multiFile = Boolean.TRUE.equals(benchmark.config.multiFileEnabled);
+        // render mode is stored on the Benchmark itself, not in BenchmarkConfig
+        App.rmOption = benchmark.getRenderMode();
+        mainFrame.syncFromModel();
+        // sync AdvancedOptionsFrame if it has already been opened (preserve lazy-init)
+        if (advancedFrame != null) advancedFrame.syncFromModel();
+        // set as the active benchmark so stale-badge comparisons have a baseline
+        App.benchmark = benchmark;
+        // clear any stale highlights — the newly loaded benchmark IS the current baseline
+        clearAllStaleHighlights();
         // override badges with the values recorded at run time (— if absent in older records)
         refreshChartBadges(benchmark.config.directIoEnabled, benchmark.config.writeSyncEnabled,
                            benchmark.config.sectorAlignment, benchmark.getRenderMode(),

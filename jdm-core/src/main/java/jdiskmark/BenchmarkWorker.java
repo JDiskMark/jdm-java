@@ -95,6 +95,9 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
     
     @Override
     protected Benchmark doInBackground() throws Exception {
+        // Clear amber stale-highlights from any previous run's setting changes.
+        // The new baseline will be App.benchmark.config once this run completes.
+        Gui.clearAllStaleHighlights();
 
         if (App.verbose) {
             msg("*** starting new worker thread");

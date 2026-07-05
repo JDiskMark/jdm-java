@@ -39,7 +39,7 @@ public class GraphPaletteMenu extends JMenu {
 
     /**
      * Selects the radio button matching the current palette and applies
-     * the colour scheme.  Called from {@link MainFrame#refreshConfig()}.
+     * the colour scheme.  Called from {@link MainFrame#syncFromModel()}.
      */
     public void syncFromModel() {
         Gui.Palette current = Gui.palette;
