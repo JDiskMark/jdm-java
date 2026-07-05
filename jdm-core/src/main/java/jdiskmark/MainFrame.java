@@ -806,6 +806,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private void multiFileCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_multiFileCheckBoxMenuItemActionPerformed
         App.multiFile = multiFileCheckBoxMenuItem.getState();
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_multiFileCheckBoxMenuItemActionPerformed
 
     private void deleteDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteDataMenuItemActionPerformed
@@ -877,6 +878,7 @@ public final class MainFrame extends javax.swing.JFrame {
         directIoCbMenuItem.setEnabled(true);
         sectorAlignmentMenu.setEnabled(true);
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_engModernRbMenuItemActionPerformed
 
     private void engLegacyRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_engLegacyRbMenuItemActionPerformed
@@ -884,6 +886,7 @@ public final class MainFrame extends javax.swing.JFrame {
         directIoCbMenuItem.setEnabled(false);
         sectorAlignmentMenu.setEnabled(false);
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_engLegacyRbMenuItemActionPerformed
 
     private void align512RbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align512RbMenuItemActionPerformed
