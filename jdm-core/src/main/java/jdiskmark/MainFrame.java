@@ -108,9 +108,12 @@ public final class MainFrame extends javax.swing.JFrame {
         javax.swing.JTabbedPane mainTabPane = new javax.swing.JTabbedPane(javax.swing.JTabbedPane.LEFT);
         mainTabPane.putClientProperty("JTabbedPane.tabRotation", "auto");
 
-        // Drives tab — always visible on all platforms, shown first
-        Gui.drivesPanel = new DrivesPanel();
-        mainTabPane.addTab("Drives", Gui.drivesPanel);
+        // Drive tab — always visible on all platforms, shown first
+        Gui.drivePanel = new DrivePanel();
+        mainTabPane.addTab("Drive", Gui.drivePanel);
+
+        // All Drives table — lives in the bottom tabbedPane
+        tabbedPane.addTab("All Drives", Gui.drivePanel.buildAllDrivesPanel());
 
         JPanel benchTab = new JPanel(new BorderLayout());
         benchTab.add(bControlMountPanel, BorderLayout.WEST);
@@ -171,6 +174,19 @@ public final class MainFrame extends javax.swing.JFrame {
         });
 
         getContentPane().add(splitPane, BorderLayout.CENTER);
+
+        // Ensure the frame is tall enough to show 5 rows in the bottom table.
+        // pack() sizes to preferred; we nudge the height up slightly after packing.
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            private boolean heightAdjusted = false;
+            @Override
+            public void componentShown(java.awt.event.ComponentEvent e) {
+                if (!heightAdjusted) {
+                    heightAdjusted = true;
+                    setSize(getWidth(), getHeight() + 30);
+                }
+            }
+        });
     }
     
     public JPanel getMountPanel() {

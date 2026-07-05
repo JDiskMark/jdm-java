@@ -991,4 +991,204 @@ public class UtilOs {
             throw new RuntimeException(e); // SHA-256 is mandatory in every JVM
         }
     }
-}
+
+    // -----------------------------------------------------------------------
+    // Drive attributes — Windows and Linux (no admin required)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Returns the filesystem type for the given drive letter (e.g. "NTFS", "FAT32").
+     * Uses PowerShell {@code Get-Volume}. No admin required.
+     *
+     * @param driveLetter single letter, e.g. "C"
+     * @return filesystem type or {@code null} on failure
+     */
+    static String getFilesystemWindows(String driveLetter) {
+        String psCmd = "(Get-Volume -DriveLetter '" + driveLetter + "').FileSystemType";
+        return runPowerShellOneLiner(psCmd);
+    }
+
+    /**
+     * Returns the bus/interface type for the given drive letter (e.g. "NVMe", "SATA", "USB").
+     * Uses PowerShell {@code Get-Partition | Get-Disk}. No admin required.
+     *
+     * @param driveLetter single letter, e.g. "C"
+     * @return bus type or {@code null} on failure
+     */
+    static String getBusTypeWindows(String driveLetter) {
+        String psCmd = "Get-Partition -DriveLetter '" + driveLetter
+                + "' | Get-Disk | Select-Object -ExpandProperty BusType";
+        return runPowerShellOneLiner(psCmd);
+    }
+
+    /**
+     * Returns the sector size for the given drive letter (e.g. "512 B", "512 B / 4096 B").
+     * When logical and physical sector sizes differ, both are shown.
+     * Uses PowerShell {@code Get-Partition | Get-Disk}. No admin required.
+     *
+     * @param driveLetter single letter, e.g. "C"
+     * @return sector size string or {@code null} on failure
+     */
+    static String getSectorSizeWindows(String driveLetter) {
+        String logicalStr = runPowerShellOneLiner(
+                "Get-Partition -DriveLetter '" + driveLetter
+                        + "' | Get-Disk | Select-Object -ExpandProperty LogicalSectorSize");
+        String physicalStr = runPowerShellOneLiner(
+                "Get-Partition -DriveLetter '" + driveLetter
+                        + "' | Get-Disk | Select-Object -ExpandProperty PhysicalSectorSize");
+        if (logicalStr == null && physicalStr == null) return null;
+
+        // Format like pydiskmark: "512 B" or "512 B / 4096 B"
+        if (logicalStr != null && physicalStr != null && !logicalStr.equals(physicalStr)) {
+            return logicalStr + " B / " + physicalStr + " B";
+        } else if (logicalStr != null) {
+            return logicalStr + " B";
+        } else {
+            return physicalStr + " B";
+        }
+    }
+
+    /**
+     * Runs a single PowerShell command and returns the first non-blank line of
+     * output, or {@code null} on any error. Timeout: 15 seconds.
+     */
+    private static String runPowerShellOneLiner(String command) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    "powershell", "-NoProfile", "-Command", command);
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String trimmed = line.trim();
+                    if (!trimmed.isEmpty()) {
+                        process.waitFor(15, java.util.concurrent.TimeUnit.SECONDS);
+                        return trimmed;
+                    }
+                }
+            }
+            process.waitFor(15, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (IOException | InterruptedException e) {
+            LOGGER.log(Level.WARNING, "PowerShell command failed: " + command, e);
+        }
+        return null;
+    }
+
+    // -----------------------------------------------------------------------
+    // Drive attributes — Linux
+    // -----------------------------------------------------------------------
+
+    /**
+     * Returns the filesystem type for the given path on Linux (e.g. "ext4", "xfs").
+     * Uses {@code df -T}. No admin required.
+     *
+     * <p>Example output:
+     * <pre>
+     * Filesystem     Type  1K-blocks     Used Available Use% Mounted on
+     * /dev/sda2      ext4  238737052 54179492 172357524  24% /
+     * </pre>
+     *
+     * @param path path on the target filesystem
+     * @return filesystem type or {@code null} on failure
+     */
+    static String getFilesystemLinux(Path path) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("df", "-T", path.toString());
+            pb.environment().put("LC_ALL", "C");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    // Skip the header line; data lines start with /dev/ or a device name
+                    if (line.startsWith("/dev/") || line.contains("/dev/")) {
+                        String[] parts = line.trim().split("\\s+");
+                        if (parts.length >= 2) {
+                            return parts[1]; // Type column
+                        }
+                    }
+                }
+            }
+            process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (IOException | InterruptedException e) {
+            LOGGER.log(Level.WARNING, "df -T failed for " + path, e);
+        }
+        return null;
+    }
+
+    /**
+     * Returns the bus/interface type for the given path on Linux (e.g. "nvme", "sata", "usb").
+     * Uses {@code lsblk -no TRAN}. No admin required.
+     *
+     * @param path path on the target filesystem
+     * @return bus type (uppercased) or {@code null} on failure
+     */
+    static String getBusTypeLinux(Path path) {
+        String partition = getPartitionFromFilePathLinux(path);
+        if (partition == null || partition.isBlank()) return null;
+        try {
+            ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "TRAN", partition);
+            pb.environment().put("LC_ALL", "C");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String trimmed = line.trim();
+                    if (!trimmed.isEmpty()) {
+                        return trimmed.toUpperCase(); // e.g. "NVME", "SATA"
+                    }
+                }
+            }
+            process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (IOException | InterruptedException e) {
+            LOGGER.log(Level.WARNING, "lsblk TRAN failed for " + partition, e);
+        }
+        return null;
+    }
+
+    /**
+     * Returns the sector size for the given path on Linux
+     * (e.g. "512 B", "512 B / 4096 B").
+     * Uses {@code lsblk -no LOG-SEC,PHY-SEC}. No admin required.
+     *
+     * @param path path on the target filesystem
+     * @return sector size string or {@code null} on failure
+     */
+    static String getSectorSizeLinux(Path path) {
+        String partition = getPartitionFromFilePathLinux(path);
+        if (partition == null || partition.isBlank()) return null;
+        try {
+            ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "LOG-SEC,PHY-SEC", partition);
+            pb.environment().put("LC_ALL", "C");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] parts = line.trim().split("\\s+");
+                    if (parts.length >= 2) {
+                        String logical = parts[0];
+                        String physical = parts[1];
+                        if (logical.equals(physical)) {
+                            return logical + " B";
+                        }
+                        return logical + " B / " + physical + " B";
+                    } else if (parts.length == 1 && !parts[0].isEmpty()) {
+                        return parts[0] + " B";
+                    }
+                }
+            }
+            process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (IOException | InterruptedException e) {
+            LOGGER.log(Level.WARNING, "lsblk sector size failed for " + partition, e);
+        }
+        return null;
+    }
+}
+

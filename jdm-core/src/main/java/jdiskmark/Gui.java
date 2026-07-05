@@ -22,6 +22,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -132,7 +133,7 @@ public final class Gui {
     public static SelectDriveFrame selFrame = null;
     public static BenchmarkPanel runPanel = null;
     public static SmartPanel smartPanel = null;
-    public static DrivesPanel drivesPanel = null;
+    public static DrivePanel drivePanel = null;
     public static SmartReportsPanel smartReportsPanel = null;
     public static javax.swing.JTabbedPane mainTabPane = null;
     public static JProgressBar progressBar = null;
@@ -445,7 +446,7 @@ public final class Gui {
             if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
                 try {
                     java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
-                } catch (Exception ex) {
+                } catch (IOException | URISyntaxException | RuntimeException ex) {
                     App.msg("Could not open browser: " + ex.getMessage());
                 }
             }
@@ -838,10 +839,6 @@ public final class Gui {
         if (controlPanel != null) controlPanel.showSettingsDrift();
     }
 
-    private static void setBadgeStale(javax.swing.JLabel badge, boolean stale) {
-        badge.setBackground(stale ? BADGE_AMBER_BG : BADGE_DEFAULT_BG);
-    }
-
     private static boolean setBadgeStaleReturn(javax.swing.JLabel badge, boolean stale) {
         badge.setBackground(stale ? BADGE_AMBER_BG : BADGE_DEFAULT_BG);
         return stale;
@@ -867,7 +864,7 @@ public final class Gui {
      * Any null value is rendered as "—" to indicate the data was not recorded.
      * Safe to call from any thread.
      */
-    public static void refreshChartBadges(Boolean directIo, Boolean writeSync,
+    private static void refreshChartBadges(Boolean directIo, Boolean writeSync,
                                           App.SectorAlignment sector, RenderFrequencyMode renderMode,
                                           App.IoEngine ioEngine, Boolean multiFile) {
         if (directIoLabel == null) return;
@@ -994,8 +991,8 @@ public final class Gui {
     static public void updateDiskInfo() {
         mainFrame.setLocation(App.locationDir.getAbsolutePath());
         chart.getTitle().setText(App.getDriveInfo());
-        if (drivesPanel != null) {
-            drivesPanel.refresh();
+        if (drivePanel != null) {
+            drivePanel.refresh();
         }
         // SMART data is fetched lazily via runSmart(), which is called
         // by the "Run SMART" button in SmartPanel and optionally after each
@@ -1117,7 +1114,7 @@ public final class Gui {
             try {
                 Smart smart = Smart.fromJson(rawJson);
                 smartPanel.populate(smart);
-            } catch (Exception ex) {
+            } catch (IOException | RuntimeException ex) {
                 SMART_LOG.log(Level.WARNING,
                         "loadSnapshot: rawJson parse failed, falling back to scalars", ex);
                 smartPanel.populateFromSnapshot(snap);
