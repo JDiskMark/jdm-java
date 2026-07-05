@@ -105,6 +105,7 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
         gcHintsCheckBox = new JCheckBox("GC Hint Optimizing");
         gcHintsCheckBox.addActionListener(e -> {
             GcDetector.gcHintsEnabled = gcHintsCheckBox.isSelected();
+            App.saveConfig();
         });
 
         gcRetryCheckBox = new JCheckBox("GC Sample Retries");
