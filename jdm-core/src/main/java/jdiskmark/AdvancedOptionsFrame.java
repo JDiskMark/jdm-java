@@ -110,6 +110,7 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
         gcRetryCheckBox = new JCheckBox("GC Sample Retries");
         gcRetryCheckBox.addActionListener(e -> {
             GcDetector.gcRetryEnabled = gcRetryCheckBox.isSelected();
+            App.saveConfig();
         });
 
         content.add(new JLabel("JVM / Sampling:"));
