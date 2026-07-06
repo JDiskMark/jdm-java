@@ -151,8 +151,9 @@ public final class Gui {
 
     // --- Stale-badge tracking ---
     /** Amber used when a badge value differs from the last-run config. */
-    static final Color BADGE_AMBER_BG   = new Color(0xC8, 0x78, 0x00); // deep amber
-    static final Color BADGE_DEFAULT_BG = new Color(40, 40, 40, 180);
+    static Color BADGE_AMBER_BG   = new Color(0xC8, 0x78, 0x00); // deep amber
+    static Color BADGE_DEFAULT_BG = new Color(40, 40, 40, 180);
+    static Color BADGE_DEFAULT_FG = new Color(200, 200, 200);
 
     /** Chart subtitle shown when current settings diverge from the displayed benchmark. */
     private static TextTitle modifiedSubtitle = null;
@@ -204,10 +205,29 @@ public final class Gui {
         if (controlPanel != null) controlPanel.clearRowHighlights();
     }
 
-    /** Resets all badge backgrounds to the default dark style. */
+    /** Resets all badge backgrounds to the default style. */
     public static void clearBadgeHighlights() {
         if (chartBadgeList == null) return;
         for (javax.swing.JLabel b : chartBadgeList) b.setBackground(BADGE_DEFAULT_BG);
+    }
+
+    /** Updates badge colors to match the current window theme. */
+    static void updateBadgeThemeColors() {
+        if (theme == Theme.LIGHT) {
+            BADGE_DEFAULT_BG = new Color(220, 220, 220, 200);
+            BADGE_DEFAULT_FG = new Color(50, 50, 50);
+            BADGE_AMBER_BG   = new Color(0xE6, 0xA0, 0x1E);
+        } else {
+            BADGE_DEFAULT_BG = new Color(40, 40, 40, 180);
+            BADGE_DEFAULT_FG = new Color(200, 200, 200);
+            BADGE_AMBER_BG   = new Color(0xC8, 0x78, 0x00);
+        }
+        if (chartBadgeList == null) return;
+        for (javax.swing.JLabel b : chartBadgeList) {
+            b.setForeground(BADGE_DEFAULT_FG);
+            b.setBackground(BADGE_DEFAULT_BG);
+        }
+        applyBadgeHighlights();
     }
     // lazy-init singleton — created on first access after the LAF is applied
     private static AdvancedOptionsFrame advancedFrame = null;
@@ -560,6 +580,7 @@ public final class Gui {
             // Remove the border or set it to a subtle gray
             chart.getLegend().setFrame(new BlockBorder(new Color(80, 80, 80)));
         }
+        updateBadgeThemeColors();
     }
     
     public static javax.swing.JPanel createChartPanel() {
@@ -788,9 +809,9 @@ public final class Gui {
     private static javax.swing.JLabel makeBadge() {
         javax.swing.JLabel lbl = new javax.swing.JLabel();
         lbl.setFont(new Font("SansSerif", Font.BOLD, 11));
-        lbl.setForeground(new Color(200, 200, 200));
+        lbl.setForeground(BADGE_DEFAULT_FG);
         lbl.setOpaque(true);
-        lbl.setBackground(new Color(40, 40, 40, 180));
+        lbl.setBackground(BADGE_DEFAULT_BG);
         lbl.setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6));
         return lbl;
     }

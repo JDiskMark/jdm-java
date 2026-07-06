@@ -284,7 +284,10 @@ public class BenchmarkControlPanel extends JPanel {
      */
     public void clearRowHighlights() {
         Color defaultFg = UIManager.getColor("Label.foreground");
-        for (JLabel lbl : rowLabels) lbl.setForeground(defaultFg);
+        for (JLabel lbl : rowLabels) {
+            lbl.setForeground(defaultFg);
+            lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN));
+        }
     }
 
     /**
