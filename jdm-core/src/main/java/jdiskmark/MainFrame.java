@@ -28,6 +28,11 @@ public final class MainFrame extends javax.swing.JFrame {
      */
     public SharingPanel sharingPanel;
 
+    /** Toggle item for archive view — text changes between "View Archive" and "Exit Archive View". */
+    private final javax.swing.JMenuItem archiveViewItem = new javax.swing.JMenuItem("View Archive");
+    /** Unarchive menu item — only meaningful while in archive view. */
+    private final javax.swing.JMenuItem unarchiveSelectedItem = new javax.swing.JMenuItem("Unarchive Selected");
+
     /**
      * Graph Palette submenu — built programmatically from the {@link Gui.Palette}
      * enum so that adding a new palette never touches the NetBeans form.
@@ -187,6 +192,56 @@ public final class MainFrame extends javax.swing.JFrame {
                 }
             }
         });
+
+        // Archive menu items — added programmatically to keep the NetBeans GEN block untouched.
+        actionMenu.addSeparator();
+
+        javax.swing.JMenuItem archiveSelectedItem = new javax.swing.JMenuItem("Archive Selected Benchmark");
+        archiveSelectedItem.addActionListener(evt -> {
+            List<UUID> ids = Gui.runPanel.getSelectedIds();
+            if (ids.isEmpty()) {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        "No benchmark selected.", "Archive",
+                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            App.msg("Archiving " + ids.size() + " benchmark(s).");
+            App.archiveBenchmarks(ids);
+            App.msg("Benchmark(s) archived.");
+        });
+        actionMenu.add(archiveSelectedItem);
+
+        archiveViewItem.addActionListener(evt -> {
+            App.archiveViewActive = !App.archiveViewActive;
+            App.benchmarks.clear();
+            App.loadBenchmarks();
+            archiveViewItem.setText(App.archiveViewActive ? "Exit Archive View" : "View Archive");
+            unarchiveSelectedItem.setEnabled(App.archiveViewActive);
+            App.msg(App.archiveViewActive ? "Viewing archived benchmarks." : "Viewing benchmark history.");
+            for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+                String t = tabbedPane.getTitleAt(i);
+                if (t.equals("Benchmarks") || t.equals("Archived Benchmarks")) {
+                    tabbedPane.setTitleAt(i, App.archiveViewActive ? "Archived Benchmarks" : "Benchmark Operations");
+                    break;
+                }
+            }
+        });
+        actionMenu.add(archiveViewItem);
+
+        unarchiveSelectedItem.setEnabled(false);
+        unarchiveSelectedItem.addActionListener(evt -> {
+            List<UUID> ids = Gui.runPanel.getSelectedIds();
+            if (ids.isEmpty()) {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        "No benchmark selected.", "Unarchive",
+                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            App.msg("Unarchiving " + ids.size() + " benchmark(s).");
+            App.unarchiveBenchmarks(ids);
+            App.msg("Benchmark(s) unarchived.");
+        });
+        actionMenu.add(unarchiveSelectedItem);
     }
     
     public JPanel getMountPanel() {
@@ -336,7 +391,7 @@ public final class MainFrame extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("JDiskMark");
 
-        tabbedPane.addTab("Benchmark Operations", runPanel);
+        tabbedPane.addTab("Benchmarks", runPanel);
 
         msgTextArea.setEditable(false);
         msgTextArea.setColumns(20);

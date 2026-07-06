@@ -339,6 +339,7 @@ public class App {
     // saved benchmarks for loading
     public static HashMap<String, Benchmark> benchmarks = new LinkedHashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new LinkedHashMap<>();
+    public static boolean archiveViewActive = false;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
@@ -872,7 +873,8 @@ public class App {
         // populate benchmark and operation map w runs from db
         benchmarks.clear();
         operations.clear();
-        Benchmark.findAll().stream().forEach((Benchmark run) -> {
+        List<Benchmark> results = archiveViewActive ? Benchmark.findArchived() : Benchmark.findActive();
+        results.stream().forEach((Benchmark run) -> {
             benchmarks.put(run.getStartTimeString(), run);
             for (BenchmarkOperation o : run.getOperations()) {
                 operations.put(o.getStartTimeString(), o);
@@ -898,6 +900,20 @@ public class App {
     public static void deleteBenchmarks(List<UUID> benchmarkIds) {
         Benchmark.delete(benchmarkIds);
         benchmarks.clear(); // clear the cache
+        loadBenchmarks();
+    }
+
+    public static void archiveBenchmarks(List<UUID> benchmarkIds) {
+        if (benchmarkIds.isEmpty()) return;
+        Benchmark.archive(benchmarkIds);
+        benchmarks.clear();
+        loadBenchmarks();
+    }
+
+    public static void unarchiveBenchmarks(List<UUID> benchmarkIds) {
+        if (benchmarkIds.isEmpty()) return;
+        Benchmark.unarchive(benchmarkIds);
+        benchmarks.clear();
         loadBenchmarks();
     }
 
