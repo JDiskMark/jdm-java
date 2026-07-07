@@ -418,7 +418,7 @@ public final class Gui {
         // Apply branding icon to the window title bar and taskbar.
         // setIconImages supplies all available sizes so Java picks the best
         // fit per display context (16px title bar, 32/48px taskbar, etc.).
-        java.util.List<java.awt.Image> icons = App.activeIcon.loadAll();
+        java.util.List<java.awt.Image> icons = AppIcon.active.loadAll();
         if (!icons.isEmpty()) {
             mainFrame.setIconImages(icons);
         }
@@ -448,7 +448,7 @@ public final class Gui {
      * system menu bar About handler registered in {@link #init()}.
      */
     public static void showAboutDialog() {
-        javax.swing.ImageIcon icon = App.activeIcon.loadSize(128);
+        javax.swing.ImageIcon icon = AppIcon.active.loadSize(128);
 
         // Build an HTML panel so the website URL is a clickable hyperlink.
         String url = "https://www.jdiskmark.net";
