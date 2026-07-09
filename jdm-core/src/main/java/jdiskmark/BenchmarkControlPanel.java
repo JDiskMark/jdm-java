@@ -7,7 +7,6 @@ import net.miginfocom.swing.MigLayout;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,7 +20,18 @@ public class BenchmarkControlPanel extends JPanel {
     final Integer[] BLOCK_SIZES = {1,2,4,8,16,32,64,128,256,512,1024,2048};
     final Integer[] NUM_SAMPLE_OPTIONS = {25,50,100,200,300,500,1000,2000,3000,5000,10000};
     
-    JLabel profileLabel = new JLabel("Profile");
+    JLabel profileLabel     = new JLabel("Profile");
+    JLabel typeLabel        = new JLabel("Type");
+    JLabel numThreadsLabel  = new JLabel("Number Threads");
+    JLabel orderLabel       = new JLabel("Block Order");
+    JLabel numBlocksLabel   = new JLabel("Blocks / Sample");
+    JLabel blockSizeLabel   = new JLabel("Block Size (KB)");
+    JLabel numSamplesLabel  = new JLabel("Number Samples");
+
+    /** All row labels — used to bulk-clear amber highlights. */
+    private final java.util.List<JLabel> rowLabels = java.util.List.of(
+            profileLabel, typeLabel, numThreadsLabel, orderLabel,
+            numBlocksLabel, blockSizeLabel, numSamplesLabel);
     
     public JComboBox<BenchmarkProfile> profileCombo = new JComboBox<>(BenchmarkProfile.getDefaults());
     public JComboBox<Benchmark.BenchmarkType> typeCombo = new JComboBox<>(Benchmark.BenchmarkType.values());
@@ -33,20 +43,19 @@ public class BenchmarkControlPanel extends JPanel {
     
     public JButton startButton = new JButton("Start");
     
-    //public JLabel sampleSizeLabel = new JLabel("- -");
-    //public JLabel wMinLabel = new JLabel("- -");
-    //public JLabel wMaxLabel = new JLabel("- -");
     public JLabel wAvgLabel = new JLabel("- -");
     public JLabel wAccessLabel = new JLabel("- -");
     public JLabel wIopsLabel = new JLabel("- -");
-    //public JLabel rMinLabel = new JLabel("- -");
-    //public JLabel rMaxLabel = new JLabel("- -");
     public JLabel rAvgLabel = new JLabel("- -");
     public JLabel rAccessLabel = new JLabel("- -");
     public JLabel rIopsLabel = new JLabel("- -");
     
+
     public BenchmarkControlPanel() {
         initComponents();
+        
+        // TODO: review if needed???
+        configChangeDetection();
         
         // locks down the preferred size to its initialized sized
         setPreferredSize(getPreferredSize());
@@ -66,71 +75,64 @@ public class BenchmarkControlPanel extends JPanel {
             
             // only if initialized, calls our refresh
             if (Gui.mainFrame != null) {
-                Gui.mainFrame.refreshConfig();
+                Gui.mainFrame.syncFromModel();
             }
+            
+            showSettingsDrift();
         });
         
         typeCombo.addActionListener((ActionEvent evt) -> {
             if (typeCombo.hasFocus()) {
                 App.benchmarkType = (Benchmark.BenchmarkType)typeCombo.getSelectedItem();
+                showSettingsDrift();
                 App.saveConfig();
             }
         });
         
         numThreadsCombo.addActionListener((ActionEvent evt) -> {
-            // NOTE: selecting a value from dropdown does not trigger the below
-            if (numThreadsCombo.hasFocus()) {
-                App.numOfThreads = (Integer)numThreadsCombo.getSelectedItem();
+            Object sel = numThreadsCombo.getSelectedItem();
+            if (sel == null) return;
+            App.numOfThreads = (Integer) sel;
+            showSettingsDrift();
+            App.saveConfig();
+        });
+        
+        orderCombo.addActionListener((ActionEvent evt) -> {
+            Object selected = orderCombo.getSelectedItem();
+            if (selected != null) {
+                App.blockSequence = (Benchmark.BlockSequence) selected;
+                showSettingsDrift();
                 App.saveConfig();
             }
         });
         
-        orderCombo.addActionListener((ActionEvent evt) -> {
-            if (orderCombo.hasFocus()) {
-                Object selected = orderCombo.getSelectedItem();
-                if (selected != null) {
-                    App.blockSequence = (Benchmark.BlockSequence) selected;
-                    App.saveConfig();
-                }
-            }
-        });
-        
         numBlocksCombo.addActionListener((ActionEvent evt) -> {
-            // NOTE: selecting a value from dropdown does not trigger the below
-            if (numBlocksCombo.hasFocus()) {
-                Object selected = numBlocksCombo.getSelectedItem();
-                if (selected != null) {
-                    App.numOfBlocks = (Integer) selected;
-                    //sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-                    Gui.progressBar.setString(String.valueOf(App.targetBenchmarkTxSizeKb()));
-                    App.saveConfig();
-                }
+            Object selected = numBlocksCombo.getSelectedItem();
+            if (selected != null) {
+                App.numOfBlocks = (Integer) selected;
+                showSettingsDrift();
+                Gui.updateProgress();
+                App.saveConfig();
             }
         });
         
         blockSizeCombo.addActionListener((ActionEvent evt) -> {
-            // NOTE: selecting a value from dropdown does not trigger the below
-            if (blockSizeCombo.hasFocus()) {
-                Object selected = blockSizeCombo.getSelectedItem();
-                if (selected != null) {
-                    App.blockSizeKb = (Integer) selected;
-                    //sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-                    Gui.progressBar.setString(String.valueOf(App.targetBenchmarkTxSizeKb()));
-                    App.saveConfig();
-                }
+            Object selected = blockSizeCombo.getSelectedItem();
+            if (selected != null) {
+                App.blockSizeKb = (Integer) selected;
+                Gui.updateProgress();
+                showSettingsDrift();
+                App.saveConfig();
             }
         });
-        
+
         numSamplesCombo.addActionListener((ActionEvent evt) -> {
-            // NOTE: selecting a value from dropdown does not trigger the below
-            if (numSamplesCombo.hasFocus()) {
-                Object selected = numSamplesCombo.getSelectedItem();
-                if (selected != null) {
-                    App.numOfSamples = (Integer) selected;
-                    //sampleSizeLabel.setText(String.valueOf(App.targetMarkSizeKb()));
-                    Gui.progressBar.setString(String.valueOf(App.targetBenchmarkTxSizeKb()));
-                    App.saveConfig();
-                }
+            Object selected = numSamplesCombo.getSelectedItem();
+            if (selected != null) {
+                App.numOfSamples = (Integer) selected;
+                Gui.updateProgress();
+                showSettingsDrift();
+                App.saveConfig();
             }
         });
 
@@ -162,25 +164,25 @@ public class BenchmarkControlPanel extends JPanel {
         add(profileCombo, "span 2, growx");
 
         // Type
-        add(new JLabel("Type"), "align left");
+        add(typeLabel, "align left");
         add(typeCombo, "span 2, growx");
 
         // --- Bottom Inputs Section (roughly 2/3 - 1/3) ---
 
         // Number Threads
-        add(new JLabel("Number Threads"), "span 2, align left");
+        add(numThreadsLabel, "span 2, align left");
         add(numThreadsCombo, "span 1, growx");
         // Block Order
-        add(new JLabel("Block Order"), "span 2, align left");
+        add(orderLabel, "span 2, align left");
         add(orderCombo, "span 1, growx");
         // Blocks / Sample
-        add(new JLabel("Blocks / Sample"), "span 2, align left");
+        add(numBlocksLabel, "span 2, align left");
         add(numBlocksCombo, "span 1, growx");
         // Block Size
-        add(new JLabel("Block Size (KB)"), "span 2, align left");
+        add(blockSizeLabel, "span 2, align left");
         add(blockSizeCombo, "span 1, growx");
         // No. Samples
-        add(new JLabel("Number Samples"), "span 2, align left");
+        add(numSamplesLabel, "span 2, align left");
         add(numSamplesCombo, "span 1, growx");
 
         // summary info
@@ -232,32 +234,14 @@ public class BenchmarkControlPanel extends JPanel {
     /**
      * Set profile to custom if a setting has been modified
      */
-    public void configChangeDetection() {
+    private void configChangeDetection() {
         ActionListener changeListener = e -> {
-            var combo = (JComboBox<?>) e.getSource();
-
-            // Guard: Only trigger if the USER made the change
-            if (!combo.hasFocus()) return;
-
-            // Safely check if the UI value differs from the App state
-            boolean changed = false;
-            Object selected = combo.getSelectedItem();
-
-            if (combo == typeCombo)            changed = !Objects.equals(selected, App.benchmarkType);
-            else if (combo == orderCombo)      changed = !Objects.equals(selected, App.blockSequence);
-            else if (combo == numSamplesCombo) changed = !Objects.equals(selected, App.numOfSamples);
-            else if (combo == numBlocksCombo)  changed = !Objects.equals(selected, App.numOfBlocks);
-            else if (combo == blockSizeCombo)  changed = !Objects.equals(selected, App.blockSizeKb);
-            else if (combo == numThreadsCombo) changed = !Objects.equals(selected, App.numOfThreads);
-
-            // Only flip to custom if it's a real change and not null
-            if (changed && selected != null) {
-                App.profileModified = true;
-                this.refreshSettings();
-            }
+            if (((JComboBox<?>)e.getSource()).getSelectedItem() == null) return;
+            App.profileModified = true;
         };
 
         // Attach to all combos
+        profileCombo.addActionListener(changeListener);
         typeCombo.addActionListener(changeListener);
         orderCombo.addActionListener(changeListener);
         numSamplesCombo.addActionListener(changeListener);
@@ -267,26 +251,76 @@ public class BenchmarkControlPanel extends JPanel {
     }
     
     public void refreshSettings() {
-        if (App.profileModified) {
-            Color accent = UIManager.getColor("Component.accentColor");
-            if (accent == null) {
-                // Fallback to custom colors if accent isn't defined
-                accent = (Gui.theme == Gui.Theme.LIGHT) 
-                         ? new Color(0, 51, 153) 
-                         : new Color(102, 178, 255);
-            }
-            profileLabel.setForeground(accent);
-        } else {
-            profileLabel.setForeground(UIManager.getColor("Label.foreground"));
+
+        // TODO: disable profile change for now since we are doing loaded benchmark
+        // settings changes which use the last run config instead and logic might
+        // be confusing.
+        // if (App.profileModified) {
+        //     Color accent = UIManager.getColor("Component.accentColor");
+        //     if (accent == null) {
+        //         accent = (Gui.theme == Gui.Theme.LIGHT)
+        //                  ? new Color(0, 51, 153) // dark blue
+        //                  : new Color(102, 178, 255); // light blue
+        //     }
+        //     profileLabel.setForeground(accent);
+        // } else {
+        //     profileLabel.setForeground(UIManager.getColor("Label.foreground"));
+        // }
+
+        profileCombo.setSelectedItem(App.activeProfile);
+        typeCombo.setSelectedItem(App.benchmarkType);
+        numThreadsCombo.setSelectedItem(App.numOfThreads);
+        orderCombo.setSelectedItem(App.blockSequence);
+        numBlocksCombo.setSelectedItem(App.numOfBlocks);
+        blockSizeCombo.setSelectedItem(App.blockSizeKb);
+        numSamplesCombo.setSelectedItem(App.numOfSamples);
+
+        showSettingsDrift();
+    }
+
+    /**
+     * Resets all row label foregrounds to the default LAF color.
+     * Called at the start of each run via {@link Gui#snapshotLastRunConfig()}.
+     */
+    public void clearRowHighlights() {
+        Color defaultFg = UIManager.getColor("Label.foreground");
+        for (JLabel lbl : rowLabels) {
+            lbl.setForeground(defaultFg);
+            lbl.setFont(lbl.getFont().deriveFont(Font.PLAIN));
         }
-        
-        if (!profileCombo.hasFocus())    profileCombo.setSelectedItem(App.activeProfile);
-        if (!typeCombo.hasFocus())       typeCombo.setSelectedItem(App.benchmarkType);
-        if (!numThreadsCombo.hasFocus()) numThreadsCombo.setSelectedItem(App.numOfThreads);
-        if (!orderCombo.hasFocus())      orderCombo.setSelectedItem(App.blockSequence);
-        if (!numBlocksCombo.hasFocus())  numBlocksCombo.setSelectedItem(App.numOfBlocks);
-        if (!blockSizeCombo.hasFocus())  blockSizeCombo.setSelectedItem(App.blockSizeKb);
-        if (!numSamplesCombo.hasFocus()) numSamplesCombo.setSelectedItem(App.numOfSamples);
+    }
+
+    /**
+     * Compares each control-panel row against lastRunConfig and colors the
+     * row label bold-amber if its value has changed since the last run.
+     */
+    public void showSettingsDrift() {
+        BenchmarkConfig lr = (App.benchmark != null) ? App.benchmark.config : null;
+        if (lr == null) return; // no run yet
+        Color amber     = new Color(0xC8, 0x78, 0x00);
+        Color defaultFg = UIManager.getColor("Label.foreground");
+        Font  boldFont   = typeLabel.getFont().deriveFont(Font.BOLD);
+        Font  normalFont = typeLabel.getFont().deriveFont(Font.PLAIN);
+
+        boolean anyStale = false;
+        anyStale |= setRowStaleReturn(profileLabel,    App.activeProfile != lr.getProfile(),                     amber, defaultFg, boldFont, normalFont);
+        anyStale |= setRowStaleReturn(typeLabel,       App.benchmarkType != lr.benchmarkType,                     amber, defaultFg, boldFont, normalFont);
+        anyStale |= setRowStaleReturn(numThreadsLabel, App.numOfThreads  != lr.numThreads,                        amber, defaultFg, boldFont, normalFont);
+        anyStale |= setRowStaleReturn(orderLabel,      App.blockSequence != lr.blockOrder,                        amber, defaultFg, boldFont, normalFont);
+        anyStale |= setRowStaleReturn(numBlocksLabel,  App.numOfBlocks   != lr.numBlocks,                         amber, defaultFg, boldFont, normalFont);
+        anyStale |= setRowStaleReturn(blockSizeLabel,  App.blockSizeKb   != (int)(lr.blockSize / App.KILOBYTE),   amber, defaultFg, boldFont, normalFont);
+        anyStale |= setRowStaleReturn(numSamplesLabel, App.numOfSamples  != lr.numSamples,                        amber, defaultFg, boldFont, normalFont);
+        // profile label keeps its existing modified-accent logic; skip here
+
+        // Subtitle: combine row-level staleness with badge-level staleness
+        Gui.setChartModifiedIndicator(anyStale || Gui.isAnyBadgeStale());
+    }
+
+    private boolean setRowStaleReturn(JLabel label, boolean stale,
+                                      Color amber, Color defaultFg, Font bold, Font normal) {
+        label.setForeground(stale ? amber : defaultFg);
+        label.setFont(stale ? bold : normal);
+        return stale;
     }
     
     public void refreshWriteMetrics() {

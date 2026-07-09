@@ -106,128 +106,7 @@ public class App {
         }
     }
 
-    /**
-     * Branding icon variants for the application window, taskbar, and installer.
-     * Each variant declares the PNG sizes available in jdm-core resources.
-     * Change {@link #activeIcon} to switch the icon across all display contexts.
-     */
-    public enum AppIcon {
-        /** Blue/orange circle — the beta brand. Single resolution. */
-        BETA(new String[] { "/icons/icon-jdm-beta.png" }),
-        /** Custom JDiskMark turtle logo — optimized for Ubuntu. */
-        TURTLE(new String[] {
-                "/icons/jdm-turtle-logo-16x16.png",
-                "/icons/jdm-turtle-logo-20x20.png",
-                "/icons/jdm-turtle-logo-24x24.png",
-                "/icons/jdm-turtle-logo-32x32.png",
-                "/icons/jdm-turtle-logo-40x40.png",
-                "/icons/jdm-turtle-logo-48x48.png",
-                "/icons/jdm-turtle-logo-64x64.png",
-                "/icons/jdm-turtle-logo-96x96.png",
-                "/icons/jdm-turtle-logo-128x128.png",
-                "/icons/jdm-turtle-logo-256x256.png",
-                "/icons/jdm-turtle-logo-512x512.png",
-                "/icons/jdm-turtle-logo-1024x1024.png"
-        }),
-        /** Duke, the BSD-licensed Java mascot from the OpenJDK project. */
-        DUKE(new String[] { "/icons/icon-duke.png" });
 
-        /** All resource paths for this icon variant, from smallest to largest. */
-        public final String[] resourcePaths;
-
-        AppIcon(String[] resourcePaths) {
-            this.resourcePaths = resourcePaths;
-        }
-
-        /**
-         * Load all available sizes as a list of Images for use with
-         * {@link java.awt.Window#setIconImages(java.util.List)}.
-         * Java picks the best-fit size per display context (title bar, taskbar, Alt+Tab).
-         * Missing resources are silently skipped.
-         * @return 
-         */
-        public java.util.List<java.awt.Image> loadAll() {
-            java.util.List<java.awt.Image> images = new java.util.ArrayList<>();
-            for (String path : resourcePaths) {
-                try (java.io.InputStream is = App.class.getResourceAsStream(path)) {
-                    if (is != null) {
-                        images.add(new javax.swing.ImageIcon(is.readAllBytes()).getImage());
-                    }
-                } catch (java.io.IOException e) {
-                    java.util.logging.Logger.getLogger(App.class.getName()).log(
-                            java.util.logging.Level.WARNING, "Could not load icon: " + path, e);
-                }
-            }
-            return images;
-        }
-
-        /**
-         * Load the largest available size as an ImageIcon (used by the About dialog).
-         * Returns {@code null} if no resource is found.
-         * @return
-         */
-        public javax.swing.ImageIcon load() {
-            String path = resourcePaths[resourcePaths.length - 1];
-            try (java.io.InputStream is = App.class.getResourceAsStream(path)) {
-                if (is == null) {
-                    java.util.logging.Logger.getLogger(App.class.getName()).log(Level.WARNING, "Icon resource not found: {0}", path);
-                    return null;
-                }
-                return new javax.swing.ImageIcon(is.readAllBytes());
-            } catch (java.io.IOException e) {
-                java.util.logging.Logger.getLogger(App.class.getName()).log(
-                        java.util.logging.Level.WARNING, "Could not load icon: " + path, e);
-                return null;
-            }
-        }
-
-        /**
-         * Load the best pre-rendered PNG at or nearest to {@code targetSize} 
-         * pixels. Prefers the smallest size that is &gt;= targetSize; falls 
-         * back to the largest available. For single-resolution variants the 
-         * only image is returned as-is. Returns {@code null} if no resource is 
-         * found.
-         * @param targetSize
-         * @return 
-         */
-        public javax.swing.ImageIcon loadSize(int targetSize) {
-            // Parse pixel widths from filenames like "/icons/jdm-turtle-logo-256x256.png".
-            // For paths without a size suffix (e.g. "/icons/icon-jdm-beta.png") the regex
-            // won't match and the path is treated as an unknown size.
-            java.util.regex.Pattern sizePattern = java.util.regex.Pattern.compile("-(\\d+)x\\d+\\.png$");
-            String bestPath = resourcePaths[resourcePaths.length - 1]; // default: largest
-            int bestDiff = Integer.MAX_VALUE;
-            for (String path : resourcePaths) {
-                java.util.regex.Matcher m = sizePattern.matcher(path);
-                if (m.find()) {
-                    int size = Integer.parseInt(m.group(1));
-                    int diff = size - targetSize;
-                    // Prefer smallest size >= targetSize; accept smaller only if nothing larger found.
-                    if (diff >= 0 && diff < bestDiff) {
-                        bestDiff = diff;
-                        bestPath = path;
-                    }
-                }
-            }
-            try (java.io.InputStream is = App.class.getResourceAsStream(bestPath)) {
-                if (is == null) {
-                    java.util.logging.Logger.getLogger(App.class.getName()).log(Level.WARNING, "Icon resource not found: {0}", bestPath);
-                    return null;
-                }
-                return new javax.swing.ImageIcon(is.readAllBytes());
-            } catch (java.io.IOException e) {
-                java.util.logging.Logger.getLogger(App.class.getName()).log(
-                        java.util.logging.Level.WARNING, "Could not load icon: " + bestPath, e);
-                return null;
-            }
-        }
-    }
-
-    /**
-     * Active branding icon — change this single line to switch the icon
-     * used for the window title bar, taskbar, and About dialog.
-     */
-    public static AppIcon activeIcon = AppIcon.TURTLE;
 
     // application mode
     public static Mode mode = Mode.CLI;
@@ -320,6 +199,8 @@ public class App {
     public static int numOfBlocks = 32; // desired number of blocks
     public static int blockSizeKb = 512; // size of a block in KBs
     public static int numOfThreads = 1; // number of threads
+    // render / display options
+    public static RenderFrequencyMode rmOption = RenderFrequencyMode.PER_SAMPLE;
     // active benchmark state
     public static State state = State.IDLE_STATE;
     public static int nextSampleNumber = 1; // number of the next sample
@@ -332,9 +213,12 @@ public class App {
     public static Future<Benchmark> cliResult = null;
     // completed benchmarks and operations
     public static Benchmark benchmark; // last or loaded benchmark
-    public static BenchmarkOperation operation; // last loaded operation
+
+    public static BenchmarkOperation operation; // last loaded operation - not sure this is actively used
+    // saved benchmarks for loading
     public static HashMap<String, Benchmark> benchmarks = new LinkedHashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new LinkedHashMap<>();
+    public static boolean archiveViewActive = false;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
@@ -723,8 +607,21 @@ public class App {
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
 
+        value = p.getProperty("renderMode", rmOption.name());
+        try {
+            rmOption = RenderFrequencyMode.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid renderMode value in properties: \"{0}\", using default: {1}",
+                    new Object[] { value, rmOption.name() });
+        }
+
         value = p.getProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
         Gui.showMaxMin = Boolean.parseBoolean(value);
+
+        value = p.getProperty("showBadges", String.valueOf(Gui.showBadges));
+        Gui.showBadges = Boolean.parseBoolean(value);
 
         value = p.getProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
         Gui.showDriveAccess = Boolean.parseBoolean(value);
@@ -771,7 +668,9 @@ public class App {
         // display properties
         p.setProperty("theme", Gui.theme.name());
         p.setProperty("palette", Gui.palette.name());
+        p.setProperty("renderMode", rmOption.name());
         p.setProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
+        p.setProperty("showBadges", String.valueOf(Gui.showBadges));
         p.setProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
         p.setProperty("showSingleOp", String.valueOf(Gui.showSingleOp));
 
@@ -841,6 +740,7 @@ public class App {
         sb.append("directEnable: ").append(directEnable).append('\n');
         sb.append("palette: ").append(Gui.palette).append('\n');
         sb.append("showMaxMin: ").append(Gui.showMaxMin).append('\n');
+        sb.append("showBadges: ").append(Gui.showBadges).append('\n');
         return sb.toString();
     }
 
@@ -852,7 +752,8 @@ public class App {
         // populate benchmark and operation map w runs from db
         benchmarks.clear();
         operations.clear();
-        Benchmark.findAll().stream().forEach((Benchmark run) -> {
+        List<Benchmark> results = archiveViewActive ? Benchmark.findArchived() : Benchmark.findActive();
+        results.stream().forEach((Benchmark run) -> {
             benchmarks.put(run.getStartTimeString(), run);
             for (BenchmarkOperation o : run.getOperations()) {
                 operations.put(o.getStartTimeString(), o);
@@ -878,6 +779,20 @@ public class App {
     public static void deleteBenchmarks(List<UUID> benchmarkIds) {
         Benchmark.delete(benchmarkIds);
         benchmarks.clear(); // clear the cache
+        loadBenchmarks();
+    }
+
+    public static void archiveBenchmarks(List<UUID> benchmarkIds) {
+        if (benchmarkIds.isEmpty()) return;
+        Benchmark.archive(benchmarkIds);
+        benchmarks.clear();
+        loadBenchmarks();
+    }
+
+    public static void unarchiveBenchmarks(List<UUID> benchmarkIds) {
+        if (benchmarkIds.isEmpty()) return;
+        Benchmark.unarchive(benchmarkIds);
+        benchmarks.clear();
         loadBenchmarks();
     }
 

@@ -7,12 +7,15 @@ import static jdiskmark.App.msg;
 import static jdiskmark.App.dataDir;
 
 import jakarta.persistence.EntityManager;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
 /**
@@ -20,9 +23,37 @@ import javax.swing.SwingWorker;
  * once.
  */
 public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
+    /** Render mode snapshot — captured once when the worker is created. */
+    private final RenderFrequencyMode renderMode = App.rmOption;
+
+    // Buffers for non-PER_SAMPLE modes
+    private final java.util.List<Sample> operationBuffer = new java.util.ArrayList<>();
+    private final java.util.List<Sample> intervalBuffer  = new java.util.ArrayList<>();
+    private long nextPublishTime = 0;
+
     BenchmarkRunner.BenchmarkListener listener = new BenchmarkRunner.BenchmarkListener() {
         @Override
-        public void onSampleComplete(Sample s) { publish(s); }
+        public void onSampleComplete(Sample s) {
+            switch (renderMode) {
+                case PER_SAMPLE -> publish(s);
+                case PER_OPERATION -> {
+                    synchronized (operationBuffer) { operationBuffer.add(s); }
+                }
+                case PER_100MS, PER_500MS, PER_1000MS -> {
+                    long interval = renderMode.getIntervalMillis();
+                    long now = System.currentTimeMillis();
+                    synchronized (intervalBuffer) {
+                        intervalBuffer.add(s);
+                        if (now >= nextPublishTime) {
+                            // flush all buffered samples
+                            for (Sample buffered : intervalBuffer) { publish(buffered); }
+                            intervalBuffer.clear();
+                            nextPublishTime = now + interval;
+                        }
+                    }
+                }
+            }
+        }
 
         @Override
         public void onProgressUpdate(long completed, long total) { setProgress((int) completed); }
@@ -32,10 +63,41 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
         @Override
         public void attemptCacheDrop() { Gui.dropCache(); }
+
+        @Override
+        public void onOperationComplete() {
+            if (renderMode == RenderFrequencyMode.PER_OPERATION) {
+                // Copy and clear the buffer under the lock, then render
+                // synchronously on the EDT so I/O and graphing never overlap.
+                List<Sample> toFlush;
+                synchronized (operationBuffer) {
+                    toFlush = new ArrayList<>(operationBuffer);
+                    operationBuffer.clear();
+                }
+                try {
+                    SwingUtilities.invokeAndWait(() -> {
+                        for (Sample s : toFlush) {
+                            switch (s.type) {
+                                case WRITE -> Gui.addWriteSample(s);
+                                case READ  -> Gui.addReadSample(s);
+                            }
+                        }
+                    });
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (InvocationTargetException e) {
+                    Logger.getLogger(BenchmarkWorker.class.getName())
+                            .log(Level.WARNING, "Chart update failed", e);
+                }
+            }
+        }
     };
     
     @Override
     protected Benchmark doInBackground() throws Exception {
+        // Clear amber stale-highlights from any previous run's setting changes.
+        // The new baseline will be App.benchmark.config once this run completes.
+        Gui.clearAllStaleHighlights();
 
         if (App.verbose) {
             msg("*** starting new worker thread");
@@ -55,6 +117,17 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
         BenchmarkRunner bRunner = new BenchmarkRunner(listener, App.getConfig());
         Benchmark benchmark = bRunner.execute();
+
+        // Flush any samples still in the interval buffer for timed render modes.
+        // PER_OPERATION is handled by onOperationComplete(); PER_SAMPLE needs no flush.
+        if (renderMode == RenderFrequencyMode.PER_100MS
+                || renderMode == RenderFrequencyMode.PER_500MS
+                || renderMode == RenderFrequencyMode.PER_1000MS) {
+            synchronized (intervalBuffer) {
+                intervalBuffer.forEach(this::publish);
+                intervalBuffer.clear();
+            }
+        }
         
         // update gui title
         Gui.chart.getTitle().setText(benchmark.getDriveInfoDisplay());

@@ -9,15 +9,20 @@ import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 import jdiskmark.Benchmark.IOMode;
 
+import java.awt.BasicStroke;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Shape;
+import java.awt.Stroke;
 import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -44,8 +49,11 @@ import org.jfree.chart.block.BlockBorder;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.ui.HorizontalAlignment;
+import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.RectangleInsets;
 
 /**
@@ -53,7 +61,34 @@ import org.jfree.ui.RectangleInsets;
  */
 public final class Gui {
     
-    public enum Palette { CLASSIC, BLUE_GREEN, BARD_COOL, BARD_WARM };
+    public enum Palette {
+        CLASSIC("Classic"),
+        BLUE_GREEN("Blue Green"),
+        BARD_COOL("Bard Cool"),
+        BARD_WARM("Bard Warm"),
+        BETA("Beta"),
+        FOURTH_OF_JULY("4th of July");
+
+        private final String displayName;
+
+        Palette(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String displayName() { return displayName; }
+
+        /** Applies this palette's colour scheme to the chart renderers. */
+        public void apply() {
+            switch (this) {
+                case CLASSIC    -> setClassicColorScheme();
+                case BLUE_GREEN -> setBlueGreenScheme();
+                case BARD_COOL  -> setCoolColorScheme();
+                case BARD_WARM  -> setWarmColorScheme();
+                case BETA           -> setBetaColorScheme();
+                case FOURTH_OF_JULY -> setFourthOfJulyColorScheme();
+            }
+        }
+    }
     
     public enum Theme {
         DARK("Dark"),
@@ -87,6 +122,7 @@ public final class Gui {
     // display settings
     public static Theme theme = Theme.DARK;
     public static Palette palette = Palette.CLASSIC;
+    public static boolean showBadges = true;
     public static boolean showMaxMin = true;
     public static boolean showDriveAccess = true;
     public static boolean showSingleOp = false;
@@ -97,10 +133,118 @@ public final class Gui {
     public static SelectDriveFrame selFrame = null;
     public static BenchmarkPanel runPanel = null;
     public static SmartPanel smartPanel = null;
-    public static DrivesPanel drivesPanel = null;
+    public static DrivePanel drivePanel = null;
     public static SmartReportsPanel smartReportsPanel = null;
     public static javax.swing.JTabbedPane mainTabPane = null;
     public static JProgressBar progressBar = null;
+    // chart badge strip — declared null until createChartPanel() wires them up
+    public static javax.swing.JLabel directIoLabel = null;
+    public static javax.swing.JLabel writeSyncLabel = null;
+    public static javax.swing.JLabel sectorLabel = null;
+    public static javax.swing.JLabel renderModeLabel = null;
+    public static javax.swing.JLabel ioEngineLabel = null;
+    public static javax.swing.JLabel multiFileLabel = null;
+    /** Priority-ordered list used by the single-row truncation listener. */
+    private static List<javax.swing.JLabel> chartBadgeList = null;
+    /** The badge strip panel — held so setChartBadgesVisible() can show/hide it. */
+    private static javax.swing.JPanel chartBadgeTopPanel = null;
+
+    // --- Stale-badge tracking ---
+    /** Amber used when a badge value differs from the last-run config. */
+    static Color BADGE_AMBER_BG   = new Color(0xC8, 0x78, 0x00); // deep amber
+    static Color BADGE_DEFAULT_BG = new Color(40, 40, 40, 180);
+    static Color BADGE_DEFAULT_FG = new Color(200, 200, 200);
+
+    /** Chart subtitle shown when current settings diverge from the displayed benchmark. */
+    private static TextTitle modifiedSubtitle = null;
+
+    /**
+     * Shows or hides the "⚠ Settings modified" subtitle on the chart. Safe to 
+     * call from any thread.
+     * @param visible
+     */
+    public static void setChartModifiedIndicator(boolean visible) {
+        if (chart == null) return;
+        Runnable r = () -> {
+            if (visible) {
+                if (modifiedSubtitle == null) {
+                    modifiedSubtitle = new TextTitle(
+                            "⚠  Settings modified — results shown reflect prior configuration",
+                            new Font("SansSerif", Font.BOLD, 11));
+                    modifiedSubtitle.setPaint(new Color(0xC8, 0x78, 0x00));
+                    modifiedSubtitle.setPosition(RectangleEdge.BOTTOM);
+                    modifiedSubtitle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+                    modifiedSubtitle.setPadding(new RectangleInsets(0, 0, 4, 0));
+                }
+                // Only add if not already present
+                if (!chart.getSubtitles().contains(modifiedSubtitle)) {
+                    chart.addSubtitle(modifiedSubtitle);
+                }
+            } else {
+                if (modifiedSubtitle != null) {
+                    chart.removeSubtitle(modifiedSubtitle);
+                }
+            }
+        };
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) r.run();
+        else javax.swing.SwingUtilities.invokeLater(r);
+    }
+    
+    public static void updateProgress() {
+        if (progressBar == null) return;
+        progressBar.setString(String.valueOf(App.targetBenchmarkTxSizeKb()));
+    }
+
+    /**
+     * Clears all badge and control-panel highlights at the start of a new run or load.
+     * The comparison baseline is App.benchmark.config (set at end of prior run / on load).
+     */
+    public static void clearAllStaleHighlights() {
+        clearBadgeHighlights();
+        setChartModifiedIndicator(false);
+        if (controlPanel != null) controlPanel.clearRowHighlights();
+    }
+
+    /** Resets all badge backgrounds to the default style. */
+    public static void clearBadgeHighlights() {
+        if (chartBadgeList == null) return;
+        for (javax.swing.JLabel b : chartBadgeList) b.setBackground(BADGE_DEFAULT_BG);
+    }
+
+    /** Updates badge colors to match the current window theme. */
+    static void updateBadgeThemeColors() {
+        if (theme == Theme.LIGHT) {
+            BADGE_DEFAULT_BG = new Color(220, 220, 220, 200);
+            BADGE_DEFAULT_FG = new Color(50, 50, 50);
+            BADGE_AMBER_BG   = new Color(0xE6, 0xA0, 0x1E);
+        } else {
+            BADGE_DEFAULT_BG = new Color(40, 40, 40, 180);
+            BADGE_DEFAULT_FG = new Color(200, 200, 200);
+            BADGE_AMBER_BG   = new Color(0xC8, 0x78, 0x00);
+        }
+        if (chartBadgeList == null) return;
+        for (javax.swing.JLabel b : chartBadgeList) {
+            b.setForeground(BADGE_DEFAULT_FG);
+            b.setBackground(BADGE_DEFAULT_BG);
+        }
+        applyBadgeHighlights();
+    }
+    // lazy-init singleton — created on first access after the LAF is applied
+    private static AdvancedOptionsFrame advancedFrame = null;
+
+    /**
+     * Returns the Advanced Options dialog, creating it on the first call.
+     * The singleton is initialised lazily so the Look-and-Feel is fully applied
+     * before any Swing components are constructed.
+     * @return reference to the Advanced Options Frame
+     */
+    public static AdvancedOptionsFrame getAdvancedFrame() {
+        if (advancedFrame == null) {
+            advancedFrame = new AdvancedOptionsFrame();
+        }
+        return advancedFrame;
+    }
+
     // last SMART data captured via runSmart() — used by Save Snapshot button
     public static Smart lastSmartData = null;
     public static String lastSmartDeviceName = null;
@@ -274,7 +418,7 @@ public final class Gui {
         // Apply branding icon to the window title bar and taskbar.
         // setIconImages supplies all available sizes so Java picks the best
         // fit per display context (16px title bar, 32/48px taskbar, etc.).
-        java.util.List<java.awt.Image> icons = App.activeIcon.loadAll();
+        java.util.List<java.awt.Image> icons = AppIcon.active.loadAll();
         if (!icons.isEmpty()) {
             mainFrame.setIconImages(icons);
         }
@@ -304,7 +448,7 @@ public final class Gui {
      * system menu bar About handler registered in {@link #init()}.
      */
     public static void showAboutDialog() {
-        javax.swing.ImageIcon icon = App.activeIcon.loadSize(128);
+        javax.swing.ImageIcon icon = AppIcon.active.loadSize(128);
 
         // Build an HTML panel so the website URL is a clickable hyperlink.
         String url = "https://www.jdiskmark.net";
@@ -322,7 +466,7 @@ public final class Gui {
             if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
                 try {
                     java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
-                } catch (Exception ex) {
+                } catch (IOException | URISyntaxException | RuntimeException ex) {
                     App.msg("Could not open browser: " + ex.getMessage());
                 }
             }
@@ -436,9 +580,10 @@ public final class Gui {
             // Remove the border or set it to a subtle gray
             chart.getLegend().setFrame(new BlockBorder(new Color(80, 80, 80)));
         }
+        updateBadgeThemeColors();
     }
     
-    public static ChartPanel createChartPanel() {
+    public static javax.swing.JPanel createChartPanel() {
         
         wSeries = new XYSeries("Write Sample");
         wAvgSeries = new XYSeries("Write Trend");
@@ -528,7 +673,7 @@ public final class Gui {
         
         updateChartPanelStyle();
         
-        chartPanel = new ChartPanel(chart) {
+        ChartPanel rawChartPanel = new ChartPanel(chart) {
             // Only way to set the size of chart panel
             // ref: http://www.jfree.org/phpBB2/viewtopic.php?p=75516
             @Override
@@ -537,7 +682,7 @@ public final class Gui {
             }
         };
         
-        chartPanel.addChartMouseListener(new ChartMouseListener() {
+        rawChartPanel.addChartMouseListener(new ChartMouseListener() {
             private long lastClickTime = 0;
             @Override
             public void chartMouseClicked(ChartMouseEvent event) {
@@ -560,7 +705,205 @@ public final class Gui {
             }
         });
         updateLegendAndAxis();
-        return chartPanel;
+
+        // chart badge strip (priority order: most → least interpretively important)
+        directIoLabel   = makeBadge();
+        writeSyncLabel  = makeBadge();
+        sectorLabel     = makeBadge();
+        ioEngineLabel   = makeBadge();
+        multiFileLabel  = makeBadge();
+        renderModeLabel = makeBadge();
+        refreshChartBadges();
+
+        // ordered list: priority order (most → least interpretively important)
+        chartBadgeList = new ArrayList<>(List.of(
+                directIoLabel, writeSyncLabel, sectorLabel,
+                ioEngineLabel, multiFileLabel, renderModeLabel));
+
+        // topPanel: override getPreferredSize() so the badge strip never drives the container
+        // wider than the chart panel below it. Width=0 means BorderLayout NORTH takes the
+        // container's width (set by CENTER) rather than expanding to fit all badges.
+        javax.swing.JPanel topPanel = new javax.swing.JPanel(new FlowLayout(FlowLayout.CENTER, 4, 2)) {
+            @Override
+            public java.awt.Dimension getPreferredSize() {
+                return new java.awt.Dimension(0, super.getPreferredSize().height);
+            }
+        };
+        topPanel.setOpaque(false);
+        for (javax.swing.JLabel badge : chartBadgeList) topPanel.add(badge);
+        chartBadgeTopPanel = topPanel;
+        topPanel.setVisible(showBadges); // apply persisted setting
+
+        // re-evaluate on every window resize
+        topPanel.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                fitBadgesToOneRow(topPanel);
+            }
+        });
+
+        javax.swing.JPanel chartWrapper = new javax.swing.JPanel(new BorderLayout());
+        chartWrapper.setOpaque(false);
+        chartWrapper.add(topPanel, BorderLayout.NORTH);
+        chartWrapper.add(rawChartPanel, BorderLayout.CENTER);
+
+        chartPanel = (ChartPanel) rawChartPanel;
+        return chartWrapper;
+    }
+
+    /**
+     * Shows or hides the chart badge strip. When hidden, BorderLayout reclaims
+     * the NORTH slot and the chart panel expands to fill the full height.
+     * @param visible show on UI
+     */
+    public static void setChartBadgesVisible(boolean visible) {
+        if (chartBadgeTopPanel == null) return;
+        chartBadgeTopPanel.setVisible(visible);
+        // revalidate the parent so BorderLayout recalculates slot sizes
+        java.awt.Container parent = chartBadgeTopPanel.getParent();
+        if (parent != null) {
+            parent.revalidate();
+            parent.repaint();
+        }
+    }
+
+    /**
+     * Shows badges left-to-right until the next one would overflow the panel width,
+     * then hides all remaining. Uses Toolkit FontMetrics so badge widths are correct
+     * even before the components have been painted for the first time.
+     */
+    private static void fitBadgesToOneRow(javax.swing.JPanel topPanel) {
+        if (chartBadgeList == null) return;
+        FlowLayout fl = (FlowLayout) topPanel.getLayout();
+        int hgap = fl.getHgap();
+        java.awt.Insets ins = topPanel.getInsets();
+        // Subtract panel insets AND FlowLayout's own leading margin (one hgap on the left)
+        int available = topPanel.getWidth() - ins.left - ins.right - hgap;
+        if (available <= 0) return; // not yet laid out — skip until a real width arrives
+        int used = 0;
+        boolean overflowed = false;
+        for (javax.swing.JLabel badge : chartBadgeList) {
+            if (overflowed) {
+                badge.setVisible(false);
+                continue;
+            }
+            // Measure text width without relying on a rendered peer.
+            // TextLayout uses the font's own metrics via a scratch FontRenderContext.
+            java.awt.font.FontRenderContext frc = new java.awt.font.FontRenderContext(null, false, false);
+            int textWidth = (badge.getText().isEmpty()) ? 0
+                    : (int) Math.ceil(new java.awt.font.TextLayout(badge.getText(), badge.getFont(), frc).getAdvance());
+            java.awt.Insets bi = badge.getInsets();
+            int badgeWidth = textWidth + bi.left + bi.right;
+            int needed = badgeWidth + (used > 0 ? hgap : 0);
+            if (used + needed <= available) {
+                badge.setVisible(true);
+                used += needed;
+            } else {
+                badge.setVisible(false);
+                overflowed = true;
+            }
+        }
+    }
+
+    /** Creates a badge label with shared styling. */
+    private static javax.swing.JLabel makeBadge() {
+        javax.swing.JLabel lbl = new javax.swing.JLabel();
+        lbl.setFont(new Font("SansSerif", Font.BOLD, 11));
+        lbl.setForeground(BADGE_DEFAULT_FG);
+        lbl.setOpaque(true);
+        lbl.setBackground(BADGE_DEFAULT_BG);
+        lbl.setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6));
+        return lbl;
+    }
+
+    /**
+     * Refreshes all chart badge labels to reflect the current App settings.
+     * Badges that differ from the last-run config are highlighted amber.
+     * Safe to call from any thread — posts to the EDT if needed.
+     */
+    public static void refreshChartBadges() {
+        if (directIoLabel == null) return;
+        Runnable update = () -> {
+            directIoLabel.setText("Direct IO: "   + (App.directEnable    ? "On" : "Off"));
+            writeSyncLabel.setText("Write Sync: " + (App.writeSyncEnable  ? "On" : "Off"));
+            sectorLabel.setText("Sector: "        + App.sectorAlignment.display.split(" \\(")[0]);
+            ioEngineLabel.setText("Engine: "      + App.ioEngine.toString().split(" ")[0]);
+            multiFileLabel.setText("Multi-File: " + (App.multiFile ? "On" : "Off"));
+            renderModeLabel.setText("Render: "     + App.rmOption.toString());
+            applyBadgeHighlights();
+        };
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+            update.run();
+        } else {
+            javax.swing.SwingUtilities.invokeLater(update);
+        }
+    }
+
+    /**
+     * Compares each badge field against App.benchmark.config (the last completed run)
+     * and sets amber background on any badge whose current value differs.
+     * Also drives the chart subtitle and control-panel row highlights.
+     * Must be called on the EDT.
+     */
+    private static void applyBadgeHighlights() {
+        BenchmarkConfig lr = (App.benchmark != null) ? App.benchmark.config : null;
+        if (lr == null) return; // no run yet — nothing to compare
+        boolean anyStale = false;
+        anyStale |= setBadgeStaleReturn(directIoLabel,   App.directEnable    != Boolean.TRUE.equals(lr.directIoEnabled));
+        anyStale |= setBadgeStaleReturn(writeSyncLabel,  App.writeSyncEnable != Boolean.TRUE.equals(lr.writeSyncEnabled));
+        anyStale |= setBadgeStaleReturn(sectorLabel,     App.sectorAlignment != lr.sectorAlignment);
+        anyStale |= setBadgeStaleReturn(ioEngineLabel,   App.ioEngine        != lr.ioEngine);
+        anyStale |= setBadgeStaleReturn(multiFileLabel,  App.multiFile       != Boolean.TRUE.equals(lr.multiFileEnabled));
+        anyStale |= setBadgeStaleReturn(renderModeLabel, App.rmOption        != App.benchmark.getRenderMode());
+        setChartModifiedIndicator(anyStale);
+        // sync control-panel row highlights too
+        if (controlPanel != null) controlPanel.showSettingsDrift();
+    }
+
+    private static boolean setBadgeStaleReturn(javax.swing.JLabel badge, boolean stale) {
+        badge.setBackground(stale ? BADGE_AMBER_BG : BADGE_DEFAULT_BG);
+        return stale;
+    }
+
+    /**
+     * Returns true if any badge setting differs from App.benchmark.config.
+     * Used by BenchmarkControlPanel to combine badge + row staleness for the subtitle.
+     */
+    static boolean isAnyBadgeStale() {
+        if (App.benchmark == null) return false;
+        BenchmarkConfig lr = App.benchmark.config;
+        return App.directEnable    != Boolean.TRUE.equals(lr.directIoEnabled)
+            || App.writeSyncEnable != Boolean.TRUE.equals(lr.writeSyncEnabled)
+            || App.sectorAlignment != lr.sectorAlignment
+            || App.ioEngine        != lr.ioEngine
+            || App.multiFile       != Boolean.TRUE.equals(lr.multiFileEnabled)
+            || App.rmOption        != App.benchmark.getRenderMode();
+    }
+
+    /**
+     * Refreshes badge labels from nullable stored values (e.g. a loaded benchmark).
+     * Any null value is rendered as "—" to indicate the data was not recorded.
+     * Safe to call from any thread.
+     */
+    private static void refreshChartBadges(Boolean directIo, Boolean writeSync,
+                                          App.SectorAlignment sector, RenderFrequencyMode renderMode,
+                                          App.IoEngine ioEngine, Boolean multiFile) {
+        if (directIoLabel == null) return;
+        Runnable update = () -> {
+            directIoLabel.setText("Direct IO: "   + (directIo  != null ? (directIo  ? "On" : "Off") : "—"));
+            writeSyncLabel.setText("Write Sync: " + (writeSync != null ? (writeSync ? "On" : "Off") : "—"));
+            String sectorText = sector != null ? sector.display.split(" \\(")[0] : "—";
+            sectorLabel.setText("Sector: " + sectorText);
+            String engineText = ioEngine != null ? ioEngine.toString().split(" ")[0] : "—";
+            ioEngineLabel.setText("Engine: " + engineText);
+            multiFileLabel.setText("Multi-File: " + (multiFile != null ? (multiFile ? "On" : "Off") : "—"));
+            renderModeLabel.setText("Render: " + (renderMode != null ? renderMode.toString() : "—"));
+        };
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+            update.run();
+        } else {
+            javax.swing.SwingUtilities.invokeLater(update);
+        }
     }
     
     public static BenchmarkControlPanel createControlPanel() {
@@ -669,8 +1012,8 @@ public final class Gui {
     static public void updateDiskInfo() {
         mainFrame.setLocation(App.locationDir.getAbsolutePath());
         chart.getTitle().setText(App.getDriveInfo());
-        if (drivesPanel != null) {
-            drivesPanel.refresh();
+        if (drivePanel != null) {
+            drivePanel.refresh();
         }
         // SMART data is fetched lazily via runSmart(), which is called
         // by the "Run SMART" button in SmartPanel and optionally after each
@@ -792,7 +1135,7 @@ public final class Gui {
             try {
                 Smart smart = Smart.fromJson(rawJson);
                 smartPanel.populate(smart);
-            } catch (Exception ex) {
+            } catch (IOException | RuntimeException ex) {
                 SMART_LOG.log(Level.WARNING,
                         "loadSnapshot: rawJson parse failed, falling back to scalars", ex);
                 smartPanel.populateFromSnapshot(snap);
@@ -947,7 +1290,25 @@ public final class Gui {
         App.numOfThreads = benchmark.config.numThreads;
         App.activeProfile = benchmark.config.profile;
         App.profileModified = benchmark.config.profileModified;
-        mainFrame.refreshConfig();
+        // IO engine / options settings (mirrors what the badges already display)
+        if (benchmark.config.ioEngine != null) App.ioEngine = benchmark.config.ioEngine;
+        if (benchmark.config.sectorAlignment != null) App.sectorAlignment = benchmark.config.sectorAlignment;
+        if (benchmark.config.writeSyncEnabled != null) App.writeSyncEnable = Boolean.TRUE.equals(benchmark.config.writeSyncEnabled);
+        if (benchmark.config.directIoEnabled != null) App.directEnable = Boolean.TRUE.equals(benchmark.config.directIoEnabled);
+        if (benchmark.config.multiFileEnabled != null) App.multiFile = Boolean.TRUE.equals(benchmark.config.multiFileEnabled);
+        // render mode is stored on the Benchmark itself, not in BenchmarkConfig
+        App.rmOption = benchmark.getRenderMode();
+        mainFrame.syncFromModel();
+        // sync AdvancedOptionsFrame if it has already been opened (preserve lazy-init)
+        if (advancedFrame != null) advancedFrame.syncFromModel();
+        // set as the active benchmark so stale-badge comparisons have a baseline
+        App.benchmark = benchmark;
+        // clear any stale highlights — the newly loaded benchmark IS the current baseline
+        clearAllStaleHighlights();
+        // override badges with the values recorded at run time (— if absent in older records)
+        refreshChartBadges(benchmark.config.directIoEnabled, benchmark.config.writeSyncEnabled,
+                           benchmark.config.sectorAlignment, benchmark.getRenderMode(),
+                           benchmark.config.ioEngine, benchmark.config.multiFileEnabled);
         
         // operation data
         for (BenchmarkOperation operation : benchmark.operations) {
@@ -999,7 +1360,25 @@ public final class Gui {
         App.blockSizeKb = (int)(operation.blockSize / App.KILOBYTE);
         App.blockSequence = operation.blockOrder;
         App.numOfThreads = operation.numThreads;
-        mainFrame.refreshConfig();
+        // IO engine / options settings (mirrors what the badges already display)
+        if (benchmark.config.ioEngine != null) App.ioEngine = benchmark.config.ioEngine;
+        if (benchmark.config.sectorAlignment != null) App.sectorAlignment = benchmark.config.sectorAlignment;
+        if (benchmark.config.writeSyncEnabled != null) App.writeSyncEnable = Boolean.TRUE.equals(benchmark.config.writeSyncEnabled);
+        if (benchmark.config.directIoEnabled != null) App.directEnable = Boolean.TRUE.equals(benchmark.config.directIoEnabled);
+        if (benchmark.config.multiFileEnabled != null) App.multiFile = Boolean.TRUE.equals(benchmark.config.multiFileEnabled);
+        // render mode is stored on the Benchmark itself, not in BenchmarkConfig
+        App.rmOption = benchmark.getRenderMode();
+        mainFrame.syncFromModel();
+        // sync AdvancedOptionsFrame if it has already been opened (preserve lazy-init)
+        if (advancedFrame != null) advancedFrame.syncFromModel();
+        // set as the active benchmark so stale-badge comparisons have a baseline
+        App.benchmark = benchmark;
+        // clear any stale highlights — the newly loaded benchmark IS the current baseline
+        clearAllStaleHighlights();
+        // override badges with the values recorded at run time (— if absent in older records)
+        refreshChartBadges(benchmark.config.directIoEnabled, benchmark.config.writeSyncEnabled,
+                           benchmark.config.sectorAlignment, benchmark.getRenderMode(),
+                           benchmark.config.ioEngine, benchmark.config.multiFileEnabled);
         switch (operation.ioMode) {
             case READ -> {
                 App.rAvg = operation.bwAvg;
@@ -1026,6 +1405,7 @@ public final class Gui {
      */
     static void setClassicColorScheme() {
         palette = Palette.CLASSIC;
+        restoreDefaultPlotBackground();
         
         // configure the bw series colors
         bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
@@ -1050,6 +1430,7 @@ public final class Gui {
     static void setBlueGreenScheme() {
         System.out.println("setting blue green palette");
         palette = Palette.BLUE_GREEN;
+        restoreDefaultPlotBackground();
         
         // configure the bw series colors
         
@@ -1078,6 +1459,7 @@ public final class Gui {
     static void setCoolColorScheme() {
         System.out.println("setting cool palette");
         palette = Palette.BARD_COOL;
+        restoreDefaultPlotBackground();
         
         // configure the bw series colors
         bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
@@ -1100,6 +1482,7 @@ public final class Gui {
     static void setWarmColorScheme() {
         System.out.println("setting warm palette");
         palette = Palette.BARD_WARM;
+        restoreDefaultPlotBackground();
         
         // configure the bw series colors
         bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
@@ -1116,6 +1499,106 @@ public final class Gui {
         msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
         msRenderer.setSeriesPaint(0, new Color(0xFFC107)); // w acc
         msRenderer.setSeriesPaint(1, new Color(0xE91E63)); // r acc
+    }
+
+    /**
+     * Beta palette — matches the Python/matplotlib dark-background look.
+     * Dark plot area (#1c1c1c), orange write series, cyan read series.
+     */
+    static void setBetaColorScheme() {
+        System.out.println("setting beta palette");
+        palette = Palette.BETA;
+
+        XYPlot plot = (XYPlot) chart.getPlot();
+        plot.setBackgroundPaint(new Color(0x1C1C1C));
+        plot.setOutlinePaint(new Color(0x555555));
+        plot.setDomainGridlinePaint(new Color(0x3A3A3A));
+        plot.setRangeGridlinePaint(new Color(0x3A3A3A));
+
+        // JFreeChart 1.0.x resets the BasicStroke dash phase per segment (each segment is a
+        // separate Line2D draw call). At high sample density (~2.5 px/segment when 200 samples
+        // fill ~500 px) a long "8 on / 4 off" dash appears solid because the segment ends before
+        // the first gap. A short "on" phase (2 px) shorter than the segment length forces a
+        // visible break at the tail of every segment, producing a dotted appearance at any density.
+        Stroke avgDot = new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
+                10.0f, new float[]{2.0f, 6.0f}, 0.0f);
+
+        // configure the bw series colors
+        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        bwRenderer.setSeriesPaint(0, new Color(0xE07B39));            // write BW
+        bwRenderer.setSeriesPaint(1, new Color(189, 176, 138, 200)); // w avg — alpha-softened, dotted
+        bwRenderer.setSeriesStroke(1, avgDot);
+        bwRenderer.setSeriesPaint(2, new Color(0xF5A623));            // w max
+        bwRenderer.setSeriesPaint(3, new Color(0xC0623A));            // w min
+        bwRenderer.setSeriesPaint(4, new Color(0x4FC3F7));            // read BW
+        bwRenderer.setSeriesPaint(5, new Color(160, 216, 239, 200)); // r avg — alpha-softened, dotted
+        bwRenderer.setSeriesStroke(5, avgDot);
+        bwRenderer.setSeriesPaint(6, new Color(0x81D4FA));            // r max
+        bwRenderer.setSeriesPaint(7, new Color(0x0288D1));            // r min
+
+        // configure the access time ms colors
+        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        msRenderer.setSeriesPaint(0, new Color(0xE07B39)); // w acc
+        msRenderer.setSeriesPaint(1, new Color(0x4FC3F7)); // r acc
+    }
+
+    /**
+     * 4th of July palette — red, white &amp; blue on a dark navy plot.
+     * Write series in reds/white (fireworks), read series in blues (sky).
+     */
+    static void setFourthOfJulyColorScheme() {
+        System.out.println("setting 4th of July palette");
+        palette = Palette.FOURTH_OF_JULY;
+
+        XYPlot plot = (XYPlot) chart.getPlot();
+        plot.setBackgroundPaint(new Color(0x0A1628));   // deep navy night sky
+        plot.setOutlinePaint(new Color(0x334466));
+        plot.setDomainGridlinePaint(new Color(0x1A2D4A));
+        plot.setRangeGridlinePaint(new Color(0x1A2D4A));
+
+        // configure the bw series colors — reds & white (fireworks / stripes)
+        Stroke bold = new BasicStroke(2.5f);
+        Stroke dash = new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
+                10.0f, new float[]{2.0f, 6.0f}, 0.0f);
+        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        bwRenderer.setSeriesPaint(0, new Color(0xDC143C)); // write  — crimson
+        bwRenderer.setSeriesStroke(0, bold);
+        bwRenderer.setSeriesPaint(1, new Color(0xE8E8E8)); // w avg  — white/silver, dashed
+        bwRenderer.setSeriesStroke(1, dash);
+        bwRenderer.setSeriesPaint(2, new Color(0xFF6B6B)); // w max  — light red
+        bwRenderer.setSeriesPaint(3, new Color(0x8B0000)); // w min  — dark red
+        bwRenderer.setSeriesPaint(4, new Color(0x1E90FF)); // read   — dodger blue
+        bwRenderer.setSeriesStroke(4, bold);
+        bwRenderer.setSeriesPaint(5, new Color(0xB0C4DE)); // r avg  — light steel blue, dashed
+        bwRenderer.setSeriesStroke(5, dash);
+        bwRenderer.setSeriesPaint(6, new Color(0x87CEEB)); // r max  — sky blue
+        bwRenderer.setSeriesPaint(7, new Color(0x003366)); // r min  — navy
+
+        // configure the access time ms colors
+        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        msRenderer.setSeriesPaint(0, new Color(0xDC143C)); // w acc — crimson
+        msRenderer.setSeriesPaint(1, new Color(0x1E90FF)); // r acc — dodger blue
+    }
+
+    /**
+     * Restores plot background to the default LAF-driven style.
+     * Called when switching away from the Beta palette.
+     */
+    static void restoreDefaultPlotBackground() {
+        if (chart == null) return;
+        XYPlot plot = (XYPlot) chart.getPlot();
+        plot.setBackgroundPaint(Color.DARK_GRAY.darker());
+        plot.setOutlinePaint(Color.WHITE);
+        // JFreeChart 1.x does not accept null paint — restore to a neutral grid color
+        plot.setDomainGridlinePaint(new Color(80, 80, 80));
+        plot.setRangeGridlinePaint(new Color(80, 80, 80));
+        // clear any per-series custom strokes (Beta dashed avg, 4th of July bold sample)
+        if (bwRenderer != null) {
+            bwRenderer.setSeriesStroke(0, null); // w sample — back to default
+            bwRenderer.setSeriesStroke(1, null); // w avg
+            bwRenderer.setSeriesStroke(4, null); // r sample — back to default
+            bwRenderer.setSeriesStroke(5, null); // r avg
+        }
     }
     
     public static void browseLocation() {

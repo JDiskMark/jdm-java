@@ -27,6 +27,17 @@ public final class MainFrame extends javax.swing.JFrame {
      * constructor.
      */
     public SharingPanel sharingPanel;
+
+    /** Toggle item for archive view — text changes between "View Archive" and "Exit Archive View". */
+    private final javax.swing.JMenuItem archiveViewItem = new javax.swing.JMenuItem("View Archive");
+    /** Unarchive menu item — only meaningful while in archive view. */
+    private final javax.swing.JMenuItem unarchiveSelectedItem = new javax.swing.JMenuItem("Unarchive Selected");
+
+    /**
+     * Graph Palette submenu — built programmatically from the {@link Gui.Palette}
+     * enum so that adding a new palette never touches the NetBeans form.
+     */
+    private final GraphPaletteMenu graphPaletteMenu = new GraphPaletteMenu();
     
     /**
      * Creates new form MainFrame
@@ -39,16 +50,30 @@ public final class MainFrame extends javax.swing.JFrame {
         // navigation pane — remove it from the bottom tabbed pane at runtime.
         // The NetBeans-generated field (locationPanel) is kept intact in the form.
         tabbedPane.remove(locationPanel);
+
+        // Replace the NetBeans-generated colorPaletteMenu with our data-driven
+        // GraphPaletteMenu — inserted at the same menu position.
+        int paletteIndex = -1;
+        for (int i = 0; i < optionMenu.getMenuComponentCount(); i++) {
+            if (optionMenu.getMenuComponent(i) == colorPaletteMenu) {
+                paletteIndex = i;
+                break;
+            }
+        }
+        if (paletteIndex >= 0) {
+            optionMenu.remove(colorPaletteMenu);
+            optionMenu.add(graphPaletteMenu, paletteIndex);
+        }
         
         //for diagnostics
         //controlsPanel.setBackground(Color.blue);
         
-        Gui.createChartPanel();
+        javax.swing.JPanel chartWrapper = Gui.createChartPanel();
         cResultMountPanel.setLayout(new BorderLayout());
         Gui.chartPanel.setSize(cResultMountPanel.getSize());
         Gui.chartPanel.setSize(cResultMountPanel.getWidth(), 200);
         Gui.smartPanel = new SmartPanel();
-        cResultMountPanel.add(Gui.chartPanel);
+        cResultMountPanel.add(chartWrapper);
         BenchmarkControlPanel bcPanel = Gui.createControlPanel();
         bControlMountPanel.setLayout(new MigLayout());
         bControlMountPanel.add(bcPanel);
@@ -59,8 +84,7 @@ public final class MainFrame extends javax.swing.JFrame {
         StringBuilder titleSb = new StringBuilder();
         titleSb.append(getTitle()).append(" ").append(App.VERSION);
         
-        refreshConfig();
-        bcPanel.configChangeDetection();
+        syncFromModel();
         
         // architecture
         if (App.arch != null && !App.arch.isEmpty()) {
@@ -89,9 +113,12 @@ public final class MainFrame extends javax.swing.JFrame {
         javax.swing.JTabbedPane mainTabPane = new javax.swing.JTabbedPane(javax.swing.JTabbedPane.LEFT);
         mainTabPane.putClientProperty("JTabbedPane.tabRotation", "auto");
 
-        // Drives tab — always visible on all platforms, shown first
-        Gui.drivesPanel = new DrivesPanel();
-        mainTabPane.addTab("Drives", Gui.drivesPanel);
+        // Drive tab — always visible on all platforms, shown first
+        Gui.drivePanel = new DrivePanel();
+        mainTabPane.addTab("Drive", Gui.drivePanel);
+
+        // All Drives table — lives in the bottom tabbedPane
+        tabbedPane.addTab("All Drives", Gui.drivePanel.buildAllDrivesPanel());
 
         JPanel benchTab = new JPanel(new BorderLayout());
         benchTab.add(bControlMountPanel, BorderLayout.WEST);
@@ -110,12 +137,6 @@ public final class MainFrame extends javax.swing.JFrame {
         // #117 Sharing tab — added programmatically so the NetBeans form is untouched.
         sharingPanel = new SharingPanel();
         tabbedPane.addTab("Sharing", sharingPanel);
-        
-        // Hide the now-redundant Help-menu portal items; all controls live in the tab.
-        portalUploadMenuItem.setVisible(false);
-        portalEndpointMenu.setVisible(false);
-        portalProtocolMenu.setVisible(false);
-
 
         // Store reference so SmartReportsPanel can switch to the SMART tab on row selection.
         Gui.mainTabPane = mainTabPane;
@@ -158,6 +179,69 @@ public final class MainFrame extends javax.swing.JFrame {
         });
 
         getContentPane().add(splitPane, BorderLayout.CENTER);
+
+        // Ensure the frame is tall enough to show 5 rows in the bottom table.
+        // pack() sizes to preferred; we nudge the height up slightly after packing.
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            private boolean heightAdjusted = false;
+            @Override
+            public void componentShown(java.awt.event.ComponentEvent e) {
+                if (!heightAdjusted) {
+                    heightAdjusted = true;
+                    setSize(getWidth(), getHeight() + 30);
+                }
+            }
+        });
+
+        // Archive menu items — added programmatically to keep the NetBeans GEN block untouched.
+        actionMenu.addSeparator();
+
+        javax.swing.JMenuItem archiveSelectedItem = new javax.swing.JMenuItem("Archive Selected Benchmark");
+        archiveSelectedItem.addActionListener(evt -> {
+            List<UUID> ids = Gui.runPanel.getSelectedIds();
+            if (ids.isEmpty()) {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        "No benchmark selected.", "Archive",
+                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            App.msg("Archiving " + ids.size() + " benchmark(s).");
+            App.archiveBenchmarks(ids);
+            App.msg("Benchmark(s) archived.");
+        });
+        actionMenu.add(archiveSelectedItem);
+
+        archiveViewItem.addActionListener(evt -> {
+            App.archiveViewActive = !App.archiveViewActive;
+            App.benchmarks.clear();
+            App.loadBenchmarks();
+            archiveViewItem.setText(App.archiveViewActive ? "Exit Archive View" : "View Archive");
+            unarchiveSelectedItem.setEnabled(App.archiveViewActive);
+            App.msg(App.archiveViewActive ? "Viewing archived benchmarks." : "Viewing benchmark history.");
+            for (int i = 0; i < tabbedPane.getTabCount(); i++) {
+                String t = tabbedPane.getTitleAt(i);
+                if (t.equals("Benchmarks") || t.equals("Archived Benchmarks")) {
+                    tabbedPane.setTitleAt(i, App.archiveViewActive ? "Archived Benchmarks" : "Benchmark Operations");
+                    break;
+                }
+            }
+        });
+        actionMenu.add(archiveViewItem);
+
+        unarchiveSelectedItem.setEnabled(false);
+        unarchiveSelectedItem.addActionListener(evt -> {
+            List<UUID> ids = Gui.runPanel.getSelectedIds();
+            if (ids.isEmpty()) {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        "No benchmark selected.", "Unarchive",
+                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            App.msg("Unarchiving " + ids.size() + " benchmark(s).");
+            App.unarchiveBenchmarks(ids);
+            App.msg("Benchmark(s) unarchived.");
+        });
+        actionMenu.add(unarchiveSelectedItem);
     }
     
     public JPanel getMountPanel() {
@@ -169,7 +253,7 @@ public final class MainFrame extends javax.swing.JFrame {
      * has been loaded.
      */
     public void loadPropertiesConfig() {
-        refreshConfig();
+        syncFromModel();
         if (App.locationDir != null) { // set the location dir if not null
             setLocation(App.locationDir.getAbsolutePath());
         }
@@ -180,38 +264,20 @@ public final class MainFrame extends javax.swing.JFrame {
         }
         
         multiFileCheckBoxMenuItem.setSelected(App.multiFile);
-        autoRemoveCheckBoxMenuItem.setSelected(App.autoRemoveData);
-        autoResetCheckBoxMenuItem.setSelected(App.autoReset);
         // display preferences
         showSingleOpMenuItem.setSelected(Gui.showSingleOp);
         showMaxMinCheckBoxMenuItem.setSelected(Gui.showMaxMin);
         showAccessCheckBoxMenuItem.setSelected(Gui.showDriveAccess);
+        showBadgesCbMenuItem.setSelected(Gui.showBadges); // overrides initComponents() which hardcodes setSelected(true)
         switch (Gui.theme) {
             case DARK -> darkThemeRbMenuItem.setSelected(true);
             case LIGHT -> lightThemeRbMenuItem.setSelected(true);
             case DARCULA -> darculaThemeRbMenuItem.setSelected(true);
         }
-        switch (Gui.palette) {
-            case CLASSIC -> {
-                classicPaletteMenuItem.setSelected(true);
-                Gui.setClassicColorScheme();
-            }
-            case BLUE_GREEN -> {
-                blueGreenPaletteMenuItem.setSelected(true);
-                Gui.setBlueGreenScheme();
-            }
-            case BARD_COOL -> {
-                bardCoolPaletteMenuItem.setSelected(true);
-                Gui.setCoolColorScheme();
-            }
-            case BARD_WARM -> {
-                bardWarmPaletteMenuItem.setSelected(true);
-                Gui.setWarmColorScheme();
-            }
-        }
+        graphPaletteMenu.syncFromModel();
     }
 
-    public void refreshConfig() {
+    public void syncFromModel() {
         // basic benchmark config
         if (Gui.controlPanel != null) {
             Gui.controlPanel.refreshSettings();
@@ -242,10 +308,9 @@ public final class MainFrame extends javax.swing.JFrame {
             case ALIGN_16K -> align16KRbMenuItem.setSelected(true);
             case ALIGN_64K -> align64KRbMenuItem.setSelected(true);
         }
-        gcHintsCbMenuItem.setSelected(GcDetector.gcHintsEnabled);
-        gcRetryCbMenuItem.setSelected(GcDetector.gcRetryEnabled);
         smartCbMenuItem.setSelected(Smart.smartEnable);
         exportMenu.setEnabled(App.benchmark != null);
+        Gui.refreshChartBadges();
     }
     
     /**
@@ -306,14 +371,8 @@ public final class MainFrame extends javax.swing.JFrame {
         align16KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         align64KRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         multiFileCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
-        smartCbMenuItem = new javax.swing.JCheckBoxMenuItem();
-        jSeparator4 = new javax.swing.JPopupMenu.Separator();
-        gcHintsCbMenuItem = new javax.swing.JCheckBoxMenuItem();
-        gcRetryCbMenuItem = new javax.swing.JCheckBoxMenuItem();
-        jSeparator3 = new javax.swing.JPopupMenu.Separator();
-        autoRemoveCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
-        autoResetCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         jSeparator2 = new javax.swing.JPopupMenu.Separator();
+        showBadgesCbMenuItem = new javax.swing.JCheckBoxMenuItem();
         showSingleOpMenuItem = new javax.swing.JCheckBoxMenuItem();
         showMaxMinCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         showAccessCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
@@ -323,25 +382,16 @@ public final class MainFrame extends javax.swing.JFrame {
         darkThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         darculaThemeRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         colorPaletteMenu = new javax.swing.JMenu();
-        classicPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
-        blueGreenPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
-        bardCoolPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
-        bardWarmPaletteMenuItem = new javax.swing.JRadioButtonMenuItem();
+        jSeparator3 = new javax.swing.JPopupMenu.Separator();
+        smartCbMenuItem = new javax.swing.JCheckBoxMenuItem();
+        advancedOptionsMenuItem = new javax.swing.JMenuItem();
         helpMenu = new javax.swing.JMenu();
-        portalUploadMenuItem = new javax.swing.JCheckBoxMenuItem();
-        portalProtocolMenu = new javax.swing.JMenu();
-        httpProtoRbMenuItem = new javax.swing.JRadioButtonMenuItem();
-        httpsProtoRbMenuItem = new javax.swing.JRadioButtonMenuItem();
-        portalEndpointMenu = new javax.swing.JMenu();
-        localEndpointRbMenuItem = new javax.swing.JRadioButtonMenuItem();
-        testEndpointRbMenuItem = new javax.swing.JRadioButtonMenuItem();
-        prodEndpointRbMenuItem = new javax.swing.JRadioButtonMenuItem();
         jMenuItem2 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("JDiskMark");
 
-        tabbedPane.addTab("Benchmark Operations", runPanel);
+        tabbedPane.addTab("Benchmarks", runPanel);
 
         msgTextArea.setEditable(false);
         msgTextArea.setColumns(20);
@@ -662,51 +712,16 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
         optionMenu.add(multiFileCheckBoxMenuItem);
-
-        smartCbMenuItem.setSelected(true);
-        smartCbMenuItem.setText("Run SMART with Benchmark");
-        smartCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                smartCbMenuItemActionPerformed(evt);
-            }
-        });
-        optionMenu.add(smartCbMenuItem);
-        optionMenu.add(jSeparator4);
-
-        gcHintsCbMenuItem.setText("GC Hint Optimizing");
-        gcHintsCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                gcHintsCbMenuItemActionPerformed(evt);
-            }
-        });
-        optionMenu.add(gcHintsCbMenuItem);
-
-        gcRetryCbMenuItem.setText("GC Sample Retries");
-        gcRetryCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                gcRetryCbMenuItemActionPerformed(evt);
-            }
-        });
-        optionMenu.add(gcRetryCbMenuItem);
-        optionMenu.add(jSeparator3);
-
-        autoRemoveCheckBoxMenuItem.setText("Auto Delete Test Files");
-        autoRemoveCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                autoRemoveCheckBoxMenuItemActionPerformed(evt);
-            }
-        });
-        optionMenu.add(autoRemoveCheckBoxMenuItem);
-
-        autoResetCheckBoxMenuItem.setSelected(true);
-        autoResetCheckBoxMenuItem.setText("Auto Reset");
-        autoResetCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                autoResetCheckBoxMenuItemActionPerformed(evt);
-            }
-        });
-        optionMenu.add(autoResetCheckBoxMenuItem);
         optionMenu.add(jSeparator2);
+
+        showBadgesCbMenuItem.setSelected(true);
+        showBadgesCbMenuItem.setText("Show Chart Badges");
+        showBadgesCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                showBadgesCbMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(showBadgesCbMenuItem);
 
         showSingleOpMenuItem.setSelected(true);
         showSingleOpMenuItem.setText("Show Single Operation");
@@ -770,109 +785,29 @@ public final class MainFrame extends javax.swing.JFrame {
 
         colorPaletteMenu.setText("Graph Palette");
         palettebuttonGroup.add(colorPaletteMenu);
-
-        palettebuttonGroup.add(classicPaletteMenuItem);
-        classicPaletteMenuItem.setText("Classic");
-        classicPaletteMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                classicPaletteMenuItemActionPerformed(evt);
-            }
-        });
-        colorPaletteMenu.add(classicPaletteMenuItem);
-
-        palettebuttonGroup.add(blueGreenPaletteMenuItem);
-        blueGreenPaletteMenuItem.setText("Blue Green");
-        blueGreenPaletteMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                blueGreenPaletteMenuItemActionPerformed(evt);
-            }
-        });
-        colorPaletteMenu.add(blueGreenPaletteMenuItem);
-
-        palettebuttonGroup.add(bardCoolPaletteMenuItem);
-        bardCoolPaletteMenuItem.setText("Bard Cool");
-        bardCoolPaletteMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                bardCoolPaletteMenuItemActionPerformed(evt);
-            }
-        });
-        colorPaletteMenu.add(bardCoolPaletteMenuItem);
-
-        palettebuttonGroup.add(bardWarmPaletteMenuItem);
-        bardWarmPaletteMenuItem.setText("Bard Warm");
-        bardWarmPaletteMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                bardWarmPaletteMenuItemActionPerformed(evt);
-            }
-        });
-        colorPaletteMenu.add(bardWarmPaletteMenuItem);
-
         optionMenu.add(colorPaletteMenu);
+        optionMenu.add(jSeparator3);
+
+        smartCbMenuItem.setSelected(true);
+        smartCbMenuItem.setText("Run SMART with Benchmark");
+        smartCbMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                smartCbMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(smartCbMenuItem);
+
+        advancedOptionsMenuItem.setText("Advanced Options…");
+        advancedOptionsMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                advancedOptionsMenuItemActionPerformed(evt);
+            }
+        });
+        optionMenu.add(advancedOptionsMenuItem);
 
         menuBar.add(optionMenu);
 
         helpMenu.setText("Help");
-
-        portalUploadMenuItem.setText("Portal Upload");
-        portalUploadMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                portalUploadMenuItemActionPerformed(evt);
-            }
-        });
-        helpMenu.add(portalUploadMenuItem);
-
-        portalProtocolMenu.setText("Portal Protocol");
-
-        protocolButtonGroup.add(httpProtoRbMenuItem);
-        httpProtoRbMenuItem.setText("HTTP");
-        httpProtoRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                httpProtoRbMenuItemActionPerformed(evt);
-            }
-        });
-        portalProtocolMenu.add(httpProtoRbMenuItem);
-
-        protocolButtonGroup.add(httpsProtoRbMenuItem);
-        httpsProtoRbMenuItem.setText("HTTPS");
-        httpsProtoRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                httpsProtoRbMenuItemActionPerformed(evt);
-            }
-        });
-        portalProtocolMenu.add(httpsProtoRbMenuItem);
-
-        helpMenu.add(portalProtocolMenu);
-
-        portalEndpointMenu.setText("Portal Endpoint");
-
-        portalEndpointButtonGroup.add(localEndpointRbMenuItem);
-        localEndpointRbMenuItem.setText("LOCALHOST");
-        localEndpointRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                localEndpointRbMenuItemActionPerformed(evt);
-            }
-        });
-        portalEndpointMenu.add(localEndpointRbMenuItem);
-
-        portalEndpointButtonGroup.add(testEndpointRbMenuItem);
-        testEndpointRbMenuItem.setText("test.jdiskmark.net");
-        testEndpointRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                testEndpointRbMenuItemActionPerformed(evt);
-            }
-        });
-        portalEndpointMenu.add(testEndpointRbMenuItem);
-
-        portalEndpointButtonGroup.add(prodEndpointRbMenuItem);
-        prodEndpointRbMenuItem.setText("www.jdiskmark.net");
-        prodEndpointRbMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                prodEndpointRbMenuItemActionPerformed(evt);
-            }
-        });
-        portalEndpointMenu.add(prodEndpointRbMenuItem);
-
-        helpMenu.add(portalEndpointMenu);
 
         jMenuItem2.setText("About...");
         jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
@@ -941,22 +876,13 @@ public final class MainFrame extends javax.swing.JFrame {
     private void multiFileCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_multiFileCheckBoxMenuItemActionPerformed
         App.multiFile = multiFileCheckBoxMenuItem.getState();
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_multiFileCheckBoxMenuItemActionPerformed
-
-    private void autoRemoveCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_autoRemoveCheckBoxMenuItemActionPerformed
-        App.autoRemoveData = autoRemoveCheckBoxMenuItem.getState();
-        App.saveConfig();
-    }//GEN-LAST:event_autoRemoveCheckBoxMenuItemActionPerformed
 
     private void deleteDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteDataMenuItemActionPerformed
         Util.deleteDirectory(App.dataDir);
         App.msg("Data dir " + App.dataDir + " has been deleted.");
     }//GEN-LAST:event_deleteDataMenuItemActionPerformed
-
-    private void autoResetCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_autoResetCheckBoxMenuItemActionPerformed
-        App.autoReset = autoResetCheckBoxMenuItem.getState();
-        App.saveConfig();
-    }//GEN-LAST:event_autoResetCheckBoxMenuItemActionPerformed
 
     private void resetSequenceMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetSequenceMenuItemActionPerformed
         App.resetSequence();
@@ -970,6 +896,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private void writeSyncCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_writeSyncCheckBoxMenuItemActionPerformed
         App.writeSyncEnable = writeSyncCheckBoxMenuItem.getState();
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_writeSyncCheckBoxMenuItemActionPerformed
 
     private void deleteAllBenchmarksItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteAllBenchmarksItemActionPerformed
@@ -989,26 +916,6 @@ public final class MainFrame extends javax.swing.JFrame {
         Gui.showDriveAccess = showAccessCheckBoxMenuItem.getState();
         App.saveConfig();
     }//GEN-LAST:event_showAccessCheckBoxMenuItemActionPerformed
-
-    private void blueGreenPaletteMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_blueGreenPaletteMenuItemActionPerformed
-        Gui.setBlueGreenScheme();
-        App.saveConfig();
-    }//GEN-LAST:event_blueGreenPaletteMenuItemActionPerformed
-
-    private void classicPaletteMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_classicPaletteMenuItemActionPerformed
-        Gui.setClassicColorScheme();
-        App.saveConfig();
-    }//GEN-LAST:event_classicPaletteMenuItemActionPerformed
-
-    private void bardCoolPaletteMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bardCoolPaletteMenuItemActionPerformed
-        Gui.setCoolColorScheme();
-        App.saveConfig();
-    }//GEN-LAST:event_bardCoolPaletteMenuItemActionPerformed
-
-    private void bardWarmPaletteMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bardWarmPaletteMenuItemActionPerformed
-        Gui.setWarmColorScheme();
-        App.saveConfig();
-    }//GEN-LAST:event_bardWarmPaletteMenuItemActionPerformed
 
     private void deleteSelBenchmarksItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteSelBenchmarksItemActionPerformed
         int result = JOptionPane.showConfirmDialog(this, 
@@ -1030,20 +937,10 @@ public final class MainFrame extends javax.swing.JFrame {
         Gui.updateLegendAndAxis();
     }//GEN-LAST:event_resetBenchmarkItemActionPerformed
 
-    private void portalUploadMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_portalUploadMenuItemActionPerformed
-        App.sharePortal = portalUploadMenuItem.getState();
-        App.saveConfig();
-        if (App.sharePortal) {
-            App.msg("portal upload enabled");
-        } else {
-            App.msg("portal upload disabled");
-        }
-        portalEndpointMenu.setEnabled(App.sharePortal);
-        portalProtocolMenu.setEnabled(App.sharePortal);
-    }//GEN-LAST:event_portalUploadMenuItemActionPerformed
     private void directIoCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_directIoCbMenuItemActionPerformed
         App.directEnable = directIoCbMenuItem.isSelected();
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_directIoCbMenuItemActionPerformed
 
     private void engModernRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_engModernRbMenuItemActionPerformed
@@ -1051,6 +948,7 @@ public final class MainFrame extends javax.swing.JFrame {
         directIoCbMenuItem.setEnabled(true);
         sectorAlignmentMenu.setEnabled(true);
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_engModernRbMenuItemActionPerformed
 
     private void engLegacyRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_engLegacyRbMenuItemActionPerformed
@@ -1058,51 +956,43 @@ public final class MainFrame extends javax.swing.JFrame {
         directIoCbMenuItem.setEnabled(false);
         sectorAlignmentMenu.setEnabled(false);
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_engLegacyRbMenuItemActionPerformed
 
     private void align512RbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align512RbMenuItemActionPerformed
         App.sectorAlignment = App.SectorAlignment.ALIGN_512;
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_align512RbMenuItemActionPerformed
 
     private void align4KRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align4KRbMenuItemActionPerformed
         App.sectorAlignment = App.SectorAlignment.ALIGN_4K;
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_align4KRbMenuItemActionPerformed
 
     private void align8KRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align8KRbMenuItemActionPerformed
         App.sectorAlignment = App.SectorAlignment.ALIGN_8K;
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_align8KRbMenuItemActionPerformed
 
     private void align16KRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align16KRbMenuItemActionPerformed
         App.sectorAlignment = App.SectorAlignment.ALIGN_16K;
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_align16KRbMenuItemActionPerformed
 
     private void align64KRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_align64KRbMenuItemActionPerformed
         App.sectorAlignment = App.SectorAlignment.ALIGN_64K;
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_align64KRbMenuItemActionPerformed
-
-    private void localEndpointRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_localEndpointRbMenuItemActionPerformed
-        Portal.uploadResourceLocator = Portal.LOCAL_UPLOAD_LOCATOR;
-        App.saveConfig();
-    }//GEN-LAST:event_localEndpointRbMenuItemActionPerformed
-
-    private void testEndpointRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_testEndpointRbMenuItemActionPerformed
-        Portal.uploadResourceLocator = Portal.TEST_UPLOAD_LOCATOR;
-        App.saveConfig();
-    }//GEN-LAST:event_testEndpointRbMenuItemActionPerformed
-
-    private void prodEndpointRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_prodEndpointRbMenuItemActionPerformed
-        Portal.uploadResourceLocator = Portal.PRODUCTION_UPLOAD_LOCATOR;
-        App.saveConfig();
-    }//GEN-LAST:event_prodEndpointRbMenuItemActionPerformed
 
     private void alignNoneRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_alignNoneRbMenuItemActionPerformed
         App.sectorAlignment = App.SectorAlignment.NONE;
         App.saveConfig();
+        Gui.refreshChartBadges();
     }//GEN-LAST:event_alignNoneRbMenuItemActionPerformed
 
     private void darkThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_darkThemeRbMenuItemActionPerformed
@@ -1141,25 +1031,17 @@ public final class MainFrame extends javax.swing.JFrame {
         Exporter.exportBenchmarkAction(App.benchmark, ExportFormat.CSV);
     }//GEN-LAST:event_exportCsvMenuItemActionPerformed
 
-    private void gcHintsCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gcHintsCbMenuItemActionPerformed
-        GcDetector.gcHintsEnabled = gcHintsCbMenuItem.isSelected();
-        App.saveConfig();
-    }//GEN-LAST:event_gcHintsCbMenuItemActionPerformed
+    private void advancedOptionsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_advancedOptionsMenuItemActionPerformed
+        AdvancedOptionsFrame frame = Gui.getAdvancedFrame();
+        frame.syncFromModel(); // ensure controls reflect current state before showing
+        frame.setVisible(true);
+    }//GEN-LAST:event_advancedOptionsMenuItemActionPerformed
 
-    private void gcRetryCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gcRetryCbMenuItemActionPerformed
-        GcDetector.gcRetryEnabled = gcRetryCbMenuItem.isSelected();
+    private void showBadgesCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showBadgesCbMenuItemActionPerformed
+        Gui.showBadges = showBadgesCbMenuItem.isSelected();
+        Gui.setChartBadgesVisible(Gui.showBadges);
         App.saveConfig();
-    }//GEN-LAST:event_gcRetryCbMenuItemActionPerformed
-
-    private void httpProtoRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_httpProtoRbMenuItemActionPerformed
-        Portal.uploadProtocol = Portal.HTTP;
-        App.saveConfig();
-    }//GEN-LAST:event_httpProtoRbMenuItemActionPerformed
-
-    private void httpsProtoRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_httpsProtoRbMenuItemActionPerformed
-        Portal.uploadProtocol = Portal.HTTPS;
-        App.saveConfig();
-    }//GEN-LAST:event_httpsProtoRbMenuItemActionPerformed
+    }//GEN-LAST:event_showBadgesCbMenuItemActionPerformed
 
     private void smartCbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_smartCbMenuItemActionPerformed
         Smart.smartEnable = this.smartCbMenuItem.isSelected();
@@ -1169,21 +1051,16 @@ public final class MainFrame extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
+    private javax.swing.JMenuItem advancedOptionsMenuItem;
     private javax.swing.JRadioButtonMenuItem align16KRbMenuItem;
     private javax.swing.JRadioButtonMenuItem align4KRbMenuItem;
     private javax.swing.JRadioButtonMenuItem align512RbMenuItem;
     private javax.swing.JRadioButtonMenuItem align64KRbMenuItem;
     private javax.swing.JRadioButtonMenuItem align8KRbMenuItem;
     private javax.swing.JRadioButtonMenuItem alignNoneRbMenuItem;
-    private javax.swing.JCheckBoxMenuItem autoRemoveCheckBoxMenuItem;
-    private javax.swing.JCheckBoxMenuItem autoResetCheckBoxMenuItem;
     private javax.swing.JPanel bControlMountPanel;
-    private javax.swing.JRadioButtonMenuItem bardCoolPaletteMenuItem;
-    private javax.swing.JRadioButtonMenuItem bardWarmPaletteMenuItem;
-    private javax.swing.JRadioButtonMenuItem blueGreenPaletteMenuItem;
     private javax.swing.JPanel cResultMountPanel;
     private javax.swing.JButton chooseButton;
-    private javax.swing.JRadioButtonMenuItem classicPaletteMenuItem;
     private javax.swing.JMenuItem clearLogsItem;
     private javax.swing.JMenu colorPaletteMenu;
     private javax.swing.JRadioButtonMenuItem darculaThemeRbMenuItem;
@@ -1202,11 +1079,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenu exportMenu;
     private javax.swing.JMenuItem exportYmlMenuItem;
     private javax.swing.JMenu fileMenu;
-    private javax.swing.JCheckBoxMenuItem gcHintsCbMenuItem;
-    private javax.swing.JCheckBoxMenuItem gcRetryCbMenuItem;
     private javax.swing.JMenu helpMenu;
-    private javax.swing.JRadioButtonMenuItem httpProtoRbMenuItem;
-    private javax.swing.JRadioButtonMenuItem httpsProtoRbMenuItem;
     private javax.swing.JMenu ioEngineMenu;
     private javax.swing.ButtonGroup ioEnginebuttonGroup;
     private javax.swing.JLabel jLabel22;
@@ -1215,9 +1088,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JPopupMenu.Separator jSeparator2;
     private javax.swing.JPopupMenu.Separator jSeparator3;
-    private javax.swing.JPopupMenu.Separator jSeparator4;
     private javax.swing.JRadioButtonMenuItem lightThemeRbMenuItem;
-    private javax.swing.JRadioButtonMenuItem localEndpointRbMenuItem;
     private javax.swing.JPanel locationPanel;
     private javax.swing.JTextField locationText;
     private javax.swing.JMenuBar menuBar;
@@ -1227,10 +1098,6 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenu optionMenu;
     private javax.swing.ButtonGroup palettebuttonGroup;
     private javax.swing.ButtonGroup portalEndpointButtonGroup;
-    private javax.swing.JMenu portalEndpointMenu;
-    private javax.swing.JMenu portalProtocolMenu;
-    private javax.swing.JCheckBoxMenuItem portalUploadMenuItem;
-    private javax.swing.JRadioButtonMenuItem prodEndpointRbMenuItem;
     private javax.swing.JPanel progressPanel;
     private javax.swing.ButtonGroup protocolButtonGroup;
     private javax.swing.JMenuItem resetBenchmarkItem;
@@ -1239,11 +1106,11 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.ButtonGroup sectorAlignbuttonGroup;
     private javax.swing.JMenu sectorAlignmentMenu;
     private javax.swing.JCheckBoxMenuItem showAccessCheckBoxMenuItem;
+    private javax.swing.JCheckBoxMenuItem showBadgesCbMenuItem;
     private javax.swing.JCheckBoxMenuItem showMaxMinCheckBoxMenuItem;
     private javax.swing.JCheckBoxMenuItem showSingleOpMenuItem;
     private javax.swing.JCheckBoxMenuItem smartCbMenuItem;
     private javax.swing.JTabbedPane tabbedPane;
-    private javax.swing.JRadioButtonMenuItem testEndpointRbMenuItem;
     private javax.swing.ButtonGroup themeButtonGroup;
     private javax.swing.JMenu themeMenu;
     private javax.swing.JProgressBar totalTxProgBar;
