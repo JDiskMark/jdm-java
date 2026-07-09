@@ -38,22 +38,40 @@
                                 </goals>
                                 <configuration>
                                     <target>
-                                        <echo message="Staging Flatpak assets..."/>
+                                        <!-- Generate release date in AppStream-required YYYY-MM-DD format -->
+                                        <tstamp>
+                                            <format property="release.date" pattern="yyyy-MM-dd"/>
+                                        </tstamp>
+                                        <echo message="Staging Flatpak assets (version=${project.version}, date=${release.date})..."/>
                                         <mkdir dir="${flatpak.staging.dir}"/>
                                         
                                         <!-- Copy shaded JAR -->
                                         <copy file="${project.basedir}/../../jdm-core/target/jdm-core-${project.version}.jar"
                                               tofile="${flatpak.staging.dir}/jdiskmark.jar"/>
                                               
-                                        <!-- Copy Flatpak resources -->
+                                        <!-- Copy non-XML Flatpak resources (binary-safe plain copy) -->
                                         <copy todir="${flatpak.staging.dir}">
                                             <fileset dir="${project.basedir}">
                                                 <include name="*.yml"/>
                                                 <include name="*.sh"/>
-                                                <include name="*.png"/>
-                                                <include name="*.xml"/>
                                                 <include name="*.desktop"/>
                                             </fileset>
+                                        </copy>
+                                        <!-- Copy icons from jdm-core (single source of truth — no PNG copies in jdm-flatpak) -->
+                                        <copy file="${project.basedir}/../../jdm-core/src/main/resources/icons/jdm-turtle-logo-128x128.png"
+                                              tofile="${flatpak.staging.dir}/net.jdiskmark.JDiskMark.png"/>
+                                        <copy file="${project.basedir}/../../jdm-core/src/main/resources/icons/jdm-turtle-logo-64x64.png"
+                                              tofile="${flatpak.staging.dir}/net.jdiskmark.JDiskMark.64x64.png"/>
+                                        <!-- Copy XML resources with token filtering so
+                                             @project.version@ and @release.date@ in metainfo.xml resolve correctly -->
+                                        <copy todir="${flatpak.staging.dir}" filtering="true">
+                                            <fileset dir="${project.basedir}">
+                                                <include name="*.xml"/>
+                                            </fileset>
+                                            <filterset>
+                                                <filter token="project.version" value="${project.version}"/>
+                                                <filter token="release.date" value="${release.date}"/>
+                                            </filterset>
                                         </copy>
 
                                         <echo message="Running flatpak-builder..."/>

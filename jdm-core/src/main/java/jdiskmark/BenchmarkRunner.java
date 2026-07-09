@@ -26,6 +26,14 @@ public class BenchmarkRunner {
         void onProgressUpdate(long completed, long total);
         boolean isCancelled();
         void attemptCacheDrop();
+
+        /**
+         * Called after each operation (write or read) completes.
+         * GUI listeners use this to flush buffered samples in PER_OPERATION
+         * render mode. Default is a no-op so CLI and other callers are
+         * unaffected.
+         */
+        default void onOperationComplete() {}
     }
     
     @FunctionalInterface
@@ -110,6 +118,8 @@ public class BenchmarkRunner {
         
         Benchmark benchmark = new Benchmark(config);
         mapEnvironment(benchmark, driveModel, partitionId, usageInfo);
+        // capture the render mode chosen at the time this run starts
+        benchmark.setRenderMode(App.rmOption);
 
         int startingSample = App.nextSampleNumber;
         int endingSample = App.nextSampleNumber + config.numSamples;
@@ -119,11 +129,19 @@ public class BenchmarkRunner {
             GcDetector.triggerAndWait(); // Initial cleanup
         }
         
+        // Fetch SMART data before the benchmark starts (Linux only, non-fatal if it fails).
+        // Gui.runSmart() handles null/missing locationDir, dead privileged shell, and
+        // device-resolution failures internally — no risk of crashing the benchmark.
+        if (Smart.smartEnable && App.isLinux()) {
+            Gui.runSmart();
+        }
+        
         benchmark.recordStartTime();
         
         // Execution Loops
         if (config.hasWriteOperation()) {
             runOperation(benchmark, IOMode.WRITE, tRanges);
+            listener.onOperationComplete();
         } else if (config.hasReadOperation()) {
             // #132 this is a read without a write so we need to generate files
             runReadPreparation(tRanges);
@@ -135,10 +153,9 @@ public class BenchmarkRunner {
         // 1. not cancelled
         // 2. read operation
         // 3. !directIo || (directIo & macOs)
-        boolean isMacOs = App.os.toLowerCase().contains("mac");
         if (!listener.isCancelled() && config.hasReadOperation() &&
                 (!config.getDirectIoEnabled() || 
-                (config.getDirectIoEnabled() && isMacOs))) {    
+                (config.getDirectIoEnabled() && App.isMacOs()))) {    
             listener.attemptCacheDrop();
         }
         
@@ -150,6 +167,7 @@ public class BenchmarkRunner {
         
         if (config.hasReadOperation() && !listener.isCancelled()) {
             runOperation(benchmark, IOMode.READ, tRanges);
+            listener.onOperationComplete();
         }
 
         benchmark.recordEndTime();
@@ -317,8 +335,8 @@ public class BenchmarkRunner {
     }
     
     private void mapEnvironment(Benchmark b, String model, String partId, DiskUsageInfo u) {
-        b.username = App.username;
-        
+        b.systemId = (App.systemId != null) ? App.systemId : "";
+
         b.systemInfo.processorName = App.processorName;
         b.systemInfo.os = App.os;
         b.systemInfo.arch = App.arch;

@@ -8,3 +8,8 @@ Icon=net.jdiskmark.JDiskMark
 Terminal=false
 Categories=Utility;System;
 Keywords=disk;benchmark;performance;storage;speed;
+# JDiskMark is a Java Swing app — it runs through XWayland on Wayland
+# compositors. The Flatpak sandbox does NOT rewrite WM_CLASS for X11/XWayland
+# apps, so the compositor sees the value jpackage sets: jdiskmark-App.
+# (The Flatpak app-id net.jdiskmark.JDiskMark is only used for native Wayland.)
+StartupWMClass=jdiskmark-App

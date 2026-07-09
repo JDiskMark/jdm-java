@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+  "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+  "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+
+  <vendor>JDiskMark</vendor>
+  <vendor_url>https://jdiskmark.net</vendor_url>
+
+  <action id="net.jdiskmark.smartctl.run">
+    <description>Read SMART drive health data</description>
+    <message>JDiskMark needs administrator access to read SMART data from your drive.</message>
+    <icon_name>jdiskmark</icon_name>
+    <defaults>
+      <!-- Headless / non-desktop sessions: require explicit admin auth -->
+      <allow_any>auth_admin</allow_any>
+      <!-- Inactive desktop sessions: same -->
+      <allow_inactive>auth_admin</allow_inactive>
+      <!-- Active desktop sessions: auth once, keep for the session -->
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <!-- Restrict this action to our bundled binary only -->
+    <annotate key="org.freedesktop.policykit.exec.path">/opt/jdiskmark/smartctl/smartctl</annotate>
+    <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
+  </action>
+
+</policyconfig>

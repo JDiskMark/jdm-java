@@ -124,9 +124,8 @@ public class Util {
     public static String getDriveModel(File dataDir) {
         //System.out.println("os: " + System.getProperty("os.name"));
         Path dataDirPath = Paths.get(dataDir.getAbsolutePath());
-        String osName = System.getProperty("os.name");
         String deviceModel;
-        if (osName.contains("Linux")) {
+        if (App.isLinux()) {
             // get disk info for linux
             String partition = UtilOs.getPartitionFromFilePathLinux(dataDirPath);
             List<String> deviceNames = UtilOs.getDeviceNamesFromPartitionLinux(partition);
@@ -152,14 +151,14 @@ public class Util {
             }
             
             return ERROR_DRIVE_INFO;
-        } else if (osName.contains("Mac OS")) {
+        } else if (App.isMacOs()) {
             // get disk info for os x
             String devicePath = UtilOs.getDeviceFromPathMacOs(dataDirPath);
             System.out.println("devicePath=" + devicePath);
             deviceModel = UtilOs.getDeviceModelMacOs(devicePath);
             //System.out.println("deviceModel=" + deviceModel);
             return deviceModel;
-        } else if (osName.contains("Windows")) {
+        } else if (App.isWindows()) {
             // get disk info for windows
             String driveLetter = dataDirPath.getRoot().toFile().toString().split(":")[0];
             if (driveLetter.length() == 1 && Character.isLetter(driveLetter.charAt(0))) {
@@ -199,7 +198,7 @@ public class Util {
         ProcessBuilder pb = new ProcessBuilder();
 
         // Choose the appropriate command for the operating system:
-        if (App.os.startsWith("Windows")) {
+        if (App.isWindows()) {
             pb.command("cmd.exe", "/c", "fsutil volume diskfree " + diskPath);
         } else {
             // command is same for linux and mac os
@@ -218,33 +217,33 @@ public class Util {
 
         int exitCode = process.waitFor();
         if (exitCode != 0) {
-            if (App.os.startsWith("Windows")) {
+            if (App.isWindows()) {
                 /* GH-21 windows parsing handles non NTFS partitions like
                  * FAT32 used for USB sticks
                  */
                 System.out.println("exit code: " + exitCode);
-            } else if (App.os.contains("Mac OS")) {
+            } else if (App.isMacOs()) {
                 throw new IOException("Command execution failed with exit code: " + exitCode);
-            } else if (App.os.contains("Linux")) {
+            } else if (App.isLinux()) {
                 throw new IOException("Command execution failed with exit code: " + exitCode);
             }
         }
 
-        if (App.os.startsWith("Windows")) {
+        if (App.isWindows()) {
             // GH-22 non local support for capacity reporting
             return UtilOs.getCapacityWindows(UtilOs.getDriveLetterWindows(Paths.get(diskPath)));
             // Original capicity implementation w english and spanish support
             //return UtilOs.parseDiskUsageInfoWindows(outputLines);
-        } else if (App.os.contains("Mac OS")) {
+        } else if (App.isMacOs()) {
             return UtilOs.parseDiskUsageInfoMacOs(outputLines);
-        } else if (App.os.contains("Linux")) {
+        } else if (App.isLinux()) {
             return UtilOs.parseDiskUsageInfoLinux(outputLines);
         }
         return new DiskUsageInfo();
     }
 
     public static String getPartitionId(Path path) {
-        if (System.getProperty("os.name").startsWith("Windows")) {
+        if (App.isWindows()) {
             String driveLetter = UtilOs.getDriveLetterWindows(path);
             return driveLetter;
         } else {
@@ -265,13 +264,55 @@ public class Util {
     }
     
     public static String getProcessorName() {
-        if (App.os.startsWith("Windows")) {
+        if (App.isWindows()) {
             return UtilOs.getProcessorNameWindows();
-        } else if (App.os.startsWith("Mac OS")) {
+        } else if (App.isMacOs()) {
             return UtilOs.getProcessorNameMacOS();
-        } else if (App.os.contains("Linux")) {
+        } else if (App.isLinux()) {
             return UtilOs.getProcessorNameLinux();
         }
         return "processor name unknown";
+    }
+
+    /**
+     * Returns the filesystem type for the volume containing {@code path}
+     * (e.g. "NTFS", "ext4"). Windows and Linux supported.
+     */
+    public static String getFilesystem(Path path) {
+        if (App.isWindows()) {
+            String driveLetter = UtilOs.getDriveLetterWindows(path);
+            if (driveLetter != null) return UtilOs.getFilesystemWindows(driveLetter);
+        } else if (App.isLinux()) {
+            return UtilOs.getFilesystemLinux(path);
+        }
+        return null;
+    }
+
+    /**
+     * Returns the drive interface / bus type for the volume containing {@code path}
+     * (e.g. "NVMe", "SATA", "USB"). Windows and Linux supported.
+     */
+    public static String getBusType(Path path) {
+        if (App.isWindows()) {
+            String driveLetter = UtilOs.getDriveLetterWindows(path);
+            if (driveLetter != null) return UtilOs.getBusTypeWindows(driveLetter);
+        } else if (App.isLinux()) {
+            return UtilOs.getBusTypeLinux(path);
+        }
+        return null;
+    }
+
+    /**
+     * Returns the sector size for the volume containing {@code path}
+     * (e.g. "512 B", "512 B / 4096 B"). Windows and Linux supported.
+     */
+    public static String getSectorSize(Path path) {
+        if (App.isWindows()) {
+            String driveLetter = UtilOs.getDriveLetterWindows(path);
+            if (driveLetter != null) return UtilOs.getSectorSizeWindows(driveLetter);
+        } else if (App.isLinux()) {
+            return UtilOs.getSectorSizeLinux(path);
+        }
+        return null;
     }
 }

@@ -1,9 +1,5 @@
 package jdiskmark;
 
-import static jdiskmark.Benchmark.BenchmarkType;
-import static jdiskmark.Benchmark.BlockSequence;
-import static jdiskmark.Benchmark.IOMode.READ;
-import static jdiskmark.Benchmark.IOMode.WRITE;
 import static jdiskmark.DriveAccessChecker.validateTargetDirectory;
 
 import picocli.CommandLine;
@@ -40,6 +36,7 @@ import jdiskmark.Benchmark.BlockSequence;
  * Primary class for global variables.
  */
 public class App {
+    public static final String APP_NAME = "JDiskMark";
     public static final String VERSION = getVersion();
     public static final String APP_CACHE_DIR_NAME = System.getProperty("user.home") + File.separator + ".jdm"
             + File.separator + VERSION;
@@ -109,8 +106,17 @@ public class App {
         }
     }
 
+
+
     // application mode
     public static Mode mode = Mode.CLI;
+
+    // Single-instance enforcement via NIO FileLock.
+    // The OS releases this lock automatically when the JVM exits by any means
+    // (normal, exception, SIGKILL, OOM crash) — stale locks are impossible.
+    // Kept as static fields so GC never closes the channel while the app runs.
+    private static java.nio.channels.FileChannel instanceLockChannel;
+    private static java.nio.channels.FileLock instanceLock;
     // elevated priviledges
     public static boolean isRoot = false;
     public static boolean isAdmin = false;
@@ -119,7 +125,47 @@ public class App {
     public static String arch;
     public static String processorName;
     public static String jdk;
-    public static String username;
+    // PII: OS username collection removed (#117 — use anonymous or a non-PII system id instead).
+    // public static String username;
+
+    /**
+     * Stable, non-PII system identifier (32-char SHA-256 hex derived from the
+     * OS machine GUID / machine-id). Persisted in {@code jdm.properties} so
+     * it survives app restarts. See {@link UtilOs#getMachineSystemId}.
+     */
+    public static String systemId;
+
+    // --- OS convenience helpers ---
+    // Delegate to UtilOs primitives. Safe to call before init() (e.g. early in
+    // main() or in CLI mode where App.os is never populated).
+
+    /** Returns {@code true} when running on macOS.
+     * @return  */
+    public static boolean isMacOs() {
+        return UtilOs.isMacOs(osName());
+    }
+
+    /** Returns {@code true} when running on Windows.
+     * @return  */
+    public static boolean isWindows() {
+        return UtilOs.isWindows(osName());
+    }
+
+    /** Returns {@code true} when running on Linux.
+     * @return  */
+    public static boolean isLinux() {
+        return UtilOs.isLinux(osName());
+    }
+
+    /**
+     * Resolves the OS name, falling back to the system property when {@link #os} is
+     * not yet set.Safe to call before {@link #init()} and in CLI mode.
+     * @return
+     */
+    public static String osName() {
+        return (os != null) ? os : System.getProperty("os.name", "");
+    }
+
     // benchmark options
     public static Properties p;
     public static File locationDir = null;
@@ -129,12 +175,14 @@ public class App {
     public static boolean autoSave = false;
     public static boolean sharePortal = false;
     // True if sharePortal was enabled in the last session; used to offer a
-    // one-click
-    // re-enable prompt at startup rather than silently resuming network activity.
+    // one-click re-enable prompt at startup rather than silently resuming network activity.
     public static boolean sharePortalPreviouslyEnabled = false;
+    // True once the user has answered the first-run portal-consent prompt.
+    // Persisted so the prompt is shown exactly once (issue #117).
+    public static boolean portalConsentAsked = false;
     public static boolean verbose = false; // affects cli output
     public static boolean multiFile = true;
-    public static boolean autoRemoveData = false;
+    public static boolean autoRemoveData = true;
     public static boolean autoReset = true;
     public static boolean directEnable = false;
     public static boolean writeSyncEnable = false;
@@ -145,12 +193,14 @@ public class App {
     // benchmark configuration
     public static BenchmarkProfile activeProfile = BenchmarkProfile.QUICK_TEST;
     public static boolean profileModified = false;
-    public static BenchmarkType benchmarkType = BenchmarkType.WRITE;
+    public static BenchmarkType benchmarkType = BenchmarkType.READ_WRITE;
     public static BlockSequence blockSequence = BlockSequence.SEQUENTIAL;
     public static int numOfSamples = 200; // desired number of samples
     public static int numOfBlocks = 32; // desired number of blocks
     public static int blockSizeKb = 512; // size of a block in KBs
     public static int numOfThreads = 1; // number of threads
+    // render / display options
+    public static RenderFrequencyMode rmOption = RenderFrequencyMode.PER_SAMPLE;
     // active benchmark state
     public static State state = State.IDLE_STATE;
     public static int nextSampleNumber = 1; // number of the next sample
@@ -163,9 +213,12 @@ public class App {
     public static Future<Benchmark> cliResult = null;
     // completed benchmarks and operations
     public static Benchmark benchmark; // last or loaded benchmark
-    public static BenchmarkOperation operation; // last loaded operation
+
+    public static BenchmarkOperation operation; // last loaded operation - not sure this is actively used
+    // saved benchmarks for loading
     public static HashMap<String, Benchmark> benchmarks = new LinkedHashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new LinkedHashMap<>();
+    public static boolean archiveViewActive = false;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
@@ -191,6 +244,17 @@ public class App {
             case Mode.GUI -> {
                 App.autoSave = true;
                 // App.verbose = true; // force verbose to true
+                // On macOS, redirect the menu bar to the native system menu bar at the
+                // top of the screen (standard macOS HIG). Must be set before AWT initialises.
+                if (App.isMacOs()) {
+                    // The app name shown in the macOS menu bar and in Dock menus.
+                    // Must be set before AWT initialises (same requirement as useScreenMenuBar).
+                    System.setProperty("apple.awt.application.name", APP_NAME);
+                    System.setProperty("apple.laf.useScreenMenuBar", "true");
+                }
+                if (!acquireInstanceLock()) {
+                    return; // another instance is already running — exit
+                }
                 java.awt.EventQueue.invokeLater(App::init);
                 return;
             }
@@ -247,13 +311,11 @@ public class App {
 
         GcDetector.printActive();
 
-        username = System.getProperty("user.name");
-
         os = System.getProperty("os.name");
         arch = System.getProperty("os.arch");
         processorName = Util.getProcessorName();
         jdk = Util.getJvmInfo();
-
+        
         checkPermission();
         if (!APP_CACHE_DIR.exists()) {
             APP_CACHE_DIR.mkdirs();
@@ -262,6 +324,14 @@ public class App {
         if (mode == Mode.GUI) {
             loadConfig();
         }
+
+        // Derive the stable, non-PII machine identifier now that loadConfig() has
+        // populated the persisted fallback value (if any). Resolved after loadConfig
+        // so we never clobber portalConsentAsked or other flags with a premature
+        // saveConfig() call.
+        String fallbackSystemId = (systemId != null && !systemId.isBlank()) ? systemId : "";
+        systemId = UtilOs.getMachineSystemId(os, fallbackSystemId);
+        // systemId persisted by the shutdown-hook saveConfig() and other normal save paths.
 
         // initialize data dir if necessary
         if (locationDir == null) {
@@ -291,11 +361,23 @@ public class App {
                     App.saveConfig();
                 }
             });
-            // If portal upload was active last session, offer a one-click re-enable.
-            // This avoids silent outbound network activity while keeping dev workflow
-            // smooth.
-            if (sharePortalPreviouslyEnabled) {
-                javax.swing.SwingUtilities.invokeLater(App::promptResumePortalUpload);
+            // #117 First-run consent: ask once if the user has never been asked.
+            // Fires for both test and production endpoints so the dialog can be
+            // exercised from the IDE without any config changes.
+            // This runs before the re-enable check so a brand-new install shows
+            // the consent dialog rather than nothing.
+            if (!portalConsentAsked) {
+                javax.swing.SwingUtilities.invokeLater(Gui::promptFirstRunPortalConsent);
+            } else if (sharePortalPreviouslyEnabled) {
+                // Consent was already given and upload was active last session —
+                // silently restore it. No need to ask again once consent is on record.
+                sharePortal = true;
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    msg("Portal upload active — disable via the Sharing tab.");
+                    if (Gui.mainFrame != null) {
+                        Gui.mainFrame.loadPropertiesConfig();
+                    }
+                });
             }
 
             // --- Event: app started (session header) ---
@@ -308,46 +390,82 @@ public class App {
         }
     }
 
+    /**
+     * Attempts to acquire an OS-level advisory lock on a file in the per-version
+     * cache directory. Called once at startup in GUI mode, before {@link #init()}.
+     *
+     * <p>
+     * The lock is held by a {@link java.nio.channels.FileLock} whose lifecycle
+     * is tied to the JVM process: the OS kernel releases it automatically when the
+     * process exits by <em>any</em> means (normal exit, uncaught exception,
+     * {@code SIGKILL}, OOM crash). Stale lock files left behind after a crash are
+     * therefore impossible — the next launch will always succeed.
+     *
+     * <p>
+     * If another instance already holds the lock a user-friendly dialog is shown
+     * and the method returns {@code false}, allowing {@code main()} to exit cleanly
+     * without opening any window or touching the Derby database.
+     *
+     * @return {@code true} if the lock was acquired and this instance may continue;
+     *         {@code false} if another instance is running (caller should exit).
+     */
+    public static boolean acquireInstanceLock() {
+        // Ensure the cache directory exists before we try to create the lock file.
+        if (!APP_CACHE_DIR.exists()) {
+            APP_CACHE_DIR.mkdirs();
+        }
+        java.io.File lockFile = new java.io.File(APP_CACHE_DIR, "jdm.lock");
+        try {
+            // Open (or create) the lock file. StandardOpenOption.CREATE ensures the
+            // file exists; WRITE is required for FileLock.
+            instanceLockChannel = java.nio.channels.FileChannel.open(
+                    lockFile.toPath(),
+                    java.nio.file.StandardOpenOption.CREATE,
+                    java.nio.file.StandardOpenOption.WRITE);
+            // tryLock() returns null (non-blocking) if another process holds the lock.
+            instanceLock = instanceLockChannel.tryLock();
+        } catch (java.io.IOException e) {
+            Logger.getLogger(App.class.getName()).log(Level.WARNING,
+                    "Could not open instance lock file: " + lockFile, e);
+            // If we cannot even open the file (e.g. permissions), allow the app to
+            // start rather than refusing to run on a technicality.
+            return true;
+        }
+
+        if (instanceLock == null) {
+            // Lock is held by another process — show a concise dialog, then bail.
+            try {
+                instanceLockChannel.close();
+            } catch (java.io.IOException ignored) {}
+            instanceLockChannel = null;
+
+            // Show the dialog on the EDT (we have no window yet, so null parent is fine).
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                javax.swing.JOptionPane.showMessageDialog(
+                        null,
+                        """
+                        JDiskMark is already running.
+                        Only one instance can be open at a time.
+                        """,
+                        "JDiskMark — Already Running",
+                        javax.swing.JOptionPane.WARNING_MESSAGE);
+                System.exit(0);
+            });
+            return false;
+        }
+        return true;
+    }
+
     public static void checkPermission() {
-        String osName = System.getProperty("os.name");
-        if (osName.contains("Linux")) {
+        if (App.isLinux()) {
             isRoot = UtilOs.isRunningAsRootLinux();
-        } else if (osName.contains("Mac OS")) {
+        } else if (App.isMacOs()) {
             isRoot = UtilOs.isRunningAsRootMacOs();
-        } else if (osName.contains("Windows")) {
+        } else if (App.isWindows()) {
             isAdmin = UtilOs.isRunningAsAdminWindows();
         }
         if (isRoot || isAdmin) {
             System.out.println("Running w elevated priviledges");
-        }
-    }
-
-    /**
-     * Offers a one-click prompt to re-enable portal upload when it was active
-     * in the previous session. Called after the main window is visible so the
-     * dialog has a proper parent. This avoids silent outbound network activity
-     * while keeping the dev workflow convenient (no password re-entry required).
-     */
-    public static void promptResumePortalUpload() {
-        int choice = javax.swing.JOptionPane.showConfirmDialog(
-                Gui.mainFrame,
-                "Portal upload was enabled in your last session.\nResume uploading benchmarks to "
-                        + Portal.getUploadUrl() + "?",
-                "Resume Portal Upload?",
-                javax.swing.JOptionPane.YES_NO_OPTION,
-                javax.swing.JOptionPane.QUESTION_MESSAGE);
-        if (choice == javax.swing.JOptionPane.YES_OPTION) {
-            sharePortal = true;
-            msg("Portal upload resumed.");
-        } else {
-            sharePortal = false;
-            sharePortalPreviouslyEnabled = false; // clear so we don't prompt again next launch
-            msg("Portal upload not resumed.");
-            saveConfig(); // persist the cleared state
-        }
-        // sync the menu checkbox to reflect the resolved state
-        if (Gui.mainFrame != null) {
-            Gui.mainFrame.loadPropertiesConfig();
         }
     }
 
@@ -368,6 +486,7 @@ public class App {
             writeSyncEnable = profile.isWriteSyncEnable();
             sectorAlignment = profile.getSectorAlignment();
             multiFile = profile.isMultiFile();
+//            Smart.smartEnable = profile.getEnableSmart();
         } finally {
             saveConfig();
         }
@@ -396,12 +515,17 @@ public class App {
         // configure settings from properties
         String value;
 
-        // Never silently re-enable portal upload on startup — network activity must
-        // always be explicitly user-confirmed each session. We remember the previous
-        // state only to offer a convenient one-click re-enable prompt.
+        // Remember previous state only to offer convenient one-click re-enable prompt.
         value = p.getProperty("sharePortal", "false");
         sharePortalPreviouslyEnabled = Boolean.parseBoolean(value);
         sharePortal = false; // always start disabled; prompt offered after window visible
+
+        // #117 one-time first-run consent flag
+        value = p.getProperty("portalConsentAsked", "false");
+        portalConsentAsked = Boolean.parseBoolean(value);
+
+        // Non-PII system identifier (blank on very first run; resolved in init())
+        systemId = p.getProperty("systemId", "");
 
         Portal.uploadResourceLocator = p.getProperty("uploadResourceLocator", Portal.uploadResourceLocator);
         Portal.uploadProtocol = p.getProperty("uploadProtocol", Portal.uploadProtocol);
@@ -426,6 +550,9 @@ public class App {
 
         value = p.getProperty("multiFile", String.valueOf(multiFile));
         multiFile = Boolean.parseBoolean(value);
+        
+        value = p.getProperty("smartEnable", String.valueOf(Smart.smartEnable));
+        Smart.smartEnable = Boolean.parseBoolean(value);
 
         value = p.getProperty("autoRemoveData", String.valueOf(autoRemoveData));
         autoRemoveData = Boolean.parseBoolean(value);
@@ -493,8 +620,21 @@ public class App {
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         Gui.palette = Gui.Palette.valueOf(value);
 
+        value = p.getProperty("renderMode", rmOption.name());
+        try {
+            rmOption = RenderFrequencyMode.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid renderMode value in properties: \"{0}\", using default: {1}",
+                    new Object[] { value, rmOption.name() });
+        }
+
         value = p.getProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
         Gui.showMaxMin = Boolean.parseBoolean(value);
+
+        value = p.getProperty("showBadges", String.valueOf(Gui.showBadges));
+        Gui.showBadges = Boolean.parseBoolean(value);
 
         value = p.getProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
         Gui.showDriveAccess = Boolean.parseBoolean(value);
@@ -510,12 +650,21 @@ public class App {
 
         // configure properties
         p.setProperty("sharePortal", String.valueOf(sharePortal));
-        p.setProperty("uploadResourceLocator", Portal.uploadResourceLocator);
-        p.setProperty("uploadProtocol", Portal.uploadProtocol);
+        p.setProperty("portalConsentAsked", String.valueOf(portalConsentAsked)); // #117
+        if (systemId != null && !systemId.isBlank()) {
+            p.setProperty("systemId", systemId);
+        }
+        if (Portal.uploadResourceLocator != null) {
+            p.setProperty("uploadResourceLocator", Portal.uploadResourceLocator);
+        }
+        if (Portal.uploadProtocol != null) {
+            p.setProperty("uploadProtocol", Portal.uploadProtocol);
+        }
         p.setProperty("activeProfile", activeProfile.name());
         p.setProperty("profileModified", String.valueOf(profileModified));
         p.setProperty("benchmarkType", benchmarkType.name());
         p.setProperty("multiFile", String.valueOf(multiFile));
+        p.setProperty("smartEnable", String.valueOf(Smart.smartEnable));
         p.setProperty("autoRemoveData", String.valueOf(autoRemoveData));
         p.setProperty("autoReset", String.valueOf(autoReset));
         p.setProperty("blockSequence", blockSequence.name());
@@ -532,7 +681,9 @@ public class App {
         // display properties
         p.setProperty("theme", Gui.theme.name());
         p.setProperty("palette", Gui.palette.name());
+        p.setProperty("renderMode", rmOption.name());
         p.setProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
+        p.setProperty("showBadges", String.valueOf(Gui.showBadges));
         p.setProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
         p.setProperty("showSingleOp", String.valueOf(Gui.showSingleOp));
 
@@ -588,6 +739,7 @@ public class App {
         sb.append("writeTest: ").append(hasWriteOperation()).append('\n');
         sb.append("locationDir: ").append(locationDir).append('\n');
         sb.append("multiFile: ").append(multiFile).append('\n');
+        
         sb.append("autoRemoveData: ").append(autoRemoveData).append('\n');
         sb.append("autoReset: ").append(autoReset).append('\n');
         sb.append("blockSequence: ").append(blockSequence).append('\n');
@@ -601,6 +753,7 @@ public class App {
         sb.append("directEnable: ").append(directEnable).append('\n');
         sb.append("palette: ").append(Gui.palette).append('\n');
         sb.append("showMaxMin: ").append(Gui.showMaxMin).append('\n');
+        sb.append("showBadges: ").append(Gui.showBadges).append('\n');
         return sb.toString();
     }
 
@@ -612,7 +765,8 @@ public class App {
         // populate benchmark and operation map w runs from db
         benchmarks.clear();
         operations.clear();
-        Benchmark.findAll().stream().forEach((Benchmark run) -> {
+        List<Benchmark> results = archiveViewActive ? Benchmark.findArchived() : Benchmark.findActive();
+        results.stream().forEach((Benchmark run) -> {
             benchmarks.put(run.getStartTimeString(), run);
             for (BenchmarkOperation o : run.getOperations()) {
                 operations.put(o.getStartTimeString(), o);
@@ -638,6 +792,20 @@ public class App {
     public static void deleteBenchmarks(List<UUID> benchmarkIds) {
         Benchmark.delete(benchmarkIds);
         benchmarks.clear(); // clear the cache
+        loadBenchmarks();
+    }
+
+    public static void archiveBenchmarks(List<UUID> benchmarkIds) {
+        if (benchmarkIds.isEmpty()) return;
+        Benchmark.archive(benchmarkIds);
+        benchmarks.clear();
+        loadBenchmarks();
+    }
+
+    public static void unarchiveBenchmarks(List<UUID> benchmarkIds) {
+        if (benchmarkIds.isEmpty()) return;
+        Benchmark.unarchive(benchmarkIds);
+        benchmarks.clear();
         loadBenchmarks();
     }
 
@@ -707,14 +875,15 @@ public class App {
         // 4. create data dir reference
         dataDir = new File(locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
 
-        // 5. remove existing test data if exist
+        // 5. remove existing test data if present (recursive — File.delete() only removes empty dirs)
         if (autoRemoveData && dataDir.exists()) {
-            if (dataDir.delete()) {
-                if (verbose) {
-                    msg("removed existing data dir");
-                }
-            } else {
-                msg("unable to remove existing data dir");
+            boolean removed = Util.deleteDirectory(dataDir);
+            if (verbose) {
+                msg(removed
+                        ? "Removed existing data dir: " + dataDir
+                        : "Unable to remove existing data dir: " + dataDir);
+            } else if (!removed) {
+                msg("Unable to remove existing data dir: " + dataDir);
             }
         }
 

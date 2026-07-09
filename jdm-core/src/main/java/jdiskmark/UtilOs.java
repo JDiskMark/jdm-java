@@ -22,7 +22,26 @@ import java.util.logging.Logger;
 public class UtilOs {
     
     public static final Logger LOGGER = Logger.getLogger(UtilOs.class.getName());
-    
+
+    // --- OS detection primitives ---
+    // Accept an explicit osName string so these can be used before App.os is
+    // populated (e.g. in CLI mode or very early in main()).
+
+    /** Returns {@code true} when {@code osName} identifies macOS. */
+    public static boolean isMacOs(String osName) {
+        return osName != null && osName.contains("Mac OS");
+    }
+
+    /** Returns {@code true} when {@code osName} identifies Windows. */
+    public static boolean isWindows(String osName) {
+        return osName != null && osName.startsWith("Windows");
+    }
+
+    /** Returns {@code true} when {@code osName} identifies Linux. */
+    public static boolean isLinux(String osName) {
+        return osName != null && osName.contains("Linux");
+    }
+
     /** The disk model power shell utility. */
     public static final String DISK_MODEL_PS_FILENAME = "disk-model.ps1";
     
@@ -850,4 +869,326 @@ public class UtilOs {
 
         return ""; // Return an empty string if no processor name was found
     }
+
+    // ─── System ID ────────────────────────────────────────────────────────────
+
+    /**
+     * Returns a stable, non-PII system identifier suitable for anonymous
+     * benchmark attribution.
+     *
+     * <p>Strategy (first successful source wins):
+     * <ol>
+     *   <li>Windows &mdash; {@code MachineGuid} from the Cryptography registry key
+     *       (readable without admin)</li>
+     *   <li>Linux   &mdash; {@code /etc/machine-id} (world-readable)</li>
+     *   <li>macOS   &mdash; {@code IOPlatformUUID} via {@code ioreg} (no admin)</li>
+     *   <li>Fallback &mdash; the previously persisted {@code systemId} from
+     *       {@code jdm.properties}, or a freshly generated {@link java.util.UUID}</li>
+     * </ol>
+     *
+     * <p>The raw OS value is SHA-256 hashed and the first 32 hex characters are
+     * returned, so the original system identifier is never stored or transmitted.
+     *
+     * @param osName      the value of {@code System.getProperty("os.name")}
+     * @param persistedId the value already stored in {@code jdm.properties}
+     *                    (may be {@code null} or blank on first run)
+     * @return a 32-character lowercase hex string identifying this system
+     */
+    public static String getMachineSystemId(String osName, String persistedId) {
+        String raw = null;
+        try {
+            if (isWindows(osName)) {
+                raw = readWindowsMachineGuid();
+            } else if (isLinux(osName)) {
+                raw = readLinuxMachineId();
+            } else if (isMacOs(osName)) {
+                raw = readMacOsPlatformUuid();
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "getMachineSystemId: OS source failed, using fallback", e);
+        }
+
+        if (raw != null && !raw.isBlank()) {
+            return sha256Hex32(raw);
+        }
+
+        // Fallback: reuse persisted id (survives across sessions) or generate once.
+        if (persistedId != null && !persistedId.isBlank()) {
+            return persistedId;
+        }
+        LOGGER.warning("getMachineSystemId: all sources failed, generating a random id");
+        return java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 32);
+    }
+
+    /** Reads HKLM\SOFTWARE\Microsoft\Cryptography\MachineGuid (no admin required). */
+    private static String readWindowsMachineGuid() throws IOException, InterruptedException {
+        Process p = new ProcessBuilder(
+                "reg", "query",
+                "HKLM\\SOFTWARE\\Microsoft\\Cryptography",
+                "/v", "MachineGuid")
+                .redirectErrorStream(true)
+                .start();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.contains("MachineGuid")) {
+                    String[] parts = line.trim().split("\\s+");
+                    if (parts.length >= 3) {
+                        return parts[parts.length - 1].trim();
+                    }
+                }
+            }
+        }
+        p.waitFor();
+        return null;
+    }
+
+    /** Reads /etc/machine-id (world-readable on all mainstream Linux distros). */
+    private static String readLinuxMachineId() throws IOException {
+        java.nio.file.Path mid = java.nio.file.Paths.get("/etc/machine-id");
+        if (java.nio.file.Files.exists(mid)) {
+            return java.nio.file.Files.readString(mid).trim();
+        }
+        java.nio.file.Path dbus = java.nio.file.Paths.get("/var/lib/dbus/machine-id");
+        if (java.nio.file.Files.exists(dbus)) {
+            return java.nio.file.Files.readString(dbus).trim();
+        }
+        return null;
+    }
+
+    /** Reads IOPlatformUUID via ioreg (no admin required on macOS). */
+    private static String readMacOsPlatformUuid() throws IOException, InterruptedException {
+        Process p = new ProcessBuilder(
+                "ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
+                .redirectErrorStream(true)
+                .start();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.contains("IOPlatformUUID")) {
+                    int eq = line.indexOf('=');
+                    if (eq >= 0) {
+                        return line.substring(eq + 1).trim().replace("\"", "");
+                    }
+                }
+            }
+        }
+        p.waitFor();
+        return null;
+    }
+
+    /** Returns the first 32 hex characters of the SHA-256 hash of {@code input}. */
+    private static String sha256Hex32(String input) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(64);
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.substring(0, 32);
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new RuntimeException(e); // SHA-256 is mandatory in every JVM
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Drive attributes — Windows and Linux (no admin required)
+    // -----------------------------------------------------------------------
+
+    /**
+     * Returns the filesystem type for the given drive letter (e.g. "NTFS", "FAT32").
+     * Uses PowerShell {@code Get-Volume}. No admin required.
+     *
+     * @param driveLetter single letter, e.g. "C"
+     * @return filesystem type or {@code null} on failure
+     */
+    static String getFilesystemWindows(String driveLetter) {
+        String psCmd = "(Get-Volume -DriveLetter '" + driveLetter + "').FileSystemType";
+        return runPowerShellOneLiner(psCmd);
+    }
+
+    /**
+     * Returns the bus/interface type for the given drive letter (e.g. "NVMe", "SATA", "USB").
+     * Uses PowerShell {@code Get-Partition | Get-Disk}. No admin required.
+     *
+     * @param driveLetter single letter, e.g. "C"
+     * @return bus type or {@code null} on failure
+     */
+    static String getBusTypeWindows(String driveLetter) {
+        String psCmd = "Get-Partition -DriveLetter '" + driveLetter
+                + "' | Get-Disk | Select-Object -ExpandProperty BusType";
+        return runPowerShellOneLiner(psCmd);
+    }
+
+    /**
+     * Returns the sector size for the given drive letter (e.g. "512 B", "512 B / 4096 B").
+     * When logical and physical sector sizes differ, both are shown.
+     * Uses PowerShell {@code Get-Partition | Get-Disk}. No admin required.
+     *
+     * @param driveLetter single letter, e.g. "C"
+     * @return sector size string or {@code null} on failure
+     */
+    static String getSectorSizeWindows(String driveLetter) {
+        String logicalStr = runPowerShellOneLiner(
+                "Get-Partition -DriveLetter '" + driveLetter
+                        + "' | Get-Disk | Select-Object -ExpandProperty LogicalSectorSize");
+        String physicalStr = runPowerShellOneLiner(
+                "Get-Partition -DriveLetter '" + driveLetter
+                        + "' | Get-Disk | Select-Object -ExpandProperty PhysicalSectorSize");
+        if (logicalStr == null && physicalStr == null) return null;
+
+        // Format like pydiskmark: "512 B" or "512 B / 4096 B"
+        if (logicalStr != null && physicalStr != null && !logicalStr.equals(physicalStr)) {
+            return logicalStr + " B / " + physicalStr + " B";
+        } else if (logicalStr != null) {
+            return logicalStr + " B";
+        } else {
+            return physicalStr + " B";
+        }
+    }
+
+    /**
+     * Runs a single PowerShell command and returns the first non-blank line of
+     * output, or {@code null} on any error. Timeout: 15 seconds.
+     */
+    private static String runPowerShellOneLiner(String command) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    "powershell", "-NoProfile", "-Command", command);
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String trimmed = line.trim();
+                    if (!trimmed.isEmpty()) {
+                        process.waitFor(15, java.util.concurrent.TimeUnit.SECONDS);
+                        return trimmed;
+                    }
+                }
+            }
+            process.waitFor(15, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (IOException | InterruptedException e) {
+            LOGGER.log(Level.WARNING, "PowerShell command failed: " + command, e);
+        }
+        return null;
+    }
+
+    // -----------------------------------------------------------------------
+    // Drive attributes — Linux
+    // -----------------------------------------------------------------------
+
+    /**
+     * Returns the filesystem type for the given path on Linux (e.g. "ext4", "xfs").
+     * Uses {@code df -T}. No admin required.
+     *
+     * <p>Example output:
+     * <pre>
+     * Filesystem     Type  1K-blocks     Used Available Use% Mounted on
+     * /dev/sda2      ext4  238737052 54179492 172357524  24% /
+     * </pre>
+     *
+     * @param path path on the target filesystem
+     * @return filesystem type or {@code null} on failure
+     */
+    static String getFilesystemLinux(Path path) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("df", "-T", path.toString());
+            pb.environment().put("LC_ALL", "C");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    // Skip the header line; data lines start with /dev/ or a device name
+                    if (line.startsWith("/dev/") || line.contains("/dev/")) {
+                        String[] parts = line.trim().split("\\s+");
+                        if (parts.length >= 2) {
+                            return parts[1]; // Type column
+                        }
+                    }
+                }
+            }
+            process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (IOException | InterruptedException e) {
+            LOGGER.log(Level.WARNING, "df -T failed for " + path, e);
+        }
+        return null;
+    }
+
+    /**
+     * Returns the bus/interface type for the given path on Linux (e.g. "nvme", "sata", "usb").
+     * Uses {@code lsblk -no TRAN}. No admin required.
+     *
+     * @param path path on the target filesystem
+     * @return bus type (uppercased) or {@code null} on failure
+     */
+    static String getBusTypeLinux(Path path) {
+        String partition = getPartitionFromFilePathLinux(path);
+        if (partition == null || partition.isBlank()) return null;
+        try {
+            ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "TRAN", partition);
+            pb.environment().put("LC_ALL", "C");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String trimmed = line.trim();
+                    if (!trimmed.isEmpty()) {
+                        return trimmed.toUpperCase(); // e.g. "NVME", "SATA"
+                    }
+                }
+            }
+            process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (IOException | InterruptedException e) {
+            LOGGER.log(Level.WARNING, "lsblk TRAN failed for " + partition, e);
+        }
+        return null;
+    }
+
+    /**
+     * Returns the sector size for the given path on Linux
+     * (e.g. "512 B", "512 B / 4096 B").
+     * Uses {@code lsblk -no LOG-SEC,PHY-SEC}. No admin required.
+     *
+     * @param path path on the target filesystem
+     * @return sector size string or {@code null} on failure
+     */
+    static String getSectorSizeLinux(Path path) {
+        String partition = getPartitionFromFilePathLinux(path);
+        if (partition == null || partition.isBlank()) return null;
+        try {
+            ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "LOG-SEC,PHY-SEC", partition);
+            pb.environment().put("LC_ALL", "C");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String[] parts = line.trim().split("\\s+");
+                    if (parts.length >= 2) {
+                        String logical = parts[0];
+                        String physical = parts[1];
+                        if (logical.equals(physical)) {
+                            return logical + " B";
+                        }
+                        return logical + " B / " + physical + " B";
+                    } else if (parts.length == 1 && !parts[0].isEmpty()) {
+                        return parts[0] + " B";
+                    }
+                }
+            }
+            process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (IOException | InterruptedException e) {
+            LOGGER.log(Level.WARNING, "lsblk sector size failed for " + partition, e);
+        }
+        return null;
+    }
 }
+

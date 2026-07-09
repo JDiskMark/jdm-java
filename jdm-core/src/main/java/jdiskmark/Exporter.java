@@ -187,15 +187,14 @@ public class Exporter {
 
         // open native os explorer (Windows, macOS, or Linux) if indicated
         if (selection == JOptionPane.YES_OPTION) {
-            String os = System.getProperty("os.name").toLowerCase();
             try {
-                if (os.contains("win")) {
+                if (App.isWindows()) {
                     // Windows: explorer.exe /select,"path"
                     new ProcessBuilder("explorer.exe", "/select,", path).start();
-                } else if (os.contains("mac")) {
+                } else if (App.isMacOs()) {
                     // macOS: open -R "path"
                     new ProcessBuilder("open", "-R", path).start();
-                } else if (os.contains("nix") || os.contains("nux")) {
+                } else if (App.isLinux()) {
                     // Linux: dbus is the most reliable way to talk to file managers
                     new ProcessBuilder("dbus-send", "--session", "--print-reply", "--dest=org.freedesktop.FileManager1",
                                        "/org/freedesktop/FileManager1", "org.freedesktop.FileManager1.ShowItems",

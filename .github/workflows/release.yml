@@ -7,7 +7,7 @@ on:
 
 jobs:
   # --- LINUX DEB BUILD ---
-  build-deb:
+  build-linux-deb:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -37,7 +37,7 @@ jobs:
           archive: false
 
   # --- WINDOWS MSI BUILD ---
-  build-msi:
+  build-windows-msi:
     runs-on: windows-latest
     steps:
       - name: Checkout Repository
@@ -71,7 +71,7 @@ jobs:
           archive: false
 
   # --- LINUX RPM BUILD ---
-  build-rpm:
+  build-linux-rpm:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -109,7 +109,7 @@ jobs:
           archive: false
 
   # --- LINUX FLATPAK BUILD ---
-  build-flatpak:
+  build-linux-flatpak:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -208,13 +208,17 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: macos-pkg
+          # plain wildcard — package-pkg.sh deletes all intermediate *.pkg files
+          # (component, unsigned) so exactly one file matches at upload time.
+          # NOTE: do NOT replace this with a step output variable — doing so breaks
+          # 'archive: false' and causes the action to fall back to zip mode.
           path: jdm-dist/jdm-pkg/target/*.pkg
           if-no-files-found: error
           archive: false
 
   # --- CREATE GITHUB RELEASE ---
   create-release:
-    needs: [build-deb, build-msi, build-rpm, build-flatpak, build-macos-pkg]
+    needs: [build-linux-deb, build-windows-msi, build-linux-rpm, build-linux-flatpak, build-macos-pkg]
     runs-on: ubuntu-latest
     permissions:
       contents: write
