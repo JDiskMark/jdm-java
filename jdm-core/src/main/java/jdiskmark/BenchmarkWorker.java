@@ -23,6 +23,7 @@ import javax.swing.SwingWorker;
  * once.
  */
 public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
+    private static final Logger LOG = Logger.getLogger(BenchmarkWorker.class.getName());
     /** Render mode snapshot — captured once when the worker is created. */
     private final RenderFrequencyMode renderMode = App.rmOption;
 
@@ -86,8 +87,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 } catch (InvocationTargetException e) {
-                    Logger.getLogger(BenchmarkWorker.class.getName())
-                            .log(Level.WARNING, "Chart update failed", e);
+                    LOG.log(Level.WARNING, "Chart update failed", e);
                 }
             }
         }
@@ -212,7 +212,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         } catch (CancellationException e) {
             // Normal cancellation path — no error to report
         } catch (ExecutionException e) {
-            Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, "Benchmark failed", e.getCause());
+            LOG.log(Level.SEVERE, "Benchmark failed", e.getCause());
             App.err("Benchmark failed: " + e.getCause().getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
