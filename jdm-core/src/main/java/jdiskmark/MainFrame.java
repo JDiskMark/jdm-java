@@ -38,6 +38,12 @@ public final class MainFrame extends javax.swing.JFrame {
      * enum so that adding a new palette never touches the NetBeans form.
      */
     private final GraphPaletteMenu graphPaletteMenu = new GraphPaletteMenu();
+
+    /**
+     * Window Theme submenu — built programmatically from the {@link Gui.Theme}
+     * enum so that adding a new theme never touches the NetBeans form.
+     */
+    private final GraphThemeMenu graphThemeMenu = new GraphThemeMenu();
     
     /**
      * Creates new form MainFrame
@@ -63,6 +69,20 @@ public final class MainFrame extends javax.swing.JFrame {
         if (paletteIndex >= 0) {
             optionMenu.remove(colorPaletteMenu);
             optionMenu.add(graphPaletteMenu, paletteIndex);
+        }
+
+        // Replace the NetBeans-generated themeMenu with our data-driven
+        // GraphThemeMenu — inserted at the same menu position.
+        int themeIndex = -1;
+        for (int i = 0; i < optionMenu.getMenuComponentCount(); i++) {
+            if (optionMenu.getMenuComponent(i) == themeMenu) {
+                themeIndex = i;
+                break;
+            }
+        }
+        if (themeIndex >= 0) {
+            optionMenu.remove(themeMenu);
+            optionMenu.add(graphThemeMenu, themeIndex);
         }
         
         //for diagnostics
@@ -269,11 +289,7 @@ public final class MainFrame extends javax.swing.JFrame {
         showMaxMinCheckBoxMenuItem.setSelected(Gui.showMaxMin);
         showAccessCheckBoxMenuItem.setSelected(Gui.showDriveAccess);
         showBadgesCbMenuItem.setSelected(Gui.showBadges); // overrides initComponents() which hardcodes setSelected(true)
-        switch (Gui.theme) {
-            case DARK -> darkThemeRbMenuItem.setSelected(true);
-            case LIGHT -> lightThemeRbMenuItem.setSelected(true);
-            case DARCULA -> darculaThemeRbMenuItem.setSelected(true);
-        }
+        graphThemeMenu.syncFromModel();
         graphPaletteMenu.syncFromModel();
     }
 

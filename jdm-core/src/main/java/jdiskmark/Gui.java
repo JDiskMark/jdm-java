@@ -93,7 +93,8 @@ public final class Gui {
     public enum Theme {
         DARK("Dark"),
         LIGHT("Light"),
-        DARCULA("Darcula");
+        DARCULA("Darcula"),
+        PATRIOT("Iron Patriot");
 
         private final String displayName;
 
@@ -101,15 +102,29 @@ public final class Gui {
             this.displayName = displayName;
         }
 
+        public String displayName() { return displayName; }
+
+        /** Applies this theme's look-and-feel and updates the UI. */
+        public void apply() {
+            switch (this) {
+                case DARK    -> goDarkTheme();
+                case LIGHT   -> goLightTheme();
+                case DARCULA -> goDarculaTheme();
+                case PATRIOT -> goPatriotTheme();
+            }
+        }
+
         public String getLafClassName() {
             boolean isMac = App.isMacOs();
 
             return switch (this) {
-                case DARK -> isMac ? "com.formdev.flatlaf.themes.FlatMacDarkLaf" 
-                                   : "com.formdev.flatlaf.FlatDarkLaf";
-                case LIGHT -> isMac ? "com.formdev.flatlaf.themes.FlatMacLightLaf" 
-                                    : "com.formdev.flatlaf.FlatLightLaf";
+                case DARK    -> isMac ? "com.formdev.flatlaf.themes.FlatMacDarkLaf"
+                                     : "com.formdev.flatlaf.FlatDarkLaf";
+                case LIGHT   -> isMac ? "com.formdev.flatlaf.themes.FlatMacLightLaf"
+                                     : "com.formdev.flatlaf.FlatLightLaf";
                 case DARCULA -> "com.formdev.flatlaf.FlatDarculaLaf";
+                case PATRIOT -> isMac ? "com.formdev.flatlaf.themes.FlatMacDarkLaf"
+                                     : "com.formdev.flatlaf.FlatDarkLaf";
             };
         }
 
@@ -154,6 +169,8 @@ public final class Gui {
     static Color BADGE_AMBER_BG   = new Color(0xC8, 0x78, 0x00); // deep amber
     static Color BADGE_DEFAULT_BG = new Color(40, 40, 40, 180);
     static Color BADGE_DEFAULT_FG = new Color(200, 200, 200);
+    /** Foreground to use when a badge is stale (set together with BADGE_AMBER_BG). */
+    static Color BADGE_STALE_FG   = Color.WHITE;
 
     /** Chart subtitle shown when current settings diverge from the displayed benchmark. */
     private static TextTitle modifiedSubtitle = null;
@@ -213,19 +230,48 @@ public final class Gui {
 
     /** Updates badge colors to match the current window theme. */
     static void updateBadgeThemeColors() {
+        if (theme == Theme.PATRIOT) {
+            // Iron Patriot: white background, alternating crimson / flag-blue text
+            BADGE_DEFAULT_BG = new Color(0xEEF2FF); // pale lavender-blue background
+            BADGE_AMBER_BG   = new Color(0xB22234); // stale → crimson background
+            BADGE_STALE_FG   = Color.WHITE;         // stale foreground on crimson
+            Color crimson  = new Color(0xB22234);
+            Color flagBlue = new Color(0x3C3B6E);
+            BADGE_DEFAULT_FG = flagBlue; // used for newly created badges
+            javax.swing.border.Border outerBorder =
+                    javax.swing.BorderFactory.createLineBorder(flagBlue, 1);
+            javax.swing.border.Border innerBorder =
+                    javax.swing.BorderFactory.createEmptyBorder(2, 5, 2, 5);
+            javax.swing.border.Border badgeBorder =
+                    javax.swing.BorderFactory.createCompoundBorder(outerBorder, innerBorder);
+            if (chartBadgeList != null) {
+                for (int i = 0; i < chartBadgeList.size(); i++) {
+                    chartBadgeList.get(i).setBackground(BADGE_DEFAULT_BG);
+                    // alternate crimson / flag-blue across the badge strip
+                    chartBadgeList.get(i).setForeground(i % 2 == 0 ? crimson : flagBlue);
+                    chartBadgeList.get(i).setBorder(badgeBorder);
+                }
+            }
+            return;
+        }
         if (theme == Theme.LIGHT) {
             BADGE_DEFAULT_BG = new Color(220, 220, 220, 200);
             BADGE_DEFAULT_FG = new Color(50, 50, 50);
             BADGE_AMBER_BG   = new Color(0xE6, 0xA0, 0x1E);
+            BADGE_STALE_FG   = Color.WHITE;
         } else {
             BADGE_DEFAULT_BG = new Color(40, 40, 40, 180);
             BADGE_DEFAULT_FG = new Color(200, 200, 200);
             BADGE_AMBER_BG   = new Color(0xC8, 0x78, 0x00);
+            BADGE_STALE_FG   = Color.WHITE;
         }
         if (chartBadgeList == null) return;
+        javax.swing.border.Border resetBorder =
+                javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6);
         for (javax.swing.JLabel b : chartBadgeList) {
             b.setForeground(BADGE_DEFAULT_FG);
             b.setBackground(BADGE_DEFAULT_BG);
+            b.setBorder(resetBorder);
         }
         applyBadgeHighlights();
     }
@@ -263,8 +309,31 @@ public final class Gui {
     public static XYLineAndShapeRenderer msRenderer;
     static Color foregroundColor;
     
+    /**
+     * Removes UIManager overrides set by {@link #configurePatriotLaf()}.
+     * Call this AFTER {@code UIManager.setLookAndFeel()} in every non-Patriot
+     * configure method so the new LAF's own defaults take over.
+     */
+    private static void clearPatriotOverrides() {
+        UIManager.put("Table.selectionBackground",  null);
+        UIManager.put("Table.selectionForeground",  null);
+        UIManager.put("List.selectionBackground",   null);
+        UIManager.put("List.selectionForeground",   null);
+        UIManager.put("Tree.selectionBackground",   null);
+        UIManager.put("Tree.selectionForeground",   null);
+        UIManager.put("TabbedPane.underlineColor",  null);
+        UIManager.put("ProgressBar.foreground",     null);
+        // scrollbar
+        UIManager.put("ScrollBar.thumb",            null);
+        UIManager.put("ScrollBar.thumbHover",       null);
+        UIManager.put("ScrollBar.thumbPressed",     null);
+        // title pane
+        UIManager.put("TitlePane.foreground",       null);
+    }
+
     public static void configureDarkLaf() {
         try {
+            FlatLaf.setGlobalExtraDefaults(null); // clear any accent override from Patriot theme
             if (App.isWindows()) {
                 UIManager.setLookAndFeel(new FlatDarkLaf());
             } else if (App.isMacOs()) {
@@ -272,6 +341,7 @@ public final class Gui {
             } else if (App.isLinux()) {
                 UIManager.setLookAndFeel(new FlatDarkLaf());
             }
+            clearPatriotOverrides();
             // Use FlatLaf custom window decorations (unified title bar + menu bar) on
             // non-macOS only. On macOS the native title bar is kept so the system menu
             // bar at the top of the screen works correctly.
@@ -295,7 +365,9 @@ public final class Gui {
     
     public static void configureDarculaLaf() {
         try {
+            FlatLaf.setGlobalExtraDefaults(null); // clear any accent override from Patriot theme
             UIManager.setLookAndFeel(new FlatDarculaLaf());
+            clearPatriotOverrides();
             if (!App.isMacOs()) {
                 javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
                 javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
@@ -316,6 +388,7 @@ public final class Gui {
     
     public static void configureLightLaf() {
         try {
+            FlatLaf.setGlobalExtraDefaults(null); // clear any accent override from Patriot theme
             if (App.isWindows()) {
                 UIManager.setLookAndFeel(new FlatLightLaf());
             } else if (App.isMacOs()) {
@@ -323,6 +396,7 @@ public final class Gui {
             } else if (App.isLinux()) {
                 UIManager.setLookAndFeel(new FlatLightLaf());
             }
+            clearPatriotOverrides();
             if (!App.isMacOs()) {
                 javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
                 javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
@@ -341,11 +415,71 @@ public final class Gui {
         }
     }
     
+    /**
+     * Iron Patriot theme — FlatLight base with patriotic red + blue accents:
+     * <ul>
+     *   <li>Old Glory Red (#B22234) as {@code @accentColor}: checkboxes,
+     *       radio buttons, slider thumb, focus rings.</li>
+     *   <li>Pure white background + Old Glory Navy text via FlatLaf
+     *       {@code @background}/{@code @foreground} so all component
+     *       colors are derived correctly by the LAF.</li>
+     *   <li>Royal Blue (#1F4DA0): table / list / tree row selections
+     *       (white text) + scrollbar thumb.</li>
+     *   <li>Red tab underline and progress bar complete the palette.</li>
+     * </ul>
+     */
+    public static void configurePatriotLaf() {
+        try {
+            // All three global vars must be set before UIManager.setLookAndFeel so
+            // FlatLaf can derive every computed component color from them correctly.
+            java.util.Map<String, String> extras = new java.util.HashMap<>();
+            extras.put("@accentColor", "#B22234"); // Old Glory Red — checkboxes, focus rings
+            extras.put("@background",  "#FFFFFF"); // pure white panels
+            extras.put("@foreground",  "#3C3B6E"); // Old Glory Blue (Pantone 282) — all text
+            extras.put("TitlePane.foreground", "#3C3B6E"); // title bar text (direct key override)
+            FlatLaf.setGlobalExtraDefaults(extras);
+            if (App.isMacOs()) {
+                UIManager.setLookAndFeel(new FlatMacLightLaf());
+            } else {
+                UIManager.setLookAndFeel(new FlatLightLaf());
+            }
+            if (!App.isMacOs()) {
+                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
+                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+            }
+            // Post-install: flag blue row selections + scrollbar; red tab + progress.
+            Color flagBlue = new Color(0x3C3B6E); // Old Glory Blue (Pantone 282)
+            Color glorRed  = new Color(0xB22234);
+            UIManager.put("Table.selectionBackground",  flagBlue);
+            UIManager.put("Table.selectionForeground",  Color.WHITE);
+            UIManager.put("List.selectionBackground",   flagBlue);
+            UIManager.put("List.selectionForeground",   Color.WHITE);
+            UIManager.put("Tree.selectionBackground",   flagBlue);
+            UIManager.put("Tree.selectionForeground",   Color.WHITE);
+            UIManager.put("TabbedPane.underlineColor",  glorRed);
+            UIManager.put("ProgressBar.foreground",     glorRed);
+            UIManager.put("ScrollBar.thumb",            flagBlue);
+            UIManager.put("ScrollBar.thumbHover",       new Color(0x2B2A52)); // darker on hover
+            UIManager.put("ScrollBar.thumbPressed",     new Color(0x1A1A38)); // darkest on press
+            // title bar text color (FlatLaf embedded title pane)
+            UIManager.put("TitlePane.foreground",       flagBlue);
+        } catch (UnsupportedLookAndFeelException e) {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (ClassNotFoundException | InstantiationException
+                    | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
+                java.util.logging.Logger.getLogger(MainFrame.class.getName())
+                        .log(java.util.logging.Level.SEVERE, null, ex);
+            }
+        }
+    }
+
     // switch to dark theme
     public static void goDarkTheme() {
         configureDarkLaf();
         FlatLaf.updateUI();
         updateChartPanelStyle();
+        if (mainFrame != null) mainFrame.getRootPane().putClientProperty("JRootPane.titleBarForeground", null);
     }
     
     // switch to darcula theme
@@ -353,6 +487,7 @@ public final class Gui {
         configureDarculaLaf();
         FlatLaf.updateUI();
         updateChartPanelStyle();
+        if (mainFrame != null) mainFrame.getRootPane().putClientProperty("JRootPane.titleBarForeground", null);
     }
     
     // switch to light theme
@@ -360,6 +495,24 @@ public final class Gui {
         configureLightLaf();
         FlatLaf.updateUI();
         updateChartPanelStyle();
+        if (mainFrame != null) mainFrame.getRootPane().putClientProperty("JRootPane.titleBarForeground", null);
+    }
+
+    /** Iron Patriot theme: crimson-accented FlatLight + auto-applies PATRIOT graph palette. */
+    public static void goPatriotTheme() {
+        configurePatriotLaf();
+        FlatLaf.updateUI();
+        updateChartPanelStyle();
+        // Force title bar text to navy via root-pane client property
+        if (mainFrame != null) {
+            mainFrame.getRootPane().putClientProperty(
+                "JRootPane.titleBarForeground", new Color(0x3C3B6E));
+        }
+        // Auto-apply the matching Patriot graph palette
+        if (chart != null) {
+            palette = Palette.PATRIOT;
+            Palette.PATRIOT.apply();
+        }
     }
     
     /**
@@ -400,9 +553,10 @@ public final class Gui {
     
     public static void init() {
         switch (Gui.theme) {
-            case DARK -> configureDarkLaf();
-            case LIGHT -> configureLightLaf();
+            case DARK    -> configureDarkLaf();
+            case LIGHT   -> configureLightLaf();
             case DARCULA -> configureDarculaLaf();
+            case PATRIOT -> configurePatriotLaf();
         }
         
         mainFrame = new MainFrame();
@@ -428,6 +582,13 @@ public final class Gui {
         }
         selFrame = new SelectDriveFrame();
         mainFrame.loadPropertiesConfig();
+        // For PATRIOT theme: badge borders, chart axis colors, and title bar color
+        // require updateChartPanelStyle() which is not called during startup (only via go*Theme).
+        if (theme == Theme.PATRIOT) {
+            mainFrame.getRootPane().putClientProperty(
+                "JRootPane.titleBarForeground", new Color(0x3C3B6E));
+            updateChartPanelStyle();
+        }
         mainFrame.setLocationRelativeTo(null);
         progressBar = mainFrame.getProgressBar();
 
@@ -862,6 +1023,7 @@ public final class Gui {
 
     private static boolean setBadgeStaleReturn(javax.swing.JLabel badge, boolean stale) {
         badge.setBackground(stale ? BADGE_AMBER_BG : BADGE_DEFAULT_BG);
+        badge.setForeground(stale ? BADGE_STALE_FG : BADGE_DEFAULT_FG);
         return stale;
     }
 
@@ -1543,41 +1705,71 @@ public final class Gui {
     }
 
     /**
-     * 4th of July palette — red, white &amp; blue on a dark navy plot.
-     * Write series in reds/white (fireworks), read series in blues (sky).
+     * Iron Patriot palette — red, white &amp; blue on a clean white plot.
+     * Write series in reds; trend lines match their sample line (dashed);
+     * read series in Old Glory Blue (#3C3B6E).
      */
     static void setFourthOfJulyColorScheme() {
         System.out.println("setting 4th of July palette");
         palette = Palette.PATRIOT;
 
         XYPlot plot = (XYPlot) chart.getPlot();
-        plot.setBackgroundPaint(new Color(0x0A1628));   // deep navy night sky
-        plot.setOutlinePaint(new Color(0x334466));
-        plot.setDomainGridlinePaint(new Color(0x1A2D4A));
-        plot.setRangeGridlinePaint(new Color(0x1A2D4A));
+        plot.setBackgroundPaint(Color.WHITE);
+        plot.setOutlinePaint(new Color(0x999999));
+        plot.setDomainGridlinePaint(new Color(0xE0E0E0)); // subtle light gray grid
+        plot.setRangeGridlinePaint(new Color(0xE0E0E0));
 
-        // configure the bw series colors — reds & white (fireworks / stripes)
-        Stroke bold = new BasicStroke(2.5f);
-        Stroke dash = new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
+        // ---- series colors ----
+        // Write series: crimson sample, crimson dashed trend, lighter/darker reds for max/min
+        // Read  series: Old Glory Blue sample, blue dashed trend, lighter/darker blues for max/min
+        Color crimson     = new Color(0xDC143C); // Write sample — full opacity
+        Color flagBlue    = new Color(0x3C3B6E); // Read sample  — Old Glory Blue (Pantone 282)
+        // Semi-transparent variants for trend lines: same hue, clearly lighter than solid sample
+        Color crimsonFade = new Color(0xDC, 0x14, 0x3C, 170);
+        Color blueFade    = new Color(0x3C, 0x3B, 0x6E, 170);
+
+        Stroke bold = new BasicStroke(1.5f);
+        Stroke dash = new BasicStroke(1.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
                 10.0f, new float[]{2.0f, 6.0f}, 0.0f);
+
         bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        bwRenderer.setSeriesPaint(0, new Color(0xDC143C)); // write  — crimson
+        bwRenderer.setSeriesPaint(0, crimson);             // write sample  — crimson
         bwRenderer.setSeriesStroke(0, bold);
-        bwRenderer.setSeriesPaint(1, new Color(0xE8E8E8)); // w avg  — white/silver, dashed
+        bwRenderer.setSeriesPaint(1, crimsonFade);          // write trend   — crimson, semi-transparent + dashed
         bwRenderer.setSeriesStroke(1, dash);
-        bwRenderer.setSeriesPaint(2, new Color(0xFF6B6B)); // w max  — light red
-        bwRenderer.setSeriesPaint(3, new Color(0x8B0000)); // w min  — dark red
-        bwRenderer.setSeriesPaint(4, new Color(0x1E90FF)); // read   — dodger blue
+        bwRenderer.setSeriesPaint(2, new Color(0xFF6B6B));  // write max     — light red
+        bwRenderer.setSeriesPaint(3, new Color(0x8B0000));  // write min     — dark red
+        bwRenderer.setSeriesPaint(4, flagBlue);             // read sample   — flag blue
         bwRenderer.setSeriesStroke(4, bold);
-        bwRenderer.setSeriesPaint(5, new Color(0xB0C4DE)); // r avg  — light steel blue, dashed
+        bwRenderer.setSeriesPaint(5, blueFade);             // read trend    — flag blue, semi-transparent + dashed
         bwRenderer.setSeriesStroke(5, dash);
-        bwRenderer.setSeriesPaint(6, new Color(0x87CEEB)); // r max  — sky blue
-        bwRenderer.setSeriesPaint(7, new Color(0x003366)); // r min  — navy
+        bwRenderer.setSeriesPaint(6, new Color(0x7878B4));  // read max      — lighter blue
+        bwRenderer.setSeriesPaint(7, new Color(0x1A1940));  // read min      — darker navy
 
         // configure the access time ms colors
         msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        msRenderer.setSeriesPaint(0, new Color(0xDC143C)); // w acc — crimson
-        msRenderer.setSeriesPaint(1, new Color(0x1E90FF)); // r acc — dodger blue
+        msRenderer.setSeriesPaint(0, crimson);   // w acc
+        msRenderer.setSeriesPaint(1, flagBlue);  // r acc
+
+        // Explicitly paint title, axes, and legend in flag blue so JFreeChart
+        // doesn't rely on a potentially-derived UIManager color.
+        if (chart != null) chart.getTitle().setPaint(flagBlue);
+        if (bwAxis != null) {
+            bwAxis.setLabelPaint(flagBlue);
+            bwAxis.setTickLabelPaint(flagBlue);
+            bwAxis.setTickMarkPaint(flagBlue);
+        }
+        if (msAxis != null) {
+            msAxis.setLabelPaint(flagBlue);
+            msAxis.setTickLabelPaint(flagBlue);
+            msAxis.setTickMarkPaint(flagBlue);
+        }
+        if (sampleAxis != null) {
+            sampleAxis.setLabelPaint(flagBlue);
+            sampleAxis.setTickLabelPaint(flagBlue);
+            sampleAxis.setTickMarkPaint(flagBlue);
+        }
+        if (chart != null && chart.getLegend() != null) chart.getLegend().setItemPaint(flagBlue);
     }
 
     /**
