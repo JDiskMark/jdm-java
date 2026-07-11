@@ -592,13 +592,19 @@ public final class Gui {
             runPanel.hideFirstColumn();
         }
         selFrame = new SelectDriveFrame();
+
+        // Establish chart base style for the current LAF *before* loading the saved palette.
+        // Without this, any palette applied in loadPropertiesConfig() (e.g. Iron Patriot
+        // in Dark mode) would run against an uninitialized chart outer background and
+        // a null foregroundColor, producing invisible or clashing colors on startup.
+        updateChartPanelStyle();
+
         mainFrame.loadPropertiesConfig();
-        // For PATRIOT theme: badge borders, chart axis colors, and title bar color
-        // require updateChartPanelStyle() which is not called during startup (only via go*Theme).
+
+        // PATRIOT-only: title bar text must be navy blue (FlatLaf client property).
         if (theme == Theme.PATRIOT) {
             mainFrame.getRootPane().putClientProperty(
                 "JRootPane.titleBarForeground", new Color(0x3C3B6E));
-            updateChartPanelStyle();
         }
         mainFrame.setLocationRelativeTo(null);
         progressBar = mainFrame.getProgressBar();
@@ -1729,13 +1735,25 @@ public final class Gui {
         System.out.println("setting 4th of July palette");
         palette = Palette.PATRIOT;
 
+        // Iron Patriot is a fully-branded palette with its own chart identity: the ENTIRE chart
+        // canvas (outer background where title and legend sit, plus the inner plot area) is white.
+        // This "white paper" approach ensures flagBlue title/axes text is always readable regardless
+        // of the surrounding LAF, and the chart has a consistent look whether selected at runtime
+        // or restored on startup.  updateChartPanelStyle() restores the LAF-derived bg on palette switch.
+        chart.setBackgroundPaint(Color.WHITE);
         XYPlot plot = (XYPlot) chart.getPlot();
         plot.setBackgroundPaint(Color.WHITE);
         plot.setOutlinePaint(new Color(0x999999));
         plot.setDomainGridlinePaint(new Color(0xE0E0E0)); // subtle light gray grid
         plot.setRangeGridlinePaint(new Color(0xE0E0E0));
+        // Legend: white background with light gray border to match the chart canvas
+        if (chart.getLegend() != null) {
+            chart.getLegend().setBackgroundPaint(Color.WHITE);
+            chart.getLegend().setFrame(new BlockBorder(new Color(0xCCCCCC)));
+        }
 
-        // ---- series colors ----
+
+        // ---- series colors — identical in every theme ----
         // Write series: crimson sample, crimson dashed trend, lighter/darker reds for max/min
         // Read  series: Old Glory Blue sample, blue dashed trend, lighter/darker blues for max/min
         Color crimson     = new Color(0xDC143C); // Write sample — full opacity
@@ -1749,7 +1767,7 @@ public final class Gui {
                 10.0f, new float[]{2.0f, 6.0f}, 0.0f);
 
         bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        bwRenderer.setSeriesPaint(0, crimson);             // write sample  — crimson
+        bwRenderer.setSeriesPaint(0, crimson);              // write sample  — crimson
         bwRenderer.setSeriesStroke(0, bold);
         bwRenderer.setSeriesPaint(1, crimsonFade);          // write trend   — crimson, semi-transparent + dashed
         bwRenderer.setSeriesStroke(1, dash);
@@ -1767,8 +1785,7 @@ public final class Gui {
         msRenderer.setSeriesPaint(0, crimson);   // w acc
         msRenderer.setSeriesPaint(1, flagBlue);  // r acc
 
-        // Explicitly paint title, axes, and legend in flag blue so JFreeChart
-        // doesn't rely on a potentially-derived UIManager color.
+        // Chart background is always white; text is always Old Glory Blue (readable on white).
         if (chart != null) chart.getTitle().setPaint(flagBlue);
         if (bwAxis != null) {
             bwAxis.setLabelPaint(flagBlue);
