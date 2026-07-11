@@ -80,12 +80,12 @@ public final class Gui {
         /** Applies this palette's colour scheme to the chart renderers. */
         public void apply() {
             switch (this) {
-                case CLASSIC    -> setClassicColorScheme();
-                case BLUE_GREEN -> setBlueGreenScheme();
-                case BARD_COOL  -> setCoolColorScheme();
-                case BARD_WARM  -> setWarmColorScheme();
-                case BETA           -> setBetaColorScheme();
-                case OLD_GLORY -> setOldGloryColorScheme();
+                case CLASSIC    -> ChartPalette.setClassicColorScheme();
+                case BLUE_GREEN -> ChartPalette.setBlueGreenScheme();
+                case BARD_COOL  -> ChartPalette.setCoolColorScheme();
+                case BARD_WARM  -> ChartPalette.setWarmColorScheme();
+                case BETA       -> ChartPalette.setBetaColorScheme();
+                case OLD_GLORY  -> ChartPalette.setOldGloryColorScheme();
             }
         }
     }
@@ -222,24 +222,30 @@ public final class Gui {
         if (controlPanel != null) controlPanel.clearRowHighlights();
     }
 
-    /** Resets all badge backgrounds to the default style. */
+    /** Resets all badge backgrounds (and foregrounds in Old Glory) to the default style. */
     public static void clearBadgeHighlights() {
         if (chartBadgeList == null) return;
-        for (javax.swing.JLabel b : chartBadgeList) b.setBackground(BADGE_DEFAULT_BG);
+        for (int i = 0; i < chartBadgeList.size(); i++) {
+            javax.swing.JLabel b = chartBadgeList.get(i);
+            b.setBackground(BADGE_DEFAULT_BG);
+            if (theme == Theme.OLD_GLORY) {
+                b.setForeground(i % 2 == 0 ? ThemeColors.OLD_GLORY_RED : ThemeColors.OLD_GLORY_BLUE);
+            } else {
+                b.setForeground(BADGE_DEFAULT_FG);
+            }
+        }
     }
 
     /** Updates badge colors to match the current window theme. */
     static void updateBadgeThemeColors() {
         if (theme == Theme.OLD_GLORY) {
             // Old Glory: white background, alternating crimson / flag-blue text
-            BADGE_DEFAULT_BG = new Color(0xEEF2FF); // pale lavender-blue background
-            BADGE_AMBER_BG   = new Color(0xB22234); // stale → crimson background
-            BADGE_STALE_FG   = Color.WHITE;         // stale foreground on crimson
-            Color crimson  = new Color(0xB22234);
-            Color flagBlue = new Color(0x3C3B6E);
-            BADGE_DEFAULT_FG = flagBlue; // used for newly created badges
+            BADGE_AMBER_BG   = ThemeColors.OLD_GLORY_RED;  // stale → crimson background
+            BADGE_STALE_FG   = Color.WHITE;                // stale foreground on crimson
+            BADGE_DEFAULT_BG = ThemeColors.OLD_GLORY_BADGE_BG;
+            BADGE_DEFAULT_FG = ThemeColors.OLD_GLORY_BLUE; // used for newly created badges
             javax.swing.border.Border outerBorder =
-                    javax.swing.BorderFactory.createLineBorder(flagBlue, 1);
+                    javax.swing.BorderFactory.createLineBorder(ThemeColors.OLD_GLORY_BLUE, 1);
             javax.swing.border.Border innerBorder =
                     javax.swing.BorderFactory.createEmptyBorder(2, 5, 2, 5);
             javax.swing.border.Border badgeBorder =
@@ -248,7 +254,8 @@ public final class Gui {
                 for (int i = 0; i < chartBadgeList.size(); i++) {
                     chartBadgeList.get(i).setBackground(BADGE_DEFAULT_BG);
                     // alternate crimson / flag-blue across the badge strip
-                    chartBadgeList.get(i).setForeground(i % 2 == 0 ? crimson : flagBlue);
+                    chartBadgeList.get(i).setForeground(
+                            i % 2 == 0 ? ThemeColors.OLD_GLORY_RED : ThemeColors.OLD_GLORY_BLUE);
                     chartBadgeList.get(i).setBorder(badgeBorder);
                 }
             }
@@ -326,7 +333,12 @@ public final class Gui {
         UIManager.put("List.selectionForeground",   null);
         UIManager.put("Tree.selectionBackground",   null);
         UIManager.put("Tree.selectionForeground",   null);
-        UIManager.put("TabbedPane.underlineColor",  null);
+        UIManager.put("TabbedPane.selectedBackground",     null);
+        UIManager.put("TabbedPane.selectedForeground",     null);
+        UIManager.put("TabbedPane.underlineColor",         null);
+        UIManager.put("TabbedPane.inactiveUnderlineColor", null);
+        UIManager.put("TabbedPane.focusColor",             null);
+        UIManager.put("TabbedPane.hoverColor",             null);
         // scrollbar
         UIManager.put("ScrollBar.thumb",            null);
         UIManager.put("ScrollBar.thumbHover",       null);
@@ -439,10 +451,10 @@ public final class Gui {
             // All three global vars must be set before UIManager.setLookAndFeel so
             // FlatLaf can derive every computed component color from them correctly.
             java.util.Map<String, String> extras = new java.util.HashMap<>();
-            extras.put("@accentColor", "#B22234"); // Old Glory Red — checkboxes, focus rings
+            extras.put("@accentColor", ThemeColors.HEX_OLD_GLORY_RED);  // checkboxes, focus rings
             extras.put("@background",  "#FFFFFF"); // pure white panels
-            extras.put("@foreground",  "#3C3B6E"); // Old Glory Blue (Pantone 282) — all text
-            extras.put("TitlePane.foreground", "#3C3B6E"); // title bar text (direct key override)
+            extras.put("@foreground",  ThemeColors.HEX_OLD_GLORY_BLUE); // all UI text
+            extras.put("TitlePane.foreground", ThemeColors.HEX_OLD_GLORY_BLUE); // title bar text
             FlatLaf.setGlobalExtraDefaults(extras);
             if (App.isMacOs()) {
                 UIManager.setLookAndFeel(new FlatMacLightLaf());
@@ -453,20 +465,27 @@ public final class Gui {
                 javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
                 javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
             }
-            // Post-install: flag blue row selections + scrollbar; red tab + progress.
-            Color flagBlue = new Color(0x3C3B6E); // Old Glory Blue (Pantone 282)
-            Color glorRed  = new Color(0xB22234);
-            UIManager.put("Table.selectionBackground",  flagBlue);
-            UIManager.put("Table.selectionForeground",  Color.WHITE);
-            UIManager.put("List.selectionBackground",   flagBlue);
-            UIManager.put("List.selectionForeground",   Color.WHITE);
-            UIManager.put("Tree.selectionBackground",   flagBlue);
-            UIManager.put("Tree.selectionForeground",   Color.WHITE);
-            UIManager.put("TabbedPane.underlineColor",  glorRed);
-            UIManager.put("ScrollBar.thumb",            flagBlue);
-            UIManager.put("ScrollBar.thumbHover",       new Color(0x2B2A52)); // darker on hover
-            UIManager.put("ScrollBar.thumbPressed",     new Color(0x1A1A38)); // darkest on press
-            UIManager.put("TitlePane.foreground",       flagBlue);
+            // Post-install: flag blue row/tab selections + scrollbar; red accent + title.
+            UIManager.put("Table.selectionBackground",     ThemeColors.OLD_GLORY_BLUE);
+            UIManager.put("Table.selectionForeground",     Color.WHITE);
+            UIManager.put("List.selectionBackground",      ThemeColors.OLD_GLORY_BLUE);
+            UIManager.put("List.selectionForeground",      Color.WHITE);
+            UIManager.put("Tree.selectionBackground",      ThemeColors.OLD_GLORY_BLUE);
+            UIManager.put("Tree.selectionForeground",      Color.WHITE);
+            // Selected tab: flag blue bg + white text (same treatment as table/list selections)
+            UIManager.put("TabbedPane.selectedBackground",      ThemeColors.OLD_GLORY_BLUE);
+            UIManager.put("TabbedPane.selectedForeground",      Color.WHITE);
+            // Underline: red whether the pane is focused or not
+            UIManager.put("TabbedPane.underlineColor",          ThemeColors.OLD_GLORY_RED);
+            UIManager.put("TabbedPane.inactiveUnderlineColor",  ThemeColors.OLD_GLORY_RED);
+            // Match focusColor to selectedBackground so the tab looks identical in all states;
+            // use a light tint only for hover to keep it subtle over white.
+            UIManager.put("TabbedPane.focusColor",              ThemeColors.OLD_GLORY_BLUE);
+            UIManager.put("TabbedPane.hoverColor",              ThemeColors.OLD_GLORY_TAB_HOVER); // very light blue hover
+            UIManager.put("ScrollBar.thumb",               ThemeColors.OLD_GLORY_BLUE);
+            UIManager.put("ScrollBar.thumbHover",          ThemeColors.OLD_GLORY_BLUE_HOVER);
+            UIManager.put("ScrollBar.thumbPressed",        ThemeColors.OLD_GLORY_BLUE_PRESS);
+            UIManager.put("TitlePane.foreground",          ThemeColors.OLD_GLORY_BLUE);
         } catch (UnsupportedLookAndFeelException e) {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -514,11 +533,9 @@ public final class Gui {
         // Force title bar text to navy via root-pane client property
         if (mainFrame != null) {
             mainFrame.getRootPane().putClientProperty(
-                "JRootPane.titleBarForeground", new Color(0x3C3B6E));
+                "JRootPane.titleBarForeground", ThemeColors.OLD_GLORY_BLUE);
         }
-        // Set progress bar to Old Glory Red directly — UIManager override alone is unreliable
-        // across FlatLaf re-installations (FlatProgressBarUI may cache the color independently).
-        if (progressBar != null) progressBar.setForeground(new Color(0xB22234));
+        if (progressBar != null) progressBar.setForeground(ThemeColors.OLD_GLORY_RED);
         // Auto-apply the matching Old Glory graph palette
         if (chart != null) {
             palette = Palette.OLD_GLORY;
@@ -604,14 +621,14 @@ public final class Gui {
         // OLD_GLORY-only: title bar text must be navy blue (FlatLaf client property).
         if (theme == Theme.OLD_GLORY) {
             mainFrame.getRootPane().putClientProperty(
-                "JRootPane.titleBarForeground", new Color(0x3C3B6E));
+                "JRootPane.titleBarForeground", ThemeColors.OLD_GLORY_BLUE);
         }
         mainFrame.setLocationRelativeTo(null);
         progressBar = mainFrame.getProgressBar();
         // Apply OLD_GLORY progress bar color directly on startup (cannot be set before this line
         // because progressBar is null until mainFrame.getProgressBar() is called above).
         if (theme == Theme.OLD_GLORY && progressBar != null) {
-            progressBar.setForeground(new Color(0xB22234)); // Old Glory Red
+            progressBar.setForeground(ThemeColors.OLD_GLORY_RED);
         }
 
         // On macOS, replace the default system-provided About dialog (which shows
@@ -1045,7 +1062,14 @@ public final class Gui {
 
     private static boolean setBadgeStaleReturn(javax.swing.JLabel badge, boolean stale) {
         badge.setBackground(stale ? BADGE_AMBER_BG : BADGE_DEFAULT_BG);
-        badge.setForeground(stale ? BADGE_STALE_FG : BADGE_DEFAULT_FG);
+        if (stale) {
+            badge.setForeground(BADGE_STALE_FG);
+        } else if (theme == Theme.OLD_GLORY && chartBadgeList != null) {
+            int idx = chartBadgeList.indexOf(badge);
+            badge.setForeground(idx % 2 == 0 ? ThemeColors.OLD_GLORY_RED : ThemeColors.OLD_GLORY_BLUE);
+        } else {
+            badge.setForeground(BADGE_DEFAULT_FG);
+        }
         return stale;
     }
 
@@ -1584,248 +1608,6 @@ public final class Gui {
         resetProgressBar();
     }
 
-    /**
-     * The original color scheme.
-     */
-    static void setClassicColorScheme() {
-        palette = Palette.CLASSIC;
-        restoreDefaultPlotBackground();
-        
-        // configure the bw series colors
-        bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        bwRenderer.setSeriesPaint(0, Color.YELLOW);     // write
-        bwRenderer.setSeriesPaint(1, Color.WHITE);      // w avg
-        bwRenderer.setSeriesPaint(2, Color.GREEN);      // w max
-        bwRenderer.setSeriesPaint(3, Color.RED);        // w min
-        bwRenderer.setSeriesPaint(4, Color.LIGHT_GRAY); // read
-        bwRenderer.setSeriesPaint(5, Color.ORANGE);     // r avg
-        bwRenderer.setSeriesPaint(6, Color.GREEN.darker()); // r max
-        bwRenderer.setSeriesPaint(7, Color.RED.darker());   // r min
-        
-        // configure the access time ms colors
-        msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        msRenderer.setSeriesPaint(0, Color.CYAN);       // w acc
-        msRenderer.setSeriesPaint(1, Color.MAGENTA);    // r acc
-    }
-
-    /**
-     * Here is my blue green scheme. can be improved.
-     */
-    static void setBlueGreenScheme() {
-        System.out.println("setting blue green palette");
-        palette = Palette.BLUE_GREEN;
-        restoreDefaultPlotBackground();
-        
-        // configure the bw series colors
-        
-        // these are bluish
-        bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        bwRenderer.setSeriesPaint(0, new Color(0x7C9CDC)); // write
-        bwRenderer.setSeriesPaint(1, new Color(0x2A5CB0)); // w avg
-        bwRenderer.setSeriesPaint(2, new Color(0xBCD2EF)); // w max
-        bwRenderer.setSeriesPaint(3, new Color(0xBFD5EA)); // w min
-        
-        // these are green
-        bwRenderer.setSeriesPaint(4, new Color(0xAACC00)); // read
-        bwRenderer.setSeriesPaint(5, new Color(0x008080)); // r avg
-        bwRenderer.setSeriesPaint(6, new Color(0x6B8E23)); // r max
-        bwRenderer.setSeriesPaint(7, new Color(0x228B22)); // r min
-        
-        // configure the access time ms colors
-        msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        msRenderer.setSeriesPaint(0, new Color(0x7C9CDC)); // w acc
-        msRenderer.setSeriesPaint(1, new Color(0xAACC00)); // r acc
-    }
-    
-    /**
-     * Cool color scheme proposed by Bard
-     */    
-    static void setCoolColorScheme() {
-        System.out.println("setting cool palette");
-        palette = Palette.BARD_COOL;
-        restoreDefaultPlotBackground();
-        
-        // configure the bw series colors
-        bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        bwRenderer.setSeriesPaint(0, new Color(0x54a0ff)); // write
-        bwRenderer.setSeriesPaint(1, new Color(0x808080)); // w avg
-        bwRenderer.setSeriesPaint(2, new Color(0x4CAF50)); // w max
-        bwRenderer.setSeriesPaint(3, new Color(0xFF5722)); // w min
-        bwRenderer.setSeriesPaint(4, new Color(0x00BCD4)); // read
-        bwRenderer.setSeriesPaint(5, new Color(0x9E9E9E)); // r avg
-        bwRenderer.setSeriesPaint(6, new Color(0x66BB6A)); // r max
-        bwRenderer.setSeriesPaint(7, new Color(0xF44336)); // r min
-        
-        // configure the access time ms colors
-        msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        msRenderer.setSeriesPaint(0, new Color(0x54a0ff)); // w acc
-        msRenderer.setSeriesPaint(1, new Color(0x00BCD4)); // r acc
-    }
-    
-
-    static void setWarmColorScheme() {
-        System.out.println("setting warm palette");
-        palette = Palette.BARD_WARM;
-        restoreDefaultPlotBackground();
-        
-        // configure the bw series colors
-        bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        bwRenderer.setSeriesPaint(0, new Color(0xFFC107)); // write
-        bwRenderer.setSeriesPaint(1, new Color(0xEBEBEB)); // w avg
-        bwRenderer.setSeriesPaint(2, new Color(0x4CAF50)); // w max
-        bwRenderer.setSeriesPaint(3, new Color(0xFF5722)); // w min
-        bwRenderer.setSeriesPaint(4, new Color(0xE91E63)); // read
-        bwRenderer.setSeriesPaint(5, new Color(0xD3D3D3)); // r avg
-        bwRenderer.setSeriesPaint(6, new Color(0x66BB6A)); // r max
-        bwRenderer.setSeriesPaint(7, new Color(0xF44336)); // r min
-        
-        // configure the access time ms colors
-        msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        msRenderer.setSeriesPaint(0, new Color(0xFFC107)); // w acc
-        msRenderer.setSeriesPaint(1, new Color(0xE91E63)); // r acc
-    }
-
-    /**
-     * Beta palette — matches the Python/matplotlib dark-background look.
-     * Dark plot area (#1c1c1c), orange write series, cyan read series.
-     */
-    static void setBetaColorScheme() {
-        System.out.println("setting beta palette");
-        palette = Palette.BETA;
-
-        XYPlot plot = (XYPlot) chart.getPlot();
-        plot.setBackgroundPaint(new Color(0x1C1C1C));
-        plot.setOutlinePaint(new Color(0x555555));
-        plot.setDomainGridlinePaint(new Color(0x3A3A3A));
-        plot.setRangeGridlinePaint(new Color(0x3A3A3A));
-
-        // JFreeChart 1.0.x resets the BasicStroke dash phase per segment (each segment is a
-        // separate Line2D draw call). At high sample density (~2.5 px/segment when 200 samples
-        // fill ~500 px) a long "8 on / 4 off" dash appears solid because the segment ends before
-        // the first gap. A short "on" phase (2 px) shorter than the segment length forces a
-        // visible break at the tail of every segment, producing a dotted appearance at any density.
-        Stroke avgDot = new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
-                10.0f, new float[]{2.0f, 6.0f}, 0.0f);
-
-        // configure the bw series colors
-        bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        bwRenderer.setSeriesPaint(0, new Color(0xE07B39));            // write BW
-        bwRenderer.setSeriesPaint(1, new Color(189, 176, 138, 200)); // w avg — alpha-softened, dotted
-        bwRenderer.setSeriesStroke(1, avgDot);
-        bwRenderer.setSeriesPaint(2, new Color(0xF5A623));            // w max
-        bwRenderer.setSeriesPaint(3, new Color(0xC0623A));            // w min
-        bwRenderer.setSeriesPaint(4, new Color(0x4FC3F7));            // read BW
-        bwRenderer.setSeriesPaint(5, new Color(160, 216, 239, 200)); // r avg — alpha-softened, dotted
-        bwRenderer.setSeriesStroke(5, avgDot);
-        bwRenderer.setSeriesPaint(6, new Color(0x81D4FA));            // r max
-        bwRenderer.setSeriesPaint(7, new Color(0x0288D1));            // r min
-
-        // configure the access time ms colors
-        msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        msRenderer.setSeriesPaint(0, new Color(0xE07B39)); // w acc
-        msRenderer.setSeriesPaint(1, new Color(0x4FC3F7)); // r acc
-    }
-
-    /**
-     * Old Glory palette — red, white &amp; blue on a clean white plot.
-     * Write series in reds; trend lines match their sample line (dashed);
-     * read series in Old Glory Blue (#3C3B6E).
-     */
-    static void setOldGloryColorScheme() {
-        System.out.println("Setting Old Glory palette");
-        palette = Palette.OLD_GLORY;
-
-        // Old Glory is a fully-branded palette with its own chart identity: the ENTIRE chart
-        // canvas (outer background where title and legend sit, plus the inner plot area) is white.
-        // This "white paper" approach ensures flagBlue title/axes text is always readable regardless
-        // of the surrounding LAF, and the chart has a consistent look whether selected at runtime
-        // or restored on startup.  updateChartPanelStyle() restores the LAF-derived bg on palette switch.
-        chart.setBackgroundPaint(Color.WHITE);
-        XYPlot plot = (XYPlot) chart.getPlot();
-        plot.setBackgroundPaint(Color.WHITE);
-        plot.setOutlinePaint(new Color(0x999999));
-        plot.setDomainGridlinePaint(new Color(0xE0E0E0)); // subtle light gray grid
-        plot.setRangeGridlinePaint(new Color(0xE0E0E0));
-        // Legend: white background with light gray border to match the chart canvas
-        if (chart.getLegend() != null) {
-            chart.getLegend().setBackgroundPaint(Color.WHITE);
-            chart.getLegend().setFrame(new BlockBorder(new Color(0xCCCCCC)));
-        }
-
-
-        // ---- series colors — identical in every theme ----
-        // Write series: crimson sample, crimson dashed trend, lighter/darker reds for max/min
-        // Read  series: Old Glory Blue sample, blue dashed trend, lighter/darker blues for max/min
-        Color crimson     = new Color(0xDC143C); // Write sample — full opacity
-        Color flagBlue    = new Color(0x3C3B6E); // Read sample  — Old Glory Blue (Pantone 282)
-        // Semi-transparent variants for trend lines: same hue, clearly lighter than solid sample
-        Color crimsonFade = new Color(0xDC, 0x14, 0x3C, 170);
-        Color blueFade    = new Color(0x3C, 0x3B, 0x6E, 170);
-
-        Stroke bold = new BasicStroke(1.5f);
-        Stroke dash = new BasicStroke(1.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
-                10.0f, new float[]{2.0f, 6.0f}, 0.0f);
-
-        bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        bwRenderer.setSeriesPaint(0, crimson);              // write sample  — crimson
-        bwRenderer.setSeriesStroke(0, bold);
-        bwRenderer.setSeriesPaint(1, crimsonFade);          // write trend   — crimson, semi-transparent + dashed
-        bwRenderer.setSeriesStroke(1, dash);
-        bwRenderer.setSeriesPaint(2, new Color(0xFF6B6B));  // write max     — light red
-        bwRenderer.setSeriesPaint(3, new Color(0x8B0000));  // write min     — dark red
-        bwRenderer.setSeriesPaint(4, flagBlue);             // read sample   — flag blue
-        bwRenderer.setSeriesStroke(4, bold);
-        bwRenderer.setSeriesPaint(5, blueFade);             // read trend    — flag blue, semi-transparent + dashed
-        bwRenderer.setSeriesStroke(5, dash);
-        bwRenderer.setSeriesPaint(6, new Color(0x7878B4));  // read max      — lighter blue
-        bwRenderer.setSeriesPaint(7, new Color(0x1A1940));  // read min      — darker navy
-
-        // configure the access time ms colors
-        msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        msRenderer.setSeriesPaint(0, crimson);   // w acc
-        msRenderer.setSeriesPaint(1, flagBlue);  // r acc
-
-        // Chart background is always white; text is always Old Glory Blue (readable on white).
-        if (chart != null) chart.getTitle().setPaint(flagBlue);
-        if (bwAxis != null) {
-            bwAxis.setLabelPaint(flagBlue);
-            bwAxis.setTickLabelPaint(flagBlue);
-            bwAxis.setTickMarkPaint(flagBlue);
-        }
-        if (msAxis != null) {
-            msAxis.setLabelPaint(flagBlue);
-            msAxis.setTickLabelPaint(flagBlue);
-            msAxis.setTickMarkPaint(flagBlue);
-        }
-        if (sampleAxis != null) {
-            sampleAxis.setLabelPaint(flagBlue);
-            sampleAxis.setTickLabelPaint(flagBlue);
-            sampleAxis.setTickMarkPaint(flagBlue);
-        }
-        if (chart != null && chart.getLegend() != null) chart.getLegend().setItemPaint(flagBlue);
-    }
-
-    /**
-     * Restores plot background to the default LAF-driven style.
-     * Called when switching away from the Beta palette.
-     */
-    static void restoreDefaultPlotBackground() {
-        if (chart == null) return;
-        XYPlot plot = (XYPlot) chart.getPlot();
-        plot.setBackgroundPaint(Color.DARK_GRAY.darker());
-        plot.setOutlinePaint(Color.WHITE);
-        // JFreeChart 1.x does not accept null paint — restore to a neutral grid color
-        plot.setDomainGridlinePaint(new Color(80, 80, 80));
-        plot.setRangeGridlinePaint(new Color(80, 80, 80));
-        // clear any per-series custom strokes (Beta dashed avg, Old Glory bold sample)
-        if (bwRenderer != null) {
-            bwRenderer.setSeriesStroke(0, null); // w sample — back to default
-            bwRenderer.setSeriesStroke(1, null); // w avg
-            bwRenderer.setSeriesStroke(4, null); // r sample — back to default
-            bwRenderer.setSeriesStroke(5, null); // r avg
-        }
-    }
-    
     public static void browseLocation() {
         selFrame = new SelectDriveFrame();
         if (App.locationDir != null && App.locationDir.exists()) {
