@@ -67,7 +67,7 @@ public final class Gui {
         BARD_COOL("Bard Cool"),
         BARD_WARM("Bard Warm"),
         BETA("Beta"),
-        FOURTH_OF_JULY("4th of July");
+        PATRIOT("Iron Patriot");
 
         private final String displayName;
 
@@ -85,7 +85,7 @@ public final class Gui {
                 case BARD_COOL  -> setCoolColorScheme();
                 case BARD_WARM  -> setWarmColorScheme();
                 case BETA           -> setBetaColorScheme();
-                case FOURTH_OF_JULY -> setFourthOfJulyColorScheme();
+                case PATRIOT -> setFourthOfJulyColorScheme();
             }
         }
     }
@@ -1548,7 +1548,7 @@ public final class Gui {
      */
     static void setFourthOfJulyColorScheme() {
         System.out.println("setting 4th of July palette");
-        palette = Palette.FOURTH_OF_JULY;
+        palette = Palette.PATRIOT;
 
         XYPlot plot = (XYPlot) chart.getPlot();
         plot.setBackgroundPaint(new Color(0x0A1628));   // deep navy night sky
