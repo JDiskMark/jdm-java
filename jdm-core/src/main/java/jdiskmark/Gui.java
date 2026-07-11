@@ -67,7 +67,7 @@ public final class Gui {
         BARD_COOL("Bard Cool"),
         BARD_WARM("Bard Warm"),
         BETA("Beta"),
-        PATRIOT("Iron Patriot");
+        OLD_GLORY("Old Glory");
 
         private final String displayName;
 
@@ -85,7 +85,7 @@ public final class Gui {
                 case BARD_COOL  -> setCoolColorScheme();
                 case BARD_WARM  -> setWarmColorScheme();
                 case BETA           -> setBetaColorScheme();
-                case PATRIOT -> setFourthOfJulyColorScheme();
+                case OLD_GLORY -> setOldGloryColorScheme();
             }
         }
     }
@@ -94,7 +94,7 @@ public final class Gui {
         DARK("Dark"),
         LIGHT("Light"),
         DARCULA("Darcula"),
-        PATRIOT("Iron Patriot");
+        OLD_GLORY("Old Glory");
 
         private final String displayName;
 
@@ -110,7 +110,7 @@ public final class Gui {
                 case DARK    -> goDarkTheme();
                 case LIGHT   -> goLightTheme();
                 case DARCULA -> goDarculaTheme();
-                case PATRIOT -> goPatriotTheme();
+                case OLD_GLORY -> goOldGloryTheme();
             }
         }
 
@@ -123,7 +123,7 @@ public final class Gui {
                 case LIGHT   -> isMac ? "com.formdev.flatlaf.themes.FlatMacLightLaf"
                                      : "com.formdev.flatlaf.FlatLightLaf";
                 case DARCULA -> "com.formdev.flatlaf.FlatDarculaLaf";
-                case PATRIOT -> isMac ? "com.formdev.flatlaf.themes.FlatMacDarkLaf"
+                case OLD_GLORY -> isMac ? "com.formdev.flatlaf.themes.FlatMacDarkLaf"
                                      : "com.formdev.flatlaf.FlatDarkLaf";
             };
         }
@@ -230,8 +230,8 @@ public final class Gui {
 
     /** Updates badge colors to match the current window theme. */
     static void updateBadgeThemeColors() {
-        if (theme == Theme.PATRIOT) {
-            // Iron Patriot: white background, alternating crimson / flag-blue text
+        if (theme == Theme.OLD_GLORY) {
+            // Old Glory: white background, alternating crimson / flag-blue text
             BADGE_DEFAULT_BG = new Color(0xEEF2FF); // pale lavender-blue background
             BADGE_AMBER_BG   = new Color(0xB22234); // stale → crimson background
             BADGE_STALE_FG   = Color.WHITE;         // stale foreground on crimson
@@ -310,13 +310,13 @@ public final class Gui {
     static Color foregroundColor;
     
     /**
-     * Removes UIManager overrides set by {@link #configurePatriotLaf()}.
-     * Call this AFTER {@code UIManager.setLookAndFeel()} in every non-Patriot
+     * Removes UIManager overrides set by {@link #configureOldGloryLaf()}.
+     * Call this AFTER {@code UIManager.setLookAndFeel()} in every non-OldGlory
      * configure method so the new LAF's own defaults take over.
      */
-    private static void clearPatriotOverrides() {
+    private static void clearOldGloryOverrides() {
         // Clear the global FlatLaf variable overrides (@accentColor, @background,
-        // @foreground, TitlePane.foreground) that configurePatriotLaf() injects.
+        // @foreground, TitlePane.foreground) that configureOldGloryLaf() injects.
         // Without this, FlatDarkLaf/FlatLightLaf re-use the crimson @accentColor
         // and all @accentColor-derived components (progress bar, sliders, etc.) stay red.
         FlatLaf.setGlobalExtraDefaults(null);
@@ -339,7 +339,7 @@ public final class Gui {
 
     public static void configureDarkLaf() {
         try {
-            FlatLaf.setGlobalExtraDefaults(null); // clear any accent override from Patriot theme
+            FlatLaf.setGlobalExtraDefaults(null); // clear any accent override from Old Glory theme
             if (App.isWindows()) {
                 UIManager.setLookAndFeel(new FlatDarkLaf());
             } else if (App.isMacOs()) {
@@ -347,7 +347,7 @@ public final class Gui {
             } else if (App.isLinux()) {
                 UIManager.setLookAndFeel(new FlatDarkLaf());
             }
-            clearPatriotOverrides();
+            clearOldGloryOverrides();
             // Use FlatLaf custom window decorations (unified title bar + menu bar) on
             // non-macOS only. On macOS the native title bar is kept so the system menu
             // bar at the top of the screen works correctly.
@@ -371,9 +371,9 @@ public final class Gui {
     
     public static void configureDarculaLaf() {
         try {
-            FlatLaf.setGlobalExtraDefaults(null); // clear any accent override from Patriot theme
+            FlatLaf.setGlobalExtraDefaults(null); // clear any accent override from Old Glory theme
             UIManager.setLookAndFeel(new FlatDarculaLaf());
-            clearPatriotOverrides();
+            clearOldGloryOverrides();
             if (!App.isMacOs()) {
                 javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
                 javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
@@ -394,7 +394,7 @@ public final class Gui {
     
     public static void configureLightLaf() {
         try {
-            FlatLaf.setGlobalExtraDefaults(null); // clear any accent override from Patriot theme
+            FlatLaf.setGlobalExtraDefaults(null); // clear any accent override from Old Glory theme
             if (App.isWindows()) {
                 UIManager.setLookAndFeel(new FlatLightLaf());
             } else if (App.isMacOs()) {
@@ -402,7 +402,7 @@ public final class Gui {
             } else if (App.isLinux()) {
                 UIManager.setLookAndFeel(new FlatLightLaf());
             }
-            clearPatriotOverrides();
+            clearOldGloryOverrides();
             if (!App.isMacOs()) {
                 javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
                 javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
@@ -422,7 +422,7 @@ public final class Gui {
     }
     
     /**
-     * Iron Patriot theme — FlatLight base with patriotic red + blue accents:
+     * Old Glory theme — FlatLight base with patriotic red + blue accents:
      * <ul>
      *   <li>Old Glory Red (#B22234) as {@code @accentColor}: checkboxes,
      *       radio buttons, slider thumb, focus rings.</li>
@@ -434,7 +434,7 @@ public final class Gui {
      *   <li>Red tab underline and progress bar complete the palette.</li>
      * </ul>
      */
-    public static void configurePatriotLaf() {
+    public static void configureOldGloryLaf() {
         try {
             // All three global vars must be set before UIManager.setLookAndFeel so
             // FlatLaf can derive every computed component color from them correctly.
@@ -506,9 +506,9 @@ public final class Gui {
         if (progressBar != null) progressBar.setForeground(UIManager.getColor("ProgressBar.foreground"));
     }
 
-    /** Iron Patriot theme: crimson-accented FlatLight + auto-applies PATRIOT graph palette. */
-    public static void goPatriotTheme() {
-        configurePatriotLaf();
+    /** Old Glory theme: crimson-accented FlatLight + auto-applies Old Glory graph palette. */
+    public static void goOldGloryTheme() {
+        configureOldGloryLaf();
         FlatLaf.updateUI();
         updateChartPanelStyle();
         // Force title bar text to navy via root-pane client property
@@ -519,10 +519,10 @@ public final class Gui {
         // Set progress bar to Old Glory Red directly — UIManager override alone is unreliable
         // across FlatLaf re-installations (FlatProgressBarUI may cache the color independently).
         if (progressBar != null) progressBar.setForeground(new Color(0xB22234));
-        // Auto-apply the matching Patriot graph palette
+        // Auto-apply the matching Old Glory graph palette
         if (chart != null) {
-            palette = Palette.PATRIOT;
-            Palette.PATRIOT.apply();
+            palette = Palette.OLD_GLORY;
+            Palette.OLD_GLORY.apply();
         }
     }
     
@@ -567,7 +567,7 @@ public final class Gui {
             case DARK    -> configureDarkLaf();
             case LIGHT   -> configureLightLaf();
             case DARCULA -> configureDarculaLaf();
-            case PATRIOT -> configurePatriotLaf();
+            case OLD_GLORY -> configureOldGloryLaf();
         }
         
         mainFrame = new MainFrame();
@@ -594,23 +594,23 @@ public final class Gui {
         selFrame = new SelectDriveFrame();
 
         // Establish chart base style for the current LAF *before* loading the saved palette.
-        // Without this, any palette applied in loadPropertiesConfig() (e.g. Iron Patriot
+        // Without this, any palette applied in loadPropertiesConfig() (e.g. Old Glory
         // in Dark mode) would run against an uninitialized chart outer background and
         // a null foregroundColor, producing invisible or clashing colors on startup.
         updateChartPanelStyle();
 
         mainFrame.loadPropertiesConfig();
 
-        // PATRIOT-only: title bar text must be navy blue (FlatLaf client property).
-        if (theme == Theme.PATRIOT) {
+        // OLD_GLORY-only: title bar text must be navy blue (FlatLaf client property).
+        if (theme == Theme.OLD_GLORY) {
             mainFrame.getRootPane().putClientProperty(
                 "JRootPane.titleBarForeground", new Color(0x3C3B6E));
         }
         mainFrame.setLocationRelativeTo(null);
         progressBar = mainFrame.getProgressBar();
-        // Apply PATRIOT progress bar color directly on startup (cannot be set before this line
+        // Apply OLD_GLORY progress bar color directly on startup (cannot be set before this line
         // because progressBar is null until mainFrame.getProgressBar() is called above).
-        if (theme == Theme.PATRIOT && progressBar != null) {
+        if (theme == Theme.OLD_GLORY && progressBar != null) {
             progressBar.setForeground(new Color(0xB22234)); // Old Glory Red
         }
 
@@ -1727,15 +1727,15 @@ public final class Gui {
     }
 
     /**
-     * Iron Patriot palette — red, white &amp; blue on a clean white plot.
+     * Old Glory palette — red, white &amp; blue on a clean white plot.
      * Write series in reds; trend lines match their sample line (dashed);
      * read series in Old Glory Blue (#3C3B6E).
      */
-    static void setFourthOfJulyColorScheme() {
-        System.out.println("setting 4th of July palette");
-        palette = Palette.PATRIOT;
+    static void setOldGloryColorScheme() {
+        System.out.println("Setting Old Glory palette");
+        palette = Palette.OLD_GLORY;
 
-        // Iron Patriot is a fully-branded palette with its own chart identity: the ENTIRE chart
+        // Old Glory is a fully-branded palette with its own chart identity: the ENTIRE chart
         // canvas (outer background where title and legend sit, plus the inner plot area) is white.
         // This "white paper" approach ensures flagBlue title/axes text is always readable regardless
         // of the surrounding LAF, and the chart has a consistent look whether selected at runtime
@@ -1817,7 +1817,7 @@ public final class Gui {
         // JFreeChart 1.x does not accept null paint — restore to a neutral grid color
         plot.setDomainGridlinePaint(new Color(80, 80, 80));
         plot.setRangeGridlinePaint(new Color(80, 80, 80));
-        // clear any per-series custom strokes (Beta dashed avg, 4th of July bold sample)
+        // clear any per-series custom strokes (Beta dashed avg, Old Glory bold sample)
         if (bwRenderer != null) {
             bwRenderer.setSeriesStroke(0, null); // w sample — back to default
             bwRenderer.setSeriesStroke(1, null); // w avg

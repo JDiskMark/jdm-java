@@ -603,6 +603,8 @@ public class App {
         GcDetector.gcHintsEnabled = Boolean.parseBoolean(value);
 
         value = p.getProperty("theme", Gui.theme.name());
+        // Backward compat: "PATRIOT" was renamed to "OLD_GLORY" in v0.8.0.
+        if ("PATRIOT".equals(value)) value = "OLD_GLORY";
         try {
             Gui.theme = Gui.Theme.valueOf(value);
         } catch (IllegalArgumentException e) {
@@ -613,6 +615,8 @@ public class App {
         }
 
         value = p.getProperty("palette", String.valueOf(Gui.palette));
+        // Backward compat: "PATRIOT" was renamed to "OLD_GLORY" in v0.8.0.
+        if ("PATRIOT".equals(value)) value = "OLD_GLORY";
         Gui.palette = Gui.Palette.valueOf(value);
 
         value = p.getProperty("renderMode", rmOption.name());
