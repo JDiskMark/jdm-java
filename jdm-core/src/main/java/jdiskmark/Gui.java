@@ -52,9 +52,9 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.HorizontalAlignment;
-import org.jfree.ui.RectangleEdge;
-import org.jfree.ui.RectangleInsets;
+import org.jfree.chart.ui.HorizontalAlignment;
+import org.jfree.chart.ui.RectangleEdge;
+import org.jfree.chart.ui.RectangleInsets;
 
 /**
  * Store GUI references for easy access
@@ -1408,7 +1408,7 @@ public final class Gui {
         restoreDefaultPlotBackground();
         
         // configure the bw series colors
-        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
         bwRenderer.setSeriesPaint(0, Color.YELLOW);     // write
         bwRenderer.setSeriesPaint(1, Color.WHITE);      // w avg
         bwRenderer.setSeriesPaint(2, Color.GREEN);      // w max
@@ -1419,7 +1419,7 @@ public final class Gui {
         bwRenderer.setSeriesPaint(7, Color.RED.darker());   // r min
         
         // configure the access time ms colors
-        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
         msRenderer.setSeriesPaint(0, Color.CYAN);       // w acc
         msRenderer.setSeriesPaint(1, Color.MAGENTA);    // r acc
     }
@@ -1435,7 +1435,7 @@ public final class Gui {
         // configure the bw series colors
         
         // these are bluish
-        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
         bwRenderer.setSeriesPaint(0, new Color(0x7C9CDC)); // write
         bwRenderer.setSeriesPaint(1, new Color(0x2A5CB0)); // w avg
         bwRenderer.setSeriesPaint(2, new Color(0xBCD2EF)); // w max
@@ -1448,7 +1448,7 @@ public final class Gui {
         bwRenderer.setSeriesPaint(7, new Color(0x228B22)); // r min
         
         // configure the access time ms colors
-        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
         msRenderer.setSeriesPaint(0, new Color(0x7C9CDC)); // w acc
         msRenderer.setSeriesPaint(1, new Color(0xAACC00)); // r acc
     }
@@ -1462,7 +1462,7 @@ public final class Gui {
         restoreDefaultPlotBackground();
         
         // configure the bw series colors
-        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
         bwRenderer.setSeriesPaint(0, new Color(0x54a0ff)); // write
         bwRenderer.setSeriesPaint(1, new Color(0x808080)); // w avg
         bwRenderer.setSeriesPaint(2, new Color(0x4CAF50)); // w max
@@ -1473,7 +1473,7 @@ public final class Gui {
         bwRenderer.setSeriesPaint(7, new Color(0xF44336)); // r min
         
         // configure the access time ms colors
-        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
         msRenderer.setSeriesPaint(0, new Color(0x54a0ff)); // w acc
         msRenderer.setSeriesPaint(1, new Color(0x00BCD4)); // r acc
     }
@@ -1485,7 +1485,7 @@ public final class Gui {
         restoreDefaultPlotBackground();
         
         // configure the bw series colors
-        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
         bwRenderer.setSeriesPaint(0, new Color(0xFFC107)); // write
         bwRenderer.setSeriesPaint(1, new Color(0xEBEBEB)); // w avg
         bwRenderer.setSeriesPaint(2, new Color(0x4CAF50)); // w max
@@ -1496,7 +1496,7 @@ public final class Gui {
         bwRenderer.setSeriesPaint(7, new Color(0xF44336)); // r min
         
         // configure the access time ms colors
-        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
         msRenderer.setSeriesPaint(0, new Color(0xFFC107)); // w acc
         msRenderer.setSeriesPaint(1, new Color(0xE91E63)); // r acc
     }
@@ -1524,7 +1524,7 @@ public final class Gui {
                 10.0f, new float[]{2.0f, 6.0f}, 0.0f);
 
         // configure the bw series colors
-        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
         bwRenderer.setSeriesPaint(0, new Color(0xE07B39));            // write BW
         bwRenderer.setSeriesPaint(1, new Color(189, 176, 138, 200)); // w avg — alpha-softened, dotted
         bwRenderer.setSeriesStroke(1, avgDot);
@@ -1537,7 +1537,7 @@ public final class Gui {
         bwRenderer.setSeriesPaint(7, new Color(0x0288D1));            // r min
 
         // configure the access time ms colors
-        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
         msRenderer.setSeriesPaint(0, new Color(0xE07B39)); // w acc
         msRenderer.setSeriesPaint(1, new Color(0x4FC3F7)); // r acc
     }
@@ -1560,7 +1560,7 @@ public final class Gui {
         Stroke bold = new BasicStroke(2.5f);
         Stroke dash = new BasicStroke(1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
                 10.0f, new float[]{2.0f, 6.0f}, 0.0f);
-        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
         bwRenderer.setSeriesPaint(0, new Color(0xDC143C)); // write  — crimson
         bwRenderer.setSeriesStroke(0, bold);
         bwRenderer.setSeriesPaint(1, new Color(0xE8E8E8)); // w avg  — white/silver, dashed
@@ -1575,7 +1575,7 @@ public final class Gui {
         bwRenderer.setSeriesPaint(7, new Color(0x003366)); // r min  — navy
 
         // configure the access time ms colors
-        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
         msRenderer.setSeriesPaint(0, new Color(0xDC143C)); // w acc — crimson
         msRenderer.setSeriesPaint(1, new Color(0x1E90FF)); // r acc — dodger blue
     }
