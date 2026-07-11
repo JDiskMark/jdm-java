@@ -41,7 +41,7 @@
         <release.dir>${pkg.name}-${msi.version}</release.dir>
 
         <!-- JVM options passed to jpackage for all installer types -->
-        <jvm.run.options>-XX:+UseZGC</jvm.run.options>
+        <jvm.run.options>--enable-native-access=ALL-UNNAMED -XX:+UseZGC</jvm.run.options>
 
         <!-- App icon selection — one file per platform, relative to each dist module.
              Override at build time to switch icons (must point to an existing file), e.g.:

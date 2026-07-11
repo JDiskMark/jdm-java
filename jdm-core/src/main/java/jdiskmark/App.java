@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 import javax.swing.SwingUtilities;
@@ -226,12 +227,19 @@ public class App {
         return DATE_FORMATTER.format(LocalDateTime.now()) + ": " + message;
     }
 
+    private static void configureLogging() {
+        try (InputStream is = App.class.getResourceAsStream("/logging.properties")) {
+            if (is != null) LogManager.getLogManager().readConfiguration(is);
+        } catch (IOException e) {
+            // non-fatal — fall back to JVM defaults
+        }
+    }
+
     /**
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-
-        // no arguments = gui mode, otherwise cmd line interface
+        configureLogging();
         mode = (args.length == 0) ? Mode.GUI : Mode.CLI;
         int exitCode = 0;
 
