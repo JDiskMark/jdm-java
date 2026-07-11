@@ -315,6 +315,11 @@ public final class Gui {
      * configure method so the new LAF's own defaults take over.
      */
     private static void clearPatriotOverrides() {
+        // Clear the global FlatLaf variable overrides (@accentColor, @background,
+        // @foreground, TitlePane.foreground) that configurePatriotLaf() injects.
+        // Without this, FlatDarkLaf/FlatLightLaf re-use the crimson @accentColor
+        // and all @accentColor-derived components (progress bar, sliders, etc.) stay red.
+        FlatLaf.setGlobalExtraDefaults(null);
         UIManager.put("Table.selectionBackground",  null);
         UIManager.put("Table.selectionForeground",  null);
         UIManager.put("List.selectionBackground",   null);
@@ -322,13 +327,14 @@ public final class Gui {
         UIManager.put("Tree.selectionBackground",   null);
         UIManager.put("Tree.selectionForeground",   null);
         UIManager.put("TabbedPane.underlineColor",  null);
-        UIManager.put("ProgressBar.foreground",     null);
         // scrollbar
         UIManager.put("ScrollBar.thumb",            null);
         UIManager.put("ScrollBar.thumbHover",       null);
         UIManager.put("ScrollBar.thumbPressed",     null);
         // title pane
         UIManager.put("TitlePane.foreground",       null);
+        // Note: progress bar foreground is reset via direct setForeground() in each go*Theme()
+        // rather than via UIManager because FlatProgressBarUI may cache the color independently.
     }
 
     public static void configureDarkLaf() {
@@ -457,11 +463,9 @@ public final class Gui {
             UIManager.put("Tree.selectionBackground",   flagBlue);
             UIManager.put("Tree.selectionForeground",   Color.WHITE);
             UIManager.put("TabbedPane.underlineColor",  glorRed);
-            UIManager.put("ProgressBar.foreground",     glorRed);
             UIManager.put("ScrollBar.thumb",            flagBlue);
             UIManager.put("ScrollBar.thumbHover",       new Color(0x2B2A52)); // darker on hover
             UIManager.put("ScrollBar.thumbPressed",     new Color(0x1A1A38)); // darkest on press
-            // title bar text color (FlatLaf embedded title pane)
             UIManager.put("TitlePane.foreground",       flagBlue);
         } catch (UnsupportedLookAndFeelException e) {
             try {
@@ -480,6 +484,8 @@ public final class Gui {
         FlatLaf.updateUI();
         updateChartPanelStyle();
         if (mainFrame != null) mainFrame.getRootPane().putClientProperty("JRootPane.titleBarForeground", null);
+        // Reset progress bar to current LAF default (direct component call, bypasses UIManager caching)
+        if (progressBar != null) progressBar.setForeground(UIManager.getColor("ProgressBar.foreground"));
     }
     
     // switch to darcula theme
@@ -488,6 +494,7 @@ public final class Gui {
         FlatLaf.updateUI();
         updateChartPanelStyle();
         if (mainFrame != null) mainFrame.getRootPane().putClientProperty("JRootPane.titleBarForeground", null);
+        if (progressBar != null) progressBar.setForeground(UIManager.getColor("ProgressBar.foreground"));
     }
     
     // switch to light theme
@@ -496,6 +503,7 @@ public final class Gui {
         FlatLaf.updateUI();
         updateChartPanelStyle();
         if (mainFrame != null) mainFrame.getRootPane().putClientProperty("JRootPane.titleBarForeground", null);
+        if (progressBar != null) progressBar.setForeground(UIManager.getColor("ProgressBar.foreground"));
     }
 
     /** Iron Patriot theme: crimson-accented FlatLight + auto-applies PATRIOT graph palette. */
@@ -508,6 +516,9 @@ public final class Gui {
             mainFrame.getRootPane().putClientProperty(
                 "JRootPane.titleBarForeground", new Color(0x3C3B6E));
         }
+        // Set progress bar to Old Glory Red directly — UIManager override alone is unreliable
+        // across FlatLaf re-installations (FlatProgressBarUI may cache the color independently).
+        if (progressBar != null) progressBar.setForeground(new Color(0xB22234));
         // Auto-apply the matching Patriot graph palette
         if (chart != null) {
             palette = Palette.PATRIOT;
@@ -591,6 +602,11 @@ public final class Gui {
         }
         mainFrame.setLocationRelativeTo(null);
         progressBar = mainFrame.getProgressBar();
+        // Apply PATRIOT progress bar color directly on startup (cannot be set before this line
+        // because progressBar is null until mainFrame.getProgressBar() is called above).
+        if (theme == Theme.PATRIOT && progressBar != null) {
+            progressBar.setForeground(new Color(0xB22234)); // Old Glory Red
+        }
 
         // On macOS, replace the default system-provided About dialog (which shows
         // the Java runtime info) with our own branded dialog.
