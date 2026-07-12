@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 import javax.swing.SwingUtilities;
@@ -31,6 +32,9 @@ import jdiskmark.App.IoEngine;
 import jdiskmark.App.SectorAlignment;
 import jdiskmark.Benchmark.BenchmarkType;
 import jdiskmark.Benchmark.BlockSequence;
+
+import org.metricus.jdm.ui.Palette;
+import org.metricus.jdm.ui.Theme;
 
 /**
  * Primary class for global variables.
@@ -184,7 +188,7 @@ public class App {
     public static boolean multiFile = true;
     public static boolean autoRemoveData = true;
     public static boolean autoReset = true;
-    public static boolean directEnable = false;
+    public static boolean directEnable = true;
     public static boolean writeSyncEnable = false;
 
     // benchmark io options
@@ -226,12 +230,19 @@ public class App {
         return DATE_FORMATTER.format(LocalDateTime.now()) + ": " + message;
     }
 
+    private static void configureLogging() {
+        try (InputStream is = App.class.getResourceAsStream("/logging.properties")) {
+            if (is != null) LogManager.getLogManager().readConfiguration(is);
+        } catch (IOException e) {
+            // non-fatal — fall back to JVM defaults
+        }
+    }
+
     /**
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-
-        // no arguments = gui mode, otherwise cmd line interface
+        configureLogging();
         mode = (args.length == 0) ? Mode.GUI : Mode.CLI;
         int exitCode = 0;
 
@@ -595,8 +606,10 @@ public class App {
         GcDetector.gcHintsEnabled = Boolean.parseBoolean(value);
 
         value = p.getProperty("theme", Gui.theme.name());
+        // Backward compat: "PATRIOT" was renamed to "OLD_GLORY" in v0.8.0.
+        if ("PATRIOT".equals(value)) value = "OLD_GLORY";
         try {
-            Gui.theme = Gui.Theme.valueOf(value);
+            Gui.theme = Theme.valueOf(value);
         } catch (IllegalArgumentException e) {
             Logger.getLogger(App.class.getName()).log(
                     Level.WARNING,
@@ -605,7 +618,21 @@ public class App {
         }
 
         value = p.getProperty("palette", String.valueOf(Gui.palette));
-        Gui.palette = Gui.Palette.valueOf(value);
+        // Backward compat: palette constants renamed in v0.8.0.
+        value = switch (value) {
+            case "BLUE_GREEN" -> "LAGOON";
+            case "BARD_COOL"  -> "MARINE";
+            case "BARD_WARM"  -> "EMBER";
+            default -> value;
+        };
+        try {
+            Gui.palette = Palette.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid palette value in properties: \"{0}\", using default: {1}",
+                    new Object[] { value, Gui.palette.name() });
+        }
 
         value = p.getProperty("renderMode", rmOption.name());
         try {
