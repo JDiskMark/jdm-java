@@ -750,7 +750,7 @@ public final class MainFrame extends javax.swing.JFrame {
         });
         optionMenu.add(showSingleOpMenuItem);
 
-        showMaxMinCheckBoxMenuItem.setSelected(true);
+        showMaxMinCheckBoxMenuItem.setSelected(false);
         showMaxMinCheckBoxMenuItem.setText("Show Max Min");
         showMaxMinCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {

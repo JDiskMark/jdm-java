@@ -8,14 +8,12 @@ import org.metricus.jdm.ui.Palette;
 import org.metricus.jdm.ui.Theme;
 import org.metricus.jdm.ui.ThemeDefinition;
 
-import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Shape;
-import java.awt.Stroke;
 import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -45,7 +43,6 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.AxisLocation;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.block.BlockBorder;
-import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.LegendItem;
 import org.jfree.chart.LegendItemCollection;
 import org.jfree.chart.LegendItemSource;
@@ -66,9 +63,9 @@ public final class Gui {
     
     // display settings
     public static Theme theme = Theme.DARK;
-    public static Palette palette = Palette.CLASSIC;
+    public static Palette palette = Palette.BETA;
     public static boolean showBadges = true;
-    public static boolean showMaxMin = true;
+    public static boolean showMaxMin = false;
     public static boolean showDriveAccess = true;
     public static boolean showSingleOp = false;
     // form components
@@ -236,6 +233,7 @@ public final class Gui {
     public static XYLineAndShapeRenderer msRenderer;
     public static LegendTitle writeLegend;
     public static LegendTitle readLegend;
+    public static LegendTitle combinedLegend;
     static Color foregroundColor;
 
     /**
@@ -570,13 +568,13 @@ public final class Gui {
         sampleAxis.setTickLabelPaint(foregroundColor);
         sampleAxis.setTickMarkPaint(foregroundColor);
 
-        // Style the Legend rows (Write + Read)
+        // Style all legend variants (combined single-row + split Write/Read rows)
         Color panelBg = UIManager.getColor("Panel.background");
         Color legendBg = (panelBg != null)
                 ? new Color(panelBg.getRed(), panelBg.getGreen(), panelBg.getBlue(), 200)
                 : null;
         BlockBorder legendBorder = new BlockBorder(new Color(80, 80, 80));
-        for (LegendTitle leg : new LegendTitle[]{writeLegend, readLegend}) {
+        for (LegendTitle leg : new LegendTitle[]{combinedLegend, writeLegend, readLegend}) {
             if (leg == null) continue;
             leg.setItemPaint(foregroundColor);
             if (legendBg != null) leg.setBackgroundPaint(legendBg);
@@ -702,12 +700,18 @@ public final class Gui {
             }
             return col;
         };
+        combinedLegend = new LegendTitle(plot);
+        combinedLegend.setPosition(RectangleEdge.BOTTOM);
+        combinedLegend.setMargin(new RectangleInsets(0, 0, 0, 0));
         writeLegend = new LegendTitle(writeSource);
         writeLegend.setPosition(RectangleEdge.BOTTOM);
         writeLegend.setMargin(new RectangleInsets(0, 0, 0, 0));
+        writeLegend.setVisible(false);
         readLegend = new LegendTitle(readSource);
         readLegend.setPosition(RectangleEdge.BOTTOM);
         readLegend.setMargin(new RectangleInsets(0, 0, 0, 0));
+        readLegend.setVisible(false);
+        chart.addSubtitle(combinedLegend);
         chart.addSubtitle(writeLegend);
         chart.addSubtitle(readLegend);
         
@@ -1017,8 +1021,10 @@ public final class Gui {
         msRenderer.setSeriesVisibleInLegend(0, App.hasWriteOperation() && showDriveAccess);
         msRenderer.setSeriesVisibleInLegend(1, App.hasReadOperation() && showDriveAccess);
         
-        writeLegend.setVisible(App.hasWriteOperation());
-        readLegend.setVisible(App.hasReadOperation());
+        boolean splitLegend = showMaxMin && App.hasWriteOperation() && App.hasReadOperation();
+        combinedLegend.setVisible(!splitLegend);
+        writeLegend.setVisible(splitLegend && App.hasWriteOperation());
+        readLegend.setVisible(splitLegend && App.hasReadOperation());
 
         msAxis.setVisible(showDriveAccess);
     }
@@ -1039,8 +1045,10 @@ public final class Gui {
         msRenderer.setSeriesVisibleInLegend(0, hasWrite && showDriveAccess);
         msRenderer.setSeriesVisibleInLegend(1, hasRead && showDriveAccess);
         
-        writeLegend.setVisible(hasWrite);
-        readLegend.setVisible(hasRead);
+        boolean splitLegend = showMaxMin && hasWrite && hasRead;
+        combinedLegend.setVisible(!splitLegend);
+        writeLegend.setVisible(splitLegend && hasWrite);
+        readLegend.setVisible(splitLegend && hasRead);
 
         msAxis.setVisible(showDriveAccess);
     }
@@ -1061,8 +1069,10 @@ public final class Gui {
         msRenderer.setSeriesVisibleInLegend(0, isWriteTest && showDriveAccess);
         msRenderer.setSeriesVisibleInLegend(1, isReadTest && showDriveAccess);
         
-        writeLegend.setVisible(isWriteTest);
-        readLegend.setVisible(isReadTest);
+        boolean splitLegend = showMaxMin && isWriteTest && isReadTest;
+        combinedLegend.setVisible(!splitLegend);
+        writeLegend.setVisible(splitLegend && isWriteTest);
+        readLegend.setVisible(splitLegend && isReadTest);
 
         msAxis.setVisible(showDriveAccess);
     }

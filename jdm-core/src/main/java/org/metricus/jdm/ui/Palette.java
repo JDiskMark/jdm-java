@@ -88,7 +88,7 @@ public enum Palette {
         // 4. Legend customisation (Write + Read rows)
         if (def.legendBackground() != null) {
             for (org.jfree.chart.title.LegendTitle leg :
-                    new org.jfree.chart.title.LegendTitle[]{Gui.writeLegend, Gui.readLegend}) {
+                    new org.jfree.chart.title.LegendTitle[]{Gui.combinedLegend, Gui.writeLegend, Gui.readLegend}) {
                 if (leg == null) continue;
                 leg.setBackgroundPaint(def.legendBackground());
                 if (def.legendBorderColor() != null) {
@@ -142,7 +142,7 @@ public enum Palette {
                 Gui.sampleAxis.setTickMarkPaint(tp);
             }
             for (org.jfree.chart.title.LegendTitle leg :
-                    new org.jfree.chart.title.LegendTitle[]{Gui.writeLegend, Gui.readLegend}) {
+                    new org.jfree.chart.title.LegendTitle[]{Gui.combinedLegend, Gui.writeLegend, Gui.readLegend}) {
                 if (leg != null) leg.setItemPaint(tp);
             }
         }

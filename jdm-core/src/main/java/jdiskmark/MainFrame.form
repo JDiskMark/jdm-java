@@ -298,7 +298,7 @@
             </MenuItem>
             <MenuItem class="javax.swing.JCheckBoxMenuItem" name="showMaxMinCheckBoxMenuItem">
               <Properties>
-                <Property name="selected" type="boolean" value="true"/>
+                <Property name="selected" type="boolean" value="false"/>
                 <Property name="text" type="java.lang.String" value="Show Max Min"/>
               </Properties>
               <Events>
