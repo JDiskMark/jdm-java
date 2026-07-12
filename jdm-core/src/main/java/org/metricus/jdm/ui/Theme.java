@@ -33,6 +33,35 @@ public enum Theme {
     public boolean hasLinkedPalette() {
         return this == OLD_GLORY || this == SAKURA;
     }
+
+    /**
+     * Configures the FlatLaf look-and-feel for this theme.
+     * Called once at startup <em>before</em> the main frame is created.
+     * Unlike {@link #apply()}, this does <strong>not</strong> call
+     * {@code FlatLaf.updateUI()} or repaint existing components.
+     */
+    public void configureLaf() {
+        switch (this) {
+            case DARK      -> Gui.configureDarkLaf();
+            case LIGHT     -> Gui.configureLightLaf();
+            case DARCULA   -> Gui.configureDarculaLaf();
+            case OLD_GLORY -> Gui.configureOldGloryLaf();
+            case SAKURA    -> Gui.configureSakuraLaf();
+        }
+    }
+
+    /**
+     * If this theme owns a hard-linked chart palette, applies it now.
+     * No-op for themes that rely on the user's saved palette preference.
+     */
+    public void applyLinkedPalette() {
+        switch (this) {
+            case OLD_GLORY -> ChartPalette.setOldGloryColorScheme();
+            case SAKURA    -> ChartPalette.setSakuraColorScheme();
+            default -> { /* user-selected palette loaded separately */ }
+        }
+    }
+
     /** Applies this theme's look-and-feel and updates the UI. */
     public void apply() {
         switch (this) {

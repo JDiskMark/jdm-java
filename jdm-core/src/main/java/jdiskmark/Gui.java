@@ -274,11 +274,23 @@ public final class Gui {
     static Color foregroundColor;
     
     /**
-     * Removes UIManager overrides set by {@link #configureOldGloryLaf()}.
-     * Call this AFTER {@code UIManager.setLookAndFeel()} in every non-OldGlory
-     * configure method so the new LAF's own defaults take over.
+     * Wraps a {@link Color} in {@link javax.swing.plaf.ColorUIResource} so
+     * Swing's {@code installDefaults()} recognizes it as LAF-provided and
+     * will override it on subsequent {@code updateUI()} calls.
+     * Without this, explicitly-set component colors (e.g.&nbsp;table selection
+     * background) stick across theme switches.
      */
-    private static void clearOldGloryOverrides() {
+    private static javax.swing.plaf.ColorUIResource uiColor(Color c) {
+        return new javax.swing.plaf.ColorUIResource(c);
+    }
+
+    /**
+     * Removes UIManager overrides set by themed LAF methods
+     * ({@link #configureOldGloryLaf()}, {@link #configureSakuraLaf()}).
+     * Call this AFTER {@code UIManager.setLookAndFeel()} in <em>every</em>
+     * {@code configureXxxLaf()} method so the new LAF's own defaults take over.
+     */
+    private static void clearThemeOverrides() {
         // Clear the global FlatLaf variable overrides (@accentColor, @background,
         // @foreground, TitlePane.foreground) that configureOldGloryLaf() injects.
         // Without this, FlatDarkLaf/FlatLightLaf re-use the crimson @accentColor
@@ -316,7 +328,7 @@ public final class Gui {
             } else if (App.isLinux()) {
                 UIManager.setLookAndFeel(new FlatDarkLaf());
             }
-            clearOldGloryOverrides();
+            clearThemeOverrides();
             // Use FlatLaf custom window decorations (unified title bar + menu bar) on
             // non-macOS only. On macOS the native title bar is kept so the system menu
             // bar at the top of the screen works correctly.
@@ -342,7 +354,7 @@ public final class Gui {
         try {
             FlatLaf.setGlobalExtraDefaults(null); // clear any accent override from Old Glory theme
             UIManager.setLookAndFeel(new FlatDarculaLaf());
-            clearOldGloryOverrides();
+            clearThemeOverrides();
             if (!App.isMacOs()) {
                 javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
                 javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
@@ -371,7 +383,7 @@ public final class Gui {
             } else if (App.isLinux()) {
                 UIManager.setLookAndFeel(new FlatLightLaf());
             }
-            clearOldGloryOverrides();
+            clearThemeOverrides();
             if (!App.isMacOs()) {
                 javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
                 javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
@@ -422,27 +434,28 @@ public final class Gui {
                 javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
                 javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
             }
+            clearThemeOverrides();
             // Post-install: flag blue row/tab selections + scrollbar; red accent + title.
-            UIManager.put("Table.selectionBackground",     ThemeColors.OLD_GLORY_BLUE);
-            UIManager.put("Table.selectionForeground",     Color.WHITE);
-            UIManager.put("List.selectionBackground",      ThemeColors.OLD_GLORY_BLUE);
-            UIManager.put("List.selectionForeground",      Color.WHITE);
-            UIManager.put("Tree.selectionBackground",      ThemeColors.OLD_GLORY_BLUE);
-            UIManager.put("Tree.selectionForeground",      Color.WHITE);
+            UIManager.put("Table.selectionBackground",     uiColor(ThemeColors.OLD_GLORY_BLUE));
+            UIManager.put("Table.selectionForeground",     uiColor(Color.WHITE));
+            UIManager.put("List.selectionBackground",      uiColor(ThemeColors.OLD_GLORY_BLUE));
+            UIManager.put("List.selectionForeground",      uiColor(Color.WHITE));
+            UIManager.put("Tree.selectionBackground",      uiColor(ThemeColors.OLD_GLORY_BLUE));
+            UIManager.put("Tree.selectionForeground",      uiColor(Color.WHITE));
             // Selected tab: flag blue bg + white text (same treatment as table/list selections)
-            UIManager.put("TabbedPane.selectedBackground",      ThemeColors.OLD_GLORY_BLUE);
-            UIManager.put("TabbedPane.selectedForeground",      Color.WHITE);
+            UIManager.put("TabbedPane.selectedBackground",      uiColor(ThemeColors.OLD_GLORY_BLUE));
+            UIManager.put("TabbedPane.selectedForeground",      uiColor(Color.WHITE));
             // Underline: red whether the pane is focused or not
-            UIManager.put("TabbedPane.underlineColor",          ThemeColors.OLD_GLORY_RED);
-            UIManager.put("TabbedPane.inactiveUnderlineColor",  ThemeColors.OLD_GLORY_RED);
+            UIManager.put("TabbedPane.underlineColor",          uiColor(ThemeColors.OLD_GLORY_RED));
+            UIManager.put("TabbedPane.inactiveUnderlineColor",  uiColor(ThemeColors.OLD_GLORY_RED));
             // Match focusColor to selectedBackground so the tab looks identical in all states;
             // use a light tint only for hover to keep it subtle over white.
-            UIManager.put("TabbedPane.focusColor",              ThemeColors.OLD_GLORY_BLUE);
-            UIManager.put("TabbedPane.hoverColor",              ThemeColors.OLD_GLORY_TAB_HOVER); // very light blue hover
-            UIManager.put("ScrollBar.thumb",               ThemeColors.OLD_GLORY_BLUE);
-            UIManager.put("ScrollBar.thumbHover",          ThemeColors.OLD_GLORY_BLUE_HOVER);
-            UIManager.put("ScrollBar.thumbPressed",        ThemeColors.OLD_GLORY_BLUE_PRESS);
-            UIManager.put("TitlePane.foreground",          ThemeColors.OLD_GLORY_BLUE);
+            UIManager.put("TabbedPane.focusColor",              uiColor(ThemeColors.OLD_GLORY_BLUE));
+            UIManager.put("TabbedPane.hoverColor",              uiColor(ThemeColors.OLD_GLORY_TAB_HOVER));
+            UIManager.put("ScrollBar.thumb",               uiColor(ThemeColors.OLD_GLORY_BLUE));
+            UIManager.put("ScrollBar.thumbHover",          uiColor(ThemeColors.OLD_GLORY_BLUE_HOVER));
+            UIManager.put("ScrollBar.thumbPressed",        uiColor(ThemeColors.OLD_GLORY_BLUE_PRESS));
+            UIManager.put("TitlePane.foreground",          uiColor(ThemeColors.OLD_GLORY_BLUE));
         } catch (UnsupportedLookAndFeelException e) {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -484,22 +497,23 @@ public final class Gui {
                 javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
                 javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
             }
+            clearThemeOverrides();
             // Selections: deep sakura rose bg + white text
-            UIManager.put("Table.selectionBackground",     ThemeColors.SAKURA_ROSE);
-            UIManager.put("Table.selectionForeground",     Color.WHITE);
-            UIManager.put("List.selectionBackground",      ThemeColors.SAKURA_ROSE);
-            UIManager.put("List.selectionForeground",      Color.WHITE);
-            UIManager.put("Tree.selectionBackground",      ThemeColors.SAKURA_ROSE);
-            UIManager.put("Tree.selectionForeground",      Color.WHITE);
+            UIManager.put("Table.selectionBackground",     uiColor(ThemeColors.SAKURA_ROSE));
+            UIManager.put("Table.selectionForeground",     uiColor(Color.WHITE));
+            UIManager.put("List.selectionBackground",      uiColor(ThemeColors.SAKURA_ROSE));
+            UIManager.put("List.selectionForeground",      uiColor(Color.WHITE));
+            UIManager.put("Tree.selectionBackground",      uiColor(ThemeColors.SAKURA_ROSE));
+            UIManager.put("Tree.selectionForeground",      uiColor(Color.WHITE));
             // Tabs: underline-only selected style (no filled bg); very light pink hover
-            UIManager.put("TabbedPane.underlineColor",         ThemeColors.SAKURA_ROSE);
-            UIManager.put("TabbedPane.inactiveUnderlineColor", ThemeColors.SAKURA_ROSE);
-            UIManager.put("TabbedPane.hoverColor",             ThemeColors.SAKURA_TAB_HOVER);
+            UIManager.put("TabbedPane.underlineColor",         uiColor(ThemeColors.SAKURA_ROSE));
+            UIManager.put("TabbedPane.inactiveUnderlineColor", uiColor(ThemeColors.SAKURA_ROSE));
+            UIManager.put("TabbedPane.hoverColor",             uiColor(ThemeColors.SAKURA_TAB_HOVER));
             // Scrollbar: medium pink thumb
-            UIManager.put("ScrollBar.thumb",               ThemeColors.SAKURA_PINK);
-            UIManager.put("ScrollBar.thumbHover",          ThemeColors.SAKURA_SCROLL_HOVER);
-            UIManager.put("ScrollBar.thumbPressed",        ThemeColors.SAKURA_SCROLL_PRESS);
-            UIManager.put("TitlePane.foreground",          ThemeColors.SAKURA_BARK);
+            UIManager.put("ScrollBar.thumb",               uiColor(ThemeColors.SAKURA_PINK));
+            UIManager.put("ScrollBar.thumbHover",          uiColor(ThemeColors.SAKURA_SCROLL_HOVER));
+            UIManager.put("ScrollBar.thumbPressed",        uiColor(ThemeColors.SAKURA_SCROLL_PRESS));
+            UIManager.put("TitlePane.foreground",          uiColor(ThemeColors.SAKURA_BARK));
         } catch (UnsupportedLookAndFeelException e) {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -511,10 +525,28 @@ public final class Gui {
         }
     }
 
+    /**
+     * Forces every open window to re-read the current UIManager defaults.
+     * <p>
+     * {@code FlatLaf.updateUI()} alone does not always propagate themed
+     * overrides (e.g.&nbsp;{@code Table.selectionBackground}) to components
+     * whose colors were explicitly set by a previous theme's
+     * {@code updateUI()} pass.  Walking all {@link java.awt.Window}s with
+     * {@code updateComponentTreeUI()} ensures every component picks up
+     * the new UIManager values.
+     * </p>
+     */
+    private static void refreshAllWindows() {
+        for (java.awt.Window w : java.awt.Window.getWindows()) {
+            javax.swing.SwingUtilities.updateComponentTreeUI(w);
+        }
+    }
+
     // switch to dark theme
     public static void goDarkTheme() {
         configureDarkLaf();
         FlatLaf.updateUI();
+        refreshAllWindows();
         updateChartPanelStyle();
         if (mainFrame != null) mainFrame.getRootPane().putClientProperty("JRootPane.titleBarForeground", null);
         // Reset progress bar to current LAF default (direct component call, bypasses UIManager caching)
@@ -525,6 +557,7 @@ public final class Gui {
     public static void goDarculaTheme() {
         configureDarculaLaf();
         FlatLaf.updateUI();
+        refreshAllWindows();
         updateChartPanelStyle();
         if (mainFrame != null) mainFrame.getRootPane().putClientProperty("JRootPane.titleBarForeground", null);
         if (progressBar != null) progressBar.setForeground(UIManager.getColor("ProgressBar.foreground"));
@@ -534,6 +567,7 @@ public final class Gui {
     public static void goLightTheme() {
         configureLightLaf();
         FlatLaf.updateUI();
+        refreshAllWindows();
         updateChartPanelStyle();
         if (mainFrame != null) mainFrame.getRootPane().putClientProperty("JRootPane.titleBarForeground", null);
         if (progressBar != null) progressBar.setForeground(UIManager.getColor("ProgressBar.foreground"));
@@ -543,6 +577,7 @@ public final class Gui {
     public static void goOldGloryTheme() {
         configureOldGloryLaf();
         FlatLaf.updateUI();
+        refreshAllWindows();
         updateChartPanelStyle();
         // Force title bar text to navy via root-pane client property
         if (mainFrame != null) {
@@ -560,6 +595,7 @@ public final class Gui {
     public static void goSakuraTheme() {
         configureSakuraLaf();
         FlatLaf.updateUI();
+        refreshAllWindows();
         updateChartPanelStyle();
         // Force title bar text to cherry bark via root-pane client property
         if (mainFrame != null) {
@@ -610,13 +646,7 @@ public final class Gui {
     }
     
     public static void init() {
-        switch (Gui.theme) {
-            case DARK    -> configureDarkLaf();
-            case LIGHT   -> configureLightLaf();
-            case DARCULA -> configureDarculaLaf();
-            case OLD_GLORY -> configureOldGloryLaf();
-            case SAKURA  -> configureSakuraLaf();
-        }
+        theme.configureLaf();
         
         mainFrame = new MainFrame();
 
@@ -650,11 +680,7 @@ public final class Gui {
         // Themes with hard-linked chart palettes apply their own chart
         // colors first; loadPropertiesConfig() will skip palette.apply()
         // for these themes (see GraphPaletteMenu.syncFromModel()).
-        if (theme == Theme.OLD_GLORY) {
-            ChartPalette.setOldGloryColorScheme();
-        } else if (theme == Theme.SAKURA) {
-            ChartPalette.setSakuraColorScheme();
-        }
+        theme.applyLinkedPalette();
 
         mainFrame.loadPropertiesConfig();
 
