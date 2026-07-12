@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatLaf;
 
 import jdiskmark.Benchmark.IOMode;
 
+import org.metricus.jdm.ui.AppIcon;
 import org.metricus.jdm.ui.ButtonStyles;
 import org.metricus.jdm.ui.Palette;
 import org.metricus.jdm.ui.Theme;

@@ -1,11 +1,12 @@
-package jdiskmark;
+package org.metricus.jdm.ui;
 
 import java.util.EnumMap;
 import java.util.Map;
 import javax.swing.ButtonGroup;
 import javax.swing.JMenu;
 import javax.swing.JRadioButtonMenuItem;
-import org.metricus.jdm.ui.Palette;
+import jdiskmark.App;
+import jdiskmark.Gui;
 
 /**
  * Self-contained "Graph Palette" submenu built entirely from the

@@ -13,6 +13,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
 import jdiskmark.Exporter.ExportFormat;
+import org.metricus.jdm.ui.AppIcon;
+import org.metricus.jdm.ui.GraphPaletteMenu;
+import org.metricus.jdm.ui.GraphThemeMenu;
 import org.metricus.jdm.ui.Theme;
 import net.miginfocom.swing.MigLayout;
 
