@@ -78,7 +78,7 @@ public final class SakuraTheme implements ThemeDefinition {
     @Override public Color badgeBorderColor() { return ROSE; }
     @Override public boolean cycleBadgeColors() { return true; }
     @Override public Color badgeEvenFg()       { return ROSE; }
-    @Override public Color badgeOddFg()        { return DARK; }
+    @Override public Color badgeOddFg()        { return PINK; }  // softer secondary — avoids the warning read of DARK
 
     @Override public boolean hasLinkedPalette() { return true; }
     @Override public PaletteDefinition linkedPalette() { return new SakuraPalette(); }
