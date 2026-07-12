@@ -85,11 +85,15 @@ public enum Palette {
             }
         }
 
-        // 4. Legend customisation
-        if (def.legendBackground() != null && Gui.chart.getLegend() != null) {
-            Gui.chart.getLegend().setBackgroundPaint(def.legendBackground());
-            if (def.legendBorderColor() != null) {
-                Gui.chart.getLegend().setFrame(new BlockBorder(def.legendBorderColor()));
+        // 4. Legend customisation (Write + Read rows)
+        if (def.legendBackground() != null) {
+            for (org.jfree.chart.title.LegendTitle leg :
+                    new org.jfree.chart.title.LegendTitle[]{Gui.writeLegend, Gui.readLegend}) {
+                if (leg == null) continue;
+                leg.setBackgroundPaint(def.legendBackground());
+                if (def.legendBorderColor() != null) {
+                    leg.setFrame(new BlockBorder(def.legendBorderColor()));
+                }
             }
         }
 
@@ -137,8 +141,9 @@ public enum Palette {
                 Gui.sampleAxis.setTickLabelPaint(tp);
                 Gui.sampleAxis.setTickMarkPaint(tp);
             }
-            if (Gui.chart.getLegend() != null) {
-                Gui.chart.getLegend().setItemPaint(tp);
+            for (org.jfree.chart.title.LegendTitle leg :
+                    new org.jfree.chart.title.LegendTitle[]{Gui.writeLegend, Gui.readLegend}) {
+                if (leg != null) leg.setItemPaint(tp);
             }
         }
     }

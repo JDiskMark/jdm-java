@@ -46,6 +46,10 @@ import org.jfree.chart.axis.AxisLocation;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.block.BlockBorder;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
+import org.jfree.chart.LegendItem;
+import org.jfree.chart.LegendItemCollection;
+import org.jfree.chart.LegendItemSource;
+import org.jfree.chart.title.LegendTitle;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.title.TextTitle;
@@ -230,6 +234,8 @@ public final class Gui {
     public static XYSeries rSeries, rAvgSeries, rMaxSeries, rMinSeries, rDrvAccess;
     public static XYLineAndShapeRenderer bwRenderer;
     public static XYLineAndShapeRenderer msRenderer;
+    public static LegendTitle writeLegend;
+    public static LegendTitle readLegend;
     static Color foregroundColor;
 
     /**
@@ -564,17 +570,17 @@ public final class Gui {
         sampleAxis.setTickLabelPaint(foregroundColor);
         sampleAxis.setTickMarkPaint(foregroundColor);
 
-        // Style the Legend
-        if (chart.getLegend() != null) {
-            chart.getLegend().setItemPaint(foregroundColor);
-            // Set legend background with slight transparency (macos like look)
-            Color panelBg = UIManager.getColor("Panel.background");
-            if (panelBg != null) {
-                Color legendBg = new Color(panelBg.getRed(), panelBg.getGreen(), panelBg.getBlue(), 200);
-                chart.getLegend().setBackgroundPaint(legendBg);
-            }
-            // Remove the border or set it to a subtle gray
-            chart.getLegend().setFrame(new BlockBorder(new Color(80, 80, 80)));
+        // Style the Legend rows (Write + Read)
+        Color panelBg = UIManager.getColor("Panel.background");
+        Color legendBg = (panelBg != null)
+                ? new Color(panelBg.getRed(), panelBg.getGreen(), panelBg.getBlue(), 200)
+                : null;
+        BlockBorder legendBorder = new BlockBorder(new Color(80, 80, 80));
+        for (LegendTitle leg : new LegendTitle[]{writeLegend, readLegend}) {
+            if (leg == null) continue;
+            leg.setItemPaint(foregroundColor);
+            if (legendBg != null) leg.setBackgroundPaint(legendBg);
+            leg.setFrame(legendBorder);
         }
         updateBadgeThemeColors();
     }
@@ -665,7 +671,45 @@ public final class Gui {
         plot.mapDatasetToRangeAxis(0, 0);
         plot.mapDatasetToRangeAxis(1, 1);
         
-        chart = new JFreeChart("", null , plot, true);
+        chart = new JFreeChart("", null , plot, false);
+
+        // Build a two-row legend: Write items on one line, Read items below.
+        // Each LegendTitle uses a filtered LegendItemSource that picks items
+        // whose series key starts with "Write" or "Read" respectively.
+        LegendItemSource writeSource = () -> {
+            LegendItemCollection col = new LegendItemCollection();
+            for (int ds = 0; ds < plot.getDatasetCount(); ds++) {
+                var r = plot.getRenderer(ds);
+                if (r == null) continue;
+                var items = r.getLegendItems();
+                for (int i = 0; i < items.getItemCount(); i++) {
+                    LegendItem it = items.get(i);
+                    if (it.getLabel().startsWith("Write")) col.add(it);
+                }
+            }
+            return col;
+        };
+        LegendItemSource readSource = () -> {
+            LegendItemCollection col = new LegendItemCollection();
+            for (int ds = 0; ds < plot.getDatasetCount(); ds++) {
+                var r = plot.getRenderer(ds);
+                if (r == null) continue;
+                var items = r.getLegendItems();
+                for (int i = 0; i < items.getItemCount(); i++) {
+                    LegendItem it = items.get(i);
+                    if (it.getLabel().startsWith("Read")) col.add(it);
+                }
+            }
+            return col;
+        };
+        writeLegend = new LegendTitle(writeSource);
+        writeLegend.setPosition(RectangleEdge.BOTTOM);
+        writeLegend.setMargin(new RectangleInsets(0, 0, 0, 0));
+        readLegend = new LegendTitle(readSource);
+        readLegend.setPosition(RectangleEdge.BOTTOM);
+        readLegend.setMargin(new RectangleInsets(0, 0, 0, 0));
+        chart.addSubtitle(writeLegend);
+        chart.addSubtitle(readLegend);
         
         updateChartPanelStyle();
         
@@ -973,6 +1017,9 @@ public final class Gui {
         msRenderer.setSeriesVisibleInLegend(0, App.hasWriteOperation() && showDriveAccess);
         msRenderer.setSeriesVisibleInLegend(1, App.hasReadOperation() && showDriveAccess);
         
+        writeLegend.setVisible(App.hasWriteOperation());
+        readLegend.setVisible(App.hasReadOperation());
+
         msAxis.setVisible(showDriveAccess);
     }
 
@@ -992,6 +1039,9 @@ public final class Gui {
         msRenderer.setSeriesVisibleInLegend(0, hasWrite && showDriveAccess);
         msRenderer.setSeriesVisibleInLegend(1, hasRead && showDriveAccess);
         
+        writeLegend.setVisible(hasWrite);
+        readLegend.setVisible(hasRead);
+
         msAxis.setVisible(showDriveAccess);
     }
     
@@ -1011,6 +1061,9 @@ public final class Gui {
         msRenderer.setSeriesVisibleInLegend(0, isWriteTest && showDriveAccess);
         msRenderer.setSeriesVisibleInLegend(1, isReadTest && showDriveAccess);
         
+        writeLegend.setVisible(isWriteTest);
+        readLegend.setVisible(isReadTest);
+
         msAxis.setVisible(showDriveAccess);
     }
     
