@@ -39,6 +39,7 @@ public final class MainFrame extends javax.swing.JFrame {
      * enum so that adding a new palette never touches the NetBeans form.
      */
     private final GraphPaletteMenu graphPaletteMenu = new GraphPaletteMenu();
+    GraphPaletteMenu getGraphPaletteMenu() { return graphPaletteMenu; }
 
     /**
      * Window Theme submenu — built programmatically from the {@link Gui.Theme}

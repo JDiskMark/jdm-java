@@ -1,9 +1,12 @@
 package org.metricus.jdm.ui.theme;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Stroke;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import jdiskmark.App;
+import org.metricus.jdm.ui.PaletteDefinition;
 import org.metricus.jdm.ui.ThemeDefinition;
 
 public final class OldGloryTheme implements ThemeDefinition {
@@ -78,4 +81,40 @@ public final class OldGloryTheme implements ThemeDefinition {
     @Override public boolean cycleBadgeColors() { return true; }
     @Override public Color badgeEvenFg()       { return RED; }
     @Override public Color badgeOddFg()        { return BLUE; }
+
+    @Override public boolean hasLinkedPalette() { return true; }
+    @Override public PaletteDefinition linkedPalette() { return new OldGloryPalette(); }
+
+    public static final class OldGloryPalette implements PaletteDefinition {
+
+        private static final Stroke BOLD = new BasicStroke(1.5f);
+        private static final Stroke DASH = new BasicStroke(
+                1.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
+                10.0f, new float[]{2.0f, 6.0f}, 0.0f);
+
+        @Override public Color chartBackground()  { return Color.WHITE; }
+        @Override public Color plotBackground()    { return Color.WHITE; }
+        @Override public Color plotOutline()        { return new Color(0x999999); }
+        @Override public Color gridColor()          { return new Color(0xE0E0E0); }
+        @Override public Color legendBackground()  { return Color.WHITE; }
+        @Override public Color legendBorderColor() { return new Color(0xCCCCCC); }
+
+        @Override public Color bwWriteSample()  { return CRIMSON; }
+        @Override public Color bwWriteTrend()   { return CRIMSON_FADE; }
+        @Override public Color bwWriteMax()     { return CRIMSON_LIGHT; }
+        @Override public Color bwWriteMin()     { return CRIMSON_DARK; }
+        @Override public Color bwReadSample()   { return BLUE; }
+        @Override public Color bwReadTrend()    { return BLUE_FADE; }
+        @Override public Color bwReadMax()      { return BLUE_LIGHT; }
+        @Override public Color bwReadMin()      { return BLUE_DARK; }
+        @Override public Color msWriteLatency() { return CRIMSON; }
+        @Override public Color msReadLatency()  { return BLUE; }
+
+        @Override public Stroke bwWriteSampleStroke() { return BOLD; }
+        @Override public Stroke bwWriteTrendStroke()  { return DASH; }
+        @Override public Stroke bwReadSampleStroke()  { return BOLD; }
+        @Override public Stroke bwReadTrendStroke()   { return DASH; }
+
+        @Override public Color textPaint() { return BLUE; }
+    }
 }

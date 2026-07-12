@@ -33,4 +33,7 @@ public interface ThemeDefinition {
     default Color badgeEvenFg() { return badgeDefaultFg(); }
 
     default Color badgeOddFg() { return badgeDefaultFg(); }
+
+    default boolean hasLinkedPalette() { return false; }
+    default PaletteDefinition linkedPalette() { return null; }
 }

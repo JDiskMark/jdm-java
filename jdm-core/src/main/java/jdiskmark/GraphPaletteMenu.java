@@ -54,4 +54,13 @@ public class GraphPaletteMenu extends JMenu {
             current.apply();
         }
     }
+
+    /**
+     * Enables or disables all menu items.  Called when switching to/from
+     * a theme with a linked palette — disabled items signal that the
+     * theme owns the chart colours.
+     */
+    public void setAllItemsEnabled(boolean enabled) {
+        items.values().forEach(item -> item.setEnabled(enabled));
+    }
 }

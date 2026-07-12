@@ -4,7 +4,6 @@ import com.formdev.flatlaf.FlatLaf;
 
 import jdiskmark.Benchmark.IOMode;
 
-import org.metricus.jdm.ui.ChartPalette;
 import org.metricus.jdm.ui.Palette;
 import org.metricus.jdm.ui.Theme;
 import org.metricus.jdm.ui.ThemeDefinition;
@@ -326,6 +325,11 @@ public final class Gui {
         }
         if (t.hasLinkedPalette() && chart != null) {
             t.applyLinkedPalette();
+        } else if (chart != null) {
+            palette.apply();
+        }
+        if (mainFrame != null) {
+            mainFrame.getGraphPaletteMenu().setAllItemsEnabled(!t.hasLinkedPalette());
         }
     }
 
@@ -405,6 +409,9 @@ public final class Gui {
         theme.applyLinkedPalette();
 
         mainFrame.loadPropertiesConfig();
+        if (theme.hasLinkedPalette()) {
+            mainFrame.getGraphPaletteMenu().setAllItemsEnabled(false);
+        }
 
         // Theme-specific title bar text (FlatLaf client property).
         Color titleFg = theme.definition().titleBarForeground();

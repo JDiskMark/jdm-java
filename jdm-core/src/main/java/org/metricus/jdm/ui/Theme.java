@@ -39,7 +39,7 @@ public enum Theme {
      * that must not be overridden by the user's saved palette preference.
      */
     public boolean hasLinkedPalette() {
-        return this == OLD_GLORY || this == SAKURA;
+        return definition.hasLinkedPalette();
     }
 
     /**
@@ -57,11 +57,8 @@ public enum Theme {
      * No-op for themes that rely on the user's saved palette preference.
      */
     public void applyLinkedPalette() {
-        switch (this) {
-            case OLD_GLORY -> ChartPalette.setOldGloryColorScheme();
-            case SAKURA    -> ChartPalette.setSakuraColorScheme();
-            default -> { /* user-selected palette loaded separately */ }
-        }
+        PaletteDefinition lp = definition.linkedPalette();
+        if (lp != null) Palette.apply(lp);
     }
 
     /** Applies this theme's look-and-feel and updates the UI. */

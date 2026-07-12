@@ -618,8 +618,13 @@ public class App {
         }
 
         value = p.getProperty("palette", String.valueOf(Gui.palette));
-        // Backward compat: "PATRIOT" was renamed to "OLD_GLORY" in v0.8.0.
-        if ("PATRIOT".equals(value)) value = "OLD_GLORY";
+        // Backward compat: palette constants renamed in v0.8.0.
+        value = switch (value) {
+            case "BLUE_GREEN" -> "LAGOON";
+            case "BARD_COOL"  -> "MARINE";
+            case "BARD_WARM"  -> "EMBER";
+            default -> value;
+        };
         try {
             Gui.palette = Palette.valueOf(value);
         } catch (IllegalArgumentException e) {
