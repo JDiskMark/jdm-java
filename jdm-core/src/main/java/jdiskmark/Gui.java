@@ -98,10 +98,10 @@ public final class Gui {
 
     // --- Stale-badge tracking ---
     /** Amber used when a badge value differs from the last-run config. */
-    static Color BADGE_AMBER_BG   = new Color(0xC8, 0x78, 0x00); // deep amber
+    static Color BADGE_STALE_BG   = new Color(0xC8, 0x78, 0x00); // deep amber
     static Color BADGE_DEFAULT_BG = new Color(40, 40, 40, 180);
     static Color BADGE_DEFAULT_FG = new Color(200, 200, 200);
-    /** Foreground to use when a badge is stale (set together with BADGE_AMBER_BG). */
+    /** Foreground to use when a badge is stale (set together with BADGE_STALE_BG). */
     static Color BADGE_STALE_FG   = Color.WHITE;
 
     /** Chart subtitle shown when current settings diverge from the displayed benchmark. */
@@ -120,11 +120,12 @@ public final class Gui {
                     modifiedSubtitle = new TextTitle(
                             "⚠  Settings modified — results shown reflect prior configuration",
                             new Font("SansSerif", Font.BOLD, 11));
-                    modifiedSubtitle.setPaint(new Color(0xC8, 0x78, 0x00));
                     modifiedSubtitle.setPosition(RectangleEdge.BOTTOM);
                     modifiedSubtitle.setHorizontalAlignment(HorizontalAlignment.CENTER);
                     modifiedSubtitle.setPadding(new RectangleInsets(0, 0, 4, 0));
                 }
+                // Refresh paint from themed accent — may have changed since creation
+                modifiedSubtitle.setPaint(BADGE_STALE_BG);
                 // Only add if not already present
                 if (!chart.getSubtitles().contains(modifiedSubtitle)) {
                     chart.addSubtitle(modifiedSubtitle);
@@ -174,7 +175,7 @@ public final class Gui {
     static void updateBadgeThemeColors() {
         if (theme == Theme.OLD_GLORY) {
             // Old Glory: white background, alternating crimson / flag-blue text
-            BADGE_AMBER_BG   = ThemeColors.OLD_GLORY_RED;  // stale → crimson background
+            BADGE_STALE_BG   = ThemeColors.OLD_GLORY_RED;  // stale → crimson background
             BADGE_STALE_FG   = Color.WHITE;                // stale foreground on crimson
             BADGE_DEFAULT_BG = ThemeColors.OLD_GLORY_BADGE_BG;
             BADGE_DEFAULT_FG = ThemeColors.OLD_GLORY_BLUE; // used for newly created badges
@@ -193,11 +194,10 @@ public final class Gui {
                     chartBadgeList.get(i).setBorder(badgeBorder);
                 }
             }
-            return;
-        }
-        if (theme == Theme.SAKURA) {
+            applyBadgeHighlights();
+        } else if (theme == Theme.SAKURA) {
             // Sakura: blush white background, alternating rose / cherry-bark text
-            BADGE_AMBER_BG   = ThemeColors.SAKURA_DARK;    // stale → deep rose background
+            BADGE_STALE_BG   = ThemeColors.SAKURA_DARK;    // stale → deep rose background
             BADGE_STALE_FG   = Color.WHITE;
             BADGE_DEFAULT_BG = ThemeColors.SAKURA_BADGE_BG;
             BADGE_DEFAULT_FG = ThemeColors.SAKURA_ROSE;    // used for newly created badges
@@ -216,28 +216,38 @@ public final class Gui {
                     chartBadgeList.get(i).setBorder(badgeBorder);
                 }
             }
-            return;
-        }
-        if (theme == Theme.LIGHT) {
+            applyBadgeHighlights();
+        } else if (theme == Theme.LIGHT) {
             BADGE_DEFAULT_BG = new Color(220, 220, 220, 200);
             BADGE_DEFAULT_FG = new Color(50, 50, 50);
-            BADGE_AMBER_BG   = new Color(0xE6, 0xA0, 0x1E);
+            BADGE_STALE_BG   = new Color(0xE6, 0xA0, 0x1E);
             BADGE_STALE_FG   = Color.WHITE;
         } else {
             BADGE_DEFAULT_BG = new Color(40, 40, 40, 180);
             BADGE_DEFAULT_FG = new Color(200, 200, 200);
-            BADGE_AMBER_BG   = new Color(0xC8, 0x78, 0x00);
+            BADGE_STALE_BG   = new Color(0xC8, 0x78, 0x00);
             BADGE_STALE_FG   = Color.WHITE;
         }
-        if (chartBadgeList == null) return;
-        javax.swing.border.Border resetBorder =
-                javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6);
-        for (javax.swing.JLabel b : chartBadgeList) {
-            b.setForeground(BADGE_DEFAULT_FG);
-            b.setBackground(BADGE_DEFAULT_BG);
-            b.setBorder(resetBorder);
+        // For non-themed LAFs (Light/Dark/Darcula), reset badge strip to defaults
+        if (theme != Theme.OLD_GLORY && theme != Theme.SAKURA) {
+            if (chartBadgeList != null) {
+                javax.swing.border.Border resetBorder =
+                        javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6);
+                for (javax.swing.JLabel b : chartBadgeList) {
+                    b.setForeground(BADGE_DEFAULT_FG);
+                    b.setBackground(BADGE_DEFAULT_BG);
+                    b.setBorder(resetBorder);
+                }
+            }
+            applyBadgeHighlights();
         }
-        applyBadgeHighlights();
+        // Re-apply control-panel stale highlights with the new accent color
+        if (controlPanel != null) controlPanel.showSettingsDrift();
+        // Refresh the chart subtitle paint if it is currently visible
+        if (modifiedSubtitle != null && chart != null
+                && chart.getSubtitles().contains(modifiedSubtitle)) {
+            modifiedSubtitle.setPaint(BADGE_STALE_BG);
+        }
     }
     // lazy-init singleton — created on first access after the LAF is applied
     private static AdvancedOptionsFrame advancedFrame = null;
@@ -1132,7 +1142,7 @@ public final class Gui {
     }
 
     private static boolean setBadgeStaleReturn(javax.swing.JLabel badge, boolean stale) {
-        badge.setBackground(stale ? BADGE_AMBER_BG : BADGE_DEFAULT_BG);
+        badge.setBackground(stale ? BADGE_STALE_BG : BADGE_DEFAULT_BG);
         if (stale) {
             badge.setForeground(BADGE_STALE_FG);
         } else if (theme == Theme.OLD_GLORY && chartBadgeList != null) {

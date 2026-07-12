@@ -297,7 +297,7 @@ public class BenchmarkControlPanel extends JPanel {
     public void showSettingsDrift() {
         BenchmarkConfig lr = (App.benchmark != null) ? App.benchmark.config : null;
         if (lr == null) return; // no run yet
-        Color amber     = new Color(0xC8, 0x78, 0x00);
+        Color amber     = Gui.BADGE_STALE_BG;
         Color defaultFg = UIManager.getColor("Label.foreground");
         Font  boldFont   = typeLabel.getFont().deriveFont(Font.BOLD);
         Font  normalFont = typeLabel.getFont().deriveFont(Font.PLAIN);

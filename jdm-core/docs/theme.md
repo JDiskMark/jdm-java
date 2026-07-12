@@ -100,7 +100,7 @@ TitlePane.foreground                = OLD_GLORY_BLUE
 ### Badge Colors (Old Glory)
 
 ```
-BADGE_AMBER_BG   = OLD_GLORY_RED          // stale background
+BADGE_STALE_BG   = OLD_GLORY_RED          // stale background
 BADGE_STALE_FG   = Color.WHITE
 BADGE_DEFAULT_BG = OLD_GLORY_BADGE_BG     // #EEF2FF pale lavender-blue
 BADGE_DEFAULT_FG = OLD_GLORY_BLUE         // fallback
@@ -197,7 +197,7 @@ is LAF-sensitive; changing it to a custom Color can cause incorrect rendering in
 ### Badge Colors (Sakura)
 
 ```
-BADGE_AMBER_BG   = SAKURA_DARK            // stale background (#A83060 deep rose)
+BADGE_STALE_BG   = SAKURA_DARK            // stale background (#A83060 deep rose)
 BADGE_STALE_FG   = Color.WHITE
 BADGE_DEFAULT_BG = SAKURA_BADGE_BG        // #FCEEF2 pale pink blush
 BADGE_DEFAULT_FG = SAKURA_ROSE            // fallback for newly-created badges
