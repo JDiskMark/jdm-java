@@ -1,8 +1,9 @@
-package jdiskmark;
+package org.metricus.jdm.ui;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Stroke;
+import jdiskmark.Gui;
 import org.jfree.chart.block.BlockBorder;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.plot.XYPlot;
@@ -14,7 +15,7 @@ import org.jfree.chart.plot.XYPlot;
  * specific visual palette.  Adding a new palette requires:
  * <ol>
  *   <li>A {@code static void setXxxColorScheme()} method in this class.</li>
- *   <li>A new constant in {@link Gui.Palette} with a delegation call to the new method.</li>
+ *   <li>A new constant in {@link Palette} with a delegation call to the new method.</li>
  * </ol>
  * All methods reference the {@code public static} chart fields in {@link Gui}
  * (e.g. {@code Gui.chart}, {@code Gui.bwRenderer}) which are set during
@@ -30,8 +31,8 @@ public final class ChartPalette {
     // -----------------------------------------------------------------------
 
     /** The original color scheme. */
-    static void setClassicColorScheme() {
-        Gui.palette = Gui.Palette.CLASSIC;
+    public static void setClassicColorScheme() {
+        Gui.palette = Palette.CLASSIC;
         restoreDefaultPlotBackground();
 
         Gui.bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
@@ -50,9 +51,9 @@ public final class ChartPalette {
     }
 
     /** Blue/green scheme. */
-    static void setBlueGreenScheme() {
+    public static void setBlueGreenScheme() {
         System.out.println("setting blue green palette");
-        Gui.palette = Gui.Palette.BLUE_GREEN;
+        Gui.palette = Palette.BLUE_GREEN;
         restoreDefaultPlotBackground();
 
         Gui.bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
@@ -71,9 +72,9 @@ public final class ChartPalette {
     }
 
     /** Cool color scheme proposed by Bard. */
-    static void setCoolColorScheme() {
+    public static void setCoolColorScheme() {
         System.out.println("setting cool palette");
-        Gui.palette = Gui.Palette.BARD_COOL;
+        Gui.palette = Palette.BARD_COOL;
         restoreDefaultPlotBackground();
 
         Gui.bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
@@ -92,9 +93,9 @@ public final class ChartPalette {
     }
 
     /** Warm color scheme proposed by Bard. */
-    static void setWarmColorScheme() {
+    public static void setWarmColorScheme() {
         System.out.println("setting warm palette");
-        Gui.palette = Gui.Palette.BARD_WARM;
+        Gui.palette = Palette.BARD_WARM;
         restoreDefaultPlotBackground();
 
         Gui.bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
@@ -116,9 +117,9 @@ public final class ChartPalette {
      * Beta palette - matches the Python/matplotlib dark-background look.
      * Dark plot area (#1c1c1c), orange write series, cyan read series.
      */
-    static void setBetaColorScheme() {
+    public static void setBetaColorScheme() {
         System.out.println("setting beta palette");
-        Gui.palette = Gui.Palette.BETA;
+        Gui.palette = Palette.BETA;
 
         XYPlot plot = (XYPlot) Gui.chart.getPlot();
         plot.setBackgroundPaint(new Color(0x1C1C1C));
@@ -162,9 +163,8 @@ public final class ChartPalette {
      * LAF-derived background when switching to another palette.
      * </p>
      */
-    static void setOldGloryColorScheme() {
+    public static void setOldGloryColorScheme() {
         System.out.println("Setting Old Glory palette");
-        Gui.palette = Gui.Palette.OLD_GLORY;
 
         // White canvas: ensures flagBlue text is readable in any surrounding LAF
         Gui.chart.setBackgroundPaint(Color.WHITE);
@@ -231,9 +231,8 @@ public final class ChartPalette {
      * background when switching to another palette.
      * </p>
      */
-    static void setSakuraColorScheme() {
+    public static void setSakuraColorScheme() {
         System.out.println("Setting Sakura palette");
-        Gui.palette = Gui.Palette.SAKURA;
 
         // White canvas: fresh like cherry blossoms in spring
         Gui.chart.setBackgroundPaint(Color.WHITE);
@@ -301,7 +300,7 @@ public final class ChartPalette {
      * (i.e. all palettes except Beta, Old Glory, and Sakura), and also when switching
      * away from the Beta palette.
      */
-    static void restoreDefaultPlotBackground() {
+    public static void restoreDefaultPlotBackground() {
         if (Gui.chart == null) return;
         XYPlot plot = (XYPlot) Gui.chart.getPlot();
         plot.setBackgroundPaint(Color.DARK_GRAY.darker());

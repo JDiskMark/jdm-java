@@ -13,6 +13,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
 import jdiskmark.Exporter.ExportFormat;
+import org.metricus.jdm.ui.Theme;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -1012,19 +1013,19 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_alignNoneRbMenuItemActionPerformed
 
     private void darkThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_darkThemeRbMenuItemActionPerformed
-        Gui.theme = Gui.Theme.DARK;
+        Gui.theme = Theme.DARK;
         Gui.goDarkTheme();
         App.saveConfig();
     }//GEN-LAST:event_darkThemeRbMenuItemActionPerformed
 
     private void lightThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_lightThemeRbMenuItemActionPerformed
-        Gui.theme = Gui.Theme.LIGHT;
+        Gui.theme = Theme.LIGHT;
         Gui.goLightTheme();
         App.saveConfig();
     }//GEN-LAST:event_lightThemeRbMenuItemActionPerformed
 
     private void darculaThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_darculaThemeRbMenuItemActionPerformed
-        Gui.theme = Gui.Theme.DARCULA;
+        Gui.theme = Theme.DARCULA;
         Gui.goDarculaTheme();
         App.saveConfig();
     }//GEN-LAST:event_darculaThemeRbMenuItemActionPerformed

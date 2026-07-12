@@ -9,6 +9,11 @@ import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 import jdiskmark.Benchmark.IOMode;
 
+import org.metricus.jdm.ui.ChartPalette;
+import org.metricus.jdm.ui.Palette;
+import org.metricus.jdm.ui.Theme;
+import org.metricus.jdm.ui.ThemeColors;
+
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -61,85 +66,6 @@ import org.jfree.chart.ui.RectangleInsets;
  */
 public final class Gui {
     
-    public enum Palette {
-        CLASSIC("Classic"),
-        BLUE_GREEN("Blue Green"),
-        BARD_COOL("Bard Cool"),
-        BARD_WARM("Bard Warm"),
-        BETA("Beta"),
-        OLD_GLORY("Old Glory"),
-        SAKURA("Sakura");
-
-        private final String displayName;
-
-        Palette(String displayName) {
-            this.displayName = displayName;
-        }
-
-        public String displayName() { return displayName; }
-
-        /** Applies this palette's colour scheme to the chart renderers. */
-        public void apply() {
-            switch (this) {
-                case CLASSIC    -> ChartPalette.setClassicColorScheme();
-                case BLUE_GREEN -> ChartPalette.setBlueGreenScheme();
-                case BARD_COOL  -> ChartPalette.setCoolColorScheme();
-                case BARD_WARM  -> ChartPalette.setWarmColorScheme();
-                case BETA       -> ChartPalette.setBetaColorScheme();
-                case OLD_GLORY  -> ChartPalette.setOldGloryColorScheme();
-                case SAKURA     -> ChartPalette.setSakuraColorScheme();
-            }
-        }
-    }
-    
-    public enum Theme {
-        DARK("Dark"),
-        LIGHT("Light"),
-        DARCULA("Darcula"),
-        OLD_GLORY("Old Glory"),
-        SAKURA("Sakura");
-
-        private final String displayName;
-
-        Theme(String displayName) {
-            this.displayName = displayName;
-        }
-
-        public String displayName() { return displayName; }
-
-        /** Applies this theme's look-and-feel and updates the UI. */
-        public void apply() {
-            switch (this) {
-                case DARK      -> goDarkTheme();
-                case LIGHT     -> goLightTheme();
-                case DARCULA   -> goDarculaTheme();
-                case OLD_GLORY -> goOldGloryTheme();
-                case SAKURA    -> goSakuraTheme();
-            }
-        }
-
-        public String getLafClassName() {
-            boolean isMac = App.isMacOs();
-
-            return switch (this) {
-                case DARK    -> isMac ? "com.formdev.flatlaf.themes.FlatMacDarkLaf"
-                                     : "com.formdev.flatlaf.FlatDarkLaf";
-                case LIGHT   -> isMac ? "com.formdev.flatlaf.themes.FlatMacLightLaf"
-                                     : "com.formdev.flatlaf.FlatLightLaf";
-                case DARCULA -> "com.formdev.flatlaf.FlatDarculaLaf";
-                case OLD_GLORY -> isMac ? "com.formdev.flatlaf.themes.FlatMacDarkLaf"
-                                     : "com.formdev.flatlaf.FlatDarkLaf";
-                case SAKURA  -> isMac ? "com.formdev.flatlaf.themes.FlatMacLightLaf"
-                                     : "com.formdev.flatlaf.FlatLightLaf";
-            };
-        }
-
-        @Override
-        public String toString() {
-            return displayName;
-        }
-    }
-        
     // display settings
     public static Theme theme = Theme.DARK;
     public static Palette palette = Palette.CLASSIC;
@@ -565,13 +491,10 @@ public final class Gui {
             UIManager.put("List.selectionForeground",      Color.WHITE);
             UIManager.put("Tree.selectionBackground",      ThemeColors.SAKURA_ROSE);
             UIManager.put("Tree.selectionForeground",      Color.WHITE);
-            // Tabs: pale petal selected bg + dark text; rose underline; hover goes darker (rose)
-            UIManager.put("TabbedPane.selectedBackground",     ThemeColors.SAKURA_LIGHT);
-            UIManager.put("TabbedPane.selectedForeground",     Color.BLACK); // this color is sensitive and can break LAF - do not change without testing
+            // Tabs: underline-only selected style (no filled bg); very light pink hover
             UIManager.put("TabbedPane.underlineColor",         ThemeColors.SAKURA_ROSE);
             UIManager.put("TabbedPane.inactiveUnderlineColor", ThemeColors.SAKURA_ROSE);
-            UIManager.put("TabbedPane.focusColor",             ThemeColors.SAKURA_LIGHT);
-            UIManager.put("TabbedPane.hoverColor",             ThemeColors.SAKURA_ROSE);
+            UIManager.put("TabbedPane.hoverColor",             ThemeColors.SAKURA_TAB_HOVER);
             // Scrollbar: medium pink thumb
             UIManager.put("ScrollBar.thumb",               ThemeColors.SAKURA_PINK);
             UIManager.put("ScrollBar.thumbHover",          ThemeColors.SAKURA_SCROLL_HOVER);
@@ -627,10 +550,9 @@ public final class Gui {
                 "JRootPane.titleBarForeground", ThemeColors.OLD_GLORY_BLUE);
         }
         if (progressBar != null) progressBar.setForeground(ThemeColors.OLD_GLORY_RED);
-        // Auto-apply the matching Old Glory graph palette
+        // Auto-apply the matching Old Glory chart colours
         if (chart != null) {
-            palette = Palette.OLD_GLORY;
-            Palette.OLD_GLORY.apply();
+            ChartPalette.setOldGloryColorScheme();
         }
     }
 
@@ -645,10 +567,9 @@ public final class Gui {
                 "JRootPane.titleBarForeground", ThemeColors.SAKURA_BARK);
         }
         if (progressBar != null) progressBar.setForeground(ThemeColors.SAKURA_ROSE);
-        // Auto-apply the matching Sakura graph palette
+        // Auto-apply the matching Sakura chart colours
         if (chart != null) {
-            palette = Palette.SAKURA;
-            Palette.SAKURA.apply();
+            ChartPalette.setSakuraColorScheme();
         }
     }
 
@@ -694,6 +615,7 @@ public final class Gui {
             case LIGHT   -> configureLightLaf();
             case DARCULA -> configureDarculaLaf();
             case OLD_GLORY -> configureOldGloryLaf();
+            case SAKURA  -> configureSakuraLaf();
         }
         
         mainFrame = new MainFrame();
@@ -725,19 +647,33 @@ public final class Gui {
         // a null foregroundColor, producing invisible or clashing colors on startup.
         updateChartPanelStyle();
 
+        // Themes with hard-linked chart palettes apply their own chart
+        // colors first; loadPropertiesConfig() will skip palette.apply()
+        // for these themes (see GraphPaletteMenu.syncFromModel()).
+        if (theme == Theme.OLD_GLORY) {
+            ChartPalette.setOldGloryColorScheme();
+        } else if (theme == Theme.SAKURA) {
+            ChartPalette.setSakuraColorScheme();
+        }
+
         mainFrame.loadPropertiesConfig();
 
-        // OLD_GLORY-only: title bar text must be navy blue (FlatLaf client property).
+        // Theme-specific title bar text (FlatLaf client property).
         if (theme == Theme.OLD_GLORY) {
             mainFrame.getRootPane().putClientProperty(
                 "JRootPane.titleBarForeground", ThemeColors.OLD_GLORY_BLUE);
+        } else if (theme == Theme.SAKURA) {
+            mainFrame.getRootPane().putClientProperty(
+                "JRootPane.titleBarForeground", ThemeColors.SAKURA_BARK);
         }
         mainFrame.setLocationRelativeTo(null);
         progressBar = mainFrame.getProgressBar();
-        // Apply OLD_GLORY progress bar color directly on startup (cannot be set before this line
-        // because progressBar is null until mainFrame.getProgressBar() is called above).
+        // Apply theme-specific progress bar color directly on startup (cannot be set
+        // before this line because progressBar is null until getProgressBar() above).
         if (theme == Theme.OLD_GLORY && progressBar != null) {
             progressBar.setForeground(ThemeColors.OLD_GLORY_RED);
+        } else if (theme == Theme.SAKURA && progressBar != null) {
+            progressBar.setForeground(ThemeColors.SAKURA_ROSE);
         }
 
         // On macOS, replace the default system-provided About dialog (which shows

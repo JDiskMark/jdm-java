@@ -5,12 +5,13 @@ import java.util.Map;
 import javax.swing.ButtonGroup;
 import javax.swing.JMenu;
 import javax.swing.JRadioButtonMenuItem;
+import org.metricus.jdm.ui.Theme;
 
 /**
  * Self-contained "Window Theme" submenu built entirely from the
- * {@link Gui.Theme} enum. Adding a new theme requires only:
+ * {@link Theme} enum. Adding a new theme requires only:
  * <ol>
- *   <li>A new constant in {@link Gui.Theme} (with display name).</li>
+ *   <li>A new constant in {@link Theme} (with display name).</li>
  *   <li>A corresponding {@code apply()} implementation in the enum.</li>
  * </ol>
  * No changes to {@link MainFrame}, its {@code .form} file, or any
@@ -18,14 +19,14 @@ import javax.swing.JRadioButtonMenuItem;
  */
 public class GraphThemeMenu extends JMenu {
 
-    private final Map<Gui.Theme, JRadioButtonMenuItem> items =
-            new EnumMap<>(Gui.Theme.class);
+    private final Map<Theme, JRadioButtonMenuItem> items =
+            new EnumMap<>(Theme.class);
 
     public GraphThemeMenu() {
         super("Window Theme");
         ButtonGroup group = new ButtonGroup();
 
-        for (Gui.Theme t : Gui.Theme.values()) {
+        for (Theme t : Theme.values()) {
             JRadioButtonMenuItem item = new JRadioButtonMenuItem(t.displayName());
             group.add(item);
             item.addActionListener(e -> {

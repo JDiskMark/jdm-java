@@ -33,6 +33,9 @@ import jdiskmark.App.SectorAlignment;
 import jdiskmark.Benchmark.BenchmarkType;
 import jdiskmark.Benchmark.BlockSequence;
 
+import org.metricus.jdm.ui.Palette;
+import org.metricus.jdm.ui.Theme;
+
 /**
  * Primary class for global variables.
  */
@@ -606,7 +609,7 @@ public class App {
         // Backward compat: "PATRIOT" was renamed to "OLD_GLORY" in v0.8.0.
         if ("PATRIOT".equals(value)) value = "OLD_GLORY";
         try {
-            Gui.theme = Gui.Theme.valueOf(value);
+            Gui.theme = Theme.valueOf(value);
         } catch (IllegalArgumentException e) {
             Logger.getLogger(App.class.getName()).log(
                     Level.WARNING,
@@ -617,7 +620,14 @@ public class App {
         value = p.getProperty("palette", String.valueOf(Gui.palette));
         // Backward compat: "PATRIOT" was renamed to "OLD_GLORY" in v0.8.0.
         if ("PATRIOT".equals(value)) value = "OLD_GLORY";
-        Gui.palette = Gui.Palette.valueOf(value);
+        try {
+            Gui.palette = Palette.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid palette value in properties: \"{0}\", using default: {1}",
+                    new Object[] { value, Gui.palette.name() });
+        }
 
         value = p.getProperty("renderMode", rmOption.name());
         try {
