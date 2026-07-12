@@ -1,6 +1,5 @@
 package org.metricus.jdm.ui;
 
-import jdiskmark.App;
 import jdiskmark.Gui;
 
 /**
@@ -71,22 +70,6 @@ public enum Theme {
             case OLD_GLORY -> Gui.goOldGloryTheme();
             case SAKURA    -> Gui.goSakuraTheme();
         }
-    }
-
-    public String getLafClassName() {
-        boolean isMac = App.isMacOs();
-
-        return switch (this) {
-            case DARK    -> isMac ? "com.formdev.flatlaf.themes.FlatMacDarkLaf"
-                                 : "com.formdev.flatlaf.FlatDarkLaf";
-            case LIGHT   -> isMac ? "com.formdev.flatlaf.themes.FlatMacLightLaf"
-                                 : "com.formdev.flatlaf.FlatLightLaf";
-            case DARCULA -> "com.formdev.flatlaf.FlatDarculaLaf";
-            case OLD_GLORY -> isMac ? "com.formdev.flatlaf.themes.FlatMacDarkLaf"
-                                 : "com.formdev.flatlaf.FlatDarkLaf";
-            case SAKURA  -> isMac ? "com.formdev.flatlaf.themes.FlatMacLightLaf"
-                                 : "com.formdev.flatlaf.FlatLightLaf";
-        };
     }
 
     @Override

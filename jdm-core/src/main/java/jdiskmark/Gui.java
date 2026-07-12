@@ -331,11 +331,9 @@ public final class Gui {
     public static void configureDarkLaf() {
         try {
             FlatLaf.setGlobalExtraDefaults(null); // clear any accent override from Old Glory theme
-            if (App.isWindows()) {
-                UIManager.setLookAndFeel(new FlatDarkLaf());
-            } else if (App.isMacOs()) {
+            if (App.isMacOs()) {
                 UIManager.setLookAndFeel(new FlatMacDarkLaf());
-            } else if (App.isLinux()) {
+            } else {
                 UIManager.setLookAndFeel(new FlatDarkLaf());
             }
             clearThemeOverrides();
@@ -386,11 +384,9 @@ public final class Gui {
     public static void configureLightLaf() {
         try {
             FlatLaf.setGlobalExtraDefaults(null); // clear any accent override from Old Glory theme
-            if (App.isWindows()) {
-                UIManager.setLookAndFeel(new FlatLightLaf());
-            } else if (App.isMacOs()) {
+            if (App.isMacOs()) {
                 UIManager.setLookAndFeel(new FlatMacLightLaf());
-            } else if (App.isLinux()) {
+            } else {
                 UIManager.setLookAndFeel(new FlatLightLaf());
             }
             clearThemeOverrides();
@@ -465,7 +461,6 @@ public final class Gui {
             UIManager.put("ScrollBar.thumb",               uiColor(ThemeColors.OLD_GLORY_BLUE));
             UIManager.put("ScrollBar.thumbHover",          uiColor(ThemeColors.OLD_GLORY_BLUE_HOVER));
             UIManager.put("ScrollBar.thumbPressed",        uiColor(ThemeColors.OLD_GLORY_BLUE_PRESS));
-            UIManager.put("TitlePane.foreground",          uiColor(ThemeColors.OLD_GLORY_BLUE));
         } catch (UnsupportedLookAndFeelException e) {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -523,7 +518,6 @@ public final class Gui {
             UIManager.put("ScrollBar.thumb",               uiColor(ThemeColors.SAKURA_PINK));
             UIManager.put("ScrollBar.thumbHover",          uiColor(ThemeColors.SAKURA_SCROLL_HOVER));
             UIManager.put("ScrollBar.thumbPressed",        uiColor(ThemeColors.SAKURA_SCROLL_PRESS));
-            UIManager.put("TitlePane.foreground",          uiColor(ThemeColors.SAKURA_BARK));
         } catch (UnsupportedLookAndFeelException e) {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -589,16 +583,12 @@ public final class Gui {
         FlatLaf.updateUI();
         refreshAllWindows();
         updateChartPanelStyle();
-        // Force title bar text to navy via root-pane client property
         if (mainFrame != null) {
             mainFrame.getRootPane().putClientProperty(
                 "JRootPane.titleBarForeground", ThemeColors.OLD_GLORY_BLUE);
         }
         if (progressBar != null) progressBar.setForeground(ThemeColors.OLD_GLORY_RED);
-        // Auto-apply the matching Old Glory chart colours
-        if (chart != null) {
-            ChartPalette.setOldGloryColorScheme();
-        }
+        if (chart != null) Theme.OLD_GLORY.applyLinkedPalette();
     }
 
     /** Sakura (Cherry Blossom) theme: rose-accented FlatLight + auto-applies Sakura graph palette. */
@@ -607,16 +597,12 @@ public final class Gui {
         FlatLaf.updateUI();
         refreshAllWindows();
         updateChartPanelStyle();
-        // Force title bar text to cherry bark via root-pane client property
         if (mainFrame != null) {
             mainFrame.getRootPane().putClientProperty(
                 "JRootPane.titleBarForeground", ThemeColors.SAKURA_BARK);
         }
         if (progressBar != null) progressBar.setForeground(ThemeColors.SAKURA_ROSE);
-        // Auto-apply the matching Sakura chart colours
-        if (chart != null) {
-            ChartPalette.setSakuraColorScheme();
-        }
+        if (chart != null) Theme.SAKURA.applyLinkedPalette();
     }
 
     /**
