@@ -5,6 +5,7 @@ import org.metricus.jdm.ui.theme.DarculaTheme;
 import org.metricus.jdm.ui.theme.DarkTheme;
 import org.metricus.jdm.ui.theme.LightTheme;
 import org.metricus.jdm.ui.theme.OldGloryTheme;
+import org.metricus.jdm.ui.theme.HarvestTheme;
 import org.metricus.jdm.ui.theme.SakuraTheme;
 
 /**
@@ -20,7 +21,8 @@ public enum Theme {
     LIGHT("Light", new LightTheme()),
     DARCULA("Darcula", new DarculaTheme()),
     OLD_GLORY("Old Glory", new OldGloryTheme()),
-    SAKURA("Sakura", new SakuraTheme());
+    SAKURA("Sakura", new SakuraTheme()),
+    HARVEST("Harvest", new HarvestTheme());
 
     private final String displayName;
     private final ThemeDefinition definition;

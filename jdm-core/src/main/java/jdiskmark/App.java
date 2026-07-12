@@ -188,7 +188,7 @@ public class App {
     public static boolean multiFile = true;
     public static boolean autoRemoveData = true;
     public static boolean autoReset = true;
-    public static boolean directEnable = false;
+    public static boolean directEnable = true;
     public static boolean writeSyncEnable = false;
 
     // benchmark io options

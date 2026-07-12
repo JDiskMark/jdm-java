@@ -107,6 +107,9 @@ public final class OldGloryTheme implements ThemeDefinition {
         );
     }
 
+    @Override public Color iconPrimaryTint()   { return CRIMSON; }
+    @Override public Color iconSecondaryTint() { return Color.WHITE; }
+
     public static final class OldGloryPalette implements PaletteDefinition {
 
         private static final Stroke BOLD = new BasicStroke(1.5f);

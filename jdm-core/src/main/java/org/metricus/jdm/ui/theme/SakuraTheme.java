@@ -17,7 +17,7 @@ public final class SakuraTheme implements ThemeDefinition {
     public static final Color FADE        = new Color(0xE8, 0x84, 0x9A, 170);
     public static final Color LIGHT       = new Color(0xF5C2CE);
     public static final Color DARK        = new Color(0xA83060);
-    public static final Color SAGE        = new Color(0x7A9E7E);
+    public static final Color SAGE        = new Color(0x7A9E7E); // "#7A9E7E"
     public static final Color SAGE_FADE   = new Color(0x7A, 0x9E, 0x7E, 170);
     public static final Color SAGE_LIGHT  = new Color(0xB0CCAA);
     public static final Color SAGE_DARK   = new Color(0x4A6B4D);
@@ -104,6 +104,10 @@ public final class SakuraTheme implements ThemeDefinition {
             "#ffffff"
         );
     }
+
+    @Override public Color iconPrimaryTint()   { return ROSE; }
+    @Override public Color iconSecondaryTint() { return Color.WHITE; }
+    @Override public boolean tintAboutIcon()   { return false; }
 
     public static final class SakuraPalette implements PaletteDefinition {
 

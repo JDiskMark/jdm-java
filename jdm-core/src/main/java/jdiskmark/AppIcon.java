@@ -1,6 +1,8 @@
 package jdiskmark;
 
+import java.awt.Color;
 import java.awt.Image;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -72,6 +74,141 @@ public enum AppIcon {
             }
         }
         return images;
+    }
+
+    /**
+     * Load all available sizes as tinted images.
+     * Dark ink pixels (mid-luminance) lerp toward {@code primary};
+     * light body pixels (high-luminance) lerp toward {@code secondary};
+     * the very dark background pixels are left unchanged.
+     * If either color is {@code null}, returns plain {@link #loadAll()}.
+     *
+     * @param primary  tint for dark ink/outlines
+     * @param secondary tint for light body fill
+     * @return list of tinted images, never {@code null}
+     */
+    public List<Image> loadAllTinted(Color primary, Color secondary) {
+        if (primary == null || secondary == null) return loadAll();
+        List<Image> images = new ArrayList<>();
+        for (String path : resourcePaths) {
+            try (InputStream is = AppIcon.class.getResourceAsStream(path)) {
+                if (is != null) {
+                    BufferedImage src = javax.imageio.ImageIO.read(is);
+                    if (src != null) images.add(tintImage(src, primary, secondary));
+                }
+            } catch (IOException e) {
+                Logger.getLogger(AppIcon.class.getName()).log(
+                        Level.WARNING, "Could not load tinted icon: " + path, e);
+            }
+        }
+        return images.isEmpty() ? loadAll() : images;
+    }
+
+    /**
+     * Load the largest available size as a tinted ImageIcon (used by the About dialog).
+     * Falls back to {@link #load()} if tinting fails or either color is {@code null}.
+     */
+    public ImageIcon loadTinted(Color primary, Color secondary) {
+        if (primary == null || secondary == null) return load();
+        String path = resourcePaths[resourcePaths.length - 1];
+        try (InputStream is = AppIcon.class.getResourceAsStream(path)) {
+            if (is == null) return load();
+            BufferedImage src = javax.imageio.ImageIO.read(is);
+            if (src == null) return load();
+            return new ImageIcon(tintImage(src, primary, secondary));
+        } catch (IOException e) {
+            Logger.getLogger(AppIcon.class.getName()).log(
+                    Level.WARNING, "Could not tint icon: " + path, e);
+            return load();
+        }
+    }
+
+    /**
+     * Load the best pre-rendered PNG at or nearest to {@code targetSize} pixels,
+     * then apply a two-tone luminance tint.
+     * Falls back to {@link #loadSize(int)} if tinting fails or either color is {@code null}.
+     */
+    public ImageIcon loadSizeTinted(int targetSize, Color primary, Color secondary) {
+        if (primary == null || secondary == null) return loadSize(targetSize);
+        Pattern sizePattern = Pattern.compile("-(\\d+)x\\d+\\.png$");
+        String bestPath = resourcePaths[resourcePaths.length - 1];
+        int bestDiff = Integer.MAX_VALUE;
+        for (String path : resourcePaths) {
+            Matcher m = sizePattern.matcher(path);
+            if (m.find()) {
+                int size = Integer.parseInt(m.group(1));
+                int diff = size - targetSize;
+                if (diff >= 0 && diff < bestDiff) {
+                    bestDiff = diff;
+                    bestPath = path;
+                }
+            }
+        }
+        try (InputStream is = AppIcon.class.getResourceAsStream(bestPath)) {
+            if (is == null) return loadSize(targetSize);
+            BufferedImage src = javax.imageio.ImageIO.read(is);
+            if (src == null) return loadSize(targetSize);
+            return new ImageIcon(tintImage(src, primary, secondary));
+        } catch (IOException e) {
+            Logger.getLogger(AppIcon.class.getName()).log(
+                    Level.WARNING, "Could not tint icon: " + bestPath, e);
+            return loadSize(targetSize);
+        }
+    }
+
+    /**
+     * Applies a two-tone luminance-based tint to a {@link BufferedImage}.
+     * Three luminance zones:
+     * <ul>
+     *   <li>&lt; 0.12 — very dark background: left unchanged</li>
+     *   <li>0.12 – 0.65 — dark ink/outlines: lerp toward {@code primary}</li>
+     *   <li>&gt; 0.65 — light body fill: lerp toward {@code secondary}</li>
+     * </ul>
+     */
+    private static Image tintImage(BufferedImage src, Color primary, Color secondary) {
+        int w = src.getWidth();
+        int h = src.getHeight();
+        BufferedImage out = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        int pr = primary.getRed(),   pg = primary.getGreen(),   pb = primary.getBlue();
+        int sr = secondary.getRed(), sg = secondary.getGreen(), sb = secondary.getBlue();
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int argb  = src.getRGB(x, y);
+                int alpha = (argb >> 24) & 0xFF;
+                int r     = (argb >> 16) & 0xFF;
+                int g     = (argb >>  8) & 0xFF;
+                int b     =  argb        & 0xFF;
+                // sRGB luminance (perceptual)
+                double lum = 0.2126 * r / 255.0 + 0.7152 * g / 255.0 + 0.0722 * b / 255.0;
+                int nr, ng, nb;
+                if (lum < 0.12) {
+                    // very dark background — leave alone
+                    nr = r; ng = g; nb = b;
+                } else if (lum <= 0.65) {
+                    // dark ink zone — lerp pixel toward primary
+                    // t=0 at lum=0.12 (darkest ink), t=1 at lum=0.65 (lightest ink edge)
+                    double t = (lum - 0.12) / (0.65 - 0.12);
+                    double strength = 0.85; // max blend factor
+                    double blend = strength * (1.0 - t * 0.3); // darker ink blends more strongly
+                    nr = clamp((int)(r + blend * (pr - r)));
+                    ng = clamp((int)(g + blend * (pg - g)));
+                    nb = clamp((int)(b + blend * (pb - b)));
+                } else {
+                    // light body zone — lerp pixel toward secondary
+                    double t = (lum - 0.65) / (1.0 - 0.65);
+                    double blend = 0.55 * t; // gentle tint on white areas
+                    nr = clamp((int)(r + blend * (sr - r)));
+                    ng = clamp((int)(g + blend * (sg - g)));
+                    nb = clamp((int)(b + blend * (sb - b)));
+                }
+                out.setRGB(x, y, (alpha << 24) | (nr << 16) | (ng << 8) | nb);
+            }
+        }
+        return out;
+    }
+
+    private static int clamp(int v) {
+        return Math.max(0, Math.min(255, v));
     }
 
     /**

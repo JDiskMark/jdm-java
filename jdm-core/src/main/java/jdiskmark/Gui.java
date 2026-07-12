@@ -337,6 +337,7 @@ public final class Gui {
             mainFrame.getGraphPaletteMenu().setAllItemsEnabled(!t.hasLinkedPalette());
         }
         applyStartButtonStyle(t);
+        applyIconToWindow(t);
     }
 
     /**
@@ -349,6 +350,23 @@ public final class Gui {
         String style = t.definition().startButtonStyle();
         if (style == null) style = ButtonStyles.DEFAULT_START;
         controlPanel.startButton.putClientProperty("FlatLaf.style", style);
+    }
+
+    /**
+     * Loads and applies the branding icon to the main window, tinting it for
+     * the given theme when the theme provides icon tint colors.
+     */
+    private static void applyIconToWindow(Theme t) {
+        if (mainFrame == null) return;
+        java.awt.Color primary   = t.definition().iconPrimaryTint();
+        java.awt.Color secondary = t.definition().iconSecondaryTint();
+        java.util.List<java.awt.Image> icons =
+                (primary != null && secondary != null)
+                ? AppIcon.active.loadAllTinted(primary, secondary)
+                : AppIcon.active.loadAll();
+        if (!icons.isEmpty()) {
+            mainFrame.setIconImages(icons);
+        }
     }
 
     /**
@@ -414,13 +432,9 @@ public final class Gui {
                     com.formdev.flatlaf.FlatClientProperties.MENU_BAR_EMBEDDED, true);
         }
 
-        // Apply branding icon to the window title bar and taskbar.
-        // setIconImages supplies all available sizes so Java picks the best
-        // fit per display context (16px title bar, 32/48px taskbar, etc.).
-        java.util.List<java.awt.Image> icons = AppIcon.active.loadAll();
-        if (!icons.isEmpty()) {
-            mainFrame.setIconImages(icons);
-        }
+        // Apply branding icon to the window title bar and taskbar, tinted for the
+        // current theme if the theme supplies tint colors.
+        applyIconToWindow(theme);
 
         if (runPanel != null) {
             runPanel.hideFirstColumn();
@@ -480,7 +494,12 @@ public final class Gui {
      * system menu bar About handler registered in {@link #init()}.
      */
     public static void showAboutDialog() {
-        javax.swing.ImageIcon icon = AppIcon.active.loadSize(128);
+        ThemeDefinition def = theme.definition();
+        java.awt.Color primary   = def.iconPrimaryTint();
+        java.awt.Color secondary = def.iconSecondaryTint();
+        javax.swing.ImageIcon icon = (primary != null && secondary != null && def.tintAboutIcon())
+                ? AppIcon.active.loadSizeTinted(128, primary, secondary)
+                : AppIcon.active.loadSize(128);
 
         // Build an HTML panel so the website URL is a clickable hyperlink.
         String url = "https://www.jdiskmark.net";

@@ -58,4 +58,24 @@ public interface ThemeDefinition {
      * thematic red that better signals "stop").
      */
     default String cancelButtonStyle() { return null; }
+
+    /**
+     * Primary tint color applied to the dark ink/outlines of the turtle icon.
+     * Return {@code null} (the default) to leave the icon unmodified.
+     */
+    default Color iconPrimaryTint() { return null; }
+
+    /**
+     * Secondary tint color applied to the light body fill of the turtle icon.
+     * Return {@code null} (the default) to leave the icon unmodified.
+     */
+    default Color iconSecondaryTint() { return null; }
+
+    /**
+     * Returns {@code true} if the About dialog should display the tinted icon
+     * (when tint colors are provided), or {@code false} to always show the
+     * plain unmodified icon in the About dialog regardless of tinting.
+     * Default is {@code true}.
+     */
+    default boolean tintAboutIcon() { return true; }
 }
