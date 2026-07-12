@@ -1014,19 +1014,19 @@ public final class MainFrame extends javax.swing.JFrame {
 
     private void darkThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_darkThemeRbMenuItemActionPerformed
         Gui.theme = Theme.DARK;
-        Gui.goDarkTheme();
+        Theme.DARK.apply();
         App.saveConfig();
     }//GEN-LAST:event_darkThemeRbMenuItemActionPerformed
 
     private void lightThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_lightThemeRbMenuItemActionPerformed
         Gui.theme = Theme.LIGHT;
-        Gui.goLightTheme();
+        Theme.LIGHT.apply();
         App.saveConfig();
     }//GEN-LAST:event_lightThemeRbMenuItemActionPerformed
 
     private void darculaThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_darculaThemeRbMenuItemActionPerformed
         Gui.theme = Theme.DARCULA;
-        Gui.goDarculaTheme();
+        Theme.DARCULA.apply();
         App.saveConfig();
     }//GEN-LAST:event_darculaThemeRbMenuItemActionPerformed
 

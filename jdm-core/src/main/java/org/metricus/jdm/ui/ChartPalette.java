@@ -7,6 +7,8 @@ import jdiskmark.Gui;
 import org.jfree.chart.block.BlockBorder;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.plot.XYPlot;
+import org.metricus.jdm.ui.theme.OldGloryTheme;
+import org.metricus.jdm.ui.theme.SakuraTheme;
 
 /**
  * Static factory for chart colour schemes.
@@ -183,42 +185,42 @@ public final class ChartPalette {
                 10.0f, new float[]{2.0f, 6.0f}, 0.0f);
 
         Gui.bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        Gui.bwRenderer.setSeriesPaint(0,  ThemeColors.CRIMSON);              // write sample
+        Gui.bwRenderer.setSeriesPaint(0,  OldGloryTheme.CRIMSON);              // write sample
         Gui.bwRenderer.setSeriesStroke(0, bold);
-        Gui.bwRenderer.setSeriesPaint(1,  ThemeColors.CRIMSON_FADE);         // write trend (dashed)
+        Gui.bwRenderer.setSeriesPaint(1,  OldGloryTheme.CRIMSON_FADE);         // write trend (dashed)
         Gui.bwRenderer.setSeriesStroke(1, dash);
-        Gui.bwRenderer.setSeriesPaint(2,  ThemeColors.CRIMSON_LIGHT);        // write max
-        Gui.bwRenderer.setSeriesPaint(3,  ThemeColors.CRIMSON_DARK);         // write min
-        Gui.bwRenderer.setSeriesPaint(4,  ThemeColors.OLD_GLORY_BLUE);       // read sample
+        Gui.bwRenderer.setSeriesPaint(2,  OldGloryTheme.CRIMSON_LIGHT);        // write max
+        Gui.bwRenderer.setSeriesPaint(3,  OldGloryTheme.CRIMSON_DARK);         // write min
+        Gui.bwRenderer.setSeriesPaint(4,  OldGloryTheme.BLUE);                 // read sample
         Gui.bwRenderer.setSeriesStroke(4, bold);
-        Gui.bwRenderer.setSeriesPaint(5,  ThemeColors.OLD_GLORY_BLUE_FADE);  // read trend (dashed)
+        Gui.bwRenderer.setSeriesPaint(5,  OldGloryTheme.BLUE_FADE);            // read trend (dashed)
         Gui.bwRenderer.setSeriesStroke(5, dash);
-        Gui.bwRenderer.setSeriesPaint(6,  ThemeColors.OLD_GLORY_BLUE_LIGHT); // read max
-        Gui.bwRenderer.setSeriesPaint(7,  ThemeColors.OLD_GLORY_BLUE_DARK);  // read min
+        Gui.bwRenderer.setSeriesPaint(6,  OldGloryTheme.BLUE_LIGHT);           // read max
+        Gui.bwRenderer.setSeriesPaint(7,  OldGloryTheme.BLUE_DARK);            // read min
 
         Gui.msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        Gui.msRenderer.setSeriesPaint(0, ThemeColors.CRIMSON);               // write latency
-        Gui.msRenderer.setSeriesPaint(1, ThemeColors.OLD_GLORY_BLUE);        // read latency
+        Gui.msRenderer.setSeriesPaint(0, OldGloryTheme.CRIMSON);               // write latency
+        Gui.msRenderer.setSeriesPaint(1, OldGloryTheme.BLUE);                  // read latency
 
         // Title, axes, and legend text in flagBlue (readable on white background)
-        if (Gui.chart != null) Gui.chart.getTitle().setPaint(ThemeColors.OLD_GLORY_BLUE);
+        if (Gui.chart != null) Gui.chart.getTitle().setPaint(OldGloryTheme.BLUE);
         if (Gui.bwAxis != null) {
-            Gui.bwAxis.setLabelPaint(ThemeColors.OLD_GLORY_BLUE);
-            Gui.bwAxis.setTickLabelPaint(ThemeColors.OLD_GLORY_BLUE);
-            Gui.bwAxis.setTickMarkPaint(ThemeColors.OLD_GLORY_BLUE);
+            Gui.bwAxis.setLabelPaint(OldGloryTheme.BLUE);
+            Gui.bwAxis.setTickLabelPaint(OldGloryTheme.BLUE);
+            Gui.bwAxis.setTickMarkPaint(OldGloryTheme.BLUE);
         }
         if (Gui.msAxis != null) {
-            Gui.msAxis.setLabelPaint(ThemeColors.OLD_GLORY_BLUE);
-            Gui.msAxis.setTickLabelPaint(ThemeColors.OLD_GLORY_BLUE);
-            Gui.msAxis.setTickMarkPaint(ThemeColors.OLD_GLORY_BLUE);
+            Gui.msAxis.setLabelPaint(OldGloryTheme.BLUE);
+            Gui.msAxis.setTickLabelPaint(OldGloryTheme.BLUE);
+            Gui.msAxis.setTickMarkPaint(OldGloryTheme.BLUE);
         }
         if (Gui.sampleAxis != null) {
-            Gui.sampleAxis.setLabelPaint(ThemeColors.OLD_GLORY_BLUE);
-            Gui.sampleAxis.setTickLabelPaint(ThemeColors.OLD_GLORY_BLUE);
-            Gui.sampleAxis.setTickMarkPaint(ThemeColors.OLD_GLORY_BLUE);
+            Gui.sampleAxis.setLabelPaint(OldGloryTheme.BLUE);
+            Gui.sampleAxis.setTickLabelPaint(OldGloryTheme.BLUE);
+            Gui.sampleAxis.setTickMarkPaint(OldGloryTheme.BLUE);
         }
         if (Gui.chart != null && Gui.chart.getLegend() != null) {
-            Gui.chart.getLegend().setItemPaint(ThemeColors.OLD_GLORY_BLUE);
+            Gui.chart.getLegend().setItemPaint(OldGloryTheme.BLUE);
         }
     }
 
@@ -251,42 +253,42 @@ public final class ChartPalette {
                 10.0f, new float[]{2.0f, 6.0f}, 0.0f);
 
         Gui.bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        Gui.bwRenderer.setSeriesPaint(0,  ThemeColors.SAKURA_PINK);            // write sample
+        Gui.bwRenderer.setSeriesPaint(0,  SakuraTheme.PINK);              // write sample
         Gui.bwRenderer.setSeriesStroke(0, bold);
-        Gui.bwRenderer.setSeriesPaint(1,  ThemeColors.SAKURA_FADE);            // write trend (dashed)
+        Gui.bwRenderer.setSeriesPaint(1,  SakuraTheme.FADE);              // write trend (dashed)
         Gui.bwRenderer.setSeriesStroke(1, dash);
-        Gui.bwRenderer.setSeriesPaint(2,  ThemeColors.SAKURA_LIGHT);           // write max
-        Gui.bwRenderer.setSeriesPaint(3,  ThemeColors.SAKURA_DARK);            // write min
-        Gui.bwRenderer.setSeriesPaint(4,  ThemeColors.SAKURA_SAGE);            // read sample
+        Gui.bwRenderer.setSeriesPaint(2,  SakuraTheme.LIGHT);             // write max
+        Gui.bwRenderer.setSeriesPaint(3,  SakuraTheme.DARK);              // write min
+        Gui.bwRenderer.setSeriesPaint(4,  SakuraTheme.SAGE);              // read sample
         Gui.bwRenderer.setSeriesStroke(4, bold);
-        Gui.bwRenderer.setSeriesPaint(5,  ThemeColors.SAKURA_SAGE_FADE);       // read trend (dashed)
+        Gui.bwRenderer.setSeriesPaint(5,  SakuraTheme.SAGE_FADE);         // read trend (dashed)
         Gui.bwRenderer.setSeriesStroke(5, dash);
-        Gui.bwRenderer.setSeriesPaint(6,  ThemeColors.SAKURA_SAGE_LIGHT);      // read max
-        Gui.bwRenderer.setSeriesPaint(7,  ThemeColors.SAKURA_SAGE_DARK);       // read min
+        Gui.bwRenderer.setSeriesPaint(6,  SakuraTheme.SAGE_LIGHT);        // read max
+        Gui.bwRenderer.setSeriesPaint(7,  SakuraTheme.SAGE_DARK);         // read min
 
         Gui.msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        Gui.msRenderer.setSeriesPaint(0, ThemeColors.SAKURA_PINK);             // write latency
-        Gui.msRenderer.setSeriesPaint(1, ThemeColors.SAKURA_SAGE);             // read latency
+        Gui.msRenderer.setSeriesPaint(0, SakuraTheme.PINK);               // write latency
+        Gui.msRenderer.setSeriesPaint(1, SakuraTheme.SAGE);               // read latency
 
         // Title, axes, and legend text in cherry bark (readable on white background)
-        if (Gui.chart != null) Gui.chart.getTitle().setPaint(ThemeColors.SAKURA_BARK);
+        if (Gui.chart != null) Gui.chart.getTitle().setPaint(SakuraTheme.BARK);
         if (Gui.bwAxis != null) {
-            Gui.bwAxis.setLabelPaint(ThemeColors.SAKURA_BARK);
-            Gui.bwAxis.setTickLabelPaint(ThemeColors.SAKURA_BARK);
-            Gui.bwAxis.setTickMarkPaint(ThemeColors.SAKURA_BARK);
+            Gui.bwAxis.setLabelPaint(SakuraTheme.BARK);
+            Gui.bwAxis.setTickLabelPaint(SakuraTheme.BARK);
+            Gui.bwAxis.setTickMarkPaint(SakuraTheme.BARK);
         }
         if (Gui.msAxis != null) {
-            Gui.msAxis.setLabelPaint(ThemeColors.SAKURA_BARK);
-            Gui.msAxis.setTickLabelPaint(ThemeColors.SAKURA_BARK);
-            Gui.msAxis.setTickMarkPaint(ThemeColors.SAKURA_BARK);
+            Gui.msAxis.setLabelPaint(SakuraTheme.BARK);
+            Gui.msAxis.setTickLabelPaint(SakuraTheme.BARK);
+            Gui.msAxis.setTickMarkPaint(SakuraTheme.BARK);
         }
         if (Gui.sampleAxis != null) {
-            Gui.sampleAxis.setLabelPaint(ThemeColors.SAKURA_BARK);
-            Gui.sampleAxis.setTickLabelPaint(ThemeColors.SAKURA_BARK);
-            Gui.sampleAxis.setTickMarkPaint(ThemeColors.SAKURA_BARK);
+            Gui.sampleAxis.setLabelPaint(SakuraTheme.BARK);
+            Gui.sampleAxis.setTickLabelPaint(SakuraTheme.BARK);
+            Gui.sampleAxis.setTickMarkPaint(SakuraTheme.BARK);
         }
         if (Gui.chart != null && Gui.chart.getLegend() != null) {
-            Gui.chart.getLegend().setItemPaint(ThemeColors.SAKURA_BARK);
+            Gui.chart.getLegend().setItemPaint(SakuraTheme.BARK);
         }
     }
 

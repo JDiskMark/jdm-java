@@ -1,18 +1,13 @@
 package jdiskmark;
 
-import com.formdev.flatlaf.FlatDarculaLaf;
-import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLaf;
-import com.formdev.flatlaf.FlatLightLaf;
-import com.formdev.flatlaf.themes.FlatMacDarkLaf;
-import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 import jdiskmark.Benchmark.IOMode;
 
 import org.metricus.jdm.ui.ChartPalette;
 import org.metricus.jdm.ui.Palette;
 import org.metricus.jdm.ui.Theme;
-import org.metricus.jdm.ui.ThemeColors;
+import org.metricus.jdm.ui.ThemeDefinition;
 
 import java.awt.BasicStroke;
 import java.awt.BorderLayout;
@@ -155,16 +150,15 @@ public final class Gui {
         if (controlPanel != null) controlPanel.clearRowHighlights();
     }
 
-    /** Resets all badge backgrounds (and foregrounds in Old Glory) to the default style. */
+    /** Resets all badge backgrounds and foregrounds to the default style. */
     public static void clearBadgeHighlights() {
         if (chartBadgeList == null) return;
+        ThemeDefinition def = theme.definition();
         for (int i = 0; i < chartBadgeList.size(); i++) {
             javax.swing.JLabel b = chartBadgeList.get(i);
             b.setBackground(BADGE_DEFAULT_BG);
-            if (theme == Theme.OLD_GLORY) {
-                b.setForeground(i % 2 == 0 ? ThemeColors.OLD_GLORY_RED : ThemeColors.OLD_GLORY_BLUE);
-            } else if (theme == Theme.SAKURA) {
-                b.setForeground(i % 2 == 0 ? ThemeColors.SAKURA_ROSE : ThemeColors.SAKURA_DARK);
+            if (def.cycleBadgeColors()) {
+                b.setForeground(i % 2 == 0 ? def.badgeEvenFg() : def.badgeOddFg());
             } else {
                 b.setForeground(BADGE_DEFAULT_FG);
             }
@@ -173,77 +167,33 @@ public final class Gui {
 
     /** Updates badge colors to match the current window theme. */
     static void updateBadgeThemeColors() {
-        if (theme == Theme.OLD_GLORY) {
-            // Old Glory: white background, alternating crimson / flag-blue text
-            BADGE_STALE_BG   = ThemeColors.OLD_GLORY_RED;  // stale → crimson background
-            BADGE_STALE_FG   = Color.WHITE;                // stale foreground on crimson
-            BADGE_DEFAULT_BG = ThemeColors.OLD_GLORY_BADGE_BG;
-            BADGE_DEFAULT_FG = ThemeColors.OLD_GLORY_BLUE; // used for newly created badges
-            javax.swing.border.Border outerBorder =
-                    javax.swing.BorderFactory.createLineBorder(ThemeColors.OLD_GLORY_BLUE, 1);
-            javax.swing.border.Border innerBorder =
-                    javax.swing.BorderFactory.createEmptyBorder(2, 5, 2, 5);
-            javax.swing.border.Border badgeBorder =
-                    javax.swing.BorderFactory.createCompoundBorder(outerBorder, innerBorder);
-            if (chartBadgeList != null) {
-                for (int i = 0; i < chartBadgeList.size(); i++) {
-                    chartBadgeList.get(i).setBackground(BADGE_DEFAULT_BG);
-                    // alternate crimson / flag-blue across the badge strip
-                    chartBadgeList.get(i).setForeground(
-                            i % 2 == 0 ? ThemeColors.OLD_GLORY_RED : ThemeColors.OLD_GLORY_BLUE);
-                    chartBadgeList.get(i).setBorder(badgeBorder);
-                }
-            }
-            applyBadgeHighlights();
-        } else if (theme == Theme.SAKURA) {
-            // Sakura: blush white background, alternating rose / cherry-bark text
-            BADGE_STALE_BG   = ThemeColors.SAKURA_DARK;    // stale → deep rose background
-            BADGE_STALE_FG   = Color.WHITE;
-            BADGE_DEFAULT_BG = ThemeColors.SAKURA_BADGE_BG;
-            BADGE_DEFAULT_FG = ThemeColors.SAKURA_ROSE;    // used for newly created badges
-            javax.swing.border.Border outerBorder =
-                    javax.swing.BorderFactory.createLineBorder(ThemeColors.SAKURA_ROSE, 1);
-            javax.swing.border.Border innerBorder =
-                    javax.swing.BorderFactory.createEmptyBorder(2, 5, 2, 5);
-            javax.swing.border.Border badgeBorder =
-                    javax.swing.BorderFactory.createCompoundBorder(outerBorder, innerBorder);
-            if (chartBadgeList != null) {
-                for (int i = 0; i < chartBadgeList.size(); i++) {
-                    chartBadgeList.get(i).setBackground(BADGE_DEFAULT_BG);
-                    // alternate sakura rose / deep rose (bark) across the badge strip
-                    chartBadgeList.get(i).setForeground(
-                            i % 2 == 0 ? ThemeColors.SAKURA_ROSE : ThemeColors.SAKURA_DARK);
-                    chartBadgeList.get(i).setBorder(badgeBorder);
-                }
-            }
-            applyBadgeHighlights();
-        } else if (theme == Theme.LIGHT) {
-            BADGE_DEFAULT_BG = new Color(220, 220, 220, 200);
-            BADGE_DEFAULT_FG = new Color(50, 50, 50);
-            BADGE_STALE_BG   = new Color(0xE6, 0xA0, 0x1E);
-            BADGE_STALE_FG   = Color.WHITE;
-        } else {
-            BADGE_DEFAULT_BG = new Color(40, 40, 40, 180);
-            BADGE_DEFAULT_FG = new Color(200, 200, 200);
-            BADGE_STALE_BG   = new Color(0xC8, 0x78, 0x00);
-            BADGE_STALE_FG   = Color.WHITE;
-        }
-        // For non-themed LAFs (Light/Dark/Darcula), reset badge strip to defaults
-        if (theme != Theme.OLD_GLORY && theme != Theme.SAKURA) {
-            if (chartBadgeList != null) {
-                javax.swing.border.Border resetBorder =
-                        javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6);
-                for (javax.swing.JLabel b : chartBadgeList) {
+        ThemeDefinition def = theme.definition();
+        BADGE_DEFAULT_BG = def.badgeDefaultBg();
+        BADGE_DEFAULT_FG = def.badgeDefaultFg();
+        BADGE_STALE_BG   = def.badgeStaleBg();
+        BADGE_STALE_FG   = def.badgeStaleFg();
+
+        if (chartBadgeList != null) {
+            Color borderColor = def.badgeBorderColor();
+            javax.swing.border.Border badge_border = (borderColor != null)
+                    ? javax.swing.BorderFactory.createCompoundBorder(
+                            javax.swing.BorderFactory.createLineBorder(borderColor, 1),
+                            javax.swing.BorderFactory.createEmptyBorder(2, 5, 2, 5))
+                    : javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6);
+
+            for (int i = 0; i < chartBadgeList.size(); i++) {
+                javax.swing.JLabel b = chartBadgeList.get(i);
+                b.setBackground(BADGE_DEFAULT_BG);
+                if (def.cycleBadgeColors()) {
+                    b.setForeground(i % 2 == 0 ? def.badgeEvenFg() : def.badgeOddFg());
+                } else {
                     b.setForeground(BADGE_DEFAULT_FG);
-                    b.setBackground(BADGE_DEFAULT_BG);
-                    b.setBorder(resetBorder);
                 }
+                b.setBorder(badge_border);
             }
-            applyBadgeHighlights();
         }
-        // Re-apply control-panel stale highlights with the new accent color
+        applyBadgeHighlights();
         if (controlPanel != null) controlPanel.showSettingsDrift();
-        // Refresh the chart subtitle paint if it is currently visible
         if (modifiedSubtitle != null && chart != null
                 && chart.getSubtitles().contains(modifiedSubtitle)) {
             modifiedSubtitle.setPaint(BADGE_STALE_BG);
@@ -282,29 +232,12 @@ public final class Gui {
     public static XYLineAndShapeRenderer bwRenderer;
     public static XYLineAndShapeRenderer msRenderer;
     static Color foregroundColor;
-    
-    /**
-     * Wraps a {@link Color} in {@link javax.swing.plaf.ColorUIResource} so
-     * Swing's {@code installDefaults()} recognizes it as LAF-provided and
-     * will override it on subsequent {@code updateUI()} calls.
-     * Without this, explicitly-set component colors (e.g.&nbsp;table selection
-     * background) stick across theme switches.
-     */
-    private static javax.swing.plaf.ColorUIResource uiColor(Color c) {
-        return new javax.swing.plaf.ColorUIResource(c);
-    }
 
     /**
-     * Removes UIManager overrides set by themed LAF methods
-     * ({@link #configureOldGloryLaf()}, {@link #configureSakuraLaf()}).
-     * Call this AFTER {@code UIManager.setLookAndFeel()} in <em>every</em>
-     * {@code configureXxxLaf()} method so the new LAF's own defaults take over.
+     * Removes UIManager overrides set by custom theme LAF configurations.
+     * Called before each LAF installation so the new LAF's own defaults take over.
      */
     private static void clearThemeOverrides() {
-        // Clear the global FlatLaf variable overrides (@accentColor, @background,
-        // @foreground, TitlePane.foreground) that configureOldGloryLaf() injects.
-        // Without this, FlatDarkLaf/FlatLightLaf re-use the crimson @accentColor
-        // and all @accentColor-derived components (progress bar, sliders, etc.) stay red.
         FlatLaf.setGlobalExtraDefaults(null);
         UIManager.put("Table.selectionBackground",  null);
         UIManager.put("Table.selectionForeground",  null);
@@ -318,215 +251,10 @@ public final class Gui {
         UIManager.put("TabbedPane.inactiveUnderlineColor", null);
         UIManager.put("TabbedPane.focusColor",             null);
         UIManager.put("TabbedPane.hoverColor",             null);
-        // scrollbar
         UIManager.put("ScrollBar.thumb",            null);
         UIManager.put("ScrollBar.thumbHover",       null);
         UIManager.put("ScrollBar.thumbPressed",     null);
-        // title pane
         UIManager.put("TitlePane.foreground",       null);
-        // Note: progress bar foreground is reset via direct setForeground() in each go*Theme()
-        // rather than via UIManager because FlatProgressBarUI may cache the color independently.
-    }
-
-    public static void configureDarkLaf() {
-        try {
-            FlatLaf.setGlobalExtraDefaults(null); // clear any accent override from Old Glory theme
-            if (App.isMacOs()) {
-                UIManager.setLookAndFeel(new FlatMacDarkLaf());
-            } else {
-                UIManager.setLookAndFeel(new FlatDarkLaf());
-            }
-            clearThemeOverrides();
-            // Use FlatLaf custom window decorations (unified title bar + menu bar) on
-            // non-macOS only. On macOS the native title bar is kept so the system menu
-            // bar at the top of the screen works correctly.
-            if (!App.isMacOs()) {
-                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
-                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
-            }
-        } catch (UnsupportedLookAndFeelException e) {
-            //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-            /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-             * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-             */
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-                java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-            }
-            //</editor-fold>
-        }
-    }
-    
-    public static void configureDarculaLaf() {
-        try {
-            FlatLaf.setGlobalExtraDefaults(null); // clear any accent override from Old Glory theme
-            UIManager.setLookAndFeel(new FlatDarculaLaf());
-            clearThemeOverrides();
-            if (!App.isMacOs()) {
-                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
-                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
-            }
-        } catch (UnsupportedLookAndFeelException e) {
-            //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-            /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-             * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-             */
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-                java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-            }
-            //</editor-fold>
-        }
-    }
-    
-    public static void configureLightLaf() {
-        try {
-            FlatLaf.setGlobalExtraDefaults(null); // clear any accent override from Old Glory theme
-            if (App.isMacOs()) {
-                UIManager.setLookAndFeel(new FlatMacLightLaf());
-            } else {
-                UIManager.setLookAndFeel(new FlatLightLaf());
-            }
-            clearThemeOverrides();
-            if (!App.isMacOs()) {
-                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
-                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
-            }
-        } catch (UnsupportedLookAndFeelException e) {
-            //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-            /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-             * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-             */
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-                java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-            }
-            //</editor-fold>
-        }
-    }
-    
-    /**
-     * Old Glory theme — FlatLight base with patriotic red + blue accents:
-     * <ul>
-     *   <li>Old Glory Red (#B22234) as {@code @accentColor}: checkboxes,
-     *       radio buttons, slider thumb, focus rings.</li>
-     *   <li>Pure white background + Old Glory Navy text via FlatLaf
-     *       {@code @background}/{@code @foreground} so all component
-     *       colors are derived correctly by the LAF.</li>
-     *   <li>Royal Blue (#1F4DA0): table / list / tree row selections
-     *       (white text) + scrollbar thumb.</li>
-     *   <li>Red tab underline and progress bar complete the palette.</li>
-     * </ul>
-     */
-    public static void configureOldGloryLaf() {
-        try {
-            // All three global vars must be set before UIManager.setLookAndFeel so
-            // FlatLaf can derive every computed component color from them correctly.
-            java.util.Map<String, String> extras = new java.util.HashMap<>();
-            extras.put("@accentColor", ThemeColors.HEX_OLD_GLORY_RED);  // checkboxes, focus rings
-            extras.put("@background",  "#FFFFFF"); // pure white panels
-            extras.put("@foreground",  ThemeColors.HEX_OLD_GLORY_BLUE); // all UI text
-            extras.put("TitlePane.foreground", ThemeColors.HEX_OLD_GLORY_BLUE); // title bar text
-            FlatLaf.setGlobalExtraDefaults(extras);
-            if (App.isMacOs()) {
-                UIManager.setLookAndFeel(new FlatMacLightLaf());
-            } else {
-                UIManager.setLookAndFeel(new FlatLightLaf());
-            }
-            if (!App.isMacOs()) {
-                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
-                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
-            }
-            clearThemeOverrides();
-            // Post-install: flag blue row/tab selections + scrollbar; red accent + title.
-            UIManager.put("Table.selectionBackground",     uiColor(ThemeColors.OLD_GLORY_BLUE));
-            UIManager.put("Table.selectionForeground",     uiColor(Color.WHITE));
-            UIManager.put("List.selectionBackground",      uiColor(ThemeColors.OLD_GLORY_BLUE));
-            UIManager.put("List.selectionForeground",      uiColor(Color.WHITE));
-            UIManager.put("Tree.selectionBackground",      uiColor(ThemeColors.OLD_GLORY_BLUE));
-            UIManager.put("Tree.selectionForeground",      uiColor(Color.WHITE));
-            // Selected tab: flag blue bg + white text (same treatment as table/list selections)
-            UIManager.put("TabbedPane.selectedBackground",      uiColor(ThemeColors.OLD_GLORY_BLUE));
-            UIManager.put("TabbedPane.selectedForeground",      uiColor(Color.WHITE));
-            // Underline: red whether the pane is focused or not
-            UIManager.put("TabbedPane.underlineColor",          uiColor(ThemeColors.OLD_GLORY_RED));
-            UIManager.put("TabbedPane.inactiveUnderlineColor",  uiColor(ThemeColors.OLD_GLORY_RED));
-            // Match focusColor to selectedBackground so the tab looks identical in all states;
-            // use a light tint only for hover to keep it subtle over white.
-            UIManager.put("TabbedPane.focusColor",              uiColor(ThemeColors.OLD_GLORY_BLUE));
-            UIManager.put("TabbedPane.hoverColor",              uiColor(ThemeColors.OLD_GLORY_TAB_HOVER));
-            UIManager.put("ScrollBar.thumb",               uiColor(ThemeColors.OLD_GLORY_BLUE));
-            UIManager.put("ScrollBar.thumbHover",          uiColor(ThemeColors.OLD_GLORY_BLUE_HOVER));
-            UIManager.put("ScrollBar.thumbPressed",        uiColor(ThemeColors.OLD_GLORY_BLUE_PRESS));
-        } catch (UnsupportedLookAndFeelException e) {
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (ClassNotFoundException | InstantiationException
-                    | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-                java.util.logging.Logger.getLogger(MainFrame.class.getName())
-                        .log(java.util.logging.Level.SEVERE, null, ex);
-            }
-        }
-    }
-
-    /**
-     * Applies the Sakura (Cherry Blossom) Look-and-Feel to the application.
-     * <p>
-     * Uses FlatLightLaf as the base, with:
-     * <ul>
-     *   <li>Sakura Rose (#D4607C) as {@code @accentColor}: checkboxes, radio
-     *       buttons, slider thumb, focus rings.</li>
-     *   <li>Near-white (#FFFBFC) background + Cherry Bark (#2D1B22) foreground
-     *       so all component colours derive correctly from the LAF.</li>
-     *   <li>Deep rose selections (white text) + matching scrollbar thumb.</li>
-     *   <li>Rose tab underline; very light pink hover tint.</li>
-     * </ul>
-     */
-    public static void configureSakuraLaf() {
-        try {
-            java.util.Map<String, String> extras = new java.util.HashMap<>();
-            extras.put("@accentColor", ThemeColors.HEX_SAKURA_ROSE);
-            extras.put("@background",  "#FFFBFC"); // near-white with faintest pink tint
-            extras.put("@foreground",  ThemeColors.HEX_SAKURA_BARK);
-            extras.put("TitlePane.foreground", ThemeColors.HEX_SAKURA_BARK);
-            FlatLaf.setGlobalExtraDefaults(extras);
-            if (App.isMacOs()) {
-                UIManager.setLookAndFeel(new FlatMacLightLaf());
-            } else {
-                UIManager.setLookAndFeel(new FlatLightLaf());
-            }
-            if (!App.isMacOs()) {
-                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
-                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
-            }
-            clearThemeOverrides();
-            // Selections: deep sakura rose bg + white text
-            UIManager.put("Table.selectionBackground",     uiColor(ThemeColors.SAKURA_ROSE));
-            UIManager.put("Table.selectionForeground",     uiColor(Color.WHITE));
-            UIManager.put("List.selectionBackground",      uiColor(ThemeColors.SAKURA_ROSE));
-            UIManager.put("List.selectionForeground",      uiColor(Color.WHITE));
-            UIManager.put("Tree.selectionBackground",      uiColor(ThemeColors.SAKURA_ROSE));
-            UIManager.put("Tree.selectionForeground",      uiColor(Color.WHITE));
-            // Tabs: underline-only selected style (no filled bg); very light pink hover
-            UIManager.put("TabbedPane.underlineColor",         uiColor(ThemeColors.SAKURA_ROSE));
-            UIManager.put("TabbedPane.inactiveUnderlineColor", uiColor(ThemeColors.SAKURA_ROSE));
-            UIManager.put("TabbedPane.hoverColor",             uiColor(ThemeColors.SAKURA_TAB_HOVER));
-            // Scrollbar: medium pink thumb
-            UIManager.put("ScrollBar.thumb",               uiColor(ThemeColors.SAKURA_PINK));
-            UIManager.put("ScrollBar.thumbHover",          uiColor(ThemeColors.SAKURA_SCROLL_HOVER));
-            UIManager.put("ScrollBar.thumbPressed",        uiColor(ThemeColors.SAKURA_SCROLL_PRESS));
-        } catch (UnsupportedLookAndFeelException e) {
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (ClassNotFoundException | InstantiationException
-                    | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-                java.util.logging.Logger.getLogger(MainFrame.class.getName())
-                        .log(java.util.logging.Level.SEVERE, null, ex);
-            }
-        }
     }
 
     /**
@@ -546,64 +274,62 @@ public final class Gui {
         }
     }
 
-    // switch to dark theme
-    public static void goDarkTheme() {
-        configureDarkLaf();
-        FlatLaf.updateUI();
-        refreshAllWindows();
-        updateChartPanelStyle();
-        if (mainFrame != null) mainFrame.getRootPane().putClientProperty("JRootPane.titleBarForeground", null);
-        // Reset progress bar to current LAF default (direct component call, bypasses UIManager caching)
-        if (progressBar != null) progressBar.setForeground(UIManager.getColor("ProgressBar.foreground"));
-    }
-    
-    // switch to darcula theme
-    public static void goDarculaTheme() {
-        configureDarculaLaf();
-        FlatLaf.updateUI();
-        refreshAllWindows();
-        updateChartPanelStyle();
-        if (mainFrame != null) mainFrame.getRootPane().putClientProperty("JRootPane.titleBarForeground", null);
-        if (progressBar != null) progressBar.setForeground(UIManager.getColor("ProgressBar.foreground"));
-    }
-    
-    // switch to light theme
-    public static void goLightTheme() {
-        configureLightLaf();
-        FlatLaf.updateUI();
-        refreshAllWindows();
-        updateChartPanelStyle();
-        if (mainFrame != null) mainFrame.getRootPane().putClientProperty("JRootPane.titleBarForeground", null);
-        if (progressBar != null) progressBar.setForeground(UIManager.getColor("ProgressBar.foreground"));
+    /**
+     * Installs the FlatLaf look-and-feel described by the given definition.
+     * Called at startup and by {@link #applyTheme(Theme)} on theme switch.
+     */
+    public static void configureLaf(ThemeDefinition def) {
+        try {
+            java.util.Map<String, String> extras = def.flatLafExtras();
+            FlatLaf.setGlobalExtraDefaults(extras);
+            UIManager.setLookAndFeel(def.lafClassName());
+            clearThemeOverrides();
+            java.util.Map<String, Object> overrides = def.uiManagerOverrides();
+            if (overrides != null) {
+                overrides.forEach(UIManager::put);
+            }
+            if (!App.isMacOs()) {
+                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
+                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+            }
+        } catch (ClassNotFoundException | InstantiationException
+                | IllegalAccessException | UnsupportedLookAndFeelException e) {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (ClassNotFoundException | InstantiationException
+                    | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
+                java.util.logging.Logger.getLogger(MainFrame.class.getName())
+                        .log(java.util.logging.Level.SEVERE, null, ex);
+            }
+        }
     }
 
-    /** Old Glory theme: crimson-accented FlatLight + auto-applies Old Glory graph palette. */
-    public static void goOldGloryTheme() {
-        configureOldGloryLaf();
+    /**
+     * Switches to a theme at runtime: installs LAF, refreshes all windows,
+     * updates chart style, title bar, progress bar, and linked chart palette.
+     */
+    public static void applyTheme(Theme t) {
+        ThemeDefinition def = t.definition();
+        configureLaf(def);
         FlatLaf.updateUI();
         refreshAllWindows();
         updateChartPanelStyle();
         if (mainFrame != null) {
             mainFrame.getRootPane().putClientProperty(
-                "JRootPane.titleBarForeground", ThemeColors.OLD_GLORY_BLUE);
+                "JRootPane.titleBarForeground", def.titleBarForeground());
         }
-        if (progressBar != null) progressBar.setForeground(ThemeColors.OLD_GLORY_RED);
-        if (chart != null) Theme.OLD_GLORY.applyLinkedPalette();
+        Color pbFg = def.progressBarForeground();
+        if (progressBar != null) {
+            progressBar.setForeground(pbFg != null
+                    ? pbFg
+                    : UIManager.getColor("ProgressBar.foreground"));
+        }
+        if (t.hasLinkedPalette() && chart != null) {
+            t.applyLinkedPalette();
+        }
     }
 
-    /** Sakura (Cherry Blossom) theme: rose-accented FlatLight + auto-applies Sakura graph palette. */
-    public static void goSakuraTheme() {
-        configureSakuraLaf();
-        FlatLaf.updateUI();
-        refreshAllWindows();
-        updateChartPanelStyle();
-        if (mainFrame != null) {
-            mainFrame.getRootPane().putClientProperty(
-                "JRootPane.titleBarForeground", ThemeColors.SAKURA_BARK);
-        }
-        if (progressBar != null) progressBar.setForeground(ThemeColors.SAKURA_ROSE);
-        if (chart != null) Theme.SAKURA.applyLinkedPalette();
-    }
+
 
     /**
      * Handles progress and state updates from the SwingWorker 
@@ -681,21 +407,17 @@ public final class Gui {
         mainFrame.loadPropertiesConfig();
 
         // Theme-specific title bar text (FlatLaf client property).
-        if (theme == Theme.OLD_GLORY) {
+        Color titleFg = theme.definition().titleBarForeground();
+        if (titleFg != null) {
             mainFrame.getRootPane().putClientProperty(
-                "JRootPane.titleBarForeground", ThemeColors.OLD_GLORY_BLUE);
-        } else if (theme == Theme.SAKURA) {
-            mainFrame.getRootPane().putClientProperty(
-                "JRootPane.titleBarForeground", ThemeColors.SAKURA_BARK);
+                "JRootPane.titleBarForeground", titleFg);
         }
         mainFrame.setLocationRelativeTo(null);
         progressBar = mainFrame.getProgressBar();
-        // Apply theme-specific progress bar color directly on startup (cannot be set
-        // before this line because progressBar is null until getProgressBar() above).
-        if (theme == Theme.OLD_GLORY && progressBar != null) {
-            progressBar.setForeground(ThemeColors.OLD_GLORY_RED);
-        } else if (theme == Theme.SAKURA && progressBar != null) {
-            progressBar.setForeground(ThemeColors.SAKURA_ROSE);
+        // Apply theme-specific progress bar color directly on startup.
+        Color pbFg = theme.definition().progressBarForeground();
+        if (progressBar != null && pbFg != null) {
+            progressBar.setForeground(pbFg);
         }
 
         // On macOS, replace the default system-provided About dialog (which shows
@@ -1131,14 +853,14 @@ public final class Gui {
         badge.setBackground(stale ? BADGE_STALE_BG : BADGE_DEFAULT_BG);
         if (stale) {
             badge.setForeground(BADGE_STALE_FG);
-        } else if (theme == Theme.OLD_GLORY && chartBadgeList != null) {
-            int idx = chartBadgeList.indexOf(badge);
-            badge.setForeground(idx % 2 == 0 ? ThemeColors.OLD_GLORY_RED : ThemeColors.OLD_GLORY_BLUE);
-        } else if (theme == Theme.SAKURA && chartBadgeList != null) {
-            int idx = chartBadgeList.indexOf(badge);
-            badge.setForeground(idx % 2 == 0 ? ThemeColors.SAKURA_ROSE : ThemeColors.SAKURA_DARK);
         } else {
-            badge.setForeground(BADGE_DEFAULT_FG);
+            ThemeDefinition def = theme.definition();
+            if (def.cycleBadgeColors() && chartBadgeList != null) {
+                int idx = chartBadgeList.indexOf(badge);
+                badge.setForeground(idx % 2 == 0 ? def.badgeEvenFg() : def.badgeOddFg());
+            } else {
+                badge.setForeground(BADGE_DEFAULT_FG);
+            }
         }
         return stale;
     }

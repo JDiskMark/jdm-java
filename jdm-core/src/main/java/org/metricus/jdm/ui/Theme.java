@@ -1,29 +1,38 @@
 package org.metricus.jdm.ui;
 
 import jdiskmark.Gui;
+import org.metricus.jdm.ui.theme.DarculaTheme;
+import org.metricus.jdm.ui.theme.DarkTheme;
+import org.metricus.jdm.ui.theme.LightTheme;
+import org.metricus.jdm.ui.theme.OldGloryTheme;
+import org.metricus.jdm.ui.theme.SakuraTheme;
 
 /**
  * Available window themes (look-and-feel configurations).
  * <p>
- * Each constant maps to a {@code Gui.goXxxTheme()} method that configures
- * FlatLaf and updates the UI.  The {@link jdiskmark.GraphThemeMenu} iterates
- * {@code values()} to build the menu automatically.
+ * Each constant holds a {@link ThemeDefinition} that encapsulates colors,
+ * FlatLaf extras, UIManager overrides, and badge styling.  Adding a new
+ * theme requires a new {@code ThemeDefinition} class and one line here.
  * </p>
  */
 public enum Theme {
-    DARK("Dark"),
-    LIGHT("Light"),
-    DARCULA("Darcula"),
-    OLD_GLORY("Old Glory"),
-    SAKURA("Sakura");
+    DARK("Dark", new DarkTheme()),
+    LIGHT("Light", new LightTheme()),
+    DARCULA("Darcula", new DarculaTheme()),
+    OLD_GLORY("Old Glory", new OldGloryTheme()),
+    SAKURA("Sakura", new SakuraTheme());
 
     private final String displayName;
+    private final ThemeDefinition definition;
 
-    Theme(String displayName) {
+    Theme(String displayName, ThemeDefinition definition) {
         this.displayName = displayName;
+        this.definition = definition;
     }
 
     public String displayName() { return displayName; }
+
+    public ThemeDefinition definition() { return definition; }
 
     /**
      * Returns {@code true} if this theme bundles its own chart palette
@@ -40,13 +49,7 @@ public enum Theme {
      * {@code FlatLaf.updateUI()} or repaint existing components.
      */
     public void configureLaf() {
-        switch (this) {
-            case DARK      -> Gui.configureDarkLaf();
-            case LIGHT     -> Gui.configureLightLaf();
-            case DARCULA   -> Gui.configureDarculaLaf();
-            case OLD_GLORY -> Gui.configureOldGloryLaf();
-            case SAKURA    -> Gui.configureSakuraLaf();
-        }
+        Gui.configureLaf(definition);
     }
 
     /**
@@ -63,13 +66,7 @@ public enum Theme {
 
     /** Applies this theme's look-and-feel and updates the UI. */
     public void apply() {
-        switch (this) {
-            case DARK      -> Gui.goDarkTheme();
-            case LIGHT     -> Gui.goLightTheme();
-            case DARCULA   -> Gui.goDarculaTheme();
-            case OLD_GLORY -> Gui.goOldGloryTheme();
-            case SAKURA    -> Gui.goSakuraTheme();
-        }
+        Gui.applyTheme(this);
     }
 
     @Override
