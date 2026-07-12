@@ -99,6 +99,7 @@ public final class MainFrame extends javax.swing.JFrame {
         BenchmarkControlPanel bcPanel = Gui.createControlPanel();
         bControlMountPanel.setLayout(new MigLayout());
         bControlMountPanel.add(bcPanel);
+        getRootPane().setDefaultButton(bcPanel.startButton);
         totalTxProgBar.setStringPainted(true);
         totalTxProgBar.setValue(0);
         totalTxProgBar.setString("");
@@ -1167,6 +1168,7 @@ public final class MainFrame extends javax.swing.JFrame {
             case App.State.DISK_TEST_STATE -> {
                 if (Gui.controlPanel != null) {
                     Gui.controlPanel.startButton.setText("Cancel");
+                    Gui.applyCancelButtonStyle(Gui.theme);
                     Gui.controlPanel.enableControls(false);
                 }
                 resetBenchmarkItem.setEnabled(false);
@@ -1175,6 +1177,7 @@ public final class MainFrame extends javax.swing.JFrame {
             case App.State.IDLE_STATE -> {
                 if (Gui.controlPanel != null) {
                     Gui.controlPanel.startButton.setText("Start");
+                    Gui.applyStartButtonStyle(Gui.theme);
                     Gui.controlPanel.enableControls(true);
                 }
                 resetBenchmarkItem.setEnabled(true);

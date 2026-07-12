@@ -85,6 +85,28 @@ public final class OldGloryTheme implements ThemeDefinition {
     @Override public boolean hasLinkedPalette() { return true; }
     @Override public PaletteDefinition linkedPalette() { return new OldGloryPalette(); }
 
+    @Override
+    public String startButtonStyle() {
+        return org.metricus.jdm.ui.ButtonStyles.buildStyle(
+            "#3C3B6E",   // BLUE — normal background
+            "#2B2A52",   // BLUE_HOVER — darker navy on hover
+            "#1A1A38",   // BLUE_PRESS — pressed
+            "#3C3B6E88", // navy focus ring
+            "#ffffff"
+        );
+    }
+
+    @Override
+    public String cancelButtonStyle() {
+        return org.metricus.jdm.ui.ButtonStyles.buildStyle(
+            "#B22234",   // RED — thematic crimson flag red
+            "#8B0000",   // CRIMSON_DARK — darker on hover
+            "#6B0000",   // deeper press state
+            "#B2223488", // crimson focus ring
+            "#ffffff"
+        );
+    }
+
     public static final class OldGloryPalette implements PaletteDefinition {
 
         private static final Stroke BOLD = new BasicStroke(1.5f);

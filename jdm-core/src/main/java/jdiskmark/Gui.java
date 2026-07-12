@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatLaf;
 
 import jdiskmark.Benchmark.IOMode;
 
+import org.metricus.jdm.ui.ButtonStyles;
 import org.metricus.jdm.ui.Palette;
 import org.metricus.jdm.ui.Theme;
 import org.metricus.jdm.ui.ThemeDefinition;
@@ -335,6 +336,31 @@ public final class Gui {
         if (mainFrame != null) {
             mainFrame.getGraphPaletteMenu().setAllItemsEnabled(!t.hasLinkedPalette());
         }
+        applyStartButtonStyle(t);
+    }
+
+    /**
+     * Applies the Start button style for the given theme.
+     * Themes can override {@link ThemeDefinition#startButtonStyle()} to supply
+     * their own accent; the default falls back to GitHub green.
+     */
+    public static void applyStartButtonStyle(Theme t) {
+        if (controlPanel == null) return;
+        String style = t.definition().startButtonStyle();
+        if (style == null) style = ButtonStyles.DEFAULT_START;
+        controlPanel.startButton.putClientProperty("FlatLaf.style", style);
+    }
+
+    /**
+     * Applies the Cancel button style for the given theme.
+     * Themes can override {@link ThemeDefinition#cancelButtonStyle()} to supply
+     * a theme-coherent "stop" colour; the default falls back to amber.
+     */
+    public static void applyCancelButtonStyle(Theme t) {
+        if (controlPanel == null) return;
+        String style = t.definition().cancelButtonStyle();
+        if (style == null) style = ButtonStyles.CANCEL;
+        controlPanel.startButton.putClientProperty("FlatLaf.style", style);
     }
 
 
@@ -430,6 +456,12 @@ public final class Gui {
         if (progressBar != null && pbFg != null) {
             progressBar.setForeground(pbFg);
         }
+        // Seed the progress bar string with the initial target KB total.
+        updateProgress();
+        // Apply the saved theme's Start button colour now that the control
+        // panel exists. Without this, the button always opens GitHub-green
+        // because BenchmarkControlPanel seeds DEFAULT_START in its constructor.
+        applyStartButtonStyle(theme);
 
         // On macOS, replace the default system-provided About dialog (which shows
         // the Java runtime info) with our own branded dialog.

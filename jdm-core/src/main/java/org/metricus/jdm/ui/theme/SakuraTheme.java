@@ -83,6 +83,28 @@ public final class SakuraTheme implements ThemeDefinition {
     @Override public boolean hasLinkedPalette() { return true; }
     @Override public PaletteDefinition linkedPalette() { return new SakuraPalette(); }
 
+    @Override
+    public String startButtonStyle() {
+        return org.metricus.jdm.ui.ButtonStyles.buildStyle(
+            "#D4607C",   // ROSE — normal background
+            "#C55878",   // darker rose on hover
+            "#A84062",   // pressed
+            "#D4607C88", // rose focus ring
+            "#ffffff"
+        );
+    }
+
+    @Override
+    public String cancelButtonStyle() {
+        return org.metricus.jdm.ui.ButtonStyles.buildStyle(
+            "#A83060",   // DARK — Sakura's stale/warning rose-purple
+            "#8C2450",   // darker on hover
+            "#70183E",   // pressed
+            "#A8306088", // focus ring
+            "#ffffff"
+        );
+    }
+
     public static final class SakuraPalette implements PaletteDefinition {
 
         private static final Stroke BOLD = new BasicStroke(1.5f);

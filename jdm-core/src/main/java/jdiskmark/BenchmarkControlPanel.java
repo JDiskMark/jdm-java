@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static jdiskmark.MainFrame.DF;
+import org.metricus.jdm.ui.ButtonStyles;
 
 public class BenchmarkControlPanel extends JPanel {
 
@@ -194,6 +195,9 @@ public class BenchmarkControlPanel extends JPanel {
         rIopsLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         // --- Start Button ---
+        // Style resolved at theme-apply time; seed it here with the default.
+        // Gui.applyStartButtonStyle() will override this on every theme switch.
+        startButton.putClientProperty("FlatLaf.style", ButtonStyles.DEFAULT_START);
         // "span": Spans all columns (100% width)
         add(startButton, "span, growx, gaptop 5, h 40!");
 
