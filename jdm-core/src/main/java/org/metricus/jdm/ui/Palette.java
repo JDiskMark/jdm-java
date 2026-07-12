@@ -17,12 +17,8 @@ import org.metricus.jdm.ui.palette.MarinePalette;
  * Each constant holds a {@link PaletteDefinition} that supplies the series
  * colours and optional canvas/stroke/text customisations.  The generic
  * {@link #apply(PaletteDefinition)} method reads these values and configures
- * the chart — palette classes never touch {@link Gui} fields directly.
- * </p>
- * <p>
- * {@link jdiskmark.GraphPaletteMenu} iterates {@code values()} to build the
+ * {@link org.metricus.jdm.ui.GraphPaletteMenu} iterates {@code values()} to build the
  * menu automatically.
- * </p>
  */
 public enum Palette {
     CLASSIC("Classic",  new ClassicPalette()),

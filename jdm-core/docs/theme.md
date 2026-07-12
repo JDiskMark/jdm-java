@@ -12,12 +12,11 @@ new thread or onboarding a new contributor.
 
 | File | Role |
 |---|---|
-| [`ThemeDefinition.java`](file:///c:/Users/james/git/jdm-java/jdm-core/src/main/java/org/metricus/jdm/ui/ThemeDefinition.java) | Interface — every theme implements this contract |
-| [`Theme.java`](file:///c:/Users/james/git/jdm-java/jdm-core/src/main/java/org/metricus/jdm/ui/Theme.java) | Enum — one constant per theme, each holding a `ThemeDefinition` |
-| [`theme/`](file:///c:/Users/james/git/jdm-java/jdm-core/src/main/java/org/metricus/jdm/ui/theme) | Package — standalone `ThemeDefinition` classes: `DarkTheme`, `LightTheme`, `DarculaTheme`, `OldGloryTheme`, `SakuraTheme` |
-| [`Gui.java`](file:///c:/Users/james/git/jdm-java/jdm-core/src/main/java/jdiskmark/Gui.java) | Generic `configureLaf(ThemeDefinition)` + `applyTheme(Theme)` — no per-theme code |
-| [`ChartPalette.java`](file:///c:/Users/james/git/jdm-java/jdm-core/src/main/java/org/metricus/jdm/ui/ChartPalette.java) | Static factory — one `setXxxColorScheme()` per chart palette |
-| [`Palette.java`](file:///c:/Users/james/git/jdm-java/jdm-core/src/main/java/org/metricus/jdm/ui/Palette.java) | Enum for chart color palettes, independent of window themes |
+| [`ThemeDefinition.java`](../src/main/java/org/metricus/jdm/ui/ThemeDefinition.java) | Interface — every theme implements this contract |
+| [`Theme.java`](../src/main/java/org/metricus/jdm/ui/Theme.java) | Enum — one constant per theme, each holding a `ThemeDefinition` |
+| [`theme/`](../src/main/java/org/metricus/jdm/ui/theme) | Package — standalone `ThemeDefinition` classes |
+| [`Gui.java`](../src/main/java/jdiskmark/Gui.java) | Generic `configureLaf(ThemeDefinition)` + `applyTheme(Theme)` — no per-theme code |
+| [`Palette.java`](../src/main/java/org/metricus/jdm/ui/Palette.java) | Enum for chart color palettes, independent of window themes |
 
 ### Data Flow
 
@@ -59,14 +58,12 @@ Theme enum
 ### Enums (auto-populate menus)
 
 **`Palette`** drives **Graph > Color Palette** menu (via `GraphPaletteMenu` iterating `values()`):
-```
-CLASSIC, BLUE_GREEN, BARD_COOL, BARD_WARM, BETA, OLD_GLORY, SAKURA
-```
+
+    CLASSIC, LAGOON, MARINE, EMBER, BETA
 
 **`Theme`** drives **Graph > Window Theme** menu (via `GraphThemeMenu` iterating `values()`):
-```
-DARK, LIGHT, DARCULA, OLD_GLORY, SAKURA
-```
+
+    DARK, LIGHT, DARCULA, OLD_GLORY, SAKURA, HARVEST
 
 ---
 
