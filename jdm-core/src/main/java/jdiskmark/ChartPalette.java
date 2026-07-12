@@ -222,6 +222,75 @@ public final class ChartPalette {
         }
     }
 
+    /**
+     * Sakura (Cherry Blossom) palette — soft pink write series on a clean white canvas.
+     * Write series in the sakura pink family; read series in spring sage green for contrast.
+     * <p>
+     * White canvas ensures cherry-bark title/axes text is readable regardless of the
+     * surrounding LAF. {@link Gui#updateChartPanelStyle()} restores the LAF-derived
+     * background when switching to another palette.
+     * </p>
+     */
+    static void setSakuraColorScheme() {
+        System.out.println("Setting Sakura palette");
+        Gui.palette = Gui.Palette.SAKURA;
+
+        // White canvas: fresh like cherry blossoms in spring
+        Gui.chart.setBackgroundPaint(Color.WHITE);
+        XYPlot plot = (XYPlot) Gui.chart.getPlot();
+        plot.setBackgroundPaint(Color.WHITE);
+        plot.setOutlinePaint(new Color(0xCCCCCC));
+        plot.setDomainGridlinePaint(new Color(0xEEEEEE)); // very light grid
+        plot.setRangeGridlinePaint(new Color(0xEEEEEE));
+        if (Gui.chart.getLegend() != null) {
+            Gui.chart.getLegend().setBackgroundPaint(Color.WHITE);
+            Gui.chart.getLegend().setFrame(new BlockBorder(new Color(0xDDDDDD)));
+        }
+
+        Stroke bold = new BasicStroke(1.5f);
+        Stroke dash = new BasicStroke(1.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
+                10.0f, new float[]{2.0f, 6.0f}, 0.0f);
+
+        Gui.bwRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
+        Gui.bwRenderer.setSeriesPaint(0,  ThemeColors.SAKURA_PINK);            // write sample
+        Gui.bwRenderer.setSeriesStroke(0, bold);
+        Gui.bwRenderer.setSeriesPaint(1,  ThemeColors.SAKURA_FADE);            // write trend (dashed)
+        Gui.bwRenderer.setSeriesStroke(1, dash);
+        Gui.bwRenderer.setSeriesPaint(2,  ThemeColors.SAKURA_LIGHT);           // write max
+        Gui.bwRenderer.setSeriesPaint(3,  ThemeColors.SAKURA_DARK);            // write min
+        Gui.bwRenderer.setSeriesPaint(4,  ThemeColors.SAKURA_SAGE);            // read sample
+        Gui.bwRenderer.setSeriesStroke(4, bold);
+        Gui.bwRenderer.setSeriesPaint(5,  ThemeColors.SAKURA_SAGE_FADE);       // read trend (dashed)
+        Gui.bwRenderer.setSeriesStroke(5, dash);
+        Gui.bwRenderer.setSeriesPaint(6,  ThemeColors.SAKURA_SAGE_LIGHT);      // read max
+        Gui.bwRenderer.setSeriesPaint(7,  ThemeColors.SAKURA_SAGE_DARK);       // read min
+
+        Gui.msRenderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
+        Gui.msRenderer.setSeriesPaint(0, ThemeColors.SAKURA_PINK);             // write latency
+        Gui.msRenderer.setSeriesPaint(1, ThemeColors.SAKURA_SAGE);             // read latency
+
+        // Title, axes, and legend text in cherry bark (readable on white background)
+        if (Gui.chart != null) Gui.chart.getTitle().setPaint(ThemeColors.SAKURA_BARK);
+        if (Gui.bwAxis != null) {
+            Gui.bwAxis.setLabelPaint(ThemeColors.SAKURA_BARK);
+            Gui.bwAxis.setTickLabelPaint(ThemeColors.SAKURA_BARK);
+            Gui.bwAxis.setTickMarkPaint(ThemeColors.SAKURA_BARK);
+        }
+        if (Gui.msAxis != null) {
+            Gui.msAxis.setLabelPaint(ThemeColors.SAKURA_BARK);
+            Gui.msAxis.setTickLabelPaint(ThemeColors.SAKURA_BARK);
+            Gui.msAxis.setTickMarkPaint(ThemeColors.SAKURA_BARK);
+        }
+        if (Gui.sampleAxis != null) {
+            Gui.sampleAxis.setLabelPaint(ThemeColors.SAKURA_BARK);
+            Gui.sampleAxis.setTickLabelPaint(ThemeColors.SAKURA_BARK);
+            Gui.sampleAxis.setTickMarkPaint(ThemeColors.SAKURA_BARK);
+        }
+        if (Gui.chart != null && Gui.chart.getLegend() != null) {
+            Gui.chart.getLegend().setItemPaint(ThemeColors.SAKURA_BARK);
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Shared helpers
     // -----------------------------------------------------------------------
@@ -229,7 +298,7 @@ public final class ChartPalette {
     /**
      * Restores the plot background to the default dark LAF-driven style.
      * Called by every palette that does not manage its own plot background
-     * (i.e. all palettes except Beta and Old Glory), and also when switching
+     * (i.e. all palettes except Beta, Old Glory, and Sakura), and also when switching
      * away from the Beta palette.
      */
     static void restoreDefaultPlotBackground() {
@@ -240,7 +309,7 @@ public final class ChartPalette {
         // JFreeChart 1.x does not accept null paint; restore to a neutral grid color
         plot.setDomainGridlinePaint(new Color(80, 80, 80));
         plot.setRangeGridlinePaint(new Color(80, 80, 80));
-        // Clear any per-series custom strokes (Beta dashed avg, Old Glory bold sample)
+        // Clear any per-series custom strokes (Beta dashed avg, Old Glory/Sakura bold sample)
         if (Gui.bwRenderer != null) {
             Gui.bwRenderer.setSeriesStroke(0, null); // write sample - back to default
             Gui.bwRenderer.setSeriesStroke(1, null); // write trend

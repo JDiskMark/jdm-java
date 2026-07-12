@@ -68,6 +68,60 @@ public final class ThemeColors {
     public static final String HEX_OLD_GLORY_RED   = "#B22234";
 
     // -----------------------------------------------------------------------
+    // Sakura (Cherry Blossom) palette
+    // -----------------------------------------------------------------------
+
+    /** Sakura rose (#D4607C) - selection bg, tab selected, accent, progress bar. */
+    public static final Color SAKURA_ROSE        = new Color(0xD4607C);
+
+    /** Medium petal pink (#E8849A) - chart write sample, scrollbar thumb. */
+    public static final Color SAKURA_PINK        = new Color(0xE8849A);
+
+    /** Petal pink at 170/255 alpha - chart write trend dashed line. */
+    public static final Color SAKURA_FADE        = new Color(0xE8, 0x84, 0x9A, 170);
+
+    /** Pale petal (#F5C2CE) - chart write max. */
+    public static final Color SAKURA_LIGHT       = new Color(0xF5C2CE);
+
+    /** Deep rose (#A83060) - chart write min. */
+    public static final Color SAKURA_DARK        = new Color(0xA83060);
+
+    /** Cherry bark (#2D1B22) - primary text and odd-index badge foreground. */
+    public static final Color SAKURA_BARK        = new Color(0x2D1B22);
+
+    /** Spring sage green (#7A9E7E) - chart read sample. */
+    public static final Color SAKURA_SAGE        = new Color(0x7A9E7E);
+
+    /** Spring sage at 170/255 alpha - chart read trend dashed line. */
+    public static final Color SAKURA_SAGE_FADE   = new Color(0x7A, 0x9E, 0x7E, 170);
+
+    /** Light sage (#B0CCAA) - chart read max. */
+    public static final Color SAKURA_SAGE_LIGHT  = new Color(0xB0CCAA);
+
+    /** Forest green (#4A6B4D) - chart read min. */
+    public static final Color SAKURA_SAGE_DARK   = new Color(0x4A6B4D);
+
+    /** Badge background - pale pink blush (#FCEEF2). */
+    public static final Color SAKURA_BADGE_BG    = new Color(0xFCEEF2);
+
+    /** Scrollbar thumb hover - deeper rose (#C55878). */
+    public static final Color SAKURA_SCROLL_HOVER = new Color(0xC55878);
+
+    /** Scrollbar thumb pressed - darkest rose (#A84062). */
+    public static final Color SAKURA_SCROLL_PRESS = new Color(0xA84062);
+
+    /** Tab hover tint - very light pink (#FDF0F4) over white background. */
+    public static final Color SAKURA_TAB_HOVER   = new Color(0xFDF0F4);
+
+    // ---- Hex-string variants for Sakura setGlobalExtraDefaults() -----------
+
+    /** Hex string form of {@link #SAKURA_ROSE} for FlatLaf key values. */
+    public static final String HEX_SAKURA_ROSE   = "#D4607C";
+
+    /** Hex string form of {@link #SAKURA_BARK} for FlatLaf key values. */
+    public static final String HEX_SAKURA_BARK   = "#2D1B22";
+
+    // -----------------------------------------------------------------------
 
     private ThemeColors() { /* static constants only */ }
 }

@@ -67,7 +67,8 @@ public final class Gui {
         BARD_COOL("Bard Cool"),
         BARD_WARM("Bard Warm"),
         BETA("Beta"),
-        OLD_GLORY("Old Glory");
+        OLD_GLORY("Old Glory"),
+        SAKURA("Sakura");
 
         private final String displayName;
 
@@ -86,6 +87,7 @@ public final class Gui {
                 case BARD_WARM  -> ChartPalette.setWarmColorScheme();
                 case BETA       -> ChartPalette.setBetaColorScheme();
                 case OLD_GLORY  -> ChartPalette.setOldGloryColorScheme();
+                case SAKURA     -> ChartPalette.setSakuraColorScheme();
             }
         }
     }
@@ -94,7 +96,8 @@ public final class Gui {
         DARK("Dark"),
         LIGHT("Light"),
         DARCULA("Darcula"),
-        OLD_GLORY("Old Glory");
+        OLD_GLORY("Old Glory"),
+        SAKURA("Sakura");
 
         private final String displayName;
 
@@ -107,10 +110,11 @@ public final class Gui {
         /** Applies this theme's look-and-feel and updates the UI. */
         public void apply() {
             switch (this) {
-                case DARK    -> goDarkTheme();
-                case LIGHT   -> goLightTheme();
-                case DARCULA -> goDarculaTheme();
+                case DARK      -> goDarkTheme();
+                case LIGHT     -> goLightTheme();
+                case DARCULA   -> goDarculaTheme();
                 case OLD_GLORY -> goOldGloryTheme();
+                case SAKURA    -> goSakuraTheme();
             }
         }
 
@@ -125,6 +129,8 @@ public final class Gui {
                 case DARCULA -> "com.formdev.flatlaf.FlatDarculaLaf";
                 case OLD_GLORY -> isMac ? "com.formdev.flatlaf.themes.FlatMacDarkLaf"
                                      : "com.formdev.flatlaf.FlatDarkLaf";
+                case SAKURA  -> isMac ? "com.formdev.flatlaf.themes.FlatMacLightLaf"
+                                     : "com.formdev.flatlaf.FlatLightLaf";
             };
         }
 
@@ -230,6 +236,8 @@ public final class Gui {
             b.setBackground(BADGE_DEFAULT_BG);
             if (theme == Theme.OLD_GLORY) {
                 b.setForeground(i % 2 == 0 ? ThemeColors.OLD_GLORY_RED : ThemeColors.OLD_GLORY_BLUE);
+            } else if (theme == Theme.SAKURA) {
+                b.setForeground(i % 2 == 0 ? ThemeColors.SAKURA_ROSE : ThemeColors.SAKURA_DARK);
             } else {
                 b.setForeground(BADGE_DEFAULT_FG);
             }
@@ -256,6 +264,29 @@ public final class Gui {
                     // alternate crimson / flag-blue across the badge strip
                     chartBadgeList.get(i).setForeground(
                             i % 2 == 0 ? ThemeColors.OLD_GLORY_RED : ThemeColors.OLD_GLORY_BLUE);
+                    chartBadgeList.get(i).setBorder(badgeBorder);
+                }
+            }
+            return;
+        }
+        if (theme == Theme.SAKURA) {
+            // Sakura: blush white background, alternating rose / cherry-bark text
+            BADGE_AMBER_BG   = ThemeColors.SAKURA_DARK;    // stale → deep rose background
+            BADGE_STALE_FG   = Color.WHITE;
+            BADGE_DEFAULT_BG = ThemeColors.SAKURA_BADGE_BG;
+            BADGE_DEFAULT_FG = ThemeColors.SAKURA_ROSE;    // used for newly created badges
+            javax.swing.border.Border outerBorder =
+                    javax.swing.BorderFactory.createLineBorder(ThemeColors.SAKURA_ROSE, 1);
+            javax.swing.border.Border innerBorder =
+                    javax.swing.BorderFactory.createEmptyBorder(2, 5, 2, 5);
+            javax.swing.border.Border badgeBorder =
+                    javax.swing.BorderFactory.createCompoundBorder(outerBorder, innerBorder);
+            if (chartBadgeList != null) {
+                for (int i = 0; i < chartBadgeList.size(); i++) {
+                    chartBadgeList.get(i).setBackground(BADGE_DEFAULT_BG);
+                    // alternate sakura rose / deep rose (bark) across the badge strip
+                    chartBadgeList.get(i).setForeground(
+                            i % 2 == 0 ? ThemeColors.SAKURA_ROSE : ThemeColors.SAKURA_DARK);
                     chartBadgeList.get(i).setBorder(badgeBorder);
                 }
             }
@@ -497,6 +528,66 @@ public final class Gui {
         }
     }
 
+    /**
+     * Applies the Sakura (Cherry Blossom) Look-and-Feel to the application.
+     * <p>
+     * Uses FlatLightLaf as the base, with:
+     * <ul>
+     *   <li>Sakura Rose (#D4607C) as {@code @accentColor}: checkboxes, radio
+     *       buttons, slider thumb, focus rings.</li>
+     *   <li>Near-white (#FFFBFC) background + Cherry Bark (#2D1B22) foreground
+     *       so all component colours derive correctly from the LAF.</li>
+     *   <li>Deep rose selections (white text) + matching scrollbar thumb.</li>
+     *   <li>Rose tab underline; very light pink hover tint.</li>
+     * </ul>
+     */
+    public static void configureSakuraLaf() {
+        try {
+            java.util.Map<String, String> extras = new java.util.HashMap<>();
+            extras.put("@accentColor", ThemeColors.HEX_SAKURA_ROSE);
+            extras.put("@background",  "#FFFBFC"); // near-white with faintest pink tint
+            extras.put("@foreground",  ThemeColors.HEX_SAKURA_BARK);
+            extras.put("TitlePane.foreground", ThemeColors.HEX_SAKURA_BARK);
+            FlatLaf.setGlobalExtraDefaults(extras);
+            if (App.isMacOs()) {
+                UIManager.setLookAndFeel(new FlatMacLightLaf());
+            } else {
+                UIManager.setLookAndFeel(new FlatLightLaf());
+            }
+            if (!App.isMacOs()) {
+                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
+                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
+            }
+            // Selections: deep sakura rose bg + white text
+            UIManager.put("Table.selectionBackground",     ThemeColors.SAKURA_ROSE);
+            UIManager.put("Table.selectionForeground",     Color.WHITE);
+            UIManager.put("List.selectionBackground",      ThemeColors.SAKURA_ROSE);
+            UIManager.put("List.selectionForeground",      Color.WHITE);
+            UIManager.put("Tree.selectionBackground",      ThemeColors.SAKURA_ROSE);
+            UIManager.put("Tree.selectionForeground",      Color.WHITE);
+            // Tabs: pale petal selected bg + dark text; rose underline; hover goes darker (rose)
+            UIManager.put("TabbedPane.selectedBackground",     ThemeColors.SAKURA_LIGHT);
+            UIManager.put("TabbedPane.selectedForeground",     Color.BLACK); // this color is sensitive and can break LAF - do not change without testing
+            UIManager.put("TabbedPane.underlineColor",         ThemeColors.SAKURA_ROSE);
+            UIManager.put("TabbedPane.inactiveUnderlineColor", ThemeColors.SAKURA_ROSE);
+            UIManager.put("TabbedPane.focusColor",             ThemeColors.SAKURA_LIGHT);
+            UIManager.put("TabbedPane.hoverColor",             ThemeColors.SAKURA_ROSE);
+            // Scrollbar: medium pink thumb
+            UIManager.put("ScrollBar.thumb",               ThemeColors.SAKURA_PINK);
+            UIManager.put("ScrollBar.thumbHover",          ThemeColors.SAKURA_SCROLL_HOVER);
+            UIManager.put("ScrollBar.thumbPressed",        ThemeColors.SAKURA_SCROLL_PRESS);
+            UIManager.put("TitlePane.foreground",          ThemeColors.SAKURA_BARK);
+        } catch (UnsupportedLookAndFeelException e) {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (ClassNotFoundException | InstantiationException
+                    | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
+                java.util.logging.Logger.getLogger(MainFrame.class.getName())
+                        .log(java.util.logging.Level.SEVERE, null, ex);
+            }
+        }
+    }
+
     // switch to dark theme
     public static void goDarkTheme() {
         configureDarkLaf();
@@ -542,7 +633,25 @@ public final class Gui {
             Palette.OLD_GLORY.apply();
         }
     }
-    
+
+    /** Sakura (Cherry Blossom) theme: rose-accented FlatLight + auto-applies Sakura graph palette. */
+    public static void goSakuraTheme() {
+        configureSakuraLaf();
+        FlatLaf.updateUI();
+        updateChartPanelStyle();
+        // Force title bar text to cherry bark via root-pane client property
+        if (mainFrame != null) {
+            mainFrame.getRootPane().putClientProperty(
+                "JRootPane.titleBarForeground", ThemeColors.SAKURA_BARK);
+        }
+        if (progressBar != null) progressBar.setForeground(ThemeColors.SAKURA_ROSE);
+        // Auto-apply the matching Sakura graph palette
+        if (chart != null) {
+            palette = Palette.SAKURA;
+            Palette.SAKURA.apply();
+        }
+    }
+
     /**
      * Handles progress and state updates from the SwingWorker 
      * and updates the progress bar accordingly.
@@ -1067,6 +1176,9 @@ public final class Gui {
         } else if (theme == Theme.OLD_GLORY && chartBadgeList != null) {
             int idx = chartBadgeList.indexOf(badge);
             badge.setForeground(idx % 2 == 0 ? ThemeColors.OLD_GLORY_RED : ThemeColors.OLD_GLORY_BLUE);
+        } else if (theme == Theme.SAKURA && chartBadgeList != null) {
+            int idx = chartBadgeList.indexOf(badge);
+            badge.setForeground(idx % 2 == 0 ? ThemeColors.SAKURA_ROSE : ThemeColors.SAKURA_DARK);
         } else {
             badge.setForeground(BADGE_DEFAULT_FG);
         }

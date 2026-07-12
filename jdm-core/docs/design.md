@@ -33,5 +33,40 @@ Bottom Panel Tabs (common to all):
 - Events
 - Sharing -- controls to share benchmarks to community portal
 
-# proposed Archived mode
-Feature to archive a benchmark so it does not show up in the benchmark history but can be unarchived and brought back into history. Entering view archive mode allows seeing exclusively archived report and allows selecting and unarchiving or deleting them. Exiting archive mode returns to normal benchmark history view
+# Package organization
+
+org.metricus.jdm
+  - core - benchmark algorithms
+  - io - abstract api
+  - io.win
+  - io.mac
+  - io.linux
+  - cli - command line interface
+  - ui - user interface, themes, palettes
+  - util - sharing, logging, export, translation
+
+## Proposed Mapping
+
+**root** — App, EM
+
+**core** — Benchmark, BenchmarkCallable, BenchmarkConfig, BenchmarkDriveInfo,
+BenchmarkOperation, BenchmarkProfile, BenchmarkRunner, BenchmarkSystemInfo,
+BenchmarkWorker, DiskUsageInfo, GcDetector, RenderFrequencyMode,
+Sample, Smart, SmartSnapshot,
+GcRetriedSamplesConverter, SampleAttributeConverter, LocalDateTimeAttributeConverter
+
+**io** — DriveAccessChecker, UtilOs (abstract interface)
+**io.win / io.mac / io.linux** — platform implementations (split from UtilOs)
+
+**cli** — Cli, RunBenchmarkCommand, VersionProvider
+
+**ui** — Gui, MainFrame, BenchmarkPanel, BenchmarkControlPanel, DrivePanel,
+SelectDriveFrame, AdvancedOptionsFrame, SmartPanel, SmartReportsPanel,
+SharingPanel, PortalEnableDialog, OperationTableSelectionListener,
+CenterTableCellRenderer, RightTableCellRenderer,
+ChartPalette, ThemeColors, GraphPaletteMenu, GraphThemeMenu, AppIcon
+
+**util** — Portal, Exporter, Util, RoundingSerializer
+
+
+# 
