@@ -38,14 +38,14 @@ public final class MainFrame extends javax.swing.JFrame {
     private final javax.swing.JMenuItem unarchiveSelectedItem = new javax.swing.JMenuItem("Unarchive Selected");
 
     /**
-     * Graph Palette submenu — built programmatically from the {@link Gui.Palette}
+     * Graph Palette submenu — built programmatically from the {@link org.metricus.jdm.ui.Palette}
      * enum so that adding a new palette never touches the NetBeans form.
      */
     private final GraphPaletteMenu graphPaletteMenu = new GraphPaletteMenu();
     GraphPaletteMenu getGraphPaletteMenu() { return graphPaletteMenu; }
 
     /**
-     * Window Theme submenu — built programmatically from the {@link Gui.Theme}
+     * Window Theme submenu — built programmatically from the {@link org.metricus.jdm.ui.Theme}
      * enum so that adding a new theme never touches the NetBeans form.
      */
     private final GraphThemeMenu graphThemeMenu = new GraphThemeMenu();

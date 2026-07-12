@@ -285,10 +285,10 @@ public final class Gui {
      */
     public static void configureLaf(ThemeDefinition def) {
         try {
+            clearThemeOverrides();
             java.util.Map<String, String> extras = def.flatLafExtras();
             FlatLaf.setGlobalExtraDefaults(extras);
             UIManager.setLookAndFeel(def.lafClassName());
-            clearThemeOverrides();
             java.util.Map<String, Object> overrides = def.uiManagerOverrides();
             if (overrides != null) {
                 overrides.forEach(UIManager::put);
