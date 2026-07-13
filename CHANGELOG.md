@@ -6,18 +6,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased] — v0.8.0
 
 ### Added
-- [#16](https://github.com/JDiskMark/jdm-java/issues/16) macOS PKG installer — tyler
+- [#16](https://github.com/JDiskMark/jdm-java/issues/16) macOS PKG installer
+- [#78](https://github.com/JDiskMark/jdm-java/issues/78) throttle graphics render
+- [#67](https://github.com/JDiskMark/jdm-java/issues/67) test portal uploads (no auth)
+- [#70](https://github.com/JDiskMark/jdm-java/issues/70) app icon
+- [#117](https://github.com/JDiskMark/jdm-java/issues/117) user portal upload acknowledgement
+- archive support
+- drive selection w improved drive info panel
+- Patriot color palette
 
 ### Changed
-- [#33](https://github.com/JDiskMark/jdm-java/issues/33) Maven build — lane/james
+- [#33](https://github.com/JDiskMark/jdm-java/issues/33) Maven build
+- [#182](https://github.com/JDiskMark/jdm-java/issues/182) Release preparation
+    - JFreeChart 1.5.6
+    - Hibernate ORM 7.4.4 (Jakarta Persistence 3.2)
+    - Explicit entity class registration for fat-JAR scanning compatibility
 
 ### In Progress
-- [#70](https://github.com/JDiskMark/jdm-java/issues/70) app icon — ian
-- [#78](https://github.com/JDiskMark/jdm-java/issues/78) throttle graphics render — val
-- [#95](https://github.com/JDiskMark/jdm-java/issues/95) disk cache purging — val
-- [#67](https://github.com/JDiskMark/jdm-java/issues/67) test portal uploads (no auth)
-- [#117](https://github.com/JDiskMark/jdm-java/issues/117) user portal upload acknowledgement
+- [#95](https://github.com/JDiskMark/jdm-java/issues/95) disk cache purging
 - [#118](https://github.com/JDiskMark/jdm-java/issues/118) test interlock or OAuth upload
+- [#61](https://github.com/JDiskMark/jdm-java/issues/61) SMART monitoring ubuntu
 
 ---
 
