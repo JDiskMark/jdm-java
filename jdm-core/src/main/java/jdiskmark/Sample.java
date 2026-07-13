@@ -16,12 +16,17 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -348,6 +353,149 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
             }
         } catch (IOException ex) {
             Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        long elapsedTimeNs = System.nanoTime() - startTime;
+        accessTimeMs = (elapsedTimeNs / 1_000_000f) / (float) numOfBlocks;
+        double sec = (double) elapsedTimeNs / 1_000_000_000d;
+        bwMbSec = ((double) totalBytesRead / (double) MEGABYTE) / sec;
+    }
+
+    /**
+     * Writes {@code numOfBlocks} blocks using {@code AsynchronousFileChannel} with a
+     * sliding queue window of up to {@code queueDepth} in-flight I/O operations.
+     * For QD=1 this is functionally identical to the synchronous path.
+     */
+    public void measureWriteAsync(long blockSize, int numOfBlocks, int queueDepth,
+                                  BenchmarkConfig rc, BenchmarkRunner bRunner) {
+        File testFile = getTestFile(bRunner);
+        long startTime = System.nanoTime();
+        long totalBytesWritten = 0;
+
+        long fileSize = rc.testFileSizeMb > 0
+                ? (long) rc.testFileSizeMb * 1024L * 1024L
+                : (long) numOfBlocks * blockSize;
+        long numAddressableBlocks = fileSize / blockSize;
+
+        Set<OpenOption> options = new HashSet<>();
+        options.add(StandardOpenOption.WRITE);
+        options.add(StandardOpenOption.CREATE);
+        if (Boolean.TRUE.equals(rc.getDirectIoEnabled())) {
+            options.add(ExtendedOpenOption.DIRECT);
+        }
+        if (Boolean.TRUE.equals(rc.writeSyncEnabled)) {
+            options.add(StandardOpenOption.DSYNC);
+        }
+
+        AsynchronousFileChannel afc = null;
+        try {
+            afc = AsynchronousFileChannel.open(testFile.toPath(),
+                    options.toArray(OpenOption[]::new));
+        } catch (UnsupportedOperationException | IOException e) {
+            if (Boolean.TRUE.equals(rc.getDirectIoEnabled()) && options.contains(ExtendedOpenOption.DIRECT)) {
+                App.err("Async direct I/O open failed: " + e.getMessage() + ". Falling back to buffered.");
+                options.remove(ExtendedOpenOption.DIRECT);
+                try {
+                    afc = AsynchronousFileChannel.open(testFile.toPath(),
+                            options.toArray(OpenOption[]::new));
+                } catch (IOException ex) {
+                    Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Async write open fallback failed", ex);
+                    return;
+                }
+            } else {
+                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Async write open failed", e);
+                return;
+            }
+        }
+
+        try (AsynchronousFileChannel ch = afc) {
+            List<Future<Integer>> pending = new ArrayList<>(queueDepth);
+            for (int b = 0; b < numOfBlocks; b++) {
+                if (bRunner.listener.isCancelled()) break;
+                long blockIndex = (rc.blockOrder == RANDOM)
+                        ? Util.randInt(0, (int)(numAddressableBlocks - 1)) : b;
+                long offset = blockIndex * blockSize;
+                ByteBuffer buf = ByteBuffer.allocateDirect((int) blockSize);
+                Future<Integer> f = ch.write(buf, offset);
+                pending.add(f);
+                if (pending.size() >= queueDepth) {
+                    totalBytesWritten += pending.removeFirst().get();
+                }
+                bRunner.updateWriteProgress();
+            }
+            for (Future<Integer> f : pending) {
+                totalBytesWritten += f.get();
+            }
+        } catch (Exception e) {
+            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
+        }
+        long elapsedTimeNs = System.nanoTime() - startTime;
+        accessTimeMs = (elapsedTimeNs / 1_000_000f) / (float) numOfBlocks;
+        double sec = (double) elapsedTimeNs / 1_000_000_000d;
+        bwMbSec = (double) totalBytesWritten / (double) MEGABYTE / sec;
+    }
+
+    /**
+     * Reads {@code numOfBlocks} blocks using {@code AsynchronousFileChannel} with a
+     * sliding queue window of up to {@code queueDepth} in-flight I/O operations.
+     */
+    public void measureReadAsync(long blockSize, int numOfBlocks, int queueDepth,
+                                 BenchmarkConfig rc, BenchmarkRunner bRunner) {
+        File testFile = getTestFile(bRunner);
+        long startTime = System.nanoTime();
+        long totalBytesRead = 0;
+
+        long fileSize = rc.testFileSizeMb > 0
+                ? (long) rc.testFileSizeMb * 1024L * 1024L
+                : (long) numOfBlocks * blockSize;
+        long numAddressableBlocks = fileSize / blockSize;
+
+        Set<OpenOption> options = new HashSet<>();
+        options.add(StandardOpenOption.READ);
+        if (Boolean.TRUE.equals(rc.getDirectIoEnabled())) {
+            options.add(ExtendedOpenOption.DIRECT);
+        }
+
+        AsynchronousFileChannel afc = null;
+        try {
+            afc = AsynchronousFileChannel.open(testFile.toPath(),
+                    options.toArray(OpenOption[]::new));
+        } catch (UnsupportedOperationException | IOException e) {
+            if (Boolean.TRUE.equals(rc.getDirectIoEnabled()) && options.contains(ExtendedOpenOption.DIRECT)) {
+                App.err("Async direct I/O open failed: " + e.getMessage() + ". Falling back to buffered.");
+                options.remove(ExtendedOpenOption.DIRECT);
+                try {
+                    afc = AsynchronousFileChannel.open(testFile.toPath(),
+                            options.toArray(OpenOption[]::new));
+                } catch (IOException ex) {
+                    Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Async read open fallback failed", ex);
+                    return;
+                }
+            } else {
+                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Async read open failed", e);
+                return;
+            }
+        }
+
+        try (AsynchronousFileChannel ch = afc) {
+            List<Future<Integer>> pending = new ArrayList<>(queueDepth);
+            for (int b = 0; b < numOfBlocks; b++) {
+                if (bRunner.listener.isCancelled()) break;
+                long blockIndex = (rc.blockOrder == RANDOM)
+                        ? Util.randInt(0, (int)(numAddressableBlocks - 1)) : b;
+                long offset = blockIndex * blockSize;
+                ByteBuffer buf = ByteBuffer.allocateDirect((int) blockSize);
+                Future<Integer> f = ch.read(buf, offset);
+                pending.add(f);
+                if (pending.size() >= queueDepth) {
+                    totalBytesRead += pending.removeFirst().get();
+                }
+                bRunner.updateReadProgress();
+            }
+            for (Future<Integer> f : pending) {
+                totalBytesRead += f.get();
+            }
+        } catch (Exception e) {
+            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
         }
         long elapsedTimeNs = System.nanoTime() - startTime;
         accessTimeMs = (elapsedTimeNs / 1_000_000f) / (float) numOfBlocks;

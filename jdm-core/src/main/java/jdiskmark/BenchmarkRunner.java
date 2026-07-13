@@ -17,6 +17,7 @@ import jdiskmark.App.IoEngine;
 import jdiskmark.Benchmark.IOMode;
 import static jdiskmark.Benchmark.IOMode.READ;
 import static jdiskmark.Benchmark.IOMode.WRITE;
+import jdiskmark.BenchmarkProfile.CdmRow;
 
 public class BenchmarkRunner {
     
@@ -175,6 +176,175 @@ public class BenchmarkRunner {
         if (config.gcHintsEnabled) { System.gc(); } // clear heap no wait
         
         return benchmark;
+    }
+
+    /**
+     * Executes a multi-row CDM-style benchmark.
+     * Creates one BenchmarkOperation per (row × ioMode) and runs them sequentially.
+     */
+    public Benchmark executeCdm(List<CdmRow> rows) throws Exception {
+        String driveModel = Util.getDriveModel(App.locationDir);
+        String partitionId = Util.getPartitionId(App.locationDir.toPath());
+        DiskUsageInfo usageInfo = Util.getDiskUsage(App.locationDir.toString());
+
+        Benchmark benchmark = new Benchmark(config);
+        mapEnvironment(benchmark, driveModel, partitionId, usageInfo);
+        benchmark.setRenderMode(App.rmOption);
+        benchmark.recordStartTime();
+
+        for (CdmRow row : rows) {
+            if (listener.isCancelled()) break;
+            BenchmarkConfig rc = rowConfig(row);
+
+            runOperationCdm(benchmark, WRITE, rc, row);
+            listener.onOperationComplete();
+
+            if (!listener.isCancelled() && rc.getDirectIoEnabled()) {
+                listener.attemptCacheDrop();
+            }
+
+            if (!listener.isCancelled()) {
+                runOperationCdm(benchmark, READ, rc, row);
+                listener.onOperationComplete();
+            }
+        }
+
+        benchmark.recordEndTime();
+        return benchmark;
+    }
+
+    /** Builds a per-row BenchmarkConfig inheriting base settings and overriding row parameters. */
+    private BenchmarkConfig rowConfig(CdmRow row) {
+        BenchmarkConfig rc = new BenchmarkConfig();
+        // inherit from base config
+        rc.testDir = config.testDir;
+        rc.appVersion = config.appVersion;
+        rc.gcRetryEnabled = config.gcRetryEnabled;
+        rc.gcHintsEnabled = config.gcHintsEnabled;
+        rc.ioEngine = config.ioEngine;
+        rc.sectorAlignment = config.sectorAlignment;
+        // row-specific overrides
+        rc.blockOrder = row.blockOrder();
+        rc.blockSize = (long) row.blockSizeKb() * 1024L;
+        rc.numBlocks = row.numBlocks();
+        rc.numSamples = row.numSamples();
+        rc.numThreads = row.numThreads();
+        rc.setQueueDepth(row.queueDepth());
+        rc.setDirectIoEnabled(row.directIo());
+        rc.writeSyncEnabled = config.writeSyncEnabled;
+        rc.multiFileEnabled = row.multiFile();
+        rc.txSize = (long) row.numBlocks() * (long) row.blockSizeKb() * 1024L;
+        // testFileSizeMb: 1 GiB for all default/extended rows (numBlocks × blockSize
+        // is only the per-sample tx size, not the file address space)
+        rc.setTestFileSizeMb(1024);
+        return rc;
+    }
+
+    private void runOperationCdm(Benchmark b, IOMode mode, BenchmarkConfig rc, CdmRow row) throws Exception {
+        BenchmarkOperation op = createOpCdm(b, mode, rc, row);
+        int startingSample = App.nextSampleNumber;
+        int endingSample = App.nextSampleNumber + rc.numSamples;
+        int[][] tRanges = divideIntoRanges(startingSample, endingSample, rc.numThreads);
+
+        // reset per-operation progress counters
+        writeUnitsComplete.reset();
+        readUnitsComplete.reset();
+        unitsTotal = (long) rc.numBlocks * rc.numSamples;
+
+        ExecutorService executor = Executors.newFixedThreadPool(rc.numThreads);
+        List<Future<?>> futures = new ArrayList<>();
+
+        final IOAction ioAction = switch (rc.ioEngine) {
+            case LEGACY -> switch (mode) {
+                case WRITE -> (s) -> s.measureWriteLegacy(rc.blockSize, rc.numBlocks, blockArr, this);
+                case READ  -> (s) -> s.measureReadLegacy(rc.blockSize, rc.numBlocks, blockArr, this);
+            };
+            case MODERN -> switch (mode) {
+                case WRITE -> (s) -> s.measureWriteAsync(rc.blockSize, rc.numBlocks, rc.getQueueDepth(), rc, this);
+                case READ  -> (s) -> s.measureReadAsync(rc.blockSize, rc.numBlocks, rc.getQueueDepth(), rc, this);
+            };
+        };
+
+        for (int[] range : tRanges) {
+            futures.add(executor.submit(() -> {
+                GcDetector gcDetector = rc.gcRetryEnabled ? new GcDetector() : null;
+                if (gcDetector != null) gcDetector.start();
+                try {
+                    for (int s = range[0]; s < range[1] && !listener.isCancelled(); s++) {
+                        Sample.Type type = mode == IOMode.WRITE ? Sample.Type.WRITE : Sample.Type.READ;
+                        Sample sample = new Sample(type, s);
+                        int retries = 0;
+                        do {
+                            if (gcDetector != null) gcDetector.reset();
+                            try {
+                                ioAction.perform(sample);
+                            } catch (Exception e) {
+                                logger.log(Level.SEVERE, null, e);
+                                throw new RuntimeException(e);
+                            }
+                            if (gcDetector != null && gcDetector.isGcDetected() && retries < MAX_GC_RETRIES) {
+                                retries++;
+                                synchronized (op) { op.gcRetriedSamples.add(s); }
+                                long resetUnits = rc.numBlocks;
+                                switch (mode) {
+                                    case WRITE -> writeUnitsComplete.add(-resetUnits);
+                                    case READ  -> readUnitsComplete.add(-resetUnits);
+                                }
+                            } else {
+                                break;
+                            }
+                        } while (true);
+
+                        App.updateMetrics(sample);
+                        op.bwMax = sample.cumMax;
+                        op.bwMin = sample.cumMin;
+                        op.bwAvg = sample.cumAvg;
+                        op.accAvg = sample.cumAccTimeMs;
+                        op.add(sample);
+
+                        switch (mode) {
+                            case WRITE -> writeUnitsComplete.increment();
+                            case READ  -> readUnitsComplete.increment();
+                        }
+                        listener.onSampleComplete(sample);
+                        throttledProgressUpdate(false);
+                    }
+                } finally {
+                    if (gcDetector != null) gcDetector.stop();
+                }
+            }));
+        }
+        executor.shutdown();
+        try {
+            for (Future<?> f : futures) f.get();
+        } catch (ExecutionException e) {
+            throw new Exception("CDM threaded IO operation failed", e.getCause());
+        } finally {
+            op.endTime = LocalDateTime.now();
+            op.setTotalOps(mode == IOMode.WRITE ? writeUnitsComplete.sum() : readUnitsComplete.sum());
+            if (op.ioMode == IOMode.WRITE) App.wIops = op.iops;
+            else App.rIops = op.iops;
+        }
+    }
+
+    private BenchmarkOperation createOpCdm(Benchmark b, IOMode mode, BenchmarkConfig rc, CdmRow row) {
+        BenchmarkOperation op = new BenchmarkOperation();
+        op.setBenchmark(b);
+        op.ioMode = mode;
+        op.blockOrder = rc.blockOrder;
+        op.numSamples = rc.numSamples;
+        op.numBlocks = rc.numBlocks;
+        op.blockSize = rc.blockSize;
+        op.txSize = rc.txSize;
+        op.numThreads = rc.numThreads;
+        op.setQueueDepth(rc.getQueueDepth());
+        op.setDirectIoEnabled(rc.getDirectIoEnabled());
+        op.setCdmRowLabel(row.label());
+        if (mode == IOMode.WRITE) {
+            op.setWriteSyncEnabled(rc.writeSyncEnabled);
+        }
+        b.getOperations().add(op);
+        return op;
     }
 
     private void runOperation(Benchmark b, IOMode mode, int[][] ranges) throws Exception {

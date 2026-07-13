@@ -74,9 +74,21 @@ public class BenchmarkOperation implements Serializable {
     public long getTxSize() { return txSize; }
     @Column
     int numThreads = 1;
-    // NEW: whether write-sync was enabled for this run (only meaningful for WRITE; may be null for READ)
+    @Column
+    int queueDepth = 1;
+    public int getQueueDepth() { return queueDepth; }
+    public void setQueueDepth(int qd) { this.queueDepth = qd; }
+    // whether write-sync was enabled for this run (only meaningful for WRITE; may be null for READ)
     @Column
     Boolean writeSyncEnabled;
+    @Column
+    Boolean directIoEnabled;
+    public Boolean getDirectIoEnabled() { return directIoEnabled; }
+    public void setDirectIoEnabled(Boolean b) { this.directIoEnabled = b; }
+    @Column
+    String cdmRowLabel;
+    public String getCdmRowLabel() { return cdmRowLabel; }
+    public void setCdmRowLabel(String label) { this.cdmRowLabel = label; }
     
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)

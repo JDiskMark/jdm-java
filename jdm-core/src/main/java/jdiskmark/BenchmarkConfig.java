@@ -51,6 +51,17 @@ public class BenchmarkConfig {
     @Column
     int numThreads = 1;
     public int getNumThreads() { return numThreads; }
+    @Column
+    int queueDepth = 1;
+    public int getQueueDepth() { return queueDepth; }
+    public void setQueueDepth(int qd) { this.queueDepth = qd; }
+    // Explicit test file size in MiB; 0 = derive from numBlocks × blockSize.
+    // Needed for random I/O where the address space (file size) is much larger
+    // than the bytes transferred per sample pass.
+    @Column
+    int testFileSizeMb = 0;
+    public int getTestFileSizeMb() { return testFileSizeMb; }
+    public void setTestFileSizeMb(int mb) { this.testFileSizeMb = mb; }
     
     // --- I/O Engine Settings ---
 
