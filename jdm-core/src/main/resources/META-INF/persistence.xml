@@ -15,10 +15,10 @@
       <property name="hibernate.hbm2ddl.auto" value="update"/>
       <property name="hibernate.jdbc.fetch_size" value="25"/>
 
-      <!-- Agroal connection pool (Hibernate 7 native pool — replaces built-in pool) -->
-      <property name="hibernate.agroal.maxSize" value="5"/>
-      <property name="hibernate.agroal.minSize" value="1"/>
-      <property name="hibernate.agroal.acquisitionTimeout" value="PT5S"/>
+      <!-- Connection pool: use Hibernate's built-in pool (no extra dependencies).
+           hibernate-agroal is excluded because it requires java.security.jgss
+           (Kerberos/GSSAPI) which jpackage strips from the bundled JRE on macOS. -->
+      <property name="hibernate.connection.pool_size" value="5"/>
 
       <property name="hibernate.show_sql" value="false"/>
     </properties>

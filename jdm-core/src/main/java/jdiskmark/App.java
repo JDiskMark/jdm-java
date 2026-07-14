@@ -360,6 +360,13 @@ public class App {
             // load current drive
             Gui.updateDiskInfo();
             Gui.mainFrame.setVisible(true);
+            // Bring the window to the front and request focus so the native
+            // macOS menu bar shows all menu items (File, Action, Options, Help).
+            // On macOS 26, jpackage-launched apps can open behind other windows
+            // and never receive a focus event, which leaves the menu bar showing
+            // only the application menu (JDiskMark) without the window's menus.
+            Gui.mainFrame.toFront();
+            Gui.mainFrame.requestFocus();
             // save configuration on exit...
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 @Override
