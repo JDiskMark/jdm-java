@@ -371,22 +371,6 @@ public final class Gui {
     }
 
     /**
-     * Returns the usable screen bounds (excluding the macOS menu bar, Dock,
-     * and other OS-reserved areas) for the default screen.
-     * <p>
-     * Uses {@link java.awt.GraphicsEnvironment#getMaximumWindowBounds()} which
-     * is always non-null and already accounts for all OS-reserved insets.
-     * This avoids the NPE risk of {@code MouseInfo.getPointerInfo()} which
-     * returns {@code null} when the app does not yet have screen access
-     * (common during jpackage startup on macOS before the first window appears).
-     * </p>
-     */
-    private static java.awt.Rectangle getUsableScreenBounds() {
-        return java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
-                .getMaximumWindowBounds();
-    }
-
-    /**
      * Applies the Cancel button style for the given theme.
      * Themes can override {@link ThemeDefinition#cancelButtonStyle()} to supply
      * a theme-coherent "stop" colour; the default falls back to amber.
@@ -480,19 +464,7 @@ public final class Gui {
             mainFrame.getRootPane().putClientProperty(
                 "JRootPane.titleBarForeground", titleFg);
         }
-        // Position the window at the center of the usable screen area.
-        // NOTE: do NOT call pack() here — initComponents() already called
-        // pack() with the original GroupLayout, and calling it again after
-        // the constructor replaced the content pane disrupts native NSWindow
-        // peer creation on macOS, causing the window to disappear from the
-        // Dock and Accessibility even though setVisible(true) was called.
         mainFrame.setLocationRelativeTo(null);
-        // Guard: clamp the window to the usable screen area so it can never
-        // land off-screen regardless of macOS version or display configuration.
-        java.awt.Rectangle usable = getUsableScreenBounds();
-        int wx = Math.max(usable.x, Math.min(mainFrame.getX(), usable.x + usable.width  - mainFrame.getWidth()));
-        int wy = Math.max(usable.y, Math.min(mainFrame.getY(), usable.y + usable.height - mainFrame.getHeight()));
-        mainFrame.setLocation(wx, wy);
         progressBar = mainFrame.getProgressBar();
         // Apply theme-specific progress bar color directly on startup.
         Color pbFg = theme.definition().progressBarForeground();
