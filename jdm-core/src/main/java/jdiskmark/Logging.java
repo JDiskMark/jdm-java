@@ -42,7 +42,7 @@ public final class Logging {
     /** ~15 MB ceiling: 3 files × 5 MB each. */
     private static final int  LOG_FILE_SIZE_BYTES = 5 * 1024 * 1024;
     private static final int  LOG_FILE_COUNT      = 3;
-    private static final String LOG_FILE_PATTERN  = "jdiskmark-%g.log";
+    private static final String LOG_FILE_PATTERN  = "jdiskmark-%u-%g.log";
 
     private static Path resolvedLogDir = null;
 
