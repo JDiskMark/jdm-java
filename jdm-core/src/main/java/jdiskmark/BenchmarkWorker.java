@@ -146,8 +146,9 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         }
 
         // --- Event: benchmark completed or cancelled ---
+        final String completedMsg;
         if (isCancelled()) {
-            msg("Benchmark cancelled.");
+            completedMsg = "Benchmark cancelled.";
         } else {
             // Build a concise result line covering whichever operations ran.
             StringBuilder result = new StringBuilder("Benchmark completed");
@@ -166,7 +167,12 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                 long elapsedSec = java.time.Duration.between(benchmark.startTime, benchmark.endTime).getSeconds();
                 result.append(String.format(" | duration=%ds", elapsedSec));
             }
-            msg(result.toString());
+            completedMsg = result.toString();
+        }
+        if (App.mode == App.Mode.GUI) {
+            SwingUtilities.invokeLater(() -> msg(completedMsg));
+        } else {
+            msg(completedMsg);
         }
         
         // update gui title
