@@ -371,6 +371,39 @@ public final class Gui {
     }
 
     /**
+     * Returns the usable screen bounds (excluding the macOS menu bar, Dock,
+     * and any other OS-reserved areas) for the screen that currently contains
+     * the mouse pointer, falling back to the default screen if unavailable.
+     * Used by {@link #init()} to clamp the main window into visible territory.
+     */
+    private static java.awt.Rectangle getUsableScreenBounds() {
+        java.awt.GraphicsEnvironment ge =
+                java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment();
+        // Prefer the screen that has the mouse pointer so the window opens there.
+        java.awt.Point mouse = java.awt.MouseInfo.getPointerInfo().getLocation();
+        for (java.awt.GraphicsDevice gd : ge.getScreenDevices()) {
+            for (java.awt.GraphicsConfiguration gc : gd.getConfigurations()) {
+                java.awt.Rectangle screenBounds = gc.getBounds();
+                if (screenBounds.contains(mouse)) {
+                    try {
+                        java.awt.Insets insets = java.awt.Toolkit.getDefaultToolkit()
+                                .getScreenInsets(gc);
+                        return new java.awt.Rectangle(
+                                screenBounds.x      + insets.left,
+                                screenBounds.y      + insets.top,
+                                screenBounds.width  - insets.left - insets.right,
+                                screenBounds.height - insets.top  - insets.bottom);
+                    } catch (Exception ignore) {
+                        return screenBounds;
+                    }
+                }
+            }
+        }
+        // Fallback: use the default screen's maximum window bounds.
+        return ge.getMaximumWindowBounds();
+    }
+
+    /**
      * Applies the Cancel button style for the given theme.
      * Themes can override {@link ThemeDefinition#cancelButtonStyle()} to supply
      * a theme-coherent "stop" colour; the default falls back to amber.
@@ -464,7 +497,19 @@ public final class Gui {
             mainFrame.getRootPane().putClientProperty(
                 "JRootPane.titleBarForeground", titleFg);
         }
+        // Re-pack after the constructor replaced all content pane components;
+        // initComponents() called pack() before the splitPane was added, so
+        // the frame has no correct preferred size until we pack() again here.
+        mainFrame.pack();
         mainFrame.setLocationRelativeTo(null);
+        // Guard: ensure the window is within the usable screen area.
+        // On macOS 26 the display geometry changed and setLocationRelativeTo(null)
+        // can position the window off-screen when the available-area calculation
+        // differs from earlier releases.
+        java.awt.Rectangle usable = getUsableScreenBounds();
+        int wx = Math.max(usable.x, Math.min(mainFrame.getX(), usable.x + usable.width  - mainFrame.getWidth()));
+        int wy = Math.max(usable.y, Math.min(mainFrame.getY(), usable.y + usable.height - mainFrame.getHeight()));
+        mainFrame.setLocation(wx, wy);
         progressBar = mainFrame.getProgressBar();
         // Apply theme-specific progress bar color directly on startup.
         Color pbFg = theme.definition().progressBarForeground();
