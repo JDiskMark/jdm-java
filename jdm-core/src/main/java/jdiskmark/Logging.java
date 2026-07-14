@@ -189,10 +189,10 @@ public final class Logging {
 
             StringBuilder sb = new StringBuilder(128);
             sb.append(ts).append(' ')
-              .append(level).append(' ')
-              .append(logger).append(" - ")
-              .append(formatMessage(r))
-              .append(System.lineSeparator());
+                    .append(level).append(' ')
+                    .append(logger).append(" - ")
+                    .append(formatMessage(r))
+                    .append(System.lineSeparator());
 
             if (r.getThrown() != null) {
                 // Append the full stack trace for exceptions
