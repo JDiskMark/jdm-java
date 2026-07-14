@@ -80,7 +80,7 @@ public final class Logging {
 
             Logger root = Logger.getLogger("");
             root.addHandler(fh);
-            root.setLevel(Level.INFO);
+            root.setLevel(Level.ALL);
 
             // In GUI mode there is no visible console — remove the default
             // ConsoleHandler so nothing is silently swallowed by a hidden stream.
