@@ -82,7 +82,6 @@
                                     <arguments>
                                         <argument>--type</argument><argument>msi</argument>
                                         <argument>--dest</argument><argument>${project.build.directory}</argument>
-                                        <argument>--icon</argument><argument>${project.basedir}/jdm-turtle-logo.ico</argument>
                                         <!-- jpackage uses `name` for BOTH the Start Menu display name
                                              and the output filename. Using the full versioned title here
                                              (e.g. "JDiskMark 0.8.0-SNAPSHOT") so Programs list shows it correctly.
