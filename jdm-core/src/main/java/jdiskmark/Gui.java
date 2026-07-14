@@ -372,35 +372,18 @@ public final class Gui {
 
     /**
      * Returns the usable screen bounds (excluding the macOS menu bar, Dock,
-     * and any other OS-reserved areas) for the screen that currently contains
-     * the mouse pointer, falling back to the default screen if unavailable.
-     * Used by {@link #init()} to clamp the main window into visible territory.
+     * and other OS-reserved areas) for the default screen.
+     * <p>
+     * Uses {@link java.awt.GraphicsEnvironment#getMaximumWindowBounds()} which
+     * is always non-null and already accounts for all OS-reserved insets.
+     * This avoids the NPE risk of {@code MouseInfo.getPointerInfo()} which
+     * returns {@code null} when the app does not yet have screen access
+     * (common during jpackage startup on macOS before the first window appears).
+     * </p>
      */
     private static java.awt.Rectangle getUsableScreenBounds() {
-        java.awt.GraphicsEnvironment ge =
-                java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment();
-        // Prefer the screen that has the mouse pointer so the window opens there.
-        java.awt.Point mouse = java.awt.MouseInfo.getPointerInfo().getLocation();
-        for (java.awt.GraphicsDevice gd : ge.getScreenDevices()) {
-            for (java.awt.GraphicsConfiguration gc : gd.getConfigurations()) {
-                java.awt.Rectangle screenBounds = gc.getBounds();
-                if (screenBounds.contains(mouse)) {
-                    try {
-                        java.awt.Insets insets = java.awt.Toolkit.getDefaultToolkit()
-                                .getScreenInsets(gc);
-                        return new java.awt.Rectangle(
-                                screenBounds.x      + insets.left,
-                                screenBounds.y      + insets.top,
-                                screenBounds.width  - insets.left - insets.right,
-                                screenBounds.height - insets.top  - insets.bottom);
-                    } catch (Exception ignore) {
-                        return screenBounds;
-                    }
-                }
-            }
-        }
-        // Fallback: use the default screen's maximum window bounds.
-        return ge.getMaximumWindowBounds();
+        return java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
+                .getMaximumWindowBounds();
     }
 
     /**
