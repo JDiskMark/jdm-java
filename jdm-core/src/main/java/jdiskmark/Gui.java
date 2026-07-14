@@ -480,15 +480,15 @@ public final class Gui {
             mainFrame.getRootPane().putClientProperty(
                 "JRootPane.titleBarForeground", titleFg);
         }
-        // Re-pack after the constructor replaced all content pane components;
-        // initComponents() called pack() before the splitPane was added, so
-        // the frame has no correct preferred size until we pack() again here.
-        mainFrame.pack();
+        // Position the window at the center of the usable screen area.
+        // NOTE: do NOT call pack() here — initComponents() already called
+        // pack() with the original GroupLayout, and calling it again after
+        // the constructor replaced the content pane disrupts native NSWindow
+        // peer creation on macOS, causing the window to disappear from the
+        // Dock and Accessibility even though setVisible(true) was called.
         mainFrame.setLocationRelativeTo(null);
-        // Guard: ensure the window is within the usable screen area.
-        // On macOS 26 the display geometry changed and setLocationRelativeTo(null)
-        // can position the window off-screen when the available-area calculation
-        // differs from earlier releases.
+        // Guard: clamp the window to the usable screen area so it can never
+        // land off-screen regardless of macOS version or display configuration.
         java.awt.Rectangle usable = getUsableScreenBounds();
         int wx = Math.max(usable.x, Math.min(mainFrame.getX(), usable.x + usable.width  - mainFrame.getWidth()));
         int wy = Math.max(usable.y, Math.min(mainFrame.getY(), usable.y + usable.height - mainFrame.getHeight()));
