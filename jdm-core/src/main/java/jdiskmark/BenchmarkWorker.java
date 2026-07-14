@@ -100,14 +100,20 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         Gui.clearAllStaleHighlights();
 
         // --- Event: benchmark started ---
-        msg(String.format("Benchmark started — %s | %s | %d samples × %d blocks × %d KB | %d thread(s) | drive: %s",
+        String startedMsg = String.format(
+                "Benchmark started — %s | %s | %d samples × %d blocks × %d KB | %d thread(s) | drive: %s",
                 App.benchmarkType,
                 App.activeProfile + (App.profileModified ? "*" : ""),
                 App.numOfSamples,
                 App.numOfBlocks,
                 App.blockSizeKb,
                 App.numOfThreads,
-                App.locationDir != null ? App.locationDir.getAbsolutePath() : "(none)"));
+                App.locationDir != null ? App.locationDir.getAbsolutePath() : "(none)");
+        if (App.mode == App.Mode.GUI) {
+            SwingUtilities.invokeLater(() -> msg(startedMsg));
+        } else {
+            msg(startedMsg);
+        }
 
         if (App.verbose) {
             msg("*** starting new worker thread");
