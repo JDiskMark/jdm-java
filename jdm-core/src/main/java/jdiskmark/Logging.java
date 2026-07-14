@@ -80,7 +80,10 @@ public final class Logging {
 
             Logger root = Logger.getLogger("");
             root.addHandler(fh);
-            root.setLevel(Level.ALL);
+            // Root stays at INFO: keeps third-party library noise (Hibernate, Derby, etc.)
+            // out of the log file. The FileHandler is ALL so jdiskmark-specific loggers
+            // can be lowered independently if finer diagnostics are ever needed.
+            root.setLevel(Level.INFO);
 
             // In GUI mode there is no visible console — remove the default
             // ConsoleHandler so nothing is silently swallowed by a hidden stream.
