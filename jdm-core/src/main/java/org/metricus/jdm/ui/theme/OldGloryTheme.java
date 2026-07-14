@@ -59,15 +59,20 @@ public final class OldGloryTheme implements ThemeDefinition {
         m.put("List.selectionForeground",      uiColor(Color.WHITE));
         m.put("Tree.selectionBackground",      uiColor(BLUE));
         m.put("Tree.selectionForeground",      uiColor(Color.WHITE));
-        m.put("TabbedPane.selectedBackground",      uiColor(BLUE));
-        m.put("TabbedPane.selectedForeground",      uiColor(Color.WHITE));
+        // Selected tab: no fill — normal background + Blue foreground, red underline only.
+        // Keeps tab text readable on both selected and hovered tabs.
         m.put("TabbedPane.underlineColor",          uiColor(RED));
         m.put("TabbedPane.inactiveUnderlineColor",  uiColor(RED));
-        m.put("TabbedPane.focusColor",              uiColor(BLUE));
+        m.put("TabbedPane.focusColor",              uiColor(new Color(0xEEF0FF)));
         m.put("TabbedPane.hoverColor",              uiColor(TAB_HOVER));
+        // Dark red text on hover for patriotic flair.
+        m.put("TabbedPane.hoverForeground",         uiColor(CRIMSON_DARK));
         m.put("ScrollBar.thumb",               uiColor(BLUE));
         m.put("ScrollBar.thumbHover",          uiColor(BLUE_HOVER));
         m.put("ScrollBar.thumbPressed",        uiColor(BLUE_PRESS));
+        // Default (accent-colored) buttons use a red background via @accentColor;
+        // force white text so it is readable against that red fill.
+        m.put("Button.default.foreground",     uiColor(Color.WHITE));
         return m;
     }
 
