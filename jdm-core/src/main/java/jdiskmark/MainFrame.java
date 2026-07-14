@@ -13,7 +13,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
 import jdiskmark.Exporter.ExportFormat;
-import org.metricus.jdm.ui.AppIcon;
 import org.metricus.jdm.ui.GraphPaletteMenu;
 import org.metricus.jdm.ui.GraphThemeMenu;
 import org.metricus.jdm.ui.Theme;
@@ -913,6 +912,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private void showMaxMinCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showMaxMinCheckBoxMenuItemActionPerformed
         Gui.showMaxMin = showMaxMinCheckBoxMenuItem.getState();
         App.saveConfig();
+        Gui.singleOpTrigReloadGraph();
     }//GEN-LAST:event_showMaxMinCheckBoxMenuItemActionPerformed
 
     private void writeSyncCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_writeSyncCheckBoxMenuItemActionPerformed
@@ -937,6 +937,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private void showAccessCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showAccessCheckBoxMenuItemActionPerformed
         Gui.showDriveAccess = showAccessCheckBoxMenuItem.getState();
         App.saveConfig();
+        Gui.singleOpTrigReloadGraph();
     }//GEN-LAST:event_showAccessCheckBoxMenuItemActionPerformed
 
     private void deleteSelBenchmarksItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteSelBenchmarksItemActionPerformed
