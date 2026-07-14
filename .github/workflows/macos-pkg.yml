@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   build-pkg:
-    runs-on: macos-15
+    runs-on: macos-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
