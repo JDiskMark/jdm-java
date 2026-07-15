@@ -95,7 +95,6 @@
                                         <argument>--main-jar</argument><argument>jdm-core-${project.version}.jar</argument>
                                         <argument>--main-class</argument><argument>jdiskmark.App</argument>
                                         <argument>--java-options</argument><argument>${jvm.run.options}</argument>
-                                        <argument>--win-console</argument>
                                         <argument>--win-menu</argument>
                                         <argument>--win-shortcut</argument>
                                         <!-- App icon for Start Menu shortcut, taskbar, and Programs list.

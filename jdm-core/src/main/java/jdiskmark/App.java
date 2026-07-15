@@ -110,8 +110,6 @@ public class App {
         }
     }
 
-
-
     // application mode
     public static Mode mode = Mode.CLI;
 
@@ -129,7 +127,8 @@ public class App {
     public static String arch;
     public static String processorName;
     public static String jdk;
-    // PII: OS username collection removed (#117 — use anonymous or a non-PII system id instead).
+    // PII: OS username collection removed (#117 — use anonymous or a non-PII system
+    // id instead).
     // public static String username;
 
     /**
@@ -143,20 +142,29 @@ public class App {
     // Delegate to UtilOs primitives. Safe to call before init() (e.g. early in
     // main() or in CLI mode where App.os is never populated).
 
-    /** Returns {@code true} when running on macOS.
-     * @return  */
+    /**
+     * Returns {@code true} when running on macOS.
+     * 
+     * @return
+     */
     public static boolean isMacOs() {
         return UtilOs.isMacOs(osName());
     }
 
-    /** Returns {@code true} when running on Windows.
-     * @return  */
+    /**
+     * Returns {@code true} when running on Windows.
+     * 
+     * @return
+     */
     public static boolean isWindows() {
         return UtilOs.isWindows(osName());
     }
 
-    /** Returns {@code true} when running on Linux.
-     * @return  */
+    /**
+     * Returns {@code true} when running on Linux.
+     * 
+     * @return
+     */
     public static boolean isLinux() {
         return UtilOs.isLinux(osName());
     }
@@ -164,6 +172,7 @@ public class App {
     /**
      * Resolves the OS name, falling back to the system property when {@link #os} is
      * not yet set.Safe to call before {@link #init()} and in CLI mode.
+     * 
      * @return
      */
     public static String osName() {
@@ -179,7 +188,8 @@ public class App {
     public static boolean autoSave = false;
     public static boolean sharePortal = false;
     // True if sharePortal was enabled in the last session; used to offer a
-    // one-click re-enable prompt at startup rather than silently resuming network activity.
+    // one-click re-enable prompt at startup rather than silently resuming network
+    // activity.
     public static boolean sharePortalPreviouslyEnabled = false;
     // True once the user has answered the first-run portal-consent prompt.
     // Persisted so the prompt is shown exactly once (issue #117).
@@ -244,6 +254,11 @@ public class App {
     public static void main(String args[]) {
         configureLogging();
         mode = (args.length == 0) ? Mode.GUI : Mode.CLI;
+
+        // Initialise file-based logging before anything else so that all
+        // java.util.logging output (including Hibernate, Derby, etc.) is
+        // captured to the rotating log file from the very first log call.
+        Logging.init(mode);
         int exitCode = 0;
 
         switch (mode) {
@@ -277,7 +292,7 @@ public class App {
 
     /**
      * Get the version from the build properties. Defaults to 0.0 if not found.
-     * 
+     *
      * @return
      */
     public static String getVersion() {
@@ -321,7 +336,7 @@ public class App {
         arch = System.getProperty("os.arch");
         processorName = Util.getProcessorName();
         jdk = Util.getJvmInfo();
-        
+
         checkPermission();
         if (!APP_CACHE_DIR.exists()) {
             APP_CACHE_DIR.mkdirs();
@@ -337,7 +352,8 @@ public class App {
         // saveConfig() call.
         String fallbackSystemId = (systemId != null && !systemId.isBlank()) ? systemId : "";
         systemId = UtilOs.getMachineSystemId(os, fallbackSystemId);
-        // systemId persisted by the shutdown-hook saveConfig() and other normal save paths.
+        // systemId persisted by the shutdown-hook saveConfig() and other normal save
+        // paths.
 
         // initialize data dir if necessary
         if (locationDir == null) {
@@ -392,6 +408,14 @@ public class App {
                     }
                 });
             }
+
+            // --- Event: app started (session header) ---
+            // Logged after the window is shown so it appears as the first visible entry.
+            java.nio.file.Path logDir = Logging.getLogDir();
+            msg(String.format(
+                    "JDiskMark %s started — OS: %s | JDK: %s | CPU: %s | logs: %s",
+                    VERSION, os, jdk, processorName,
+                    logDir != null ? logDir.toAbsolutePath() : "(console only)"));
         }
     }
 
@@ -441,7 +465,8 @@ public class App {
             // Lock is held by another process — show a concise dialog, then bail.
             try {
                 instanceLockChannel.close();
-            } catch (java.io.IOException ignored) {}
+            } catch (java.io.IOException ignored) {
+            }
             instanceLockChannel = null;
 
             // Show the dialog on the EDT (we have no window yet, so null parent is fine).
@@ -449,9 +474,9 @@ public class App {
                 javax.swing.JOptionPane.showMessageDialog(
                         null,
                         """
-                        JDiskMark is already running.
-                        Only one instance can be open at a time.
-                        """,
+                                JDiskMark is already running.
+                                Only one instance can be open at a time.
+                                """,
                         "JDiskMark — Already Running",
                         javax.swing.JOptionPane.WARNING_MESSAGE);
                 System.exit(0);
@@ -491,7 +516,7 @@ public class App {
             writeSyncEnable = profile.isWriteSyncEnable();
             sectorAlignment = profile.getSectorAlignment();
             multiFile = profile.isMultiFile();
-//            Smart.smartEnable = profile.getEnableSmart();
+            // Smart.smartEnable = profile.getEnableSmart();
         } finally {
             saveConfig();
         }
@@ -555,7 +580,7 @@ public class App {
 
         value = p.getProperty("multiFile", String.valueOf(multiFile));
         multiFile = Boolean.parseBoolean(value);
-        
+
         value = p.getProperty("smartEnable", String.valueOf(Smart.smartEnable));
         Smart.smartEnable = Boolean.parseBoolean(value);
 
@@ -719,7 +744,7 @@ public class App {
 
     /**
      * Creates a point-in-time snapshot of the current settings.
-     * 
+     *
      * @return the configuration for benchmarking
      */
     public static BenchmarkConfig getConfig() {
@@ -760,7 +785,7 @@ public class App {
         sb.append("writeTest: ").append(hasWriteOperation()).append('\n');
         sb.append("locationDir: ").append(locationDir).append('\n');
         sb.append("multiFile: ").append(multiFile).append('\n');
-        
+
         sb.append("autoRemoveData: ").append(autoRemoveData).append('\n');
         sb.append("autoReset: ").append(autoReset).append('\n');
         sb.append("blockSequence: ").append(blockSequence).append('\n');
@@ -817,14 +842,16 @@ public class App {
     }
 
     public static void archiveBenchmarks(List<UUID> benchmarkIds) {
-        if (benchmarkIds.isEmpty()) return;
+        if (benchmarkIds.isEmpty())
+            return;
         Benchmark.archive(benchmarkIds);
         benchmarks.clear();
         loadBenchmarks();
     }
 
     public static void unarchiveBenchmarks(List<UUID> benchmarkIds) {
-        if (benchmarkIds.isEmpty()) return;
+        if (benchmarkIds.isEmpty())
+            return;
         Benchmark.unarchive(benchmarkIds);
         benchmarks.clear();
         loadBenchmarks();
@@ -849,8 +876,6 @@ public class App {
             case GUI -> {
                 if (Gui.mainFrame != null) {
                     Gui.mainFrame.msg(formattedMsg);
-                } else {
-                    System.out.println(formattedMsg);
                 }
             }
             case CLI -> System.out.println(formattedMsg);
@@ -896,7 +921,8 @@ public class App {
         // 4. create data dir reference
         dataDir = new File(locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
 
-        // 5. remove existing test data if present (recursive — File.delete() only removes empty dirs)
+        // 5. remove existing test data if present (recursive — File.delete() only
+        // removes empty dirs)
         if (autoRemoveData && dataDir.exists()) {
             boolean removed = Util.deleteDirectory(dataDir);
             if (verbose) {
@@ -1049,7 +1075,7 @@ public class App {
 
     /**
      * Get a string summary of current drive capacity info
-     * 
+     *
      * @return String summarizing the drive information.
      */
     static public String getDriveInfo() {
@@ -1091,11 +1117,13 @@ public class App {
 
     /**
      * This sets the location directory and configures the data directory within it.
-     * 
+     *
      * @param directory the dir to store
      */
     static public void setLocationDir(File directory) {
         locationDir = directory;
         dataDir = new File(locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
+        // --- Event: drive location changed ---
+        msg("Drive location set to: " + locationDir.getAbsolutePath());
     }
 }

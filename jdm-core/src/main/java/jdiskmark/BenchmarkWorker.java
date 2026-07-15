@@ -23,6 +23,7 @@ import javax.swing.SwingWorker;
  * once.
  */
 public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
+    private static final Logger LOG = Logger.getLogger(BenchmarkWorker.class.getName());
     /** Render mode snapshot — captured once when the worker is created. */
     private final RenderFrequencyMode renderMode = App.rmOption;
 
@@ -86,8 +87,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 } catch (InvocationTargetException e) {
-                    Logger.getLogger(BenchmarkWorker.class.getName())
-                            .log(Level.WARNING, "Chart update failed", e);
+                    LOG.log(Level.WARNING, "Chart update failed", e);
                 }
             }
         }
@@ -98,6 +98,22 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         // Clear amber stale-highlights from any previous run's setting changes.
         // The new baseline will be App.benchmark.config once this run completes.
         Gui.clearAllStaleHighlights();
+
+        // --- Event: benchmark started ---
+        String startedMsg = String.format(
+                "Benchmark started — %s | %s | %d samples × %d blocks × %d KB | %d thread(s) | drive: %s",
+                App.benchmarkType,
+                App.activeProfile + (App.profileModified ? "*" : ""),
+                App.numOfSamples,
+                App.numOfBlocks,
+                App.blockSizeKb,
+                App.numOfThreads,
+                App.locationDir != null ? App.locationDir.getAbsolutePath() : "(none)");
+        if (App.mode == App.Mode.GUI) {
+            SwingUtilities.invokeLater(() -> msg(startedMsg));
+        } else {
+            msg(startedMsg);
+        }
 
         if (App.verbose) {
             msg("*** starting new worker thread");
@@ -127,6 +143,36 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                 intervalBuffer.forEach(this::publish);
                 intervalBuffer.clear();
             }
+        }
+
+        // --- Event: benchmark completed or cancelled ---
+        final String completedMsg;
+        if (isCancelled()) {
+            completedMsg = "Benchmark cancelled.";
+        } else {
+            // Build a concise result line covering whichever operations ran.
+            StringBuilder result = new StringBuilder("Benchmark completed");
+            for (BenchmarkOperation op : benchmark.getOperations()) {
+                switch (op.ioMode) {
+                    case WRITE -> result.append(String.format(
+                            " | Write avg=%.2f max=%.2f min=%.2f MB/s  IOPS=%d",
+                            op.bwAvg, op.bwMax, op.bwMin, op.iops));
+                    case READ -> result.append(String.format(
+                            " | Read avg=%.2f max=%.2f min=%.2f MB/s  IOPS=%d",
+                            op.bwAvg, op.bwMax, op.bwMin, op.iops));
+                }
+            }
+            // Elapsed time
+            if (benchmark.startTime != null && benchmark.endTime != null) {
+                long elapsedSec = java.time.Duration.between(benchmark.startTime, benchmark.endTime).getSeconds();
+                result.append(String.format(" | duration=%ds", elapsedSec));
+            }
+            completedMsg = result.toString();
+        }
+        if (App.mode == App.Mode.GUI) {
+            SwingUtilities.invokeLater(() -> msg(completedMsg));
+        } else {
+            msg(completedMsg);
         }
         
         // update gui title
@@ -178,7 +224,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         } catch (CancellationException e) {
             // Normal cancellation path — no error to report
         } catch (ExecutionException e) {
-            Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, "Benchmark failed", e.getCause());
+            LOG.log(Level.SEVERE, "Benchmark failed", e.getCause());
             App.err("Benchmark failed: " + e.getCause().getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
