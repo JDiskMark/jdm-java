@@ -1064,8 +1064,9 @@ public final class Gui {
     }
 
     public static void lockSampleAxis(int numSamples) {
+        int start = App.nextSampleNumber;
         sampleAxis.setAutoRange(false);
-        sampleAxis.setRange(1, numSamples);
+        sampleAxis.setRange(start, start + numSamples - 1);
     }
 
     public static void unlockSampleAxis() {
