@@ -1062,6 +1062,15 @@ public final class Gui {
         controlPanel.refreshReadMetrics();
         controlPanel.refreshWriteMetrics();
     }
+
+    public static void lockSampleAxis(int numSamples) {
+        sampleAxis.setAutoRange(false);
+        sampleAxis.setRange(1, numSamples);
+    }
+
+    public static void unlockSampleAxis() {
+        sampleAxis.setAutoRange(true);
+    }
     
     public static void updateLegendAndAxis() {
         bwRenderer.setSeriesVisibleInLegend(0, App.hasWriteOperation());

@@ -114,6 +114,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             Gui.resetBenchmarkData();
             Gui.updateLegendAndAxis();
         }
+        Gui.lockSampleAxis(App.numOfSamples);
 
         BenchmarkRunner bRunner = new BenchmarkRunner(listener, App.getConfig());
         Benchmark benchmark = bRunner.execute();
@@ -186,6 +187,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         if (App.autoRemoveData) {
             Util.deleteDirectory(dataDir);
         }
+        Gui.unlockSampleAxis();
         App.state = App.State.IDLE_STATE;
         Gui.mainFrame.adjustSensitivity();
     }

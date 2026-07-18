@@ -7,9 +7,9 @@ import org.metricus.jdm.ui.PaletteDefinition;
 
 public final class BetaPalette implements PaletteDefinition {
 
-    private static final Stroke AVG_DOT = new BasicStroke(
+    private static final Stroke AVG_DASH = new BasicStroke(
             1.8f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
-            10.0f, new float[]{2.0f, 6.0f}, 0.0f);
+            10.0f, new float[]{6.0f, 6.0f}, 0.0f);
 
     @Override public Color plotBackground() { return new Color(0x1C1C1C); }
     @Override public Color plotOutline()     { return new Color(0x555555); }
@@ -26,6 +26,6 @@ public final class BetaPalette implements PaletteDefinition {
     @Override public Color msWriteLatency() { return new Color(0xE07B39); }
     @Override public Color msReadLatency()  { return new Color(0x4FC3F7); }
 
-    @Override public Stroke bwWriteTrendStroke() { return AVG_DOT; }
-    @Override public Stroke bwReadTrendStroke()  { return AVG_DOT; }
+    @Override public Stroke bwWriteTrendStroke() { return AVG_DASH; }
+    @Override public Stroke bwReadTrendStroke()  { return AVG_DASH; }
 }
