@@ -33,7 +33,7 @@ public final class SakuraTheme implements ThemeDefinition {
     // DESIGN NOTES:
     // #FFFBFC: original pastel pink background
     // #FFF8FA: between FFBFC and FFF5F7
-    // #FFF5F7: partial setp up between FFBFC and FFF0F3
+    // #FFF5F7: partial step up between FFBFC and FFF0F3
     // #FFF0F3: Change from "#FFFBFC" to a slightly richer pastel pink
     // #FDE2E4: Slightly more muted, sophisticated pastel rose background
     // #FFE5EC: A bit deeper and warmer.
