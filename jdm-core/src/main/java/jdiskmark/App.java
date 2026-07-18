@@ -630,6 +630,7 @@ public class App {
             case "BLUE_GREEN" -> "LAGOON";
             case "BARD_COOL"  -> "MARINE";
             case "BARD_WARM"  -> "EMBER";
+            case "BETA"       -> "BETA_DARK";
             default -> value;
         };
         try {

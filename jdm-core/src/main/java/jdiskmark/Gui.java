@@ -65,7 +65,7 @@ public final class Gui {
     
     // display settings
     public static Theme theme = Theme.DARK;
-    public static Palette palette = Palette.BETA;
+    public static Palette palette = Palette.BETA_DARK;
     public static boolean showBadges = true;
     public static boolean showMaxMin = false;
     public static boolean showDriveAccess = true;
