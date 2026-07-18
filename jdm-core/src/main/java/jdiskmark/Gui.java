@@ -256,10 +256,13 @@ public final class Gui {
         UIManager.put("TabbedPane.inactiveUnderlineColor", null);
         UIManager.put("TabbedPane.focusColor",             null);
         UIManager.put("TabbedPane.hoverColor",             null);
+        UIManager.put("TabbedPane.hoverForeground",        null);
         UIManager.put("ScrollBar.thumb",            null);
         UIManager.put("ScrollBar.thumbHover",       null);
         UIManager.put("ScrollBar.thumbPressed",     null);
         UIManager.put("TitlePane.foreground",       null);
+        UIManager.put("Button.default.background",  null);
+        UIManager.put("Button.default.foreground",  null);
     }
 
     /**
@@ -1523,6 +1526,11 @@ public final class Gui {
     }
 
     public static void browseLocation() {
+        if (selFrame != null && selFrame.isShowing()) {
+            selFrame.toFront();
+            selFrame.requestFocus();
+            return;
+        }
         selFrame = new SelectDriveFrame();
         if (App.locationDir != null && App.locationDir.exists()) {
             selFrame.setInitDir(App.locationDir);
