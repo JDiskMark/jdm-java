@@ -5,6 +5,7 @@ import jdiskmark.Gui;
 import org.jfree.chart.block.BlockBorder;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.plot.XYPlot;
+import org.metricus.jdm.ui.palette.BetaLightPalette;
 import org.metricus.jdm.ui.palette.BetaPalette;
 import org.metricus.jdm.ui.palette.ClassicPalette;
 import org.metricus.jdm.ui.palette.EmberPalette;
@@ -21,11 +22,12 @@ import org.metricus.jdm.ui.palette.MarinePalette;
  * menu automatically.
  */
 public enum Palette {
-    CLASSIC("Classic",  new ClassicPalette()),
-    LAGOON("Lagoon",    new LagoonPalette()),
-    MARINE("Marine",    new MarinePalette()),
-    EMBER("Ember",      new EmberPalette()),
-    BETA("Beta",        new BetaPalette());
+    BETA_DARK("Beta Dark",   new BetaPalette()),
+    BETA_LIGHT("Beta Light",  new BetaLightPalette()),
+    LAGOON("Lagoon",          new LagoonPalette()),
+    MARINE("Marine",          new MarinePalette()),
+    EMBER("Ember",            new EmberPalette()),
+    CLASSIC("Classic",        new ClassicPalette());
 
     private final String displayName;
     private final PaletteDefinition definition;

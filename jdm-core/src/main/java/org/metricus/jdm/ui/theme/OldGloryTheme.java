@@ -70,9 +70,6 @@ public final class OldGloryTheme implements ThemeDefinition {
         m.put("ScrollBar.thumb",               uiColor(BLUE));
         m.put("ScrollBar.thumbHover",          uiColor(BLUE_HOVER));
         m.put("ScrollBar.thumbPressed",        uiColor(BLUE_PRESS));
-        // Default (accent-colored) buttons use a red background via @accentColor;
-        // force white text so it is readable against that red fill.
-        m.put("Button.default.foreground",     uiColor(Color.WHITE));
         return m;
     }
 

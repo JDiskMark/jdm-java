@@ -30,6 +30,27 @@ The default position is: **do nothing with git unless explicitly told to.**
 
 ---
 
+### Design Documentation
+
+The `jdm-core/docs/` folder contains authoritative design documents:
+
+| File | Covers |
+|---|---|
+| [`design.md`](jdm-core/docs/design.md) | GUI layout decisions, active design trades, package organisation |
+| [`theme.md`](jdm-core/docs/theme.md) | Theme and palette architecture, unlinked palette constraints, per-theme colour reference |
+
+- **Read before coding.** Before making any change to theming, chart palettes,
+  LAF configuration, or UI layout, read the relevant doc(s) in `jdm-core/docs/`.
+  This prevents violating established constraints (e.g. unlinked palettes must
+  not override LAF-owned chrome — see `theme.md`).
+
+- **Update after coding.** If a code change affects something documented in
+  `jdm-core/docs/` — a new palette, a renamed constant, a changed architecture
+  decision, a new design constraint — update the relevant doc in the same session.
+  Do not leave docs stale.
+
+---
+
 ### Coding Practices & Conventions
 
 - **No unrequested features.** Implement only what is asked.
@@ -45,6 +66,9 @@ The default position is: **do nothing with git unless explicitly told to.**
 - **Issue references:** Use `#N` to reference GitHub issue numbers in commits.
 - **IDE:** NetBeans is the primary IDE. Do not reformat or reorganize files in
   ways that would conflict with NetBeans project settings.
+- **Keep design docs current.** When a code change touches an area covered by
+  `jdm-core/docs/`, update the relevant doc in the same session — do not leave
+  design documentation out of sync with the code.
 
 ---
 

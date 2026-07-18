@@ -65,7 +65,7 @@ public final class Gui {
     
     // display settings
     public static Theme theme = Theme.DARK;
-    public static Palette palette = Palette.BETA;
+    public static Palette palette = Palette.BETA_DARK;
     public static boolean showBadges = true;
     public static boolean showMaxMin = false;
     public static boolean showDriveAccess = true;
@@ -256,10 +256,13 @@ public final class Gui {
         UIManager.put("TabbedPane.inactiveUnderlineColor", null);
         UIManager.put("TabbedPane.focusColor",             null);
         UIManager.put("TabbedPane.hoverColor",             null);
+        UIManager.put("TabbedPane.hoverForeground",        null);
         UIManager.put("ScrollBar.thumb",            null);
         UIManager.put("ScrollBar.thumbHover",       null);
         UIManager.put("ScrollBar.thumbPressed",     null);
         UIManager.put("TitlePane.foreground",       null);
+        UIManager.put("Button.default.background",  null);
+        UIManager.put("Button.default.foreground",  null);
     }
 
     /**
@@ -1059,6 +1062,16 @@ public final class Gui {
         controlPanel.refreshReadMetrics();
         controlPanel.refreshWriteMetrics();
     }
+
+    public static void lockSampleAxis(int numSamples) {
+        int start = App.nextSampleNumber;
+        sampleAxis.setAutoRange(false);
+        sampleAxis.setRange(start, start + numSamples - 1);
+    }
+
+    public static void unlockSampleAxis() {
+        sampleAxis.setAutoRange(true);
+    }
     
     public static void updateLegendAndAxis() {
         bwRenderer.setSeriesVisibleInLegend(0, App.hasWriteOperation());
@@ -1523,6 +1536,11 @@ public final class Gui {
     }
 
     public static void browseLocation() {
+        if (selFrame != null && selFrame.isShowing()) {
+            selFrame.toFront();
+            selFrame.requestFocus();
+            return;
+        }
         selFrame = new SelectDriveFrame();
         if (App.locationDir != null && App.locationDir.exists()) {
             selFrame.setInitDir(App.locationDir);
