@@ -213,7 +213,9 @@ public final class MainFrame extends javax.swing.JFrame {
             public void componentShown(java.awt.event.ComponentEvent e) {
                 if (!heightAdjusted) {
                     heightAdjusted = true;
-                    setSize(getWidth(), getHeight() + 30);
+                    String os = System.getProperty("os.name", "").toLowerCase();
+                    int w = (os.contains("linux") || os.contains("mac")) ? Math.max(994, getWidth()) : getWidth();
+                    setSize(w, getHeight() + 30);
                 }
             }
         });

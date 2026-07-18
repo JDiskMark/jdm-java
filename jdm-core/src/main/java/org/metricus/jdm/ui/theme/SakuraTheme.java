@@ -30,6 +30,17 @@ public final class SakuraTheme implements ThemeDefinition {
     private static final String HEX_ROSE = "#D4607C";
     private static final String HEX_BARK = "#2D1B22";
 
+    // DESIGN NOTES:
+    // #FFFBFC: original pastel pink background
+    // #FFF8FA: between FFBFC and FFF5F7
+    // #FFF5F7: partial setp up between FFBFC and FFF0F3
+    // #FFF0F3: Change from "#FFFBFC" to a slightly richer pastel pink
+    // #FDE2E4: Slightly more muted, sophisticated pastel rose background
+    // #FFE5EC: A bit deeper and warmer.
+
+    private static final String HEX_BG   = "#FFFBFC";
+    static final Color BG = new Color(0xFFFBFC);
+
     private static javax.swing.plaf.ColorUIResource uiColor(Color c) {
         return new javax.swing.plaf.ColorUIResource(c);
     }
@@ -45,7 +56,7 @@ public final class SakuraTheme implements ThemeDefinition {
     public Map<String, String> flatLafExtras() {
         Map<String, String> extras = new LinkedHashMap<>();
         extras.put("@accentColor", HEX_ROSE);
-        extras.put("@background",  "#FFFBFC");
+        extras.put("@background",  HEX_BG);
         extras.put("@foreground",  HEX_BARK);
         extras.put("TitlePane.foreground", HEX_BARK);
         return extras;
@@ -116,11 +127,11 @@ public final class SakuraTheme implements ThemeDefinition {
                 1.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
                 10.0f, new float[]{2.0f, 6.0f}, 0.0f);
 
-        @Override public Color chartBackground()  { return Color.WHITE; }
+        @Override public Color chartBackground()  { return BG; }
         @Override public Color plotBackground()    { return Color.WHITE; }
         @Override public Color plotOutline()        { return new Color(0xCCCCCC); }
         @Override public Color gridColor()          { return new Color(0xEEEEEE); }
-        @Override public Color legendBackground()  { return Color.WHITE; }
+        @Override public Color legendBackground()  { return BG; }
         @Override public Color legendBorderColor() { return new Color(0xDDDDDD); }
 
         @Override public Color bwWriteSample()  { return PINK; }
