@@ -153,15 +153,27 @@ public final class Logging {
     /**
      * Detects whether the app was launched from a jpackage-produced installer.
      *
-     * <p>jpackage bundles all application JARs and scripts inside an {@code app/}
-     * subdirectory relative to the launcher. When running from there, the
-     * working directory contains that subdirectory. In IDE / portable mode the
-     * subdirectory is absent.
+     * <p>Layout differences by platform:
+     * <ul>
+     *   <li><b>Windows / Linux jpackage</b> — CWD is the install root, so
+     *       {@code ./app/} exists directly.</li>
+     *   <li><b>macOS jpackage (.app bundle)</b> — the launcher lives in
+     *       {@code Contents/MacOS/} and CWD is set to that directory, so
+     *       {@code app/} is one level up at {@code ../app/} (i.e.
+     *       {@code Contents/app/}).</li>
+     * </ul>
+     * In IDE / portable mode neither path exists.
      */
     private static boolean isPackagedInstall() {
-        // jpackage places the fat jar in <install>/app/
-        // The launcher sets the working directory to <install>/, so ./app/ exists.
-        return java.nio.file.Files.isDirectory(Path.of(".", "app"));
+        // Linux / Windows: CWD = install root, app/ is a direct child.
+        if (java.nio.file.Files.isDirectory(Path.of(".", "app"))) {
+            return true;
+        }
+        // macOS .app bundle: CWD = Contents/MacOS/, app/ is at ../app/.
+        if (java.nio.file.Files.isDirectory(Path.of("..", "app"))) {
+            return true;
+        }
+        return false;
     }
 
     // -------------------------------------------------------------------------
