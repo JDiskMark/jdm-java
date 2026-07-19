@@ -397,6 +397,26 @@ public class UtilOs {
         return null;
     }
     
+    /**
+     * Extracts the whole-disk device name from a macOS partition path.
+     *
+     * <p>macOS partitions follow the {@code /dev/disk<N>s<P>} convention, where
+     * APFS volumes can be nested further (e.g. {@code /dev/disk1s5s1}).
+     * {@code smartctl} requires the whole disk ({@code disk0}, {@code disk1}, …),
+     * so this method strips everything after the first {@code s} suffix.
+     *
+     * @param partitionPath full device path from {@code df}, e.g. {@code /dev/disk1s5s1}
+     * @return the whole-disk identifier, e.g. {@code disk1}, or {@code null} on parse failure
+     */
+    static public String getWholeDeviceNameMacOs(String partitionPath) {
+        if (partitionPath == null) return null;
+        // Strip /dev/ prefix if present
+        String dev = partitionPath.startsWith("/dev/") ? partitionPath.substring(5) : partitionPath;
+        // Match disk<digits> at the start, ignoring any s<partition> suffixes
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("^(disk\\d+)").matcher(dev);
+        return m.find() ? m.group(1) : null;
+    }
+    
     static public String getDeviceModelMacOs(String devicePath) {
 
         if (devicePath == null || devicePath.isEmpty()) {

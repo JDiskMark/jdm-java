@@ -59,13 +59,60 @@ Theme enum
 
 **`Palette`** drives **Graph > Color Palette** menu (via `GraphPaletteMenu` iterating `values()`):
 
-    CLASSIC, LAGOON, MARINE, EMBER, BETA
+    BETA_DARK, BETA_LIGHT, LAGOON, MARINE, EMBER, CLASSIC
 
 **`Theme`** drives **Graph > Window Theme** menu (via `GraphThemeMenu` iterating `values()`):
 
     DARK, LIGHT, DARCULA, OLD_GLORY, SAKURA, HARVEST
 
 ---
+
+## Unlinked Palette Design Constraint
+
+**Unlinked palettes** (every `Palette` constant that is *not* returned by
+`Theme.hasLinkedPalette()`) may only set colors and strokes **inside the graph
+canvas**.  The surrounding UI chrome — axis labels, chart title, legend
+background and border, outer chart background — is owned by the active LAF and
+must not be overridden.
+
+### What an unlinked palette MAY override
+
+| `PaletteDefinition` method | Scope |
+|---|---|
+| `plotBackground()` | Fill color of the XY plot canvas (inside the axes) |
+| `plotOutline()` | Border of the plot canvas |
+| `gridColor()` | Domain and range gridlines |
+| `bwWrite*()` / `bwRead*()` | Bandwidth renderer series paints (8 series) |
+| `msWriteLatency()` / `msReadLatency()` | Latency renderer series paints |
+| `bwWriteSampleStroke()` etc. | Per-series `BasicStroke` overrides |
+
+### What an unlinked palette MUST NOT override
+
+| `PaletteDefinition` method | Why |
+|---|---|
+| `chartBackground()` | Outer chart paint — set by LAF |
+| `textPaint()` | Axis labels, chart title, legend item text — set by LAF |
+| `legendBackground()` | Legend fill — set by LAF |
+| `legendBorderColor()` | Legend border — set by LAF |
+
+### Why this matters
+
+Unlinked palettes are LAF-agnostic and can be applied to any window theme
+(Dark, Light, Darcula, etc.).  Overriding text or legend colors forces values
+that may be unreadable on the current LAF — for example, forcing dark text
+while the Dark LAF renders a dark background.
+
+Linked palettes (Old Glory, Sakura, Harvest) are exempt because they are
+always applied together with a specific LAF that they control end-to-end.
+
+### Adding a new unlinked palette — checklist
+
+1. Create a class in `org.metricus.jdm.ui.palette` implementing `PaletteDefinition`.
+2. Only override the **MAY** methods listed above.
+3. Do **not** override `chartBackground()`, `textPaint()`, `legendBackground()`,
+   or `legendBorderColor()`.
+4. Add one line to the `Palette` enum (declaration order = menu order).
+5. No changes to `Gui.java`, `GraphPaletteMenu`, or any theme class are needed.
 
 ## Adding a New Theme — Checklist
 
@@ -279,9 +326,10 @@ These themes use their FlatLaf defaults without custom extras or UIManager overr
 
 | Theme | Class | LAF Class |
 |---|---|---|
-| Dark | [`DarkTheme.java`](file:///c:/Users/james/git/jdm-java/jdm-core/src/main/java/org/metricus/jdm/ui/theme/DarkTheme.java) | `FlatDarkLaf` / `FlatMacDarkLaf` |
-| Light | [`LightTheme.java`](file:///c:/Users/james/git/jdm-java/jdm-core/src/main/java/org/metricus/jdm/ui/theme/LightTheme.java) | `FlatLightLaf` / `FlatMacLightLaf` |
-| Darcula | [`DarculaTheme.java`](file:///c:/Users/james/git/jdm-java/jdm-core/src/main/java/org/metricus/jdm/ui/theme/DarculaTheme.java) | `FlatDarculaLaf` |
+| Dark | [`DarkTheme.java`](../src/main/java/org/metricus/jdm/ui/theme/DarkTheme.java) | `FlatDarkLaf` / `FlatMacDarkLaf` |
+| Light | [`LightTheme.java`](../src/main/java/org/metricus/jdm/ui/theme/LightTheme.java) | `FlatLightLaf` / `FlatMacLightLaf` |
+| Darcula | [`DarculaTheme.java`](../src/main/java/org/metricus/jdm/ui/theme/DarculaTheme.java) | `FlatDarculaLaf` |
+| Harvest | [`HarvestTheme.java`](../src/main/java/org/metricus/jdm/ui/theme/HarvestTheme.java) | `FlatDarkLaf` with autumn overrides — linked palette |
 
 Badge colors follow the same `ThemeDefinition` interface but with simpler values:
 
@@ -303,7 +351,10 @@ and resets `FlatLaf.setGlobalExtraDefaults(null)` so previous theme colors don't
 
 ### restoreDefaultPlotBackground()
 
-Called by Classic, Blue-Green, Bard Cool/Warm. Not called by Beta, Old Glory, or Sakura.
+Called at the start of every `Palette.apply(PaletteDefinition)` invocation to
+reset any previously applied custom canvas colors and strokes before the new
+palette's values are written.  Palette implementations that supply their own
+`plotBackground()` will immediately overwrite this reset.
 
 ```
 plot.setBackgroundPaint(Color.DARK_GRAY.darker())

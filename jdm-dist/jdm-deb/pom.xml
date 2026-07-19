@@ -113,6 +113,23 @@ if [ -f "$POLICY" ]; then
     echo "[patch] Included polkit policy file"
 fi
 
+# Create a /usr/bin symlink so `jdiskmark` is on PATH.
+# Including it in the package contents makes it a dpkg-tracked file —
+# dpkg removes it automatically on uninstall, no prerm needed.
+mkdir -p "$WORK/pkg/usr/bin"
+ln -sf /opt/jdiskmark/bin/jdiskmark "$WORK/pkg/usr/bin/jdiskmark"
+echo "[patch] Created /usr/bin/jdiskmark symlink"
+
+# Make xdg-desktop-menu failure non-fatal in postinst.
+# jpackage's generated postinst uses set -e, so xdg-desktop-menu failing
+# on headless systems (no display server) aborts the entire script.
+# Wrap the xdg-desktop-menu call with set +e/set -e so it can't kill the hook.
+POSTINST="$WORK/pkg/DEBIAN/postinst"
+if [ -f "$POSTINST" ] && grep -qE '^[[:space:]]*xdg-desktop-menu' "$POSTINST"; then
+    sed -i -E 's|^([[:space:]]*)xdg-desktop-menu(.*)$|\1set +e; xdg-desktop-menu\2; set -e|' "$POSTINST"
+    echo "[patch] Made xdg-desktop-menu non-fatal in postinst"
+fi
+
 dpkg-deb -b "$WORK/pkg" "$DEB"
 echo "[patch] Done."
                                         ]]></argument>

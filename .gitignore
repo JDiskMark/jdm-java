@@ -39,3 +39,7 @@ release.properties
 flatpak-repo
 .flatpak-builder
 flatpak-staging
+
+# rotating log files (portable/IDE mode writes to ./logs/)
+logs/
+*.log

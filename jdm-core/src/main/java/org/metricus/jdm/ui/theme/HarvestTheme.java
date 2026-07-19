@@ -62,11 +62,12 @@ public final class HarvestTheme implements ThemeDefinition {
         m.put("List.selectionForeground",      uiColor(Color.WHITE));
         m.put("Tree.selectionBackground",      uiColor(ORANGE));
         m.put("Tree.selectionForeground",      uiColor(Color.WHITE));
-        m.put("TabbedPane.selectedBackground",      uiColor(ORANGE));
-        m.put("TabbedPane.selectedForeground",      uiColor(Color.WHITE));
+        // Selected tab: no fill — normal background + Umber text, amber underline only.
+        // This keeps the text readable on both selected and hovered tabs,
+        // matching the Sakura/Light tab style the user prefers.
         m.put("TabbedPane.underlineColor",          uiColor(AMBER));
         m.put("TabbedPane.inactiveUnderlineColor",  uiColor(AMBER));
-        m.put("TabbedPane.focusColor",              uiColor(ORANGE));
+        m.put("TabbedPane.focusColor",              uiColor(new Color(0xFFF0D8)));
         m.put("TabbedPane.hoverColor",              uiColor(TAB_HOVER));
         m.put("ScrollBar.thumb",               uiColor(ORANGE));
         m.put("ScrollBar.thumbHover",          uiColor(ORANGE_HOVER));

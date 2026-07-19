@@ -58,7 +58,9 @@ public class DrivePanel extends JPanel {
 
     private static class DriveEntry {
         final File   root;
-        final String label;
+        final String pathLabel;    // "/ [SSD]"
+        final String capacity;     // "467 GB"
+        String       model = "loading\u2026";   // filled in asynchronously
 
         DriveEntry(File root) {
             this.root = root;
@@ -66,11 +68,14 @@ public class DrivePanel extends JPanel {
             String typeDesc = Util.getDriveType(root);
             String type     = (typeDesc != null && !typeDesc.isBlank())
                               ? "  [" + typeDesc + "]" : "";
-            label = root.getAbsolutePath() + type + "   —   "
-                    + String.format("%.0f GB", totalGb);
+            pathLabel = root.getAbsolutePath() + type;
+            capacity  = String.format("%.0f GB", totalGb);
         }
 
-        @Override public String toString() { return label; }
+        @Override public String toString() {
+            // path   —   model   —   capacity
+            return pathLabel + "   \u2014   " + model + "   \u2014   " + capacity;
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -331,7 +336,25 @@ public class DrivePanel extends JPanel {
             driveCombo.removeAllItems();
             for (File root : File.listRoots()) {
                 if (root.getTotalSpace() == 0) continue;
-                driveCombo.addItem(new DriveEntry(root));
+                DriveEntry entry = new DriveEntry(root);
+                driveCombo.addItem(entry);
+                // Fetch the drive model in the background, then refresh the combo
+                new SwingWorker<String, Void>() {
+                    @Override
+                    protected String doInBackground() {
+                        return Util.getDriveModel(root);
+                    }
+                    @Override
+                    protected void done() {
+                        try {
+                            String m = get();
+                            entry.model = (m != null && !m.isBlank()) ? m : "\u2014";
+                        } catch (Exception ex) {
+                            entry.model = "\u2014";
+                        }
+                        driveCombo.repaint();
+                    }
+                }.execute();
             }
         } finally {
             suppressComboEvents = false;

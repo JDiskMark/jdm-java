@@ -26,8 +26,17 @@ public class GraphThemeMenu extends JMenu {
     public GraphThemeMenu() {
         super("Window Theme");
         ButtonGroup group = new ButtonGroup();
+        boolean separatorAdded = false;
 
         for (Theme t : Theme.values()) {
+            // Insert a visual divider between the standard FlatLaf themes
+            // (Dark, Light, Darcula) and the custom branded themes.
+            // hasLinkedPalette() is true for exactly the branded themes and
+            // serves as the natural partition — no separate flag needed.
+            if (t.hasLinkedPalette() && !separatorAdded) {
+                addSeparator();
+                separatorAdded = true;
+            }
             JRadioButtonMenuItem item = new JRadioButtonMenuItem(t.displayName());
             group.add(item);
             item.addActionListener(e -> {

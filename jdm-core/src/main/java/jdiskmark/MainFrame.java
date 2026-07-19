@@ -13,7 +13,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
 import jdiskmark.Exporter.ExportFormat;
-import org.metricus.jdm.ui.AppIcon;
 import org.metricus.jdm.ui.GraphPaletteMenu;
 import org.metricus.jdm.ui.GraphThemeMenu;
 import org.metricus.jdm.ui.Theme;
@@ -153,8 +152,8 @@ public final class MainFrame extends javax.swing.JFrame {
         // Start on the Benchmark tab — it's the primary interaction surface.
         mainTabPane.setSelectedIndex(mainTabPane.getTabCount() - 1);
 
-        // SMART tab — Linux only (requires smartctl / NVMe kernel support)
-        if (App.isLinux()) {
+        // SMART tab — Linux and macOS (requires bundled or system smartctl)
+        if (App.isLinux() || App.isMacOs()) {
             mainTabPane.addTab("SMART", Gui.smartPanel);
             Gui.smartReportsPanel = new SmartReportsPanel();
             // SMART Reports lives in the bottom tabbedPane alongside Benchmark Operations + Events
@@ -214,7 +213,9 @@ public final class MainFrame extends javax.swing.JFrame {
             public void componentShown(java.awt.event.ComponentEvent e) {
                 if (!heightAdjusted) {
                     heightAdjusted = true;
-                    setSize(getWidth(), getHeight() + 30);
+                    String os = System.getProperty("os.name", "").toLowerCase();
+                    int w = (os.contains("linux") || os.contains("mac")) ? Math.max(994, getWidth()) : getWidth();
+                    setSize(w, getHeight() + 30);
                 }
             }
         });
@@ -913,6 +914,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private void showMaxMinCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showMaxMinCheckBoxMenuItemActionPerformed
         Gui.showMaxMin = showMaxMinCheckBoxMenuItem.getState();
         App.saveConfig();
+        Gui.singleOpTrigReloadGraph();
     }//GEN-LAST:event_showMaxMinCheckBoxMenuItemActionPerformed
 
     private void writeSyncCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_writeSyncCheckBoxMenuItemActionPerformed
@@ -937,6 +939,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private void showAccessCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showAccessCheckBoxMenuItemActionPerformed
         Gui.showDriveAccess = showAccessCheckBoxMenuItem.getState();
         App.saveConfig();
+        Gui.singleOpTrigReloadGraph();
     }//GEN-LAST:event_showAccessCheckBoxMenuItemActionPerformed
 
     private void deleteSelBenchmarksItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteSelBenchmarksItemActionPerformed
