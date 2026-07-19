@@ -153,27 +153,13 @@ public final class Logging {
     /**
      * Detects whether the app was launched from a jpackage-produced installer.
      *
-     * <p>Layout differences by platform:
-     * <ul>
-     *   <li><b>Windows / Linux jpackage</b> — CWD is the install root, so
-     *       {@code ./app/} exists directly.</li>
-     *   <li><b>macOS jpackage (.app bundle)</b> — the launcher lives in
-     *       {@code Contents/MacOS/} and CWD is set to that directory, so
-     *       {@code app/} is one level up at {@code ../app/} (i.e.
-     *       {@code Contents/app/}).</li>
-     * </ul>
-     * In IDE / portable mode neither path exists.
+     * <p>jpackage injects {@code -Djpackage.app-version=<version>} into the JVM
+     * on every platform via the launcher config (e.g. {@code JDiskMark.cfg}).
+     * This property is never present when running from the IDE or a portable zip,
+     * making it a reliable cross-platform packaged-install signal.
      */
     private static boolean isPackagedInstall() {
-        // Linux / Windows: CWD = install root, app/ is a direct child.
-        if (java.nio.file.Files.isDirectory(Path.of(".", "app"))) {
-            return true;
-        }
-        // macOS .app bundle: CWD = Contents/MacOS/, app/ is at ../app/.
-        if (java.nio.file.Files.isDirectory(Path.of("..", "app"))) {
-            return true;
-        }
-        return false;
+        return System.getProperty("jpackage.app-version") != null;
     }
 
     // -------------------------------------------------------------------------
