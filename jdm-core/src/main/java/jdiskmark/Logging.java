@@ -153,15 +153,13 @@ public final class Logging {
     /**
      * Detects whether the app was launched from a jpackage-produced installer.
      *
-     * <p>jpackage bundles all application JARs and scripts inside an {@code app/}
-     * subdirectory relative to the launcher. When running from there, the
-     * working directory contains that subdirectory. In IDE / portable mode the
-     * subdirectory is absent.
+     * <p>jpackage injects {@code -Djpackage.app-version=<version>} into the JVM
+     * on every platform via the launcher config (e.g. {@code JDiskMark.cfg}).
+     * This property is never present when running from the IDE or a portable zip,
+     * making it a reliable cross-platform packaged-install signal.
      */
     private static boolean isPackagedInstall() {
-        // jpackage places the fat jar in <install>/app/
-        // The launcher sets the working directory to <install>/, so ./app/ exists.
-        return java.nio.file.Files.isDirectory(Path.of(".", "app"));
+        return System.getProperty("jpackage.app-version") != null;
     }
 
     // -------------------------------------------------------------------------

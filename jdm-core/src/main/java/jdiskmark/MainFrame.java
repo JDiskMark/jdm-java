@@ -152,8 +152,8 @@ public final class MainFrame extends javax.swing.JFrame {
         // Start on the Benchmark tab — it's the primary interaction surface.
         mainTabPane.setSelectedIndex(mainTabPane.getTabCount() - 1);
 
-        // SMART tab — Linux only (requires smartctl / NVMe kernel support)
-        if (App.isLinux()) {
+        // SMART tab — Linux and macOS (requires bundled or system smartctl)
+        if (App.isLinux() || App.isMacOs()) {
             mainTabPane.addTab("SMART", Gui.smartPanel);
             Gui.smartReportsPanel = new SmartReportsPanel();
             // SMART Reports lives in the bottom tabbedPane alongside Benchmark Operations + Events
