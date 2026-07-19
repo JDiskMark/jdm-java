@@ -67,6 +67,8 @@ jobs:
         run: |
           sudo dpkg -i jdm-dist/jdm-deb/target/*.deb || true
           /opt/jdiskmark/bin/jdiskmark --help
+          # Verify the PATH symlink was created so `jdiskmark` works from the terminal
+          jdiskmark --help
           # Verify bundled smartctl was installed correctly
           test -x /opt/jdiskmark/smartctl/smartctl
           /opt/jdiskmark/smartctl/smartctl --version
@@ -90,6 +92,7 @@ jobs:
         run: |
           sudo dpkg -i *.deb || true
           /opt/jdiskmark/bin/jdiskmark --help
+          jdiskmark --help
 
   # --- LINUX DEBIAN SLIM BUILD (jdeb plugin, system JRE dependency) ---
   # Builds once on ubuntu-22.04; slim package is just a JAR + wrapper script,
