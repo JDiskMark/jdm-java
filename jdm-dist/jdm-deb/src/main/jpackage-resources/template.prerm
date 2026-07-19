@@ -1,0 +1,23 @@
+#!/bin/sh
+# prerm script for APPLICATION_PACKAGE
+#
+# see: dh_installdeb(1)
+
+set -e
+
+case "$1" in
+    remove|upgrade|deconfigure)
+        # Remove the PATH symlink created by postinst.
+        rm -f /usr/bin/jdiskmark
+    ;;
+
+    failed-upgrade)
+    ;;
+
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

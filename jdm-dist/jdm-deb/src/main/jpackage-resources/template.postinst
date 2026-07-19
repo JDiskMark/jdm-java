@@ -24,6 +24,10 @@ case "$1" in
     configure)
 DESKTOP_COMMANDS_INSTALL
 LAUNCHER_AS_SERVICE_COMMANDS_INSTALL
+        # Put jdiskmark on the system PATH so it can be invoked from any terminal.
+        # jpackage installs the real binary at /opt/jdiskmark/bin/jdiskmark but
+        # does not add it to PATH itself; this symlink bridges that gap.
+        ln -sf /opt/jdiskmark/bin/jdiskmark /usr/bin/jdiskmark
         # Install the polkit action file so pkexec shows a branded JDiskMark
         # prompt when the app requests SMART data access, rather than the
         # generic "unknown application wants to run as root" dialog.
@@ -33,6 +37,7 @@ LAUNCHER_AS_SERVICE_COMMANDS_INSTALL
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
+        rm -f /usr/bin/jdiskmark
         rm -f /usr/share/polkit-1/actions/net.jdiskmark.smartctl.policy
     ;;
 
