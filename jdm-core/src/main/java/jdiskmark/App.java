@@ -41,9 +41,17 @@ import org.metricus.jdm.ui.Theme;
  */
 public class App {
     public static final String APP_NAME = "JDiskMark";
-    public static final String VERSION = getVersion();
+    private static final Properties BUILD_PROPERTIES = loadBuildProperties();
+    /** Version used for filesystem paths — no +build-metadata suffix. */
+    public static final String INSTALL_VERSION  = BUILD_PROPERTIES.getProperty("install.version",
+            BUILD_PROPERTIES.getProperty("version", "0.0"));
+    /** Version used for display: title bar, About, exports, jdm.properties header. */
+    public static final String DISPLAY_VERSION  = BUILD_PROPERTIES.getProperty("display.version",
+            BUILD_PROPERTIES.getProperty("version", "0.0"));
+    /** Back-compat alias — equals DISPLAY_VERSION. */
+    public static final String VERSION = DISPLAY_VERSION;
     public static final String APP_CACHE_DIR_NAME = System.getProperty("user.home") + File.separator + ".jdm"
-            + File.separator + VERSION;
+            + File.separator + INSTALL_VERSION;
     public static final File APP_CACHE_DIR = new File(APP_CACHE_DIR_NAME);
     public static final String PROPERTIES_FILENAME = "jdm.properties";
     public static final File PROPERTIES_FILE = new File(APP_CACHE_DIR_NAME + File.separator + PROPERTIES_FILENAME);
@@ -276,13 +284,11 @@ public class App {
     }
 
     /**
-     * Get the version from the build properties. Defaults to 0.0 if not found.
-     * 
-     * @return
+     * Load build.properties from the classpath, the working directory, or the
+     * jpackage app/ directory. Returns an empty Properties on failure.
      */
-    public static String getVersion() {
+    private static Properties loadBuildProperties() {
         Properties bp = new Properties();
-        String version = "0.0";
         InputStream input = App.class.getResourceAsStream("/META-INF/build.properties");
         if (input != null) {
             try (input) {
@@ -306,8 +312,17 @@ public class App {
                 Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        version = bp.getProperty("version", version);
-        return version;
+        return bp;
+    }
+
+    /**
+     * Get the raw {@code version} key from build.properties.
+     * Defaults to {@code "0.0"} if not found.
+     *
+     * @return version string
+     */
+    public static String getVersion() {
+        return BUILD_PROPERTIES.getProperty("version", "0.0");
     }
 
     /**

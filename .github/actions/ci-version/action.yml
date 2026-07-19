@@ -1,0 +1,93 @@
+name: Compute CI version
+description: >
+  Strips -SNAPSHOT from the POM version and appends a unique CI pre-release
+  label using the abbreviated branch name and run number.
+  Skipped on main, release, and release/** branches only — those use the raw
+  POM version so engineers can manage their own pre-release labels.
+  dev and all feature branches receive the label automatically.
+
+inputs:
+  disable_ci_label:
+    description: 'Set to "true" to pass the raw POM version through unchanged.'
+    required: false
+    default: 'false'
+
+outputs:
+  display_version:
+    description: 'Full version with +HHmmss build metadata (e.g. 0.8.0-ci.f.cleanup.47+175426)'
+    value: ${{ steps.compute.outputs.display_version }}
+  install_version:
+    description: 'Version without build metadata, safe for filesystem paths (e.g. 0.8.0-ci.f.cleanup.47)'
+    value: ${{ steps.compute.outputs.install_version }}
+  base_version:
+    description: 'Numeric base with no suffix (e.g. 0.8.0)'
+    value: ${{ steps.compute.outputs.base_version }}
+  msi_version:
+    description: 'Purely numeric Major.Minor.Build for WiX/MSI (e.g. 0.8.0)'
+    value: ${{ steps.compute.outputs.msi_version }}
+  rpm_version:
+    description: 'No-hyphen version for RPM spec (e.g. 0.8.0)'
+    value: ${{ steps.compute.outputs.rpm_version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Compute CI version
+      id: compute
+      shell: bash
+      env:
+        DISABLE: ${{ inputs.disable_ci_label }}
+      run: |
+        # Read POM version and derive the numeric base (strip -SNAPSHOT)
+        RAW=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+        BASE=${RAW%-SNAPSHOT}
+
+        # Prefer the PR head branch; fall back to push/tag branch name
+        BRANCH="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+
+        # Determine whether to skip auto-label generation
+        SKIP=false
+        [ "$DISABLE" = "true" ] && SKIP=true
+        case "$BRANCH" in
+          main|release|release/*) SKIP=true ;;
+        esac
+
+        if [ "$SKIP" = "true" ]; then
+          echo "display_version=${RAW}" >> "$GITHUB_OUTPUT"
+          echo "install_version=${RAW}" >> "$GITHUB_OUTPUT"
+          echo "base_version=${BASE}"   >> "$GITHUB_OUTPUT"
+          echo "msi_version=${BASE}"    >> "$GITHUB_OUTPUT"
+          echo "rpm_version=${BASE}"    >> "$GITHUB_OUTPUT"
+          echo "CI label skipped (branch=${BRANCH}, disable=${DISABLE})"
+          exit 0
+        fi
+
+        # Abbreviate the branch name
+        B="${BRANCH,,}"          # lowercase
+        LEAF="${B##*/}"          # part after the last /
+        case "$B" in
+          dev)              SLUG="d"          ;;
+          dev/*)            SLUG="d.${LEAF}"  ;;
+          release)          SLUG="r"          ;;
+          release/*)        SLUG="r.${LEAF}"  ;;
+          bug/*|bugfix/*)   SLUG="b.${LEAF}"  ;;
+          feature/*|feat/*) SLUG="f.${LEAF}"  ;;
+          *)                SLUG="${LEAF:0:10}" ;;
+        esac
+        # Strip chars outside [a-z0-9.-], collapse duplicate separators, trim edges
+        SLUG=$(printf '%s' "$SLUG" | sed 's/[^a-z0-9.-]//g; s/[.-]\{2,\}/./g; s/^[.-]*//; s/[.-]*$//')
+        SLUG="${SLUG:0:20}"
+
+        # Build metadata timestamp: HHmmss 24-hour clock
+        TIME=$(date +%H%M%S)
+
+        DISPLAY="${BASE}-ci.${SLUG}.${{ github.run_number }}+${TIME}"
+        INSTALL="${BASE}-ci.${SLUG}.${{ github.run_number }}"
+
+        echo "display_version=${DISPLAY}" >> "$GITHUB_OUTPUT"
+        echo "install_version=${INSTALL}" >> "$GITHUB_OUTPUT"
+        echo "base_version=${BASE}"       >> "$GITHUB_OUTPUT"
+        echo "msi_version=${BASE}"        >> "$GITHUB_OUTPUT"
+        echo "rpm_version=${BASE}"        >> "$GITHUB_OUTPUT"
+        echo "CI version:      ${DISPLAY}"
+        echo "Install version: ${INSTALL}"
