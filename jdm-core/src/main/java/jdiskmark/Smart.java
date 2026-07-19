@@ -105,10 +105,14 @@ public class Smart {
     }
 
     /**
-     * Launches a single {@code pkexec bash} process and wires up the
+     * Launches a single privileged {@code bash} process and wires up the
      * shared {@link #shellWriter} / {@link #shellReader}.  The user is
      * prompted for their password exactly once; subsequent SMART queries
      * reuse this shell without re-escalating privileges.
+     *
+     * <p>On Linux, privilege escalation uses {@code pkexec bash}.
+     * On macOS, a native password dialog ({@code osascript display dialog})
+     * collects the password, which is fed to {@code sudo -S bash}.
      *
      * <p>Safe to call multiple times — a no-op if the shell is already alive.
      *
@@ -119,14 +123,55 @@ public class Smart {
             if (process != null && process.isAlive()) {
                 return; // already running
             }
-            LOGGER.info("Starting privileged bash shell via pkexec...");
-            ProcessBuilder pb = new ProcessBuilder("pkexec", "bash");
-            pb.redirectErrorStream(false); // keep stderr separate from stdout
-            process = pb.start();
-            shellWriter = new BufferedWriter(
-                new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
-            shellReader = new BufferedReader(
-                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+
+            if (App.isMacOs()) {
+                LOGGER.info("Starting privileged bash shell via osascript/sudo...");
+
+                // Prompt for password using native macOS authorization dialog
+                ProcessBuilder dialogPb = new ProcessBuilder("osascript", "-e",
+                        "return text returned of (display dialog "
+                        + "\"JDiskMark needs administrator privileges to read SMART data.\" "
+                        + "default answer \"\" with hidden answer "
+                        + "with title \"JDiskMark\" "
+                        + "buttons {\"Cancel\", \"OK\"} default button \"OK\")");
+                dialogPb.redirectErrorStream(true);
+                Process dialogProcess = dialogPb.start();
+                String password;
+                try {
+                    password = new String(
+                            dialogProcess.getInputStream().readAllBytes(),
+                            StandardCharsets.UTF_8).trim();
+                    int exitCode = dialogProcess.waitFor();
+                    if (exitCode != 0 || password.isEmpty()) {
+                        throw new IOException("User cancelled macOS authorization dialog");
+                    }
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException("Interrupted waiting for macOS authorization", ex);
+                }
+
+                ProcessBuilder pb = new ProcessBuilder("sudo", "-S", "bash");
+                pb.redirectErrorStream(false);
+                process = pb.start();
+                shellWriter = new BufferedWriter(
+                        new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
+                shellReader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+
+                // Feed password to sudo via stdin
+                shellWriter.write(password);
+                shellWriter.newLine();
+                shellWriter.flush();
+            } else {
+                LOGGER.info("Starting privileged bash shell via pkexec...");
+                ProcessBuilder pb = new ProcessBuilder("pkexec", "bash");
+                pb.redirectErrorStream(false);
+                process = pb.start();
+                shellWriter = new BufferedWriter(
+                        new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
+                shellReader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+            }
 
             // Drain stderr so the process can't deadlock if it emits output there.
             final BufferedReader errReader = new BufferedReader(

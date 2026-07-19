@@ -1182,8 +1182,8 @@ public final class Gui {
      */
     static public void runSmart() {
         
-        if (!App.isLinux()) { 
-            App.msg("SMART is only available in linux");
+        if (!App.isLinux() && !App.isMacOs()) { 
+            App.msg("SMART is only available on Linux and macOS");
             return;
         }
         
@@ -1202,14 +1202,23 @@ public final class Gui {
             protected Smart doInBackground() {
                 try {
                     Path path = locDir.toPath();
-                    String partition = UtilOs.getPartitionFromFilePathLinux(path);
-                    List<String> devices =
-                            UtilOs.getDeviceNamesFromPartitionLinux(partition);
-                    if (devices == null || devices.isEmpty()) {
-                        SMART_LOG.log(Level.WARNING, "runSmart: no device for {0}", locDir);
-                        return null;
+                    if (App.isLinux()) {
+                        String partition = UtilOs.getPartitionFromFilePathLinux(path);
+                        List<String> devices =
+                                UtilOs.getDeviceNamesFromPartitionLinux(partition);
+                        if (devices == null || devices.isEmpty()) {
+                            SMART_LOG.log(Level.WARNING, "runSmart: no device for {0}", locDir);
+                            return null;
+                        }
+                        deviceRef[0] = devices.get(0);
+                    } else if (App.isMacOs()) {
+                        String partitionPath = UtilOs.getDeviceFromPathMacOs(path);
+                        deviceRef[0] = UtilOs.getWholeDeviceNameMacOs(partitionPath);
+                        if (deviceRef[0] == null) {
+                            SMART_LOG.log(Level.WARNING, "runSmart: no device for {0}", locDir);
+                            return null;
+                        }
                     }
-                    deviceRef[0] = devices.get(0);
                     if (Smart.process == null || !Smart.process.isAlive()) {
                         Smart.startPrivilegedShell();
                         Smart.startHeartbeat();
