@@ -37,6 +37,7 @@ jobs:
         run: |
           curl -fsSL -o smartctl.tar.gz \
             https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-7.5-macos-arm64/smartctl-7.5-macos-arm64.tar.gz
+          echo "ac42f5c73ba271d0bc2140e0b755b8645f9cee96d3aa177ce55eec3a8a579a58  smartctl.tar.gz" | shasum -a 256 --check
           mkdir -p jdm-dist/jdm-pkg/app-content
           tar -xzf smartctl.tar.gz -C jdm-dist/jdm-pkg/app-content
           # Sanity check: binary must exist and be executable
