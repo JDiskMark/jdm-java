@@ -22,17 +22,8 @@ LAUNCHER_AS_SERVICE_SCRIPTS
 
 case "$1" in
     configure)
-        # Put jdiskmark on the system PATH so it can be invoked from any terminal.
-        # jpackage installs the binary at /opt/jdiskmark/bin/ which is not on PATH.
-        ln -sf /opt/jdiskmark/bin/jdiskmark /usr/bin/jdiskmark
-        # Desktop menu and launcher-as-service registration are best-effort:
-        # xdg-desktop-menu fails on headless systems (no display server) with
-        # exit 3 and would abort the entire postinst via set -e, leaving the
-        # package half-configured. Suspend set -e so the failure is non-fatal.
-        set +e
 DESKTOP_COMMANDS_INSTALL
 LAUNCHER_AS_SERVICE_COMMANDS_INSTALL
-        set -e
         # Install the polkit action file so pkexec shows a branded JDiskMark
         # prompt when the app requests SMART data access, rather than the
         # generic "unknown application wants to run as root" dialog.
@@ -42,7 +33,6 @@ LAUNCHER_AS_SERVICE_COMMANDS_INSTALL
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
-        rm -f /usr/bin/jdiskmark
         rm -f /usr/share/polkit-1/actions/net.jdiskmark.smartctl.policy
     ;;
 
