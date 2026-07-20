@@ -37,8 +37,8 @@ INSTALL="${BASE}-a.${SLUG}"
 DISPLAY="${BASE}-a.${SLUG}+${TIME}"
 
 echo "branch:          ${BRANCH}"
-echo "install version: ${INSTALL}   (Maven coordinate + .jdm/ path)"
-echo "display version: ${DISPLAY}  (title bar / About / jdm.properties)"
+echo "install version: ${INSTALL}   (Maven coordinate + title bar + .jdm/ path)"
+echo "display version: ${DISPLAY}  (About dialog / exports / jdm.properties header)"
 echo ""
 
 mvn clean install -pl jdm-core -am \

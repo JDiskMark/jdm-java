@@ -62,7 +62,7 @@ in filenames and display strings.
 Auto-label generation is **skipped** on `main`, `release`, and
 `release/**`.  On those branches both `display_version` and `install_version`
 are set to the raw POM version (e.g. `0.8.0-SNAPSHOT`).  Engineers control
-their own pre-release label by editing `<version>` in the root `pom.xml`.
+their own pre-release label by editing `<revision>` in the root `pom.xml`.
 
 ---
 
