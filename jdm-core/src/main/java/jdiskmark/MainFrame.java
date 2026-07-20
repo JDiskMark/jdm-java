@@ -107,7 +107,7 @@ public final class MainFrame extends javax.swing.JFrame {
         totalTxProgBar.setString("");
         
         StringBuilder titleSb = new StringBuilder();
-        titleSb.append(getTitle()).append(" ").append(App.VERSION);
+        titleSb.append(getTitle()).append(" ").append(App.INSTALL_VERSION);
         
         syncFromModel();
         

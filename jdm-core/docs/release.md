@@ -9,8 +9,8 @@ uniquely identifiable without polluting the install directory with build metadat
 
 | Concept | Property key | Used for | Example |
 |---|---|---|---|
-| **`display_version`** | `display.version` | Title bar, About dialog, `jdm.properties` header, export headers | `0.8.0-ci.f.cleanup.47+175426` |
-| **`install_version`** | `install.version` | `.jdm/<version>/` directory, DB path | `0.8.0-ci.f.cleanup.47` |
+| **`display_version`** | `display.version` | About dialog, `jdm.properties` header, export headers | `0.8.0-ci.f.cleanup.47+175426` |
+| **`install_version`** | `install.version` | Title bar, `.jdm/<version>/` directory, DB path | `0.8.0-ci.f.cleanup.47` |
 
 Both are written into `META-INF/build.properties` at build time and read by
 `App.DISPLAY_VERSION` / `App.INSTALL_VERSION` at runtime.  `App.VERSION` is
@@ -167,3 +167,42 @@ change it: update `timezone="America/Los_Angeles"` in the `local-label` Ant
 `<tstamp>` block and `date +%H%M%S` uses the runner's local clock in CI
 (which is UTC on GitHub-hosted runners — acceptable since the timestamp is
 informational only).
+
+---
+
+## Version Tags (Release Workflow)
+
+Pushing a Git tag that matches `v*` triggers the unified release workflow
+(`.github/workflows/release.yml`).  The tag name **overrides** the POM version:
+
+```
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+The workflow strips the `v` prefix (`VERSION=${GITHUB_REF_NAME#v}`) and calls
+`mvn versions:set -DnewVersion=$VERSION` in every build job.  This replaces
+the POM `<version>` before the build runs, so the tag value becomes the
+version embedded in all packages.
+
+### Pre-release detection
+
+The `create-release` job inspects the version to decide whether the GitHub
+Release should be marked as a pre-release:
+
+| Tag | Detected as | Why |
+|---|---|---|
+| `v1.0.0` | **release** | No hyphen suffix |
+| `v2.0.0-beta` | **pre-release** | `x.y.z-label` pattern |
+| `v0.8.0-rc1` | **pre-release** | `x.y.z-label` pattern |
+| `v0.8.0-SNAPSHOT` | **pre-release** | matches `snapshot` keyword |
+
+### Package-specific fixups
+
+Some packages have format restrictions.  The release workflow handles these
+automatically per job:
+
+- **MSI**: extracts the numeric `Major.Minor.Build` from the tag version and
+  writes it into `<msi.version>` via `sed` (WiX requires purely numeric).
+- **RPM**: extracts the numeric base and writes it into `<rpm.version>` via
+  `sed` (no hyphens allowed).
+- **Flatpak**: also patches the `build.xml` `version` property.
