@@ -63,7 +63,7 @@ runs:
         fi
 
         # Abbreviate the branch name
-        B="${BRANCH,,}"          # lowercase
+        B="$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]')"   # lowercase (bash 3.2-safe for macOS)
         LEAF="${B##*/}"          # part after the last /
         case "$B" in
           dev)              SLUG="d"          ;;

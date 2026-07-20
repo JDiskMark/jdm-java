@@ -46,6 +46,7 @@ jobs:
         # then jdm-msi. Explicitly activating the windows-msi profile.
         # msi.version must remain purely numeric (Major.Minor.Build) — pass
         # base_version to satisfy the WiX/MSI format constraint.
+        shell: bash
         run: |
           mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am -Pwindows-msi \
             -Drevision=${{ steps.ver.outputs.install_version }} \
