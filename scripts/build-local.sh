@@ -16,10 +16,9 @@ BASE=$(grep -m1 '<msi.version>' pom.xml | sed 's/[[:space:]]*<msi\.version>\([^<
 # Detect branch; fall back to "local" on detached HEAD or missing git.
 BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "local")
 [ "$BRANCH" = "HEAD" ] && BRANCH="local"
-LEAF="${BRANCH##*/}"
-
-# Abbreviate — mirrors the table in .github/actions/ci-version/action.yml.
-B="${BRANCH,,}"
+# Lowercase branch name (bash 3.2-safe for macOS)
+B="$(printf '%s' "$BRANCH" | tr '[:upper:]' '[:lower:]')"
+LEAF="${B##*/}"
 case "$B" in
   dev)              SLUG="d"          ;;
   dev/*)            SLUG="d.${LEAF}"  ;;

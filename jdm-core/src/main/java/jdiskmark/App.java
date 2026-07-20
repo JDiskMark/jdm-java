@@ -316,8 +316,8 @@ public class App {
                 Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
             }
         } else if (Files.exists(Paths.get(BUILD_TOKEN_FILENAME))) { // ide and zip release
-            try {
-                bp.load(new FileInputStream(BUILD_TOKEN_FILENAME));
+            try (var fis = new FileInputStream(BUILD_TOKEN_FILENAME)) {
+                bp.load(fis);
             } catch (IOException ex) {
                 System.err.println("If in NetBeans please do a "
                         + "Clean and Build Project from the Run Menu or press F11");
@@ -325,8 +325,8 @@ public class App {
             }
         } else {
             // GH-14 jpackage windows environment
-            try {
-                bp.load(new FileInputStream("app/" + BUILD_TOKEN_FILENAME));
+            try (var fis = new FileInputStream("app/" + BUILD_TOKEN_FILENAME)) {
+                bp.load(fis);
             } catch (IOException ex) {
                 Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
             }
