@@ -9,7 +9,7 @@ uniquely identifiable without polluting the install directory with build metadat
 
 | Concept | Property key | Used for | Example |
 |---|---|---|---|
-| **`display_version`** | `display.version` | About dialog, `jdm.properties` header, export headers | `0.8.0-ci.f.cleanup.47+175426` |
+| **`display_version`** | `display.version` | About dialog, `jdm.properties` header, export headers | `0.8.0-ci.f.cleanup.47+0720.0210` |
 | **`install_version`** | `install.version` | Title bar, `.jdm/<version>/` directory, DB path | `0.8.0-ci.f.cleanup.47` |
 
 Both are written into `META-INF/build.properties` at build time and read by
@@ -23,22 +23,22 @@ a back-compat alias for `DISPLAY_VERSION`.
 | Mode | How | `display_version` | `install_version` |
 |---|---|---|---|
 | **Local default** | `mvn install` | `0.8.0-SNAPSHOT` | `0.8.0-SNAPSHOT` |
-| **Local opt-in** | `bash scripts/build-local.sh` (Git Bash) | `0.8.0-a.f.cleanup+175426` | `0.8.0-a.f.cleanup` |
-| **CI pipeline** | GitHub Actions (automatic) | `0.8.0-ci.f.cleanup.47+175426` | `0.8.0-ci.f.cleanup.47` |
+| **Local opt-in** | `bash scripts/build-local.sh` (Git Bash) | `0.8.0-a.f.cleanup+0720.0210` | `0.8.0-a.f.cleanup` |
+| **CI pipeline** | GitHub Actions (automatic) | `0.8.0-ci.f.cleanup.47+0720.0210` | `0.8.0-ci.f.cleanup.47` |
 
 ### Label anatomy
 
 ```
-0.8.0 - ci . f.cleanup . 47  + 175426
+0.8.0 - ci . f.cleanup . 47  + 0720.0210
   │      │       │         │     │
-  │      │       │         │     └─ HHmmss timestamp (24-hour, America/Los_Angeles)
+  │      │       │         │     └─ MMDD.HHMM timestamp (America/Los_Angeles)
   │      │       │         └─────── run_number (CI) — not present locally
   │      │       └───────────────── abbreviated branch slug
   │      └───────────────────────── "ci" = pipeline build, "a" = adhoc local
   └──────────────────────────────── numeric base (msi.version, no SNAPSHOT)
 ```
 
-`+175426` is SemVer build metadata — ignored for version ordering but visible
+`+0720.0210` is SemVer build metadata — ignored for version ordering but visible
 in filenames and display strings.
 
 ---
@@ -80,7 +80,7 @@ The script:
 1. Reads `msi.version` from `pom.xml` via `grep`/`sed` (no Maven invocation).
 2. Detects the current branch via `git rev-parse --abbrev-ref HEAD`.
 3. Abbreviates it using the same rules as the CI composite action.
-4. Stamps the time with `date +%H%M%S`.
+4. Stamps the time with `date +%m%d.%H%M`.
 5. Calls `mvn clean install -pl jdm-core -am -Drevision=... -Ddisplay.version=...`.
 
 Result: the Maven coordinate **and** `.jdm/` install path both use
@@ -103,8 +103,8 @@ The composite action `.github/actions/ci-version` runs after `Set up JDK 25`
 in every build job.  It:
 
 1. Reads the POM version via `mvn help:evaluate` and strips `-SNAPSHOT`.
-2. Checks whether the branch is excluded (`main`, `dev`, `release`, `release/**`).
-3. Abbreviates the branch name using the same rules as the Ant profile.
+2. Checks whether the branch is excluded (`main`, `release`, `release/**`).
+3. Abbreviates the branch name using the same rules as the local script.
 4. Assembles `display_version` and `install_version` using `github.run_number`.
 5. Outputs them as step outputs consumed by the `mvn` build step via:
 
@@ -154,18 +154,17 @@ its numeric base from `msi.version` automatically.
 **In the CI action** (`.github/actions/ci-version`): add a new `case` entry
 in the bash `case "$B" in` block.
 
-**In the local-label profile** (`jdm-core/pom.xml`): add a new pair of
-`<condition property="branch.abbrev" value="...">` + `<not><isset .../></not>`
-blocks after the existing `f.*` block and before the fallback.
+**In the local script** (`scripts/build-local.sh`): add a new `case` entry
+in the matching `case "$B" in` block.
 
 Both must use the same abbreviation for consistency.
 
 ### Timezone
 
-The timestamp in both local and CI versions is in `America/Los_Angeles`.  To
-change it: update `timezone="America/Los_Angeles"` in the `local-label` Ant
-`<tstamp>` block and `date +%H%M%S` uses the runner's local clock in CI
-(which is UTC on GitHub-hosted runners — acceptable since the timestamp is
+The timestamp in both local and CI versions is in `America/Los_Angeles`.
+The local script (`scripts/build-local.sh`) uses `date +%m%d.%H%M` which
+follows the system timezone.  The CI action uses the runner's local clock
+(UTC on GitHub-hosted runners — acceptable since the timestamp is
 informational only).
 
 ---

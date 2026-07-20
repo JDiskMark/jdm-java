@@ -14,7 +14,7 @@ inputs:
 
 outputs:
   display_version:
-    description: 'Full version with +HHmmss build metadata (e.g. 0.8.0-ci.f.cleanup.47+175426)'
+    description: 'Full version with +MMDD.HHMM build metadata (e.g. 0.8.0-ci.f.cleanup.47+0720.0210)'
     value: ${{ steps.compute.outputs.display_version }}
   install_version:
     description: 'Version without build metadata, safe for filesystem paths (e.g. 0.8.0-ci.f.cleanup.47)'
@@ -78,8 +78,8 @@ runs:
         SLUG=$(printf '%s' "$SLUG" | sed 's/[^a-z0-9.-]//g; s/[.-]\{2,\}/./g; s/^[.-]*//; s/[.-]*$//')
         SLUG="${SLUG:0:20}"
 
-        # Build metadata timestamp: HHmmss 24-hour clock
-        TIME=$(date +%H%M%S)
+        # Build metadata timestamp: MMDD.HHMM (month-day + 24-hour clock)
+        TIME=$(date +%m%d.%H%M)
 
         DISPLAY="${BASE}-ci.${SLUG}.${{ github.run_number }}+${TIME}"
         INSTALL="${BASE}-ci.${SLUG}.${{ github.run_number }}"

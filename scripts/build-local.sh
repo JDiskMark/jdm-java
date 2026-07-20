@@ -6,7 +6,7 @@
 # Produces Maven coordinate:  jdm-core-<base>-a.<slug>
 #   e.g. on feature/cleanup:  jdm-core-0.8.0-a.f.cleanup
 #
-# Also sets display.version with a +HHmmss timestamp for the title bar/About.
+# Also sets display.version with a +MMDD.HHMM timestamp for the title bar/About.
 set -euo pipefail
 
 # Read the authoritative numeric base directly from the root POM — fast and
@@ -32,7 +32,7 @@ esac
 SLUG=$(printf '%s' "$SLUG" | sed 's/[^a-z0-9.-]//g; s/[.-]\{2,\}/./g; s/^[.-]*//; s/[.-]*$//')
 SLUG="${SLUG:0:20}"
 
-TIME=$(date +%H%M%S)
+TIME=$(date +%m%d.%H%M)
 INSTALL="${BASE}-a.${SLUG}"
 DISPLAY="${BASE}-a.${SLUG}+${TIME}"
 

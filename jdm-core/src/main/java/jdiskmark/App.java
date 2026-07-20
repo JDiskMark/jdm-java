@@ -45,11 +45,15 @@ public class App {
     /** Version used for filesystem paths — no +build-metadata suffix. */
     public static final String INSTALL_VERSION  = BUILD_PROPERTIES.getProperty("install.version",
             BUILD_PROPERTIES.getProperty("version", "0.0"));
-    /** Version used for display: title bar, About, exports, jdm.properties header. */
+    /** Version used for display: About dialog, exports, jdm.properties header. */
     public static final String DISPLAY_VERSION  = BUILD_PROPERTIES.getProperty("display.version",
             BUILD_PROPERTIES.getProperty("version", "0.0"));
     /** Back-compat alias — equals DISPLAY_VERSION. */
     public static final String VERSION = DISPLAY_VERSION;
+    /** Returns a value from META-INF/build.properties, or "?" if absent. */
+    public static String buildProp(String key) {
+        return BUILD_PROPERTIES.getProperty(key, "?");
+    }
     public static final String APP_CACHE_DIR_NAME = System.getProperty("user.home") + File.separator + ".jdm"
             + File.separator + INSTALL_VERSION;
     public static final File APP_CACHE_DIR = new File(APP_CACHE_DIR_NAME);

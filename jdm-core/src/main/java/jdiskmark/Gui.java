@@ -511,6 +511,13 @@ public final class Gui {
                 + "<b>" + App.APP_NAME + " " + App.VERSION + "</b><br>"
                 + "JVM: " + App.jdk + "<br>"
                 + "OS:&nbsp; " + App.os + "<br><br>"
+                + "<span style='color:gray;font-size:10px'>"
+                + "FlatLaf " + App.buildProp("lib.flatlaf")
+                + " &middot; JFreeChart " + App.buildProp("lib.jfreechart")
+                + " &middot; Hibernate " + App.buildProp("lib.hibernate") + "<br>"
+                + "Derby " + App.buildProp("lib.derby")
+                + " &middot; Picocli " + App.buildProp("lib.picocli")
+                + "</span><br><br>"
                 + "<a href='" + url + "'>" + url + "</a>"
                 + "</body></html>";
 
@@ -531,7 +538,6 @@ public final class Gui {
                 mainFrame, msgPane, "About " + App.APP_NAME,
                 javax.swing.JOptionPane.PLAIN_MESSAGE, icon);
     }
-
     /**
      * #117 Shows the one-time first-run consent dialog for portal sharing.
      * Fires when {@link App#portalConsentAsked} is {@code false}. After the user
