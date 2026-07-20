@@ -10,6 +10,11 @@ on:
   pull_request:
     branches: [ "**" ]
   workflow_dispatch:
+    inputs:
+      disable_ci_label:
+        description: 'Skip CI pre-release label and pass POM version through unchanged'
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -29,6 +34,12 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Compute CI version
+        id: ver
+        uses: ./.github/actions/ci-version
+        with:
+          disable_ci_label: ${{ inputs.disable_ci_label || false }}
+          
       - name: Fetch bundled smartctl from jdm-deps
         # Downloads the pre-packaged smartctl 7.5 binary from the public
         # JDiskMark/jdm-deps release asset.  The staging directory is picked
@@ -46,7 +57,11 @@ jobs:
           jdm-dist/jdm-pkg/app-content/smartctl/smartctl --version || true
 
       - name: Build macOS PKG
-        run: mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am -Pmacos-pkg --no-transfer-progress
+        run: |
+          mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am -Pmacos-pkg \
+            -Drevision=${{ steps.ver.outputs.install_version }} \
+            -Ddisplay.version=${{ steps.ver.outputs.display_version }} \
+            --no-transfer-progress
 
       - name: Build and Sign macOS PKG (if secrets available)
         if: env.MACOS_CERTIFICATE != ''

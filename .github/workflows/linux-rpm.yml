@@ -10,6 +10,11 @@ on:
   pull_request:
     branches: [ "**" ]
   workflow_dispatch:
+    inputs:
+      disable_ci_label:
+        description: 'Skip CI pre-release label and pass POM version through unchanged'
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -33,7 +38,8 @@ jobs:
             rpm-build \
             maven \
             findutils \
-            which
+            which \
+            git
           rpmbuild --version
           mvn --version
 
@@ -47,10 +53,20 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Compute CI version
+        id: ver
+        uses: ./.github/actions/ci-version
+        with:
+          disable_ci_label: ${{ inputs.disable_ci_label || false }}
 
       - name: Build RPM Package
         # Explicitly activating the linux-rpm profile to ensure jpackage runs.
-        run: mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm --no-transfer-progress
+        run: |
+          mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm \
+            -Drevision=${{ steps.ver.outputs.install_version }} \
+            -Ddisplay.version=${{ steps.ver.outputs.display_version }} \
+            -Drpm.version=${{ steps.ver.outputs.rpm_version }} \
+            --no-transfer-progress
 
       - name: Upload RPM Artifact
         uses: actions/upload-artifact@v7

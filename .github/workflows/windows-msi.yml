@@ -9,7 +9,12 @@ on:
       - 'docs/**'
   pull_request:
     branches: [ "**" ]
-  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      disable_ci_label:
+        description: 'Skip CI pre-release label and pass POM version through unchanged'
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -30,10 +35,24 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Compute CI version
+        id: ver
+        uses: ./.github/actions/ci-version
+        with:
+          disable_ci_label: ${{ inputs.disable_ci_label || false }}
+
       - name: Build Windows MSI (unsigned)
         # Builds jdm-core first (-am = also build upstream dependencies),
         # then jdm-msi. Explicitly activating the windows-msi profile.
-        run: mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am -Pwindows-msi --no-transfer-progress
+        # msi.version must remain purely numeric (Major.Minor.Build) — pass
+        # base_version to satisfy the WiX/MSI format constraint.
+        shell: bash
+        run: |
+          mvn clean install -pl jdm-core,jdm-dist/jdm-msi -am -Pwindows-msi \
+            -Drevision=${{ steps.ver.outputs.install_version }} \
+            -Ddisplay.version=${{ steps.ver.outputs.display_version }} \
+            -Dmsi.version=${{ steps.ver.outputs.msi_version }} \
+            --no-transfer-progress
 
       - name: Upload MSI Artifact
         uses: actions/upload-artifact@v7
