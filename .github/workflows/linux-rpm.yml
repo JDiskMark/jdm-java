@@ -38,7 +38,8 @@ jobs:
             rpm-build \
             maven \
             findutils \
-            which
+            which \
+            git
           rpmbuild --version
           mvn --version
 

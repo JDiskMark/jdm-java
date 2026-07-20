@@ -207,13 +207,13 @@
                                 <exec executable="whoami" outputproperty="whoami"
                                       failonerror="false"/>
                                 <exec executable="git" outputproperty="git.commit.hash"
-                                      failonerror="false">
+                                      failonerror="false" failifexecutionfails="false">
                                     <arg value="rev-parse"/>
                                     <arg value="--short"/>
                                     <arg value="HEAD"/>
                                 </exec>
                                 <exec executable="git" outputproperty="git.status.out"
-                                      failonerror="false">
+                                      failonerror="false" failifexecutionfails="false">
                                     <arg value="status"/>
                                     <arg value="--porcelain"/>
                                 </exec>
