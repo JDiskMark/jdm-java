@@ -84,6 +84,37 @@ public class Smart {
      * </ol>
      */
     static String resolveSmartctlPath() {
+        if (App.isWindows()) {
+            // 1. Bundled copy: jpackage sets APPDIR → …\JDiskMark\app
+            String appDir = System.getenv("APPDIR");
+            if (appDir != null) {
+                Path bundled = Path.of(appDir).getParent().resolve("smartctl/smartctl.exe");
+                if (Files.isExecutable(bundled)) {
+                    LOGGER.info("Using bundled smartctl (APPDIR): " + bundled);
+                    return bundled.toString();
+                }
+                bundled = Path.of(appDir).resolve("smartctl.exe");
+                if (Files.isExecutable(bundled)) {
+                    LOGGER.info("Using bundled smartctl: " + bundled);
+                    return bundled.toString();
+                }
+            }
+            // 2. Check well-known installation paths
+            Path installed = Path.of("C:\\Program Files\\smartmontools\\bin\\smartctl.exe");
+            if (Files.isExecutable(installed)) {
+                LOGGER.info("Using installed smartctl: " + installed);
+                return installed.toString();
+            }
+            installed = Path.of("C:\\Program Files (x86)\\smartmontools\\bin\\smartctl.exe");
+            if (Files.isExecutable(installed)) {
+                LOGGER.info("Using installed smartctl: " + installed);
+                return installed.toString();
+            }
+            // 3. System fallback
+            LOGGER.info("Using system smartctl: smartctl.exe");
+            return "smartctl.exe";
+        }
+
         // 1. Bundled copy: jpackage sets APPDIR → …/opt/jdiskmark/app
         String appDir = System.getenv("APPDIR");
         if (appDir != null) {
@@ -115,6 +146,9 @@ public class Smart {
      * @throws IOException if the process cannot be started
      */
     public static void startPrivilegedShell() throws IOException {
+        if (App.isWindows()) {
+            return;
+        }
         synchronized (pLock) {
             if (process != null && process.isAlive()) {
                 return; // already running
@@ -154,6 +188,9 @@ public class Smart {
      * Only one thread is started; subsequent calls are ignored.
      */
     public static void startHeartbeat() {
+        if (App.isWindows()) {
+            return;
+        }
         if (hbThread != null && hbThread.isAlive()) return;
         hbThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
@@ -191,6 +228,36 @@ public class Smart {
     public static Smart getSmart(String deviceName) {
         if (deviceName == null || !deviceName.matches("[A-Za-z0-9._-]+")) {
             LOGGER.severe("getSmart: invalid device name: " + deviceName);
+            return null;
+        }
+        if (App.isWindows()) {
+            try {
+                String smartctlPath = resolveSmartctlPath();
+                ProcessBuilder pb = new ProcessBuilder(smartctlPath, "--json", "-a", "/dev/" + deviceName);
+                pb.redirectErrorStream(false);
+                Process p = pb.start();
+                
+                StringBuilder sb = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        sb.append(line).append('\n');
+                    }
+                }
+                p.waitFor();
+                
+                String result = sb.toString().trim();
+                if (result.isEmpty()) {
+                    LOGGER.severe("getSmart: empty response from smartctl for device " + deviceName);
+                    return null;
+                }
+                
+                Smart smart = fromJson(result);
+                logSmart(smart);
+                return smart;
+            } catch (IOException | InterruptedException ex) {
+                LOGGER.log(Level.SEVERE, "getSmart failed for Windows device: " + deviceName, ex);
+            }
             return null;
         }
         final String sentinel = "---SMART_DONE---";

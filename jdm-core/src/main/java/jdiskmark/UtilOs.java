@@ -1049,6 +1049,48 @@ public class UtilOs {
     }
 
     /**
+     * Returns the physical drive number for the given drive letter (e.g. "1" or "0").
+     * Uses PowerShell {@code Get-Partition -DriveLetter <Letter>}. Falls back to WMI if needed.
+     *
+     * @param driveLetter single letter, e.g. "C"
+     * @return physical drive number string or {@code null} on failure
+     */
+    public static String getPhysicalDriveNumberWindows(String driveLetter) {
+        if (driveLetter == null || driveLetter.trim().isEmpty()) {
+            return null;
+        }
+        String letter = driveLetter.trim().substring(0, 1).toUpperCase();
+        
+        // 1. Try using Get-Partition
+        String diskNum = runPowerShellOneLiner(
+                "Get-Partition -DriveLetter '" + letter + "' | Select-Object -ExpandProperty DiskNumber");
+        if (diskNum != null) {
+            diskNum = diskNum.trim();
+            if (diskNum.matches("\\d+")) {
+                return diskNum;
+            }
+        }
+        
+        // 2. Fallback using WMI / Get-CimInstance
+        String fallbackNum = runPowerShellOneLiner(
+                "Get-CimInstance Win32_LogicalDiskToPartition | " +
+                "Where-Object { `$_.Dependent.DeviceId -eq '" + letter + ":' } | " +
+                "ForEach-Object { `$_.Antecedent.DeviceId }");
+        if (fallbackNum != null && fallbackNum.contains("Disk #")) {
+            String parts[] = fallbackNum.split("Disk #");
+            if (parts.length > 1) {
+                String diskNumPart = parts[1].split(",")[0].trim();
+                if (diskNumPart.matches("\\d+")) {
+                    return diskNumPart;
+                }
+            }
+        }
+        
+        return null;
+    }
+
+
+    /**
      * Runs a single PowerShell command and returns the first non-blank line of
      * output, or {@code null} on any error. Timeout: 15 seconds.
      */

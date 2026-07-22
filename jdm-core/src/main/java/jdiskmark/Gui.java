@@ -1047,8 +1047,8 @@ public final class Gui {
      */
     static public void runSmart() {
         
-        if (!App.isLinux()) { 
-            App.msg("SMART is only available in linux");
+        if (!App.isLinux() && !App.isWindows()) { 
+            App.msg("SMART is only available on Linux and Windows");
             return;
         }
         
@@ -1067,17 +1067,31 @@ public final class Gui {
             protected Smart doInBackground() {
                 try {
                     Path path = locDir.toPath();
-                    String partition = UtilOs.getPartitionFromFilePathLinux(path);
-                    List<String> devices =
-                            UtilOs.getDeviceNamesFromPartitionLinux(partition);
-                    if (devices == null || devices.isEmpty()) {
+                    String device = null;
+                    if (App.isLinux()) {
+                        String partition = UtilOs.getPartitionFromFilePathLinux(path);
+                        List<String> devices =
+                                UtilOs.getDeviceNamesFromPartitionLinux(partition);
+                        if (devices != null && !devices.isEmpty()) {
+                            device = devices.get(0);
+                        }
+                    } else if (App.isWindows()) {
+                        String driveLetter = UtilOs.getDriveLetterWindows(path);
+                        String driveNum = UtilOs.getPhysicalDriveNumberWindows(driveLetter);
+                        if (driveNum != null) {
+                            device = "pd" + driveNum;
+                        }
+                    }
+                    if (device == null) {
                         SMART_LOG.log(Level.WARNING, "runSmart: no device for {0}", locDir);
                         return null;
                     }
-                    deviceRef[0] = devices.get(0);
-                    if (Smart.process == null || !Smart.process.isAlive()) {
-                        Smart.startPrivilegedShell();
-                        Smart.startHeartbeat();
+                    deviceRef[0] = device;
+                    if (App.isLinux()) {
+                        if (Smart.process == null || !Smart.process.isAlive()) {
+                            Smart.startPrivilegedShell();
+                            Smart.startHeartbeat();
+                        }
                     }
                     return Smart.getSmart(deviceRef[0]);
                 } catch (IOException ex) {
