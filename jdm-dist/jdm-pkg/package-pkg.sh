@@ -69,9 +69,24 @@ jpackage --type app-image \
          --java-options "-XX:+UseZGC" \
          --add-modules "java.base,java.desktop,java.logging,java.prefs,java.management,java.instrument,java.sql,java.rmi,java.naming,jdk.unsupported,java.net.http"
 
-# Step 3: Sign app bundle (Optional)
+# Step 3: Inject bundled smartctl (if staged by CI)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SMARTCTL_STAGE="$SCRIPT_DIR/app-content/smartctl"
+if [ -x "$SMARTCTL_STAGE/smartctl" ]; then
+    echo "Step 3: Injecting bundled smartctl into app bundle..."
+    rm -rf "$APP_BUNDLE/Contents/smartctl"
+    mkdir -p "$APP_BUNDLE/Contents/smartctl"
+    cp -R "$SMARTCTL_STAGE/." "$APP_BUNDLE/Contents/smartctl"
+    chmod 755 "$APP_BUNDLE/Contents/smartctl/smartctl"
+    echo "smartctl injection OK:"
+    "$APP_BUNDLE/Contents/smartctl/smartctl" --version || true
+else
+    echo "Step 3: WARNING: app-content/smartctl not found (or smartctl not executable) — skipping (local dev or no CI staging)"
+fi
+
+# Step 4: Sign app bundle (Optional)
 if [ -n "$SIGNING_IDENTITY" ]; then
-    echo "Step 3: Signing app bundle..."
+    echo "Step 4: Signing app bundle..."
     # Sign runtime components
     find "$APP_BUNDLE/Contents/runtime" \( -name '*.dylib' -o -name '*.so' \) | while read f; do
         codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign "$SIGNING_IDENTITY" "$f"
@@ -86,13 +101,18 @@ if [ -n "$SIGNING_IDENTITY" ]; then
     # Seal runtime sub-bundle
     codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign "$SIGNING_IDENTITY" "$APP_BUNDLE/Contents/runtime"
     
+    # Sign bundled smartctl (if present)
+    if [ -x "$APP_BUNDLE/Contents/smartctl/smartctl" ]; then
+        codesign --force --options runtime --timestamp --sign "$SIGNING_IDENTITY" "$APP_BUNDLE/Contents/smartctl/smartctl"
+    fi
+
     # Sign main launcher and app bundle
     codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign "$SIGNING_IDENTITY" "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
     codesign --force --options runtime --entitlements entitlements.plist --timestamp --sign "$SIGNING_IDENTITY" "$APP_BUNDLE"
 fi
 
-# Step 4: Build PKG
-echo "Step 4: Building PKG..."
+# Step 5: Build PKG
+echo "Step 5: Building PKG..."
 COMPONENT_PKG="${DIST_DIR}/${PKG_NAME}-${VERSION}-component.pkg"
 
 # Copy bundle to a staging directory to avoid pkgbuild chowning the source files to root
@@ -112,18 +132,18 @@ rm -rf "$STAGING_DIR" 2>/dev/null || true
 productbuild --package "$COMPONENT_PKG" "$UNSIGNED_PKG"
 rm "$COMPONENT_PKG"
 
-# Step 5: Sign the PKG installer (Optional)
+# Step 6: Sign the PKG installer (Optional)
 if [ -n "$INSTALLER_IDENTITY" ]; then
-    echo "Step 5: Signing PKG installer..."
+    echo "Step 6: Signing PKG installer..."
     productsign --sign "$INSTALLER_IDENTITY" --timestamp "$UNSIGNED_PKG" "$FINAL_PKG"
     rm "$UNSIGNED_PKG"
 else
     mv "$UNSIGNED_PKG" "$FINAL_PKG"
 fi
 
-# Step 6: Notarize (Optional)
+# Step 7: Notarize (Optional)
 if [ -n "$APPLE_ID" ]; then
-    echo "Step 6: Notarizing PKG..."
+    echo "Step 7: Notarizing PKG..."
     xcrun notarytool submit "$FINAL_PKG" \
                      --apple-id "$APPLE_ID" \
                      --password "$APPLE_PASSWORD" \

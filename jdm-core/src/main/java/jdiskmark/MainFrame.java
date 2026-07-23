@@ -13,6 +13,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
 import jdiskmark.Exporter.ExportFormat;
+import org.metricus.jdm.ui.GraphPaletteMenu;
+import org.metricus.jdm.ui.GraphThemeMenu;
+import org.metricus.jdm.ui.Theme;
 import net.miginfocom.swing.MigLayout;
 
 /**
@@ -34,10 +37,17 @@ public final class MainFrame extends javax.swing.JFrame {
     private final javax.swing.JMenuItem unarchiveSelectedItem = new javax.swing.JMenuItem("Unarchive Selected");
 
     /**
-     * Graph Palette submenu — built programmatically from the {@link Gui.Palette}
+     * Graph Palette submenu — built programmatically from the {@link org.metricus.jdm.ui.Palette}
      * enum so that adding a new palette never touches the NetBeans form.
      */
     private final GraphPaletteMenu graphPaletteMenu = new GraphPaletteMenu();
+    GraphPaletteMenu getGraphPaletteMenu() { return graphPaletteMenu; }
+
+    /**
+     * Window Theme submenu — built programmatically from the {@link org.metricus.jdm.ui.Theme}
+     * enum so that adding a new theme never touches the NetBeans form.
+     */
+    private final GraphThemeMenu graphThemeMenu = new GraphThemeMenu();
     
     /**
      * Creates new form MainFrame
@@ -64,6 +74,20 @@ public final class MainFrame extends javax.swing.JFrame {
             optionMenu.remove(colorPaletteMenu);
             optionMenu.add(graphPaletteMenu, paletteIndex);
         }
+
+        // Replace the NetBeans-generated themeMenu with our data-driven
+        // GraphThemeMenu — inserted at the same menu position.
+        int themeIndex = -1;
+        for (int i = 0; i < optionMenu.getMenuComponentCount(); i++) {
+            if (optionMenu.getMenuComponent(i) == themeMenu) {
+                themeIndex = i;
+                break;
+            }
+        }
+        if (themeIndex >= 0) {
+            optionMenu.remove(themeMenu);
+            optionMenu.add(graphThemeMenu, themeIndex);
+        }
         
         //for diagnostics
         //controlsPanel.setBackground(Color.blue);
@@ -77,12 +101,13 @@ public final class MainFrame extends javax.swing.JFrame {
         BenchmarkControlPanel bcPanel = Gui.createControlPanel();
         bControlMountPanel.setLayout(new MigLayout());
         bControlMountPanel.add(bcPanel);
+        getRootPane().setDefaultButton(bcPanel.startButton);
         totalTxProgBar.setStringPainted(true);
         totalTxProgBar.setValue(0);
         totalTxProgBar.setString("");
         
         StringBuilder titleSb = new StringBuilder();
-        titleSb.append(getTitle()).append(" ").append(App.VERSION);
+        titleSb.append(getTitle()).append(" ").append(App.INSTALL_VERSION);
         
         syncFromModel();
         
@@ -188,7 +213,9 @@ public final class MainFrame extends javax.swing.JFrame {
             public void componentShown(java.awt.event.ComponentEvent e) {
                 if (!heightAdjusted) {
                     heightAdjusted = true;
-                    setSize(getWidth(), getHeight() + 30);
+                    String os = System.getProperty("os.name", "").toLowerCase();
+                    int w = (os.contains("linux") || os.contains("mac")) ? Math.max(994, getWidth()) : getWidth();
+                    setSize(w, getHeight() + 30);
                 }
             }
         });
@@ -269,11 +296,7 @@ public final class MainFrame extends javax.swing.JFrame {
         showMaxMinCheckBoxMenuItem.setSelected(Gui.showMaxMin);
         showAccessCheckBoxMenuItem.setSelected(Gui.showDriveAccess);
         showBadgesCbMenuItem.setSelected(Gui.showBadges); // overrides initComponents() which hardcodes setSelected(true)
-        switch (Gui.theme) {
-            case DARK -> darkThemeRbMenuItem.setSelected(true);
-            case LIGHT -> lightThemeRbMenuItem.setSelected(true);
-            case DARCULA -> darculaThemeRbMenuItem.setSelected(true);
-        }
+        graphThemeMenu.syncFromModel();
         graphPaletteMenu.syncFromModel();
     }
 
@@ -732,7 +755,7 @@ public final class MainFrame extends javax.swing.JFrame {
         });
         optionMenu.add(showSingleOpMenuItem);
 
-        showMaxMinCheckBoxMenuItem.setSelected(true);
+        showMaxMinCheckBoxMenuItem.setSelected(false);
         showMaxMinCheckBoxMenuItem.setText("Show Max Min");
         showMaxMinCheckBoxMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -891,6 +914,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private void showMaxMinCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showMaxMinCheckBoxMenuItemActionPerformed
         Gui.showMaxMin = showMaxMinCheckBoxMenuItem.getState();
         App.saveConfig();
+        Gui.singleOpTrigReloadGraph();
     }//GEN-LAST:event_showMaxMinCheckBoxMenuItemActionPerformed
 
     private void writeSyncCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_writeSyncCheckBoxMenuItemActionPerformed
@@ -915,6 +939,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private void showAccessCheckBoxMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_showAccessCheckBoxMenuItemActionPerformed
         Gui.showDriveAccess = showAccessCheckBoxMenuItem.getState();
         App.saveConfig();
+        Gui.singleOpTrigReloadGraph();
     }//GEN-LAST:event_showAccessCheckBoxMenuItemActionPerformed
 
     private void deleteSelBenchmarksItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteSelBenchmarksItemActionPerformed
@@ -996,20 +1021,20 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_alignNoneRbMenuItemActionPerformed
 
     private void darkThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_darkThemeRbMenuItemActionPerformed
-        Gui.theme = Gui.Theme.DARK;
-        Gui.goDarkTheme();
+        Gui.theme = Theme.DARK;
+        Theme.DARK.apply();
         App.saveConfig();
     }//GEN-LAST:event_darkThemeRbMenuItemActionPerformed
 
     private void lightThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_lightThemeRbMenuItemActionPerformed
-        Gui.theme = Gui.Theme.LIGHT;
-        Gui.goLightTheme();
+        Gui.theme = Theme.LIGHT;
+        Theme.LIGHT.apply();
         App.saveConfig();
     }//GEN-LAST:event_lightThemeRbMenuItemActionPerformed
 
     private void darculaThemeRbMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_darculaThemeRbMenuItemActionPerformed
-        Gui.theme = Gui.Theme.DARCULA;
-        Gui.goDarculaTheme();
+        Gui.theme = Theme.DARCULA;
+        Theme.DARCULA.apply();
         App.saveConfig();
     }//GEN-LAST:event_darculaThemeRbMenuItemActionPerformed
 
@@ -1149,6 +1174,7 @@ public final class MainFrame extends javax.swing.JFrame {
             case App.State.DISK_TEST_STATE -> {
                 if (Gui.controlPanel != null) {
                     Gui.controlPanel.startButton.setText("Cancel");
+                    Gui.applyCancelButtonStyle(Gui.theme);
                     Gui.controlPanel.enableControls(false);
                 }
                 resetBenchmarkItem.setEnabled(false);
@@ -1157,6 +1183,7 @@ public final class MainFrame extends javax.swing.JFrame {
             case App.State.IDLE_STATE -> {
                 if (Gui.controlPanel != null) {
                     Gui.controlPanel.startButton.setText("Start");
+                    Gui.applyStartButtonStyle(Gui.theme);
                     Gui.controlPanel.enableControls(true);
                 }
                 resetBenchmarkItem.setEnabled(true);

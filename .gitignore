@@ -24,6 +24,7 @@ temp_resources
 #Maven
 target/
 dependency-reduced-pom.xml
+.flattened-pom.xml
 pom.xml.versionsBackup
 pom.xml.releaseBackup
 release.properties
@@ -38,3 +39,7 @@ release.properties
 flatpak-repo
 .flatpak-builder
 flatpak-staging
+
+# rotating log files (portable/IDE mode writes to ./logs/)
+logs/
+*.log

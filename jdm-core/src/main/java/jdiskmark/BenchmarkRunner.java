@@ -130,12 +130,12 @@ public class BenchmarkRunner {
             GcDetector.triggerAndWait(); // Initial cleanup
         }
         
-        // Fetch SMART data before the benchmark starts (Linux and Windows, non-fatal if it fails).
+        // Fetch SMART data before the benchmark starts (Linux, macOS, and Windows, non-fatal if it fails).
         if (Smart.smartEnable) {
             Smart smart = null;
             try {
                 Path path = App.locationDir.toPath();
-                if (App.isLinux()) {
+                if (App.isLinux() || App.isMacOs()) {
                     String partition = UtilOs.getPartitionFromFilePathLinux(path);
                     List<String> devices = UtilOs.getDeviceNamesFromPartitionLinux(partition);
                     if (devices != null && !devices.isEmpty()) {
@@ -159,7 +159,7 @@ public class BenchmarkRunner {
             if (smart != null) {
                 benchmark.setSmartData(smart);
             }
-            
+
             // Also trigger UI update if we are in GUI mode
             if (Gui.mainFrame != null) {
                 Gui.runSmart();

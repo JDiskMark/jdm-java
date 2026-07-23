@@ -7,7 +7,7 @@
     <parent>
         <groupId>jdiskmark</groupId>
         <artifactId>jdm-dist</artifactId>
-        <version>0.8.0-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>jdm-msi</artifactId>
@@ -41,6 +41,37 @@
                                         <delete dir="${project.basedir}/../../jdm-core/target/maven-archiver"/>
                                         <delete dir="${project.basedir}/../../jdm-core/target/maven-status"/>
                                         <delete dir="${project.basedir}/../../jdm-core/target/antrun"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <!-- Stage bundled smartctl.exe from jdm-deps so jpackage app-content
+                                     picks it up. Downloads from the jdm-deps GitHub release if not
+                                     already present. Idempotent: skipped when smartctl.exe exists. -->
+                                <id>stage-smartctl-windows</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target xmlns:unless="ant:unless">
+                                        <condition property="smartctl.already.staged">
+                                            <available file="${project.basedir}/../../jdm-core/target/smartctl/smartctl.exe" type="file"/>
+                                        </condition>
+                                        <sequential unless:set="smartctl.already.staged">
+                                            <mkdir dir="${project.basedir}/../../jdm-core/target/smartctl"/>
+                                            <get src="https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-7.5-win64/smartctl-7.5-windows-x86_64.zip"
+                                                 dest="${project.build.directory}/smartctl-win.zip"
+                                                 verbose="true"
+                                                 retries="3"/>
+                                            <unzip src="${project.build.directory}/smartctl-win.zip"
+                                                   dest="${project.basedir}/../../jdm-core/target"
+                                                   overwrite="true"/>
+                                        </sequential>
+                                        <available file="${project.basedir}/../../jdm-core/target/smartctl/smartctl.exe"
+                                                   type="file"
+                                                   property="smartctl.staged.ok"/>
+                                        <echo message="[smartctl] smartctl.exe staged: ${smartctl.staged.ok}"/>
                                     </target>
                                 </configuration>
                             </execution>
@@ -95,13 +126,16 @@
                                         <argument>--main-jar</argument><argument>jdm-core-${project.version}.jar</argument>
                                         <argument>--main-class</argument><argument>jdiskmark.App</argument>
                                         <argument>--java-options</argument><argument>${jvm.run.options}</argument>
-                                        <argument>--win-console</argument>
                                         <argument>--win-menu</argument>
                                         <argument>--win-shortcut</argument>
                                         <!-- App icon for Start Menu shortcut, taskbar, and Programs list.
                                              To test a different icon: mvn install -Pwindows-msi -Dapp.icon.win=jdm-beta-logo.ico -->
                                         <argument>--icon</argument>
                                         <argument>${project.basedir}/${app.icon.win}</argument>
+                                        <!-- smartctl/ is staged into jdm-core/target/ by stage-smartctl-windows.
+                                             jpackage copies all 'input' contents (incl. subdirs) into app/,
+                                             so smartctl.exe lands at app/smartctl/smartctl.exe = APPDIR/smartctl/smartctl.exe
+                                             which is where resolveSmartctlPath() looks for it. -->
                                     </arguments>
                                 </configuration>
                             </execution>

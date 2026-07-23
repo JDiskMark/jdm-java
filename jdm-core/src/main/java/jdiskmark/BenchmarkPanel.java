@@ -18,6 +18,11 @@ public class BenchmarkPanel extends javax.swing.JPanel {
     initComponents();
     Gui.runPanel = BenchmarkPanel.this;
 
+    // Rename column headers to save space and prevent truncation
+    //runTable.getColumnModel().getColumn(6).setHeaderValue("Blocks");
+    //runTable.getColumnModel().getColumn(9).setHeaderValue("Time");
+    //runTable.getColumnModel().getColumn(10).setHeaderValue("Lat");
+
     // Tooltip only – keep it simple
     runTable.setToolTipText("Mode: Write* means Write Sync was enabled");
     
@@ -63,7 +68,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
 
             },
             new String [] {
-                "ID", "Drive Model", "Profile", "Type", "Order", "Samples", "Blocks (Size)", "Thread", "Start Time", "Time (ms)", "Lat (ms)", "IOPS", "BW (MB/s)"
+                "ID", "Drive Model", "Profile", "Type", "Order", "Qty", "Blocks", "Thread", "Start Time", "Elapsed", "Lat", "IOPS", "BW (MB/s)"
             }
         ) {
             boolean[] canEdit = new boolean [] {

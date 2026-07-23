@@ -7,7 +7,7 @@
     <parent>
         <groupId>jdiskmark</groupId>
         <artifactId>jdm-java</artifactId>
-        <version>0.8.0-SNAPSHOT</version>
+        <version>${revision}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -18,9 +18,18 @@
         <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
-            <version>6.4.4.Final</version>
+            <version>7.4.4.Final</version>
         </dependency>
-        
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-community-dialects</artifactId>
+            <version>7.4.4.Final</version>
+        </dependency>
+        <!-- hibernate-agroal is intentionally excluded: it requires java.security.jgss
+             (Kerberos/GSSAPI) which jpackage strips from the bundled JRE on macOS,
+             causing NoClassDefFoundError: org/ietf/jgss/GSSException at startup.
+             Hibernate's built-in pool (hibernate.connection.pool_size) is used instead. -->
+
         <dependency>
             <groupId>org.apache.derby</groupId>
             <artifactId>derby</artifactId>
@@ -57,7 +66,7 @@
         <dependency>
             <groupId>jakarta.persistence</groupId>
             <artifactId>jakarta.persistence-api</artifactId>
-            <version>3.1.0</version>
+            <version>3.2.0</version>
         </dependency>
         <dependency>
             <groupId>com.formdev</groupId>
@@ -77,7 +86,7 @@
         <dependency>
             <groupId>org.jfree</groupId>
             <artifactId>jfreechart</artifactId>
-            <version>1.0.19</version>
+            <version>1.5.6</version>
         </dependency>
         <dependency>
             <groupId>info.picocli</groupId>
@@ -105,6 +114,24 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <!-- Dump resolved dependency versions to a text file so the Ant
+                 target can extract them into build.properties automatically.
+                 Runs in initialize (before process-resources). -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>list-deps</id>
+                        <phase>initialize</phase>
+                        <goals><goal>list</goal></goals>
+                        <configuration>
+                            <outputFile>${project.build.directory}/dep-list.txt</outputFile>
+                            <includeScope>runtime</includeScope>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -179,15 +206,89 @@
                                 </tstamp>
                                 <exec executable="whoami" outputproperty="whoami"
                                       failonerror="false"/>
+                                <exec executable="git" outputproperty="git.commit.hash"
+                                      failonerror="false" failifexecutionfails="false">
+                                    <arg value="rev-parse"/>
+                                    <arg value="--short"/>
+                                    <arg value="HEAD"/>
+                                </exec>
+                                <exec executable="git" outputproperty="git.status.out"
+                                      failonerror="false" failifexecutionfails="false">
+                                    <arg value="status"/>
+                                    <arg value="--porcelain"/>
+                                </exec>
+                                <condition property="git.dirty.flag" value="true" else="false">
+                                    <not><equals arg1="${git.status.out}" arg2=""/></not>
+                                </condition>
+                                <!-- display.version: set by CI -Ddisplay.version or build-local.sh;
+                                     falls back to the raw POM version for default local builds. -->
+                                <condition property="eff.display.version"
+                                           value="${display.version}" else="${project.version}">
+                                    <isset property="display.version"/>
+                                </condition>
+                                <!-- install.version: same, but no +MMDD.HHMM build-metadata suffix. -->
+                                <condition property="eff.install.version"
+                                           value="${install.version}" else="${project.version}">
+                                    <isset property="install.version"/>
+                                </condition>
+                                <!-- Extract library versions from the dependency
+                                     list generated by maven-dependency-plugin:list.
+                                     Format: groupId:artifactId:jar:VERSION:scope -->
+                                <loadfile property="lib.flatlaf.ver" srcFile="${project.build.directory}/dep-list.txt" failonerror="false">
+                                    <filterchain>
+                                        <linecontains><contains value="com.formdev:flatlaf:jar:"/></linecontains>
+                                        <tokenfilter><replaceregex pattern=".*:jar:([^:]+):.*" replace="\1"/></tokenfilter>
+                                        <striplinebreaks/>
+                                    </filterchain>
+                                </loadfile>
+                                <loadfile property="lib.jfreechart.ver" srcFile="${project.build.directory}/dep-list.txt" failonerror="false">
+                                    <filterchain>
+                                        <linecontains><contains value="org.jfree:jfreechart:jar:"/></linecontains>
+                                        <tokenfilter><replaceregex pattern=".*:jar:([^:]+):.*" replace="\1"/></tokenfilter>
+                                        <striplinebreaks/>
+                                    </filterchain>
+                                </loadfile>
+                                <loadfile property="lib.hibernate.ver" srcFile="${project.build.directory}/dep-list.txt" failonerror="false">
+                                    <filterchain>
+                                        <linecontains><contains value="org.hibernate.orm:hibernate-core:jar:"/></linecontains>
+                                        <tokenfilter><replaceregex pattern=".*:jar:([^:]+):.*" replace="\1"/></tokenfilter>
+                                        <striplinebreaks/>
+                                    </filterchain>
+                                </loadfile>
+                                <loadfile property="lib.derby.ver" srcFile="${project.build.directory}/dep-list.txt" failonerror="false">
+                                    <filterchain>
+                                        <linecontains><contains value="org.apache.derby:derby:jar:"/></linecontains>
+                                        <tokenfilter><replaceregex pattern=".*:jar:([^:]+):.*" replace="\1"/></tokenfilter>
+                                        <striplinebreaks/>
+                                    </filterchain>
+                                </loadfile>
+                                <loadfile property="lib.picocli.ver" srcFile="${project.build.directory}/dep-list.txt" failonerror="false">
+                                    <filterchain>
+                                        <linecontains><contains value="info.picocli:picocli:jar:"/></linecontains>
+                                        <tokenfilter><replaceregex pattern=".*:jar:([^:]+):.*" replace="\1"/></tokenfilter>
+                                        <striplinebreaks/>
+                                    </filterchain>
+                                </loadfile>
                                 <propertyfile
                                     file="${project.build.outputDirectory}/META-INF/build.properties"
                                     comment="This file is automatically generated - DO NOT EDIT">
-                                    <entry key="buildtime" value="${builtat}"/>
-                                    <entry key="builder"   value="${whoami}"/>
-                                    <entry key="version"   value="${project.version}"/>
-                                    <entry key="os.name"   value="${os.name}"/>
-                                    <entry key="os.version" value="${os.version}"/>
-                                    <entry key="os.arch"   value="${os.arch}"/>
+                                    <entry key="buildtime"       value="${builtat}"/>
+                                    <entry key="builder"         value="${whoami}"/>
+                                    <entry key="version"         value="${project.version}"/>
+                                    <entry key="display.version" value="${eff.display.version}"/>
+                                    <entry key="install.version" value="${eff.install.version}"/>
+                                    <entry key="git.commit"      value="${git.commit.hash}"/>
+                                    <entry key="git.dirty"       value="${git.dirty.flag}"/>
+                                    <entry key="jdk.version"     value="${java.runtime.version}"/>
+                                    <entry key="maven.version"   value="${maven.version}"/>
+                                    <entry key="os.name"         value="${os.name}"/>
+                                    <entry key="os.version"      value="${os.version}"/>
+                                    <entry key="os.arch"         value="${os.arch}"/>
+                                    <entry key="lib.flatlaf"     value="${lib.flatlaf.ver}"/>
+                                    <entry key="lib.jfreechart"  value="${lib.jfreechart.ver}"/>
+                                    <entry key="lib.hibernate"   value="${lib.hibernate.ver}"/>
+                                    <entry key="lib.derby"       value="${lib.derby.ver}"/>
+                                    <entry key="lib.picocli"     value="${lib.picocli.ver}"/>
                                 </propertyfile>
                             </target>
                         </configuration>

@@ -384,6 +384,17 @@ public class SmartPanel extends JPanel {
     }
 
     /**
+     * Sets an arbitrary message in the toolbar status label. Safe to call
+     * from any thread. Use this to show error or warning messages when SMART
+     * data retrieval fails (e.g. missing admin privileges or smartctl not found).
+     *
+     * @param message the text to display in the status label
+     */
+    public void setStatus(String message) {
+        SwingUtilities.invokeLater(() -> statusLabel.setText(message));
+    }
+
+    /**
      * Called after the SMART tab has been populated from a stored
      * {@link SmartSnapshot} (via the SMART Reports table).
      *
