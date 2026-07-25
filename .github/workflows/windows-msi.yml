@@ -43,20 +43,20 @@ jobs:
 
       - name: Fetch bundled smartctl from jdm-deps
         # Downloads the pre-packaged smartctl 7.5 binary from the public
-        # JDiskMark/jdm-deps release asset. The staging directory is picked
-        # up by jpackage --app-content (configured in jdm-msi/pom.xml) and
-        # lands at <install-dir>\app\smartctl\smartctl.exe in the installed image.
+        # JDiskMark/jdm-deps release asset into jdm-core/target/smartctl/.
+        # The windows-msi Maven profile passes jdm-core/target as jpackage --input,
+        # so smartctl.exe is included at <install-dir>\app\smartctl\smartctl.exe in the installed image.
         shell: pwsh
         run: |
-          $dest = "jdm-dist/jdm-msi/src/main/app-content"
+          $dest = "jdm-core/target/smartctl"
           $zip  = "$env:TEMP/smartctl-win.zip"
-          New-Item -ItemType Directory -Force -Path "$dest/smartctl" | Out-Null
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
           Write-Host "[smartctl] Downloading smartctl-7.5-windows-x86_64.zip from jdm-deps..."
           Invoke-WebRequest -Uri "https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-7.5-win64/smartctl-7.5-windows-x86_64.zip" -OutFile $zip
-          Expand-Archive -Path $zip -DestinationPath $dest -Force
-          $exe = Get-Item "$dest/smartctl/smartctl.exe" -ErrorAction Stop
+          Expand-Archive -Path $zip -DestinationPath (Split-Path $dest) -Force
+          $exe = Get-Item "$dest/smartctl.exe" -ErrorAction Stop
           Write-Host "[smartctl] Staged: $($exe.FullName) ($($exe.Length) bytes)"
-          & "$dest/smartctl/smartctl.exe" --version
+          & "$dest/smartctl.exe" --version
 
       - name: Build Windows MSI (unsigned)
         # Builds jdm-core first (-am = also build upstream dependencies),

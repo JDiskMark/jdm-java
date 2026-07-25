@@ -355,7 +355,11 @@ public class Smart {
                             sb.append(line).append('\n');
                         }
                     }
-                    p.waitFor();
+                    if (!p.waitFor(15, TimeUnit.SECONDS)) {
+                        p.destroyForcibly();
+                        LOGGER.warning("getSmart: smartctl timed out for device arg: " + devArg);
+                        continue;
+                    }
 
                     String result = sb.toString().trim();
                     if (result.isEmpty()) {
@@ -372,7 +376,10 @@ public class Smart {
                     return smart;
                 }
                 LOGGER.severe("getSmart: all device arg attempts failed for: " + deviceName);
-            } catch (IOException | InterruptedException ex) {
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                LOGGER.log(Level.SEVERE, "getSmart interrupted for Windows device: " + deviceName, ex);
+            } catch (IOException ex) {
                 LOGGER.log(Level.SEVERE, "getSmart failed for Windows device: " + deviceName, ex);
             }
             return null;

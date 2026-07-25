@@ -71,6 +71,9 @@
                                         <available file="${project.basedir}/../../jdm-core/target/smartctl/smartctl.exe"
                                                    type="file"
                                                    property="smartctl.staged.ok"/>
+                                        <fail message="[smartctl] staging failed: expected smartctl.exe at ${project.basedir}/../../jdm-core/target/smartctl/smartctl.exe">
+                                            <condition><not><isset property="smartctl.staged.ok"/></not></condition>
+                                        </fail>
                                         <echo message="[smartctl] smartctl.exe staged: ${smartctl.staged.ok}"/>
                                     </target>
                                 </configuration>
