@@ -10,6 +10,11 @@ on:
   pull_request:
     branches: [ "**" ]
   workflow_dispatch:
+    inputs:
+      disable_ci_label:
+        description: 'Skip CI pre-release label and pass POM version through unchanged'
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -48,9 +53,19 @@ jobs:
           org.freedesktop.Sdk//25.08 \
           org.freedesktop.Sdk.Extension.openjdk25//25.08
 
+    - name: Compute CI version
+      id: ver
+      uses: ./.github/actions/ci-version
+      with:
+        disable_ci_label: ${{ inputs.disable_ci_label || false }}
+
     - name: Build Flatpak Bundle
       # Explicitly activating the linux-flatpak profile to ensure jpackage/antrun runs.
-      run: mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak --no-transfer-progress
+      run: |
+        mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak \
+          -Drevision=${{ steps.ver.outputs.install_version }} \
+          -Ddisplay.version=${{ steps.ver.outputs.display_version }} \
+          --no-transfer-progress
 
     - name: Upload Flatpak Artifact
       uses: actions/upload-artifact@v7
