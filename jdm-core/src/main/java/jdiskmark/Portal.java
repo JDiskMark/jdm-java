@@ -3,10 +3,8 @@ package jdiskmark;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -104,20 +102,18 @@ public class Portal {
         String uploadUrl = getSmartUploadUrl();
         URI uploadUri = URI.create(uploadUrl);
         String host = uploadUri.getHost();
-        int port = uploadUri.getPort() != -1 ? uploadUri.getPort() : 80;
+        // Default port: 443 for HTTPS, 80 for HTTP — matches what the server actually listens on.
+        int port = uploadUri.getPort() != -1 ? uploadUri.getPort()
+                : uploadProtocol.equals(HTTPS) ? 443 : 80;
 
+        // Pre-upload check: use a short socket connect to verify the host is reachable.
+        // Avoids InetAddress.getLocalHost() which triggers the macOS Local Network permission
+        // dialog unnecessarily — consistent with upload().
         try {
-            if (InetAddress.getLocalHost() == null) {
-                App.err("No local network connection detected.");
-                return;
-            }
             if (!isHostReachable(host, port)) {
                 App.err("Target host " + host + " is unreachable.");
                 return;
             }
-        } catch (UnknownHostException e) {
-            App.err("Connectivity check failed: " + e.getMessage());
-            return;
         } catch (SecurityException e) {
             App.err("Security Error: Connection blocked by local system - " + e.getMessage());
             return;

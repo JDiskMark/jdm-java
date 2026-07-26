@@ -607,9 +607,6 @@ public class App {
         value = p.getProperty("smartEnable", String.valueOf(Smart.smartEnable));
         Smart.smartEnable = Boolean.parseBoolean(value);
 
-        value = p.getProperty("smartEnable", String.valueOf(Smart.smartEnable));
-        Smart.smartEnable = Boolean.parseBoolean(value);
-
         value = p.getProperty("autoRemoveData", String.valueOf(autoRemoveData));
         autoRemoveData = Boolean.parseBoolean(value);
 
@@ -904,7 +901,7 @@ public class App {
         switch (mode) {
             case GUI -> {
                 if (Gui.mainFrame != null) {
-                    Gui.mainFrame.msg(formattedMsg);
+                    SwingUtilities.invokeLater(() -> Gui.mainFrame.msg(formattedMsg));
                 }
             }
             case CLI -> System.out.println(formattedMsg);
