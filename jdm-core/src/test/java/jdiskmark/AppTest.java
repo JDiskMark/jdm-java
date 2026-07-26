@@ -3,6 +3,7 @@ package jdiskmark;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.metricus.jdm.ui.AppIcon;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -42,8 +43,8 @@ class AppTest {
      * About dialog (and taskbar/title-bar) to silently display no icon.
      */
     @ParameterizedTest
-    @EnumSource(App.AppIcon.class)
-    void appIcon_load_isNonNull(App.AppIcon icon) {
+    @EnumSource(AppIcon.class)
+    void appIcon_load_isNonNull(AppIcon icon) {
         assertNotNull(icon.load(),
                 "Icon resource not found on classpath: " + java.util.Arrays.toString(icon.resourcePaths));
     }

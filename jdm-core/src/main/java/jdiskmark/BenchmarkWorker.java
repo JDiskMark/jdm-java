@@ -7,12 +7,15 @@ import static jdiskmark.App.msg;
 import static jdiskmark.App.dataDir;
 
 import jakarta.persistence.EntityManager;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 
 /**
@@ -20,9 +23,38 @@ import javax.swing.SwingWorker;
  * once.
  */
 public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
+    private static final Logger LOG = Logger.getLogger(BenchmarkWorker.class.getName());
+    /** Render mode snapshot — captured once when the worker is created. */
+    private final RenderFrequencyMode renderMode = App.rmOption;
+
+    // Buffers for non-PER_SAMPLE modes
+    private final java.util.List<Sample> operationBuffer = new java.util.ArrayList<>();
+    private final java.util.List<Sample> intervalBuffer  = new java.util.ArrayList<>();
+    private long nextPublishTime = 0;
+
     BenchmarkRunner.BenchmarkListener listener = new BenchmarkRunner.BenchmarkListener() {
         @Override
-        public void onSampleComplete(Sample s) { publish(s); }
+        public void onSampleComplete(Sample s) {
+            switch (renderMode) {
+                case PER_SAMPLE -> publish(s);
+                case PER_OPERATION -> {
+                    synchronized (operationBuffer) { operationBuffer.add(s); }
+                }
+                case PER_100MS, PER_500MS, PER_1000MS -> {
+                    long interval = renderMode.getIntervalMillis();
+                    long now = System.currentTimeMillis();
+                    synchronized (intervalBuffer) {
+                        intervalBuffer.add(s);
+                        if (now >= nextPublishTime) {
+                            // flush all buffered samples
+                            for (Sample buffered : intervalBuffer) { publish(buffered); }
+                            intervalBuffer.clear();
+                            nextPublishTime = now + interval;
+                        }
+                    }
+                }
+            }
+        }
 
         @Override
         public void onProgressUpdate(long completed, long total) { setProgress((int) completed); }
@@ -32,10 +64,56 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
         @Override
         public void attemptCacheDrop() { Gui.dropCache(); }
+
+        @Override
+        public void onOperationComplete() {
+            if (renderMode == RenderFrequencyMode.PER_OPERATION) {
+                // Copy and clear the buffer under the lock, then render
+                // synchronously on the EDT so I/O and graphing never overlap.
+                List<Sample> toFlush;
+                synchronized (operationBuffer) {
+                    toFlush = new ArrayList<>(operationBuffer);
+                    operationBuffer.clear();
+                }
+                try {
+                    SwingUtilities.invokeAndWait(() -> {
+                        for (Sample s : toFlush) {
+                            switch (s.type) {
+                                case WRITE -> Gui.addWriteSample(s);
+                                case READ  -> Gui.addReadSample(s);
+                            }
+                        }
+                    });
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (InvocationTargetException e) {
+                    LOG.log(Level.WARNING, "Chart update failed", e);
+                }
+            }
+        }
     };
     
     @Override
     protected Benchmark doInBackground() throws Exception {
+        // Clear amber stale-highlights from any previous run's setting changes.
+        // The new baseline will be App.benchmark.config once this run completes.
+        Gui.clearAllStaleHighlights();
+
+        // --- Event: benchmark started ---
+        String startedMsg = String.format(
+                "Benchmark started — %s | %s | %d samples × %d blocks × %d KB | %d thread(s) | drive: %s",
+                App.benchmarkType,
+                App.activeProfile + (App.profileModified ? "*" : ""),
+                App.numOfSamples,
+                App.numOfBlocks,
+                App.blockSizeKb,
+                App.numOfThreads,
+                App.locationDir != null ? App.locationDir.getAbsolutePath() : "(none)");
+        if (App.mode == App.Mode.GUI) {
+            SwingUtilities.invokeLater(() -> msg(startedMsg));
+        } else {
+            msg(startedMsg);
+        }
 
         if (App.verbose) {
             msg("*** starting new worker thread");
@@ -52,9 +130,51 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             Gui.resetBenchmarkData();
             Gui.updateLegendAndAxis();
         }
+        Gui.lockSampleAxis(App.numOfSamples);
 
         BenchmarkRunner bRunner = new BenchmarkRunner(listener, App.getConfig());
         Benchmark benchmark = bRunner.execute();
+
+        // Flush any samples still in the interval buffer for timed render modes.
+        // PER_OPERATION is handled by onOperationComplete(); PER_SAMPLE needs no flush.
+        if (renderMode == RenderFrequencyMode.PER_100MS
+                || renderMode == RenderFrequencyMode.PER_500MS
+                || renderMode == RenderFrequencyMode.PER_1000MS) {
+            synchronized (intervalBuffer) {
+                intervalBuffer.forEach(this::publish);
+                intervalBuffer.clear();
+            }
+        }
+
+        // --- Event: benchmark completed or cancelled ---
+        final String completedMsg;
+        if (isCancelled()) {
+            completedMsg = "Benchmark cancelled.";
+        } else {
+            // Build a concise result line covering whichever operations ran.
+            StringBuilder result = new StringBuilder("Benchmark completed");
+            for (BenchmarkOperation op : benchmark.getOperations()) {
+                switch (op.ioMode) {
+                    case WRITE -> result.append(String.format(
+                            " | Write avg=%.2f max=%.2f min=%.2f MB/s  IOPS=%d",
+                            op.bwAvg, op.bwMax, op.bwMin, op.iops));
+                    case READ -> result.append(String.format(
+                            " | Read avg=%.2f max=%.2f min=%.2f MB/s  IOPS=%d",
+                            op.bwAvg, op.bwMax, op.bwMin, op.iops));
+                }
+            }
+            // Elapsed time
+            if (benchmark.startTime != null && benchmark.endTime != null) {
+                long elapsedSec = java.time.Duration.between(benchmark.startTime, benchmark.endTime).getSeconds();
+                result.append(String.format(" | duration=%ds", elapsedSec));
+            }
+            completedMsg = result.toString();
+        }
+        if (App.mode == App.Mode.GUI) {
+            SwingUtilities.invokeLater(() -> msg(completedMsg));
+        } else {
+            msg(completedMsg);
+        }
         
         // update gui title
         Gui.chart.getTitle().setText(benchmark.getDriveInfoDisplay());
@@ -105,7 +225,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         } catch (CancellationException e) {
             // Normal cancellation path — no error to report
         } catch (ExecutionException e) {
-            Logger.getLogger(BenchmarkWorker.class.getName()).log(Level.SEVERE, "Benchmark failed", e.getCause());
+            LOG.log(Level.SEVERE, "Benchmark failed", e.getCause());
             App.err("Benchmark failed: " + e.getCause().getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -113,6 +233,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         if (App.autoRemoveData) {
             Util.deleteDirectory(dataDir);
         }
+        Gui.unlockSampleAxis();
         App.state = App.State.IDLE_STATE;
         Gui.mainFrame.adjustSensitivity();
     }

@@ -1,16 +1,19 @@
 package jdiskmark;
 
-import com.formdev.flatlaf.FlatDarculaLaf;
-import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLaf;
-import com.formdev.flatlaf.FlatLightLaf;
-import com.formdev.flatlaf.themes.FlatMacDarkLaf;
-import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 import jdiskmark.Benchmark.IOMode;
 
+import org.metricus.jdm.ui.AppIcon;
+import org.metricus.jdm.ui.ButtonStyles;
+import org.metricus.jdm.ui.Palette;
+import org.metricus.jdm.ui.Theme;
+import org.metricus.jdm.ui.ThemeDefinition;
+
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Shape;
 import java.awt.geom.Rectangle2D;
@@ -18,6 +21,7 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -41,53 +45,29 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.AxisLocation;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.block.BlockBorder;
-import org.jfree.chart.labels.StandardXYToolTipGenerator;
+import org.jfree.chart.LegendItem;
+import org.jfree.chart.LegendItemCollection;
+import org.jfree.chart.LegendItemSource;
+import org.jfree.chart.title.LegendTitle;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.RectangleInsets;
+import org.jfree.chart.ui.HorizontalAlignment;
+import org.jfree.chart.ui.RectangleEdge;
+import org.jfree.chart.ui.RectangleInsets;
 
 /**
  * Store GUI references for easy access
  */
 public final class Gui {
     
-    public enum Palette { CLASSIC, BLUE_GREEN, BARD_COOL, BARD_WARM };
-    
-    public enum Theme {
-        DARK("Dark"),
-        LIGHT("Light"),
-        DARCULA("Darcula");
-
-        private final String displayName;
-
-        Theme(String displayName) {
-            this.displayName = displayName;
-        }
-
-        public String getLafClassName() {
-            boolean isMac = App.isMacOs();
-
-            return switch (this) {
-                case DARK -> isMac ? "com.formdev.flatlaf.themes.FlatMacDarkLaf" 
-                                   : "com.formdev.flatlaf.FlatDarkLaf";
-                case LIGHT -> isMac ? "com.formdev.flatlaf.themes.FlatMacLightLaf" 
-                                    : "com.formdev.flatlaf.FlatLightLaf";
-                case DARCULA -> "com.formdev.flatlaf.FlatDarculaLaf";
-            };
-        }
-
-        @Override
-        public String toString() {
-            return displayName;
-        }
-    }
-        
     // display settings
     public static Theme theme = Theme.DARK;
-    public static Palette palette = Palette.CLASSIC;
-    public static boolean showMaxMin = true;
+    public static Palette palette = Palette.BETA_DARK;
+    public static boolean showBadges = true;
+    public static boolean showMaxMin = false;
     public static boolean showDriveAccess = true;
     public static boolean showSingleOp = false;
     // form components
@@ -97,10 +77,146 @@ public final class Gui {
     public static SelectDriveFrame selFrame = null;
     public static BenchmarkPanel runPanel = null;
     public static SmartPanel smartPanel = null;
-    public static DrivesPanel drivesPanel = null;
+    public static DrivePanel drivePanel = null;
     public static SmartReportsPanel smartReportsPanel = null;
     public static javax.swing.JTabbedPane mainTabPane = null;
     public static JProgressBar progressBar = null;
+    // chart badge strip — declared null until createChartPanel() wires them up
+    public static javax.swing.JLabel directIoLabel = null;
+    public static javax.swing.JLabel writeSyncLabel = null;
+    public static javax.swing.JLabel sectorLabel = null;
+    public static javax.swing.JLabel renderModeLabel = null;
+    public static javax.swing.JLabel ioEngineLabel = null;
+    public static javax.swing.JLabel multiFileLabel = null;
+    /** Priority-ordered list used by the single-row truncation listener. */
+    private static List<javax.swing.JLabel> chartBadgeList = null;
+    /** The badge strip panel — held so setChartBadgesVisible() can show/hide it. */
+    private static javax.swing.JPanel chartBadgeTopPanel = null;
+
+    // --- Stale-badge tracking ---
+    /** Amber used when a badge value differs from the last-run config. */
+    static Color BADGE_STALE_BG   = new Color(0xC8, 0x78, 0x00); // deep amber
+    static Color BADGE_DEFAULT_BG = new Color(40, 40, 40, 180);
+    static Color BADGE_DEFAULT_FG = new Color(200, 200, 200);
+    /** Foreground to use when a badge is stale (set together with BADGE_STALE_BG). */
+    static Color BADGE_STALE_FG   = Color.WHITE;
+
+    /** Chart subtitle shown when current settings diverge from the displayed benchmark. */
+    private static TextTitle modifiedSubtitle = null;
+
+    /**
+     * Shows or hides the "⚠ Settings modified" subtitle on the chart. Safe to 
+     * call from any thread.
+     * @param visible
+     */
+    public static void setChartModifiedIndicator(boolean visible) {
+        if (chart == null) return;
+        Runnable r = () -> {
+            if (visible) {
+                if (modifiedSubtitle == null) {
+                    modifiedSubtitle = new TextTitle(
+                            "⚠  Settings modified — results shown reflect prior configuration",
+                            new Font("SansSerif", Font.BOLD, 11));
+                    modifiedSubtitle.setPosition(RectangleEdge.BOTTOM);
+                    modifiedSubtitle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+                    modifiedSubtitle.setPadding(new RectangleInsets(0, 0, 4, 0));
+                }
+                // Refresh paint from themed accent — may have changed since creation
+                modifiedSubtitle.setPaint(BADGE_STALE_BG);
+                // Only add if not already present
+                if (!chart.getSubtitles().contains(modifiedSubtitle)) {
+                    chart.addSubtitle(modifiedSubtitle);
+                }
+            } else {
+                if (modifiedSubtitle != null) {
+                    chart.removeSubtitle(modifiedSubtitle);
+                }
+            }
+        };
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) r.run();
+        else javax.swing.SwingUtilities.invokeLater(r);
+    }
+    
+    public static void updateProgress() {
+        if (progressBar == null) return;
+        progressBar.setString(String.valueOf(App.targetBenchmarkTxSizeKb()));
+    }
+
+    /**
+     * Clears all badge and control-panel highlights at the start of a new run or load.
+     * The comparison baseline is App.benchmark.config (set at end of prior run / on load).
+     */
+    public static void clearAllStaleHighlights() {
+        clearBadgeHighlights();
+        setChartModifiedIndicator(false);
+        if (controlPanel != null) controlPanel.clearRowHighlights();
+    }
+
+    /** Resets all badge backgrounds and foregrounds to the default style. */
+    public static void clearBadgeHighlights() {
+        if (chartBadgeList == null) return;
+        ThemeDefinition def = theme.definition();
+        for (int i = 0; i < chartBadgeList.size(); i++) {
+            javax.swing.JLabel b = chartBadgeList.get(i);
+            b.setBackground(BADGE_DEFAULT_BG);
+            if (def.cycleBadgeColors()) {
+                b.setForeground(i % 2 == 0 ? def.badgeEvenFg() : def.badgeOddFg());
+            } else {
+                b.setForeground(BADGE_DEFAULT_FG);
+            }
+        }
+    }
+
+    /** Updates badge colors to match the current window theme. */
+    static void updateBadgeThemeColors() {
+        ThemeDefinition def = theme.definition();
+        BADGE_DEFAULT_BG = def.badgeDefaultBg();
+        BADGE_DEFAULT_FG = def.badgeDefaultFg();
+        BADGE_STALE_BG   = def.badgeStaleBg();
+        BADGE_STALE_FG   = def.badgeStaleFg();
+
+        if (chartBadgeList != null) {
+            Color borderColor = def.badgeBorderColor();
+            javax.swing.border.Border badge_border = (borderColor != null)
+                    ? javax.swing.BorderFactory.createCompoundBorder(
+                            javax.swing.BorderFactory.createLineBorder(borderColor, 1),
+                            javax.swing.BorderFactory.createEmptyBorder(2, 5, 2, 5))
+                    : javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6);
+
+            for (int i = 0; i < chartBadgeList.size(); i++) {
+                javax.swing.JLabel b = chartBadgeList.get(i);
+                b.setBackground(BADGE_DEFAULT_BG);
+                if (def.cycleBadgeColors()) {
+                    b.setForeground(i % 2 == 0 ? def.badgeEvenFg() : def.badgeOddFg());
+                } else {
+                    b.setForeground(BADGE_DEFAULT_FG);
+                }
+                b.setBorder(badge_border);
+            }
+        }
+        applyBadgeHighlights();
+        if (controlPanel != null) controlPanel.showSettingsDrift();
+        if (modifiedSubtitle != null && chart != null
+                && chart.getSubtitles().contains(modifiedSubtitle)) {
+            modifiedSubtitle.setPaint(BADGE_STALE_BG);
+        }
+    }
+    // lazy-init singleton — created on first access after the LAF is applied
+    private static AdvancedOptionsFrame advancedFrame = null;
+
+    /**
+     * Returns the Advanced Options dialog, creating it on the first call.
+     * The singleton is initialised lazily so the Look-and-Feel is fully applied
+     * before any Swing components are constructed.
+     * @return reference to the Advanced Options Frame
+     */
+    public static AdvancedOptionsFrame getAdvancedFrame() {
+        if (advancedFrame == null) {
+            advancedFrame = new AdvancedOptionsFrame();
+        }
+        return advancedFrame;
+    }
+
     // last SMART data captured via runSmart() — used by Save Snapshot button
     public static Smart lastSmartData = null;
     public static String lastSmartDeviceName = null;
@@ -117,107 +233,160 @@ public final class Gui {
     public static XYSeries rSeries, rAvgSeries, rMaxSeries, rMinSeries, rDrvAccess;
     public static XYLineAndShapeRenderer bwRenderer;
     public static XYLineAndShapeRenderer msRenderer;
+    public static LegendTitle writeLegend;
+    public static LegendTitle readLegend;
+    public static LegendTitle combinedLegend;
     static Color foregroundColor;
-    
-    public static void configureDarkLaf() {
+
+    /**
+     * Removes UIManager overrides set by custom theme LAF configurations.
+     * Called before each LAF installation so the new LAF's own defaults take over.
+     */
+    private static void clearThemeOverrides() {
+        FlatLaf.setGlobalExtraDefaults(null);
+        UIManager.put("Table.selectionBackground",  null);
+        UIManager.put("Table.selectionForeground",  null);
+        UIManager.put("List.selectionBackground",   null);
+        UIManager.put("List.selectionForeground",   null);
+        UIManager.put("Tree.selectionBackground",   null);
+        UIManager.put("Tree.selectionForeground",   null);
+        UIManager.put("TabbedPane.selectedBackground",     null);
+        UIManager.put("TabbedPane.selectedForeground",     null);
+        UIManager.put("TabbedPane.underlineColor",         null);
+        UIManager.put("TabbedPane.inactiveUnderlineColor", null);
+        UIManager.put("TabbedPane.focusColor",             null);
+        UIManager.put("TabbedPane.hoverColor",             null);
+        UIManager.put("TabbedPane.hoverForeground",        null);
+        UIManager.put("ScrollBar.thumb",            null);
+        UIManager.put("ScrollBar.thumbHover",       null);
+        UIManager.put("ScrollBar.thumbPressed",     null);
+        UIManager.put("TitlePane.foreground",       null);
+        UIManager.put("Button.default.background",  null);
+        UIManager.put("Button.default.foreground",  null);
+    }
+
+    /**
+     * Forces every open window to re-read the current UIManager defaults.
+     * <p>
+     * {@code FlatLaf.updateUI()} alone does not always propagate themed
+     * overrides (e.g.&nbsp;{@code Table.selectionBackground}) to components
+     * whose colors were explicitly set by a previous theme's
+     * {@code updateUI()} pass.  Walking all {@link java.awt.Window}s with
+     * {@code updateComponentTreeUI()} ensures every component picks up
+     * the new UIManager values.
+     * </p>
+     */
+    private static void refreshAllWindows() {
+        for (java.awt.Window w : java.awt.Window.getWindows()) {
+            javax.swing.SwingUtilities.updateComponentTreeUI(w);
+        }
+    }
+
+    /**
+     * Installs the FlatLaf look-and-feel described by the given definition.
+     * Called at startup and by {@link #applyTheme(Theme)} on theme switch.
+     */
+    public static void configureLaf(ThemeDefinition def) {
         try {
-            if (App.isWindows()) {
-                UIManager.setLookAndFeel(new FlatDarkLaf());
-            } else if (App.isMacOs()) {
-                UIManager.setLookAndFeel(new FlatMacDarkLaf());
-            } else if (App.isLinux()) {
-                UIManager.setLookAndFeel(new FlatDarkLaf());
+            clearThemeOverrides();
+            java.util.Map<String, String> extras = def.flatLafExtras();
+            FlatLaf.setGlobalExtraDefaults(extras);
+            UIManager.setLookAndFeel(def.lafClassName());
+            java.util.Map<String, Object> overrides = def.uiManagerOverrides();
+            if (overrides != null) {
+                overrides.forEach(UIManager::put);
             }
-            // Use FlatLaf custom window decorations (unified title bar + menu bar) on
-            // non-macOS only. On macOS the native title bar is kept so the system menu
-            // bar at the top of the screen works correctly.
             if (!App.isMacOs()) {
                 javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
                 javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
             }
-        } catch (UnsupportedLookAndFeelException e) {
-            //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-            /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-             * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-             */
+        } catch (ClassNotFoundException | InstantiationException
+                | IllegalAccessException | UnsupportedLookAndFeelException e) {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-                java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            } catch (ClassNotFoundException | InstantiationException
+                    | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
+                java.util.logging.Logger.getLogger(MainFrame.class.getName())
+                        .log(java.util.logging.Level.SEVERE, null, ex);
             }
-            //</editor-fold>
         }
     }
-    
-    public static void configureDarculaLaf() {
-        try {
-            UIManager.setLookAndFeel(new FlatDarculaLaf());
-            if (!App.isMacOs()) {
-                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
-                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
-            }
-        } catch (UnsupportedLookAndFeelException e) {
-            //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-            /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-             * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-             */
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-                java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-            }
-            //</editor-fold>
+
+    /**
+     * Switches to a theme at runtime: installs LAF, refreshes all windows,
+     * updates chart style, title bar, progress bar, and linked chart palette.
+     */
+    public static void applyTheme(Theme t) {
+        ThemeDefinition def = t.definition();
+        configureLaf(def);
+        FlatLaf.updateUI();
+        refreshAllWindows();
+        updateChartPanelStyle();
+        if (mainFrame != null) {
+            mainFrame.getRootPane().putClientProperty(
+                "JRootPane.titleBarForeground", def.titleBarForeground());
+        }
+        Color pbFg = def.progressBarForeground();
+        if (progressBar != null) {
+            progressBar.setForeground(pbFg != null
+                    ? pbFg
+                    : UIManager.getColor("ProgressBar.foreground"));
+        }
+        if (t.hasLinkedPalette() && chart != null) {
+            t.applyLinkedPalette();
+        } else if (chart != null) {
+            palette.apply();
+        }
+        if (mainFrame != null) {
+            mainFrame.getGraphPaletteMenu().setAllItemsEnabled(!t.hasLinkedPalette());
+        }
+        applyStartButtonStyle(t);
+        applyIconToWindow(t);
+    }
+
+    /**
+     * Applies the Start button style for the given theme.
+     * Themes can override {@link ThemeDefinition#startButtonStyle()} to supply
+     * their own accent; the default falls back to GitHub green.
+     */
+    public static void applyStartButtonStyle(Theme t) {
+        if (controlPanel == null) return;
+        String style = t.definition().startButtonStyle();
+        if (style == null) style = ButtonStyles.DEFAULT_START;
+        controlPanel.startButton.putClientProperty("FlatLaf.style", style);
+    }
+
+    /**
+     * Loads and applies the branding icon to the main window, tinting it for
+     * the given theme when the theme provides icon tint colors.
+     */
+    private static void applyIconToWindow(Theme t) {
+        if (mainFrame == null) return;
+        java.awt.Color primary   = t.definition().iconPrimaryTint();
+        java.awt.Color secondary = t.definition().iconSecondaryTint();
+        java.util.List<java.awt.Image> icons =
+                (primary != null && secondary != null)
+                ? AppIcon.active.loadAllTinted(primary, secondary)
+                : AppIcon.active.loadAll();
+        if (!icons.isEmpty()) {
+            mainFrame.setIconImages(icons);
         }
     }
-    
-    public static void configureLightLaf() {
-        try {
-            if (App.isWindows()) {
-                UIManager.setLookAndFeel(new FlatLightLaf());
-            } else if (App.isMacOs()) {
-                UIManager.setLookAndFeel(new FlatMacLightLaf());
-            } else if (App.isLinux()) {
-                UIManager.setLookAndFeel(new FlatLightLaf());
-            }
-            if (!App.isMacOs()) {
-                javax.swing.JFrame.setDefaultLookAndFeelDecorated(true);
-                javax.swing.JDialog.setDefaultLookAndFeelDecorated(true);
-            }
-        } catch (UnsupportedLookAndFeelException e) {
-            //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-            /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-             * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-             */
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-                java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-            }
-            //</editor-fold>
-        }
+
+    /**
+     * Applies the Cancel button style for the given theme.
+     * Themes can override {@link ThemeDefinition#cancelButtonStyle()} to supply
+     * a theme-coherent "stop" colour; the default falls back to amber.
+     */
+    public static void applyCancelButtonStyle(Theme t) {
+        if (controlPanel == null) return;
+        String style = t.definition().cancelButtonStyle();
+        if (style == null) style = ButtonStyles.CANCEL;
+        controlPanel.startButton.putClientProperty("FlatLaf.style", style);
     }
-    
-    // switch to dark theme
-    public static void goDarkTheme() {
-        configureDarkLaf();
-        FlatLaf.updateUI();
-        updateChartPanelStyle();
-    }
-    
-    // switch to darcula theme
-    public static void goDarculaTheme() {
-        configureDarculaLaf();
-        FlatLaf.updateUI();
-        updateChartPanelStyle();
-    }
-    
-    // switch to light theme
-    public static void goLightTheme() {
-        configureLightLaf();
-        FlatLaf.updateUI();
-        updateChartPanelStyle();
-    }
-    
+
+
+
     /**
      * Handles progress and state updates from the SwingWorker 
      * and updates the progress bar accordingly.
@@ -255,11 +424,7 @@ public final class Gui {
     }
     
     public static void init() {
-        switch (Gui.theme) {
-            case DARK -> configureDarkLaf();
-            case LIGHT -> configureLightLaf();
-            case DARCULA -> configureDarculaLaf();
-        }
+        theme.configureLaf();
         
         mainFrame = new MainFrame();
 
@@ -271,21 +436,50 @@ public final class Gui {
                     com.formdev.flatlaf.FlatClientProperties.MENU_BAR_EMBEDDED, true);
         }
 
-        // Apply branding icon to the window title bar and taskbar.
-        // setIconImages supplies all available sizes so Java picks the best
-        // fit per display context (16px title bar, 32/48px taskbar, etc.).
-        java.util.List<java.awt.Image> icons = App.activeIcon.loadAll();
-        if (!icons.isEmpty()) {
-            mainFrame.setIconImages(icons);
-        }
+        // Apply branding icon to the window title bar and taskbar, tinted for the
+        // current theme if the theme supplies tint colors.
+        applyIconToWindow(theme);
 
         if (runPanel != null) {
             runPanel.hideFirstColumn();
         }
         selFrame = new SelectDriveFrame();
+
+        // Establish chart base style for the current LAF *before* loading the saved palette.
+        // Without this, any palette applied in loadPropertiesConfig() (e.g. Old Glory
+        // in Dark mode) would run against an uninitialized chart outer background and
+        // a null foregroundColor, producing invisible or clashing colors on startup.
+        updateChartPanelStyle();
+
+        // Themes with hard-linked chart palettes apply their own chart
+        // colors first; loadPropertiesConfig() will skip palette.apply()
+        // for these themes (see GraphPaletteMenu.syncFromModel()).
+        theme.applyLinkedPalette();
+
         mainFrame.loadPropertiesConfig();
+        if (theme.hasLinkedPalette()) {
+            mainFrame.getGraphPaletteMenu().setAllItemsEnabled(false);
+        }
+
+        // Theme-specific title bar text (FlatLaf client property).
+        Color titleFg = theme.definition().titleBarForeground();
+        if (titleFg != null) {
+            mainFrame.getRootPane().putClientProperty(
+                "JRootPane.titleBarForeground", titleFg);
+        }
         mainFrame.setLocationRelativeTo(null);
         progressBar = mainFrame.getProgressBar();
+        // Apply theme-specific progress bar color directly on startup.
+        Color pbFg = theme.definition().progressBarForeground();
+        if (progressBar != null && pbFg != null) {
+            progressBar.setForeground(pbFg);
+        }
+        // Seed the progress bar string with the initial target KB total.
+        updateProgress();
+        // Apply the saved theme's Start button colour now that the control
+        // panel exists. Without this, the button always opens GitHub-green
+        // because BenchmarkControlPanel seeds DEFAULT_START in its constructor.
+        applyStartButtonStyle(theme);
 
         // On macOS, replace the default system-provided About dialog (which shows
         // the Java runtime info) with our own branded dialog.
@@ -304,7 +498,12 @@ public final class Gui {
      * system menu bar About handler registered in {@link #init()}.
      */
     public static void showAboutDialog() {
-        javax.swing.ImageIcon icon = App.activeIcon.loadSize(128);
+        ThemeDefinition def = theme.definition();
+        java.awt.Color primary   = def.iconPrimaryTint();
+        java.awt.Color secondary = def.iconSecondaryTint();
+        javax.swing.ImageIcon icon = (primary != null && secondary != null && def.tintAboutIcon())
+                ? AppIcon.active.loadSizeTinted(128, primary, secondary)
+                : AppIcon.active.loadSize(128);
 
         // Build an HTML panel so the website URL is a clickable hyperlink.
         String url = "https://www.jdiskmark.net";
@@ -312,6 +511,13 @@ public final class Gui {
                 + "<b>" + App.APP_NAME + " " + App.VERSION + "</b><br>"
                 + "JVM: " + App.jdk + "<br>"
                 + "OS:&nbsp; " + App.os + "<br><br>"
+                + "<span style='color:gray;font-size:10px'>"
+                + "FlatLaf " + App.buildProp("lib.flatlaf")
+                + " &middot; JFreeChart " + App.buildProp("lib.jfreechart")
+                + " &middot; Hibernate " + App.buildProp("lib.hibernate") + "<br>"
+                + "Derby " + App.buildProp("lib.derby")
+                + " &middot; Picocli " + App.buildProp("lib.picocli")
+                + "</span><br><br>"
                 + "<a href='" + url + "'>" + url + "</a>"
                 + "</body></html>";
 
@@ -322,7 +528,7 @@ public final class Gui {
             if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
                 try {
                     java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
-                } catch (Exception ex) {
+                } catch (IOException | URISyntaxException | RuntimeException ex) {
                     App.msg("Could not open browser: " + ex.getMessage());
                 }
             }
@@ -332,7 +538,6 @@ public final class Gui {
                 mainFrame, msgPane, "About " + App.APP_NAME,
                 javax.swing.JOptionPane.PLAIN_MESSAGE, icon);
     }
-
     /**
      * #117 Shows the one-time first-run consent dialog for portal sharing.
      * Fires when {@link App#portalConsentAsked} is {@code false}. After the user
@@ -424,21 +629,22 @@ public final class Gui {
         sampleAxis.setTickLabelPaint(foregroundColor);
         sampleAxis.setTickMarkPaint(foregroundColor);
 
-        // Style the Legend
-        if (chart.getLegend() != null) {
-            chart.getLegend().setItemPaint(foregroundColor);
-            // Set legend background with slight transparency (macos like look)
-            Color panelBg = UIManager.getColor("Panel.background");
-            if (panelBg != null) {
-                Color legendBg = new Color(panelBg.getRed(), panelBg.getGreen(), panelBg.getBlue(), 200);
-                chart.getLegend().setBackgroundPaint(legendBg);
-            }
-            // Remove the border or set it to a subtle gray
-            chart.getLegend().setFrame(new BlockBorder(new Color(80, 80, 80)));
+        // Style all legend variants (combined single-row + split Write/Read rows)
+        Color panelBg = UIManager.getColor("Panel.background");
+        Color legendBg = (panelBg != null)
+                ? new Color(panelBg.getRed(), panelBg.getGreen(), panelBg.getBlue(), 200)
+                : null;
+        BlockBorder legendBorder = new BlockBorder(new Color(80, 80, 80));
+        for (LegendTitle leg : new LegendTitle[]{combinedLegend, writeLegend, readLegend}) {
+            if (leg == null) continue;
+            leg.setItemPaint(foregroundColor);
+            if (legendBg != null) leg.setBackgroundPaint(legendBg);
+            leg.setFrame(legendBorder);
         }
+        updateBadgeThemeColors();
     }
     
-    public static ChartPanel createChartPanel() {
+    public static javax.swing.JPanel createChartPanel() {
         
         wSeries = new XYSeries("Write Sample");
         wAvgSeries = new XYSeries("Write Trend");
@@ -524,11 +730,55 @@ public final class Gui {
         plot.mapDatasetToRangeAxis(0, 0);
         plot.mapDatasetToRangeAxis(1, 1);
         
-        chart = new JFreeChart("", null , plot, true);
+        chart = new JFreeChart("", null , plot, false);
+
+        // Build a two-row legend: Write items on one line, Read items below.
+        // Each LegendTitle uses a filtered LegendItemSource that picks items
+        // whose series key starts with "Write" or "Read" respectively.
+        LegendItemSource writeSource = () -> {
+            LegendItemCollection col = new LegendItemCollection();
+            for (int ds = 0; ds < plot.getDatasetCount(); ds++) {
+                var r = plot.getRenderer(ds);
+                if (r == null) continue;
+                var items = r.getLegendItems();
+                for (int i = 0; i < items.getItemCount(); i++) {
+                    LegendItem it = items.get(i);
+                    if (it.getLabel().startsWith("Write")) col.add(it);
+                }
+            }
+            return col;
+        };
+        LegendItemSource readSource = () -> {
+            LegendItemCollection col = new LegendItemCollection();
+            for (int ds = 0; ds < plot.getDatasetCount(); ds++) {
+                var r = plot.getRenderer(ds);
+                if (r == null) continue;
+                var items = r.getLegendItems();
+                for (int i = 0; i < items.getItemCount(); i++) {
+                    LegendItem it = items.get(i);
+                    if (it.getLabel().startsWith("Read")) col.add(it);
+                }
+            }
+            return col;
+        };
+        combinedLegend = new LegendTitle(plot);
+        combinedLegend.setPosition(RectangleEdge.BOTTOM);
+        combinedLegend.setMargin(new RectangleInsets(0, 0, 0, 0));
+        writeLegend = new LegendTitle(writeSource);
+        writeLegend.setPosition(RectangleEdge.BOTTOM);
+        writeLegend.setMargin(new RectangleInsets(0, 0, 0, 0));
+        writeLegend.setVisible(false);
+        readLegend = new LegendTitle(readSource);
+        readLegend.setPosition(RectangleEdge.BOTTOM);
+        readLegend.setMargin(new RectangleInsets(0, 0, 0, 0));
+        readLegend.setVisible(false);
+        chart.addSubtitle(combinedLegend);
+        chart.addSubtitle(writeLegend);
+        chart.addSubtitle(readLegend);
         
         updateChartPanelStyle();
         
-        chartPanel = new ChartPanel(chart) {
+        ChartPanel rawChartPanel = new ChartPanel(chart) {
             // Only way to set the size of chart panel
             // ref: http://www.jfree.org/phpBB2/viewtopic.php?p=75516
             @Override
@@ -537,7 +787,7 @@ public final class Gui {
             }
         };
         
-        chartPanel.addChartMouseListener(new ChartMouseListener() {
+        rawChartPanel.addChartMouseListener(new ChartMouseListener() {
             private long lastClickTime = 0;
             @Override
             public void chartMouseClicked(ChartMouseEvent event) {
@@ -560,7 +810,216 @@ public final class Gui {
             }
         });
         updateLegendAndAxis();
-        return chartPanel;
+
+        // chart badge strip (priority order: most → least interpretively important)
+        directIoLabel   = makeBadge();
+        writeSyncLabel  = makeBadge();
+        sectorLabel     = makeBadge();
+        ioEngineLabel   = makeBadge();
+        multiFileLabel  = makeBadge();
+        renderModeLabel = makeBadge();
+        refreshChartBadges();
+
+        // ordered list: priority order (most → least interpretively important)
+        chartBadgeList = new ArrayList<>(List.of(
+                directIoLabel, writeSyncLabel, sectorLabel,
+                ioEngineLabel, multiFileLabel, renderModeLabel));
+
+        // topPanel: override getPreferredSize() so the badge strip never drives the container
+        // wider than the chart panel below it. Width=0 means BorderLayout NORTH takes the
+        // container's width (set by CENTER) rather than expanding to fit all badges.
+        javax.swing.JPanel topPanel = new javax.swing.JPanel(new FlowLayout(FlowLayout.CENTER, 4, 2)) {
+            @Override
+            public java.awt.Dimension getPreferredSize() {
+                return new java.awt.Dimension(0, super.getPreferredSize().height);
+            }
+        };
+        topPanel.setOpaque(false);
+        for (javax.swing.JLabel badge : chartBadgeList) topPanel.add(badge);
+        chartBadgeTopPanel = topPanel;
+        topPanel.setVisible(showBadges); // apply persisted setting
+
+        // re-evaluate on every window resize
+        topPanel.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                fitBadgesToOneRow(topPanel);
+            }
+        });
+
+        javax.swing.JPanel chartWrapper = new javax.swing.JPanel(new BorderLayout());
+        chartWrapper.setOpaque(false);
+        chartWrapper.add(topPanel, BorderLayout.NORTH);
+        chartWrapper.add(rawChartPanel, BorderLayout.CENTER);
+
+        chartPanel = (ChartPanel) rawChartPanel;
+        return chartWrapper;
+    }
+
+    /**
+     * Shows or hides the chart badge strip. When hidden, BorderLayout reclaims
+     * the NORTH slot and the chart panel expands to fill the full height.
+     * @param visible show on UI
+     */
+    public static void setChartBadgesVisible(boolean visible) {
+        if (chartBadgeTopPanel == null) return;
+        chartBadgeTopPanel.setVisible(visible);
+        // revalidate the parent so BorderLayout recalculates slot sizes
+        java.awt.Container parent = chartBadgeTopPanel.getParent();
+        if (parent != null) {
+            parent.revalidate();
+            parent.repaint();
+        }
+    }
+
+    /**
+     * Shows badges left-to-right until the next one would overflow the panel width,
+     * then hides all remaining. Uses Toolkit FontMetrics so badge widths are correct
+     * even before the components have been painted for the first time.
+     */
+    private static void fitBadgesToOneRow(javax.swing.JPanel topPanel) {
+        if (chartBadgeList == null) return;
+        FlowLayout fl = (FlowLayout) topPanel.getLayout();
+        int hgap = fl.getHgap();
+        java.awt.Insets ins = topPanel.getInsets();
+        // Subtract panel insets AND FlowLayout's own leading margin (one hgap on the left)
+        int available = topPanel.getWidth() - ins.left - ins.right - hgap;
+        if (available <= 0) return; // not yet laid out — skip until a real width arrives
+        int used = 0;
+        boolean overflowed = false;
+        for (javax.swing.JLabel badge : chartBadgeList) {
+            if (overflowed) {
+                badge.setVisible(false);
+                continue;
+            }
+            // Measure text width without relying on a rendered peer.
+            // TextLayout uses the font's own metrics via a scratch FontRenderContext.
+            java.awt.font.FontRenderContext frc = new java.awt.font.FontRenderContext(null, false, false);
+            int textWidth = (badge.getText().isEmpty()) ? 0
+                    : (int) Math.ceil(new java.awt.font.TextLayout(badge.getText(), badge.getFont(), frc).getAdvance());
+            java.awt.Insets bi = badge.getInsets();
+            int badgeWidth = textWidth + bi.left + bi.right;
+            int needed = badgeWidth + (used > 0 ? hgap : 0);
+            if (used + needed <= available) {
+                badge.setVisible(true);
+                used += needed;
+            } else {
+                badge.setVisible(false);
+                overflowed = true;
+            }
+        }
+    }
+
+    /** Creates a badge label with shared styling. */
+    private static javax.swing.JLabel makeBadge() {
+        javax.swing.JLabel lbl = new javax.swing.JLabel();
+        lbl.setFont(new Font("SansSerif", Font.BOLD, 11));
+        lbl.setForeground(BADGE_DEFAULT_FG);
+        lbl.setOpaque(true);
+        lbl.setBackground(BADGE_DEFAULT_BG);
+        lbl.setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6));
+        return lbl;
+    }
+
+    /**
+     * Refreshes all chart badge labels to reflect the current App settings.
+     * Badges that differ from the last-run config are highlighted amber.
+     * Safe to call from any thread — posts to the EDT if needed.
+     */
+    public static void refreshChartBadges() {
+        if (directIoLabel == null) return;
+        Runnable update = () -> {
+            directIoLabel.setText("Direct IO: "   + (App.directEnable    ? "On" : "Off"));
+            writeSyncLabel.setText("Write Sync: " + (App.writeSyncEnable  ? "On" : "Off"));
+            sectorLabel.setText("Sector: "        + App.sectorAlignment.display.split(" \\(")[0]);
+            ioEngineLabel.setText("Engine: "      + App.ioEngine.toString().split(" ")[0]);
+            multiFileLabel.setText("Multi-File: " + (App.multiFile ? "On" : "Off"));
+            renderModeLabel.setText("Render: "     + App.rmOption.toString());
+            applyBadgeHighlights();
+        };
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+            update.run();
+        } else {
+            javax.swing.SwingUtilities.invokeLater(update);
+        }
+    }
+
+    /**
+     * Compares each badge field against App.benchmark.config (the last completed run)
+     * and sets amber background on any badge whose current value differs.
+     * Also drives the chart subtitle and control-panel row highlights.
+     * Must be called on the EDT.
+     */
+    private static void applyBadgeHighlights() {
+        BenchmarkConfig lr = (App.benchmark != null) ? App.benchmark.config : null;
+        if (lr == null) return; // no run yet — nothing to compare
+        boolean anyStale = false;
+        anyStale |= setBadgeStaleReturn(directIoLabel,   App.directEnable    != Boolean.TRUE.equals(lr.directIoEnabled));
+        anyStale |= setBadgeStaleReturn(writeSyncLabel,  App.writeSyncEnable != Boolean.TRUE.equals(lr.writeSyncEnabled));
+        anyStale |= setBadgeStaleReturn(sectorLabel,     App.sectorAlignment != lr.sectorAlignment);
+        anyStale |= setBadgeStaleReturn(ioEngineLabel,   App.ioEngine        != lr.ioEngine);
+        anyStale |= setBadgeStaleReturn(multiFileLabel,  App.multiFile       != Boolean.TRUE.equals(lr.multiFileEnabled));
+        anyStale |= setBadgeStaleReturn(renderModeLabel, App.rmOption        != App.benchmark.getRenderMode());
+        setChartModifiedIndicator(anyStale);
+        // sync control-panel row highlights too
+        if (controlPanel != null) controlPanel.showSettingsDrift();
+    }
+
+    private static boolean setBadgeStaleReturn(javax.swing.JLabel badge, boolean stale) {
+        badge.setBackground(stale ? BADGE_STALE_BG : BADGE_DEFAULT_BG);
+        if (stale) {
+            badge.setForeground(BADGE_STALE_FG);
+        } else {
+            ThemeDefinition def = theme.definition();
+            if (def.cycleBadgeColors() && chartBadgeList != null) {
+                int idx = chartBadgeList.indexOf(badge);
+                badge.setForeground(idx % 2 == 0 ? def.badgeEvenFg() : def.badgeOddFg());
+            } else {
+                badge.setForeground(BADGE_DEFAULT_FG);
+            }
+        }
+        return stale;
+    }
+
+    /**
+     * Returns true if any badge setting differs from App.benchmark.config.
+     * Used by BenchmarkControlPanel to combine badge + row staleness for the subtitle.
+     */
+    static boolean isAnyBadgeStale() {
+        if (App.benchmark == null) return false;
+        BenchmarkConfig lr = App.benchmark.config;
+        return App.directEnable    != Boolean.TRUE.equals(lr.directIoEnabled)
+            || App.writeSyncEnable != Boolean.TRUE.equals(lr.writeSyncEnabled)
+            || App.sectorAlignment != lr.sectorAlignment
+            || App.ioEngine        != lr.ioEngine
+            || App.multiFile       != Boolean.TRUE.equals(lr.multiFileEnabled)
+            || App.rmOption        != App.benchmark.getRenderMode();
+    }
+
+    /**
+     * Refreshes badge labels from nullable stored values (e.g. a loaded benchmark).
+     * Any null value is rendered as "—" to indicate the data was not recorded.
+     * Safe to call from any thread.
+     */
+    private static void refreshChartBadges(Boolean directIo, Boolean writeSync,
+                                          App.SectorAlignment sector, RenderFrequencyMode renderMode,
+                                          App.IoEngine ioEngine, Boolean multiFile) {
+        if (directIoLabel == null) return;
+        Runnable update = () -> {
+            directIoLabel.setText("Direct IO: "   + (directIo  != null ? (directIo  ? "On" : "Off") : "—"));
+            writeSyncLabel.setText("Write Sync: " + (writeSync != null ? (writeSync ? "On" : "Off") : "—"));
+            String sectorText = sector != null ? sector.display.split(" \\(")[0] : "—";
+            sectorLabel.setText("Sector: " + sectorText);
+            String engineText = ioEngine != null ? ioEngine.toString().split(" ")[0] : "—";
+            ioEngineLabel.setText("Engine: " + engineText);
+            multiFileLabel.setText("Multi-File: " + (multiFile != null ? (multiFile ? "On" : "Off") : "—"));
+            renderModeLabel.setText("Render: " + (renderMode != null ? renderMode.toString() : "—"));
+        };
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+            update.run();
+        } else {
+            javax.swing.SwingUtilities.invokeLater(update);
+        }
     }
     
     public static BenchmarkControlPanel createControlPanel() {
@@ -609,6 +1068,16 @@ public final class Gui {
         controlPanel.refreshReadMetrics();
         controlPanel.refreshWriteMetrics();
     }
+
+    public static void lockSampleAxis(int numSamples) {
+        int start = App.nextSampleNumber;
+        sampleAxis.setAutoRange(false);
+        sampleAxis.setRange(start, start + numSamples - 1);
+    }
+
+    public static void unlockSampleAxis() {
+        sampleAxis.setAutoRange(true);
+    }
     
     public static void updateLegendAndAxis() {
         bwRenderer.setSeriesVisibleInLegend(0, App.hasWriteOperation());
@@ -623,6 +1092,11 @@ public final class Gui {
         msRenderer.setSeriesVisibleInLegend(0, App.hasWriteOperation() && showDriveAccess);
         msRenderer.setSeriesVisibleInLegend(1, App.hasReadOperation() && showDriveAccess);
         
+        boolean splitLegend = showMaxMin && App.hasWriteOperation() && App.hasReadOperation();
+        combinedLegend.setVisible(!splitLegend);
+        writeLegend.setVisible(splitLegend && App.hasWriteOperation());
+        readLegend.setVisible(splitLegend && App.hasReadOperation());
+
         msAxis.setVisible(showDriveAccess);
     }
 
@@ -642,6 +1116,11 @@ public final class Gui {
         msRenderer.setSeriesVisibleInLegend(0, hasWrite && showDriveAccess);
         msRenderer.setSeriesVisibleInLegend(1, hasRead && showDriveAccess);
         
+        boolean splitLegend = showMaxMin && hasWrite && hasRead;
+        combinedLegend.setVisible(!splitLegend);
+        writeLegend.setVisible(splitLegend && hasWrite);
+        readLegend.setVisible(splitLegend && hasRead);
+
         msAxis.setVisible(showDriveAccess);
     }
     
@@ -661,17 +1140,22 @@ public final class Gui {
         msRenderer.setSeriesVisibleInLegend(0, isWriteTest && showDriveAccess);
         msRenderer.setSeriesVisibleInLegend(1, isReadTest && showDriveAccess);
         
+        boolean splitLegend = showMaxMin && isWriteTest && isReadTest;
+        combinedLegend.setVisible(!splitLegend);
+        writeLegend.setVisible(splitLegend && isWriteTest);
+        readLegend.setVisible(splitLegend && isReadTest);
+
         msAxis.setVisible(showDriveAccess);
     }
     
     private static final Logger SMART_LOG = Logger.getLogger(Gui.class.getName());
 
     static public void updateDiskInfo() {
-        mainFrame.setLocation(App.locationDir.getAbsolutePath());
         chart.getTitle().setText(App.getDriveInfo());
-        if (drivesPanel != null) {
-            drivesPanel.refresh();
+        if (drivePanel != null) {
+            drivePanel.refresh();
         }
+
         // SMART data is fetched lazily via runSmart(), which is called
         // by the "Run SMART" button in SmartPanel and optionally after each
         // benchmark when "Run SMART with Benchmark" is enabled.
@@ -704,8 +1188,8 @@ public final class Gui {
      */
     static public void runSmart() {
         
-        if (!App.isLinux()) { 
-            App.msg("SMART is only available in linux");
+        if (!App.isLinux() && !App.isMacOs()) { 
+            App.msg("SMART is only available on Linux and macOS");
             return;
         }
         
@@ -724,14 +1208,23 @@ public final class Gui {
             protected Smart doInBackground() {
                 try {
                     Path path = locDir.toPath();
-                    String partition = UtilOs.getPartitionFromFilePathLinux(path);
-                    List<String> devices =
-                            UtilOs.getDeviceNamesFromPartitionLinux(partition);
-                    if (devices == null || devices.isEmpty()) {
-                        SMART_LOG.log(Level.WARNING, "runSmart: no device for {0}", locDir);
-                        return null;
+                    if (App.isLinux()) {
+                        String partition = UtilOs.getPartitionFromFilePathLinux(path);
+                        List<String> devices =
+                                UtilOs.getDeviceNamesFromPartitionLinux(partition);
+                        if (devices == null || devices.isEmpty()) {
+                            SMART_LOG.log(Level.WARNING, "runSmart: no device for {0}", locDir);
+                            return null;
+                        }
+                        deviceRef[0] = devices.get(0);
+                    } else if (App.isMacOs()) {
+                        String partitionPath = UtilOs.getDeviceFromPathMacOs(path);
+                        deviceRef[0] = UtilOs.getWholeDeviceNameMacOs(partitionPath);
+                        if (deviceRef[0] == null) {
+                            SMART_LOG.log(Level.WARNING, "runSmart: no device for {0}", locDir);
+                            return null;
+                        }
                     }
-                    deviceRef[0] = devices.get(0);
                     if (Smart.process == null || !Smart.process.isAlive()) {
                         Smart.startPrivilegedShell();
                         Smart.startHeartbeat();
@@ -792,7 +1285,7 @@ public final class Gui {
             try {
                 Smart smart = Smart.fromJson(rawJson);
                 smartPanel.populate(smart);
-            } catch (Exception ex) {
+            } catch (IOException | RuntimeException ex) {
                 SMART_LOG.log(Level.WARNING,
                         "loadSnapshot: rawJson parse failed, falling back to scalars", ex);
                 smartPanel.populateFromSnapshot(snap);
@@ -947,7 +1440,25 @@ public final class Gui {
         App.numOfThreads = benchmark.config.numThreads;
         App.activeProfile = benchmark.config.profile;
         App.profileModified = benchmark.config.profileModified;
-        mainFrame.refreshConfig();
+        // IO engine / options settings (mirrors what the badges already display)
+        if (benchmark.config.ioEngine != null) App.ioEngine = benchmark.config.ioEngine;
+        if (benchmark.config.sectorAlignment != null) App.sectorAlignment = benchmark.config.sectorAlignment;
+        if (benchmark.config.writeSyncEnabled != null) App.writeSyncEnable = Boolean.TRUE.equals(benchmark.config.writeSyncEnabled);
+        if (benchmark.config.directIoEnabled != null) App.directEnable = Boolean.TRUE.equals(benchmark.config.directIoEnabled);
+        if (benchmark.config.multiFileEnabled != null) App.multiFile = Boolean.TRUE.equals(benchmark.config.multiFileEnabled);
+        // render mode is stored on the Benchmark itself, not in BenchmarkConfig
+        App.rmOption = benchmark.getRenderMode();
+        mainFrame.syncFromModel();
+        // sync AdvancedOptionsFrame if it has already been opened (preserve lazy-init)
+        if (advancedFrame != null) advancedFrame.syncFromModel();
+        // set as the active benchmark so stale-badge comparisons have a baseline
+        App.benchmark = benchmark;
+        // clear any stale highlights — the newly loaded benchmark IS the current baseline
+        clearAllStaleHighlights();
+        // override badges with the values recorded at run time (— if absent in older records)
+        refreshChartBadges(benchmark.config.directIoEnabled, benchmark.config.writeSyncEnabled,
+                           benchmark.config.sectorAlignment, benchmark.getRenderMode(),
+                           benchmark.config.ioEngine, benchmark.config.multiFileEnabled);
         
         // operation data
         for (BenchmarkOperation operation : benchmark.operations) {
@@ -999,7 +1510,25 @@ public final class Gui {
         App.blockSizeKb = (int)(operation.blockSize / App.KILOBYTE);
         App.blockSequence = operation.blockOrder;
         App.numOfThreads = operation.numThreads;
-        mainFrame.refreshConfig();
+        // IO engine / options settings (mirrors what the badges already display)
+        if (benchmark.config.ioEngine != null) App.ioEngine = benchmark.config.ioEngine;
+        if (benchmark.config.sectorAlignment != null) App.sectorAlignment = benchmark.config.sectorAlignment;
+        if (benchmark.config.writeSyncEnabled != null) App.writeSyncEnable = Boolean.TRUE.equals(benchmark.config.writeSyncEnabled);
+        if (benchmark.config.directIoEnabled != null) App.directEnable = Boolean.TRUE.equals(benchmark.config.directIoEnabled);
+        if (benchmark.config.multiFileEnabled != null) App.multiFile = Boolean.TRUE.equals(benchmark.config.multiFileEnabled);
+        // render mode is stored on the Benchmark itself, not in BenchmarkConfig
+        App.rmOption = benchmark.getRenderMode();
+        mainFrame.syncFromModel();
+        // sync AdvancedOptionsFrame if it has already been opened (preserve lazy-init)
+        if (advancedFrame != null) advancedFrame.syncFromModel();
+        // set as the active benchmark so stale-badge comparisons have a baseline
+        App.benchmark = benchmark;
+        // clear any stale highlights — the newly loaded benchmark IS the current baseline
+        clearAllStaleHighlights();
+        // override badges with the values recorded at run time (— if absent in older records)
+        refreshChartBadges(benchmark.config.directIoEnabled, benchmark.config.writeSyncEnabled,
+                           benchmark.config.sectorAlignment, benchmark.getRenderMode(),
+                           benchmark.config.ioEngine, benchmark.config.multiFileEnabled);
         switch (operation.ioMode) {
             case READ -> {
                 App.rAvg = operation.bwAvg;
@@ -1021,104 +1550,12 @@ public final class Gui {
         resetProgressBar();
     }
 
-    /**
-     * The original color scheme.
-     */
-    static void setClassicColorScheme() {
-        palette = Palette.CLASSIC;
-        
-        // configure the bw series colors
-        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
-        bwRenderer.setSeriesPaint(0, Color.YELLOW);     // write
-        bwRenderer.setSeriesPaint(1, Color.WHITE);      // w avg
-        bwRenderer.setSeriesPaint(2, Color.GREEN);      // w max
-        bwRenderer.setSeriesPaint(3, Color.RED);        // w min
-        bwRenderer.setSeriesPaint(4, Color.LIGHT_GRAY); // read
-        bwRenderer.setSeriesPaint(5, Color.ORANGE);     // r avg
-        bwRenderer.setSeriesPaint(6, Color.GREEN.darker()); // r max
-        bwRenderer.setSeriesPaint(7, Color.RED.darker());   // r min
-        
-        // configure the access time ms colors
-        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
-        msRenderer.setSeriesPaint(0, Color.CYAN);       // w acc
-        msRenderer.setSeriesPaint(1, Color.MAGENTA);    // r acc
-    }
-
-    /**
-     * Here is my blue green scheme. can be improved.
-     */
-    static void setBlueGreenScheme() {
-        System.out.println("setting blue green palette");
-        palette = Palette.BLUE_GREEN;
-        
-        // configure the bw series colors
-        
-        // these are bluish
-        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
-        bwRenderer.setSeriesPaint(0, new Color(0x7C9CDC)); // write
-        bwRenderer.setSeriesPaint(1, new Color(0x2A5CB0)); // w avg
-        bwRenderer.setSeriesPaint(2, new Color(0xBCD2EF)); // w max
-        bwRenderer.setSeriesPaint(3, new Color(0xBFD5EA)); // w min
-        
-        // these are green
-        bwRenderer.setSeriesPaint(4, new Color(0xAACC00)); // read
-        bwRenderer.setSeriesPaint(5, new Color(0x008080)); // r avg
-        bwRenderer.setSeriesPaint(6, new Color(0x6B8E23)); // r max
-        bwRenderer.setSeriesPaint(7, new Color(0x228B22)); // r min
-        
-        // configure the access time ms colors
-        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
-        msRenderer.setSeriesPaint(0, new Color(0x7C9CDC)); // w acc
-        msRenderer.setSeriesPaint(1, new Color(0xAACC00)); // r acc
-    }
-    
-    /**
-     * Cool color scheme proposed by Bard
-     */    
-    static void setCoolColorScheme() {
-        System.out.println("setting cool palette");
-        palette = Palette.BARD_COOL;
-        
-        // configure the bw series colors
-        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
-        bwRenderer.setSeriesPaint(0, new Color(0x54a0ff)); // write
-        bwRenderer.setSeriesPaint(1, new Color(0x808080)); // w avg
-        bwRenderer.setSeriesPaint(2, new Color(0x4CAF50)); // w max
-        bwRenderer.setSeriesPaint(3, new Color(0xFF5722)); // w min
-        bwRenderer.setSeriesPaint(4, new Color(0x00BCD4)); // read
-        bwRenderer.setSeriesPaint(5, new Color(0x9E9E9E)); // r avg
-        bwRenderer.setSeriesPaint(6, new Color(0x66BB6A)); // r max
-        bwRenderer.setSeriesPaint(7, new Color(0xF44336)); // r min
-        
-        // configure the access time ms colors
-        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
-        msRenderer.setSeriesPaint(0, new Color(0x54a0ff)); // w acc
-        msRenderer.setSeriesPaint(1, new Color(0x00BCD4)); // r acc
-    }
-    
-
-    static void setWarmColorScheme() {
-        System.out.println("setting warm palette");
-        palette = Palette.BARD_WARM;
-        
-        // configure the bw series colors
-        bwRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
-        bwRenderer.setSeriesPaint(0, new Color(0xFFC107)); // write
-        bwRenderer.setSeriesPaint(1, new Color(0xEBEBEB)); // w avg
-        bwRenderer.setSeriesPaint(2, new Color(0x4CAF50)); // w max
-        bwRenderer.setSeriesPaint(3, new Color(0xFF5722)); // w min
-        bwRenderer.setSeriesPaint(4, new Color(0xE91E63)); // read
-        bwRenderer.setSeriesPaint(5, new Color(0xD3D3D3)); // r avg
-        bwRenderer.setSeriesPaint(6, new Color(0x66BB6A)); // r max
-        bwRenderer.setSeriesPaint(7, new Color(0xF44336)); // r min
-        
-        // configure the access time ms colors
-        msRenderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
-        msRenderer.setSeriesPaint(0, new Color(0xFFC107)); // w acc
-        msRenderer.setSeriesPaint(1, new Color(0xE91E63)); // r acc
-    }
-    
     public static void browseLocation() {
+        if (selFrame != null && selFrame.isShowing()) {
+            selFrame.toFront();
+            selFrame.requestFocus();
+            return;
+        }
         selFrame = new SelectDriveFrame();
         if (App.locationDir != null && App.locationDir.exists()) {
             selFrame.setInitDir(App.locationDir);

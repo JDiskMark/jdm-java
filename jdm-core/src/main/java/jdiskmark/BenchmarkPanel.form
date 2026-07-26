@@ -50,12 +50,12 @@
                 <Column editable="false" title="Profile" type="java.lang.Object"/>
                 <Column editable="false" title="Type" type="java.lang.Object"/>
                 <Column editable="false" title="Order" type="java.lang.Object"/>
-                <Column editable="false" title="Samples" type="java.lang.Object"/>
-                <Column editable="false" title="Blocks (Size)" type="java.lang.Object"/>
+                <Column editable="false" title="Qty" type="java.lang.Object"/>
+                <Column editable="false" title="Blocks" type="java.lang.Object"/>
                 <Column editable="false" title="Thread" type="java.lang.Object"/>
                 <Column editable="false" title="Start Time" type="java.lang.Object"/>
-                <Column editable="false" title="Time (ms)" type="java.lang.Object"/>
-                <Column editable="false" title="Lat (ms)" type="java.lang.Object"/>
+                <Column editable="false" title="Elapsed" type="java.lang.Object"/>
+                <Column editable="false" title="Lat" type="java.lang.Object"/>
                 <Column editable="false" title="IOPS" type="java.lang.Object"/>
                 <Column editable="false" title="BW (MB/s)" type="java.lang.Object"/>
               </Table>

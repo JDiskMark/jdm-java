@@ -69,22 +69,26 @@ public class Smart {
 
     /**
      * Resolves the path to the {@code smartctl} binary, preferring a bundled
-     * copy shipped with the JDiskMark fat installer over the system installation.
+     * copy shipped with the JDiskMark fat installer over any system installation.
      *
      * <p>Resolution order:
      * <ol>
-     *   <li>{@code $APPDIR/../smartctl/smartctl} — jpackage sets {@code APPDIR}
-     *       at runtime, pointing to the {@code app/} subdirectory of the
-     *       install root (e.g. {@code /opt/jdiskmark/app}). The bundled binary
+     *   <li>{@code $APPDIR/../smartctl/smartctl} — Linux jpackage sets {@code APPDIR}
+     *       to the {@code app/} subdirectory of the install root. The bundled binary
      *       lands one level up at {@code /opt/jdiskmark/smartctl/smartctl}.</li>
+     *   <li>macOS {@code .app} bundle — {@code APPDIR} is not set by macOS jpackage.
+     *       Instead, the jar's own {@code CodeSource} location is used to find
+     *       {@code Contents/app/<jar>} → walk up to {@code Contents/smartctl/smartctl},
+     *       where {@code package-pkg.sh} injects the bundled binary.</li>
      *   <li>{@code /opt/jdiskmark/smartctl/smartctl} — well-known absolute path
-     *       for the fat DEB install, used when APPDIR is not set.</li>
-     *   <li>{@code /usr/sbin/smartctl} — system fallback for dev environments
-     *       and slim-DEB users who have smartmontools installed system-wide.</li>
+     *       for the fat Linux DEB install when {@code APPDIR} is not in the env.</li>
+     *   <li>Homebrew — {@code /usr/local/bin/smartctl} (Intel) or
+     *       {@code /opt/homebrew/bin/smartctl} (Apple Silicon) for dev machines.</li>
+     *   <li>{@code /usr/sbin/smartctl} — system fallback for slim-DEB / other Unix.</li>
      * </ol>
      */
     static String resolveSmartctlPath() {
-        // 1. Bundled copy: jpackage sets APPDIR → …/opt/jdiskmark/app
+        // 1. Bundled copy via APPDIR (Linux jpackage sets this; macOS does not).
         String appDir = System.getenv("APPDIR");
         if (appDir != null) {
             Path bundled = Path.of(appDir).getParent().resolve("smartctl/smartctl");
@@ -93,22 +97,59 @@ public class Smart {
                 return bundled.toString();
             }
         }
-        // 2. Well-known absolute path (fat DEB install without APPDIR in env)
+
+        // 2. macOS .app bundle: APPDIR is not set, but the fat jar lives at
+        //    Contents/app/<jar>. Walk up to Contents/ and look for the bundled
+        //    smartctl injected by package-pkg.sh at Contents/smartctl/smartctl.
+        try {
+            java.net.URL jarUrl = Smart.class.getProtectionDomain().getCodeSource().getLocation();
+            if (jarUrl != null) {
+                // jarUrl → file:/Applications/JDiskMark.app/Contents/app/<jar>
+                Path jarPath   = Path.of(jarUrl.toURI());          // …/Contents/app/<jar>
+                Path contentsDir = jarPath.getParent().getParent(); // …/Contents/
+                Path macBundled  = contentsDir.resolve("smartctl/smartctl");
+                if (Files.isExecutable(macBundled)) {
+                    LOGGER.info("Using bundled smartctl (macOS app bundle): " + macBundled);
+                    return macBundled.toString();
+                }
+            }
+        } catch (Exception ex) {
+            LOGGER.log(Level.FINE, "macOS bundle smartctl lookup failed", ex);
+        }
+
+        // 3. Well-known absolute path (fat DEB install without APPDIR in env)
         Path installed = Path.of("/opt/jdiskmark/smartctl/smartctl");
         if (Files.isExecutable(installed)) {
             LOGGER.info("Using installed smartctl: " + installed);
             return installed.toString();
         }
-        // 3. System fallback — dev machines, slim DEB with apt smartmontools
+
+        // 4. Homebrew locations — common on dev machines and macOS without a system smartctl
+        for (String brew : new String[]{
+                "/usr/local/bin/smartctl",   // Homebrew on Intel Mac
+                "/opt/homebrew/bin/smartctl" // Homebrew on Apple Silicon
+        }) {
+            Path brewPath = Path.of(brew);
+            if (Files.isExecutable(brewPath)) {
+                LOGGER.info("Using Homebrew smartctl: " + brewPath);
+                return brewPath.toString();
+            }
+        }
+
+        // 5. System fallback — slim DEB with apt smartmontools, or any other Unix path
         LOGGER.info("Using system smartctl: /usr/sbin/smartctl");
         return "/usr/sbin/smartctl";
     }
 
     /**
-     * Launches a single {@code pkexec bash} process and wires up the
+     * Launches a single privileged {@code bash} process and wires up the
      * shared {@link #shellWriter} / {@link #shellReader}.  The user is
      * prompted for their password exactly once; subsequent SMART queries
      * reuse this shell without re-escalating privileges.
+     *
+     * <p>On Linux, privilege escalation uses {@code pkexec bash}.
+     * On macOS, a native password dialog ({@code osascript display dialog})
+     * collects the password, which is fed to {@code sudo -S bash}.
      *
      * <p>Safe to call multiple times — a no-op if the shell is already alive.
      *
@@ -119,14 +160,56 @@ public class Smart {
             if (process != null && process.isAlive()) {
                 return; // already running
             }
-            LOGGER.info("Starting privileged bash shell via pkexec...");
-            ProcessBuilder pb = new ProcessBuilder("pkexec", "bash");
-            pb.redirectErrorStream(false); // keep stderr separate from stdout
-            process = pb.start();
-            shellWriter = new BufferedWriter(
-                new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
-            shellReader = new BufferedReader(
-                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+
+            if (App.isMacOs()) {
+                LOGGER.info("Starting privileged bash shell via osascript/sudo...");
+
+                // macOS: prompt for password using native macOS authorization dialog
+                ProcessBuilder dialogPb = new ProcessBuilder("osascript", "-e",
+                        "return text returned of (display dialog "
+                        + "\"JDiskMark needs administrator privileges to read SMART data.\" "
+                        + "default answer \"\" with hidden answer "
+                        + "with title \"JDiskMark\" "
+                        + "buttons {\"Cancel\", \"OK\"} default button \"OK\")");
+                dialogPb.redirectErrorStream(true);
+                Process dialogProcess = dialogPb.start();
+                String password;
+                try {
+                    password = new String(
+                            dialogProcess.getInputStream().readAllBytes(),
+                            StandardCharsets.UTF_8).trim();
+                    int exitCode = dialogProcess.waitFor();
+                    if (exitCode != 0 || password.isEmpty()) {
+                        throw new IOException("User cancelled macOS authorization dialog");
+                    }
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException("Interrupted waiting for macOS authorization", ex);
+                }
+
+                ProcessBuilder pb = new ProcessBuilder("sudo", "-S", "bash");
+                pb.redirectErrorStream(false);
+                process = pb.start();
+                shellWriter = new BufferedWriter(
+                        new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
+                shellReader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+
+                // Feed password to sudo via stdin
+                shellWriter.write(password);
+                shellWriter.newLine();
+                shellWriter.flush();
+            } else {
+                // Linux: use pkexec for privilege escalation (polkit)
+                LOGGER.info("Starting privileged bash shell via pkexec...");
+                ProcessBuilder pb = new ProcessBuilder("pkexec", "bash");
+                pb.redirectErrorStream(false);
+                process = pb.start();
+                shellWriter = new BufferedWriter(
+                        new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
+                shellReader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+            }
 
             // Drain stderr so the process can't deadlock if it emits output there.
             final BufferedReader errReader = new BufferedReader(

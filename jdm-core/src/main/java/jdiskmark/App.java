@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 import javax.swing.SwingUtilities;
@@ -32,14 +33,29 @@ import jdiskmark.App.SectorAlignment;
 import jdiskmark.Benchmark.BenchmarkType;
 import jdiskmark.Benchmark.BlockSequence;
 
+import org.metricus.jdm.ui.Palette;
+import org.metricus.jdm.ui.Theme;
+
 /**
  * Primary class for global variables.
  */
 public class App {
     public static final String APP_NAME = "JDiskMark";
-    public static final String VERSION = getVersion();
+    private static final Properties BUILD_PROPERTIES = loadBuildProperties();
+    /** Version used for filesystem paths — no +build-metadata suffix. */
+    public static final String INSTALL_VERSION  = BUILD_PROPERTIES.getProperty("install.version",
+            BUILD_PROPERTIES.getProperty("version", "0.0"));
+    /** Version used for display: About dialog, exports, jdm.properties header. */
+    public static final String DISPLAY_VERSION  = BUILD_PROPERTIES.getProperty("display.version",
+            BUILD_PROPERTIES.getProperty("version", "0.0"));
+    /** Back-compat alias — equals DISPLAY_VERSION. */
+    public static final String VERSION = DISPLAY_VERSION;
+    /** Returns a value from META-INF/build.properties, or "?" if absent. */
+    public static String buildProp(String key) {
+        return BUILD_PROPERTIES.getProperty(key, "?");
+    }
     public static final String APP_CACHE_DIR_NAME = System.getProperty("user.home") + File.separator + ".jdm"
-            + File.separator + VERSION;
+            + File.separator + INSTALL_VERSION;
     public static final File APP_CACHE_DIR = new File(APP_CACHE_DIR_NAME);
     public static final String PROPERTIES_FILENAME = "jdm.properties";
     public static final File PROPERTIES_FILE = new File(APP_CACHE_DIR_NAME + File.separator + PROPERTIES_FILENAME);
@@ -106,126 +122,6 @@ public class App {
         }
     }
 
-    /**
-     * Branding icon variants for the application window, taskbar, and installer.
-     * Each variant declares the PNG sizes available in jdm-core resources.
-     * Change {@link #activeIcon} to switch the icon across all display contexts.
-     */
-    public enum AppIcon {
-        /** Blue/orange circle — the beta brand. Single resolution. */
-        BETA(new String[] { "/icons/icon-jdm-beta.png" }),
-        /** Custom JDiskMark turtle logo — the default project brand. */
-        TURTLE(new String[] {
-                "/icons/jdm-turtle-logo-16x16.png",
-                "/icons/jdm-turtle-logo-20x20.png",
-                "/icons/jdm-turtle-logo-24x24.png",
-                "/icons/jdm-turtle-logo-32x32.png",
-                "/icons/jdm-turtle-logo-40x40.png",
-                "/icons/jdm-turtle-logo-48x48.png",
-                "/icons/jdm-turtle-logo-64x64.png",
-                "/icons/jdm-turtle-logo-96x96.png",
-                "/icons/jdm-turtle-logo-128x128.png",
-                "/icons/jdm-turtle-logo-256x256.png",
-                "/icons/jdm-turtle-logo-512x512.png",
-                "/icons/jdm-turtle-logo-1024x1024.png"
-        }),
-        /** Duke, the BSD-licensed Java mascot from the OpenJDK project. */
-        DUKE(new String[] { "/icons/icon-duke.png" });
-
-        /** All resource paths for this icon variant, from smallest to largest. */
-        public final String[] resourcePaths;
-
-        AppIcon(String[] resourcePaths) {
-            this.resourcePaths = resourcePaths;
-        }
-
-        /**
-         * Load all available sizes as a list of Images for use with
-         * {@link java.awt.Window#setIconImages(java.util.List)}.
-         * Java picks the best-fit size per display context (title bar, taskbar, Alt+Tab).
-         * Missing resources are silently skipped.
-         */
-        public java.util.List<java.awt.Image> loadAll() {
-            java.util.List<java.awt.Image> images = new java.util.ArrayList<>();
-            for (String path : resourcePaths) {
-                try (java.io.InputStream is = App.class.getResourceAsStream(path)) {
-                    if (is != null) {
-                        images.add(new javax.swing.ImageIcon(is.readAllBytes()).getImage());
-                    }
-                } catch (java.io.IOException e) {
-                    java.util.logging.Logger.getLogger(App.class.getName()).log(
-                            java.util.logging.Level.WARNING, "Could not load icon: " + path, e);
-                }
-            }
-            return images;
-        }
-
-        /**
-         * Load the largest available size as an ImageIcon (used by the About dialog).
-         * Returns {@code null} if no resource is found.
-         */
-        public javax.swing.ImageIcon load() {
-            String path = resourcePaths[resourcePaths.length - 1];
-            try (java.io.InputStream is = App.class.getResourceAsStream(path)) {
-                if (is == null) {
-                    java.util.logging.Logger.getLogger(App.class.getName()).warning(
-                            "Icon resource not found: " + path);
-                    return null;
-                }
-                return new javax.swing.ImageIcon(is.readAllBytes());
-            } catch (java.io.IOException e) {
-                java.util.logging.Logger.getLogger(App.class.getName()).log(
-                        java.util.logging.Level.WARNING, "Could not load icon: " + path, e);
-                return null;
-            }
-        }
-
-        /**
-         * Load the best pre-rendered PNG at or nearest to {@code targetSize} pixels.
-         * Prefers the smallest size that is &gt;= targetSize; falls back to the largest
-         * available. For single-resolution variants the only image is returned as-is.
-         * Returns {@code null} if no resource is found.
-         */
-        public javax.swing.ImageIcon loadSize(int targetSize) {
-            // Parse pixel widths from filenames like "/icons/jdm-turtle-logo-256x256.png".
-            // For paths without a size suffix (e.g. "/icons/icon-jdm-beta.png") the regex
-            // won't match and the path is treated as an unknown size.
-            java.util.regex.Pattern sizePattern = java.util.regex.Pattern.compile("-(\\d+)x\\d+\\.png$");
-            String bestPath = resourcePaths[resourcePaths.length - 1]; // default: largest
-            int bestDiff = Integer.MAX_VALUE;
-            for (String path : resourcePaths) {
-                java.util.regex.Matcher m = sizePattern.matcher(path);
-                if (m.find()) {
-                    int size = Integer.parseInt(m.group(1));
-                    int diff = size - targetSize;
-                    // Prefer smallest size >= targetSize; accept smaller only if nothing larger found.
-                    if (diff >= 0 && diff < bestDiff) {
-                        bestDiff = diff;
-                        bestPath = path;
-                    }
-                }
-            }
-            try (java.io.InputStream is = App.class.getResourceAsStream(bestPath)) {
-                if (is == null) {
-                    java.util.logging.Logger.getLogger(App.class.getName()).warning(
-                            "Icon resource not found: " + bestPath);
-                    return null;
-                }
-                return new javax.swing.ImageIcon(is.readAllBytes());
-            } catch (java.io.IOException e) {
-                java.util.logging.Logger.getLogger(App.class.getName()).log(
-                        java.util.logging.Level.WARNING, "Could not load icon: " + bestPath, e);
-                return null;
-            }
-        }
-    }
-
-    /**
-     * Active branding icon — change this single line to switch the icon
-     * used for the window title bar, taskbar, and About dialog.
-     */
-    public static AppIcon activeIcon = AppIcon.TURTLE;
-
     // application mode
     public static Mode mode = Mode.CLI;
 
@@ -243,7 +139,8 @@ public class App {
     public static String arch;
     public static String processorName;
     public static String jdk;
-    // PII: OS username collection removed (#117 — use anonymous or a non-PII system id instead).
+    // PII: OS username collection removed (#117 — use anonymous or a non-PII system
+    // id instead).
     // public static String username;
 
     /**
@@ -257,25 +154,38 @@ public class App {
     // Delegate to UtilOs primitives. Safe to call before init() (e.g. early in
     // main() or in CLI mode where App.os is never populated).
 
-    /** Returns {@code true} when running on macOS. */
+    /**
+     * Returns {@code true} when running on macOS.
+     * 
+     * @return
+     */
     public static boolean isMacOs() {
         return UtilOs.isMacOs(osName());
     }
 
-    /** Returns {@code true} when running on Windows. */
+    /**
+     * Returns {@code true} when running on Windows.
+     * 
+     * @return
+     */
     public static boolean isWindows() {
         return UtilOs.isWindows(osName());
     }
 
-    /** Returns {@code true} when running on Linux. */
+    /**
+     * Returns {@code true} when running on Linux.
+     * 
+     * @return
+     */
     public static boolean isLinux() {
         return UtilOs.isLinux(osName());
     }
 
     /**
      * Resolves the OS name, falling back to the system property when {@link #os} is
-     * not yet set.
-     * Safe to call before {@link #init()} and in CLI mode.
+     * not yet set.Safe to call before {@link #init()} and in CLI mode.
+     * 
+     * @return
      */
     public static String osName() {
         return (os != null) ? os : System.getProperty("os.name", "");
@@ -290,7 +200,8 @@ public class App {
     public static boolean autoSave = false;
     public static boolean sharePortal = false;
     // True if sharePortal was enabled in the last session; used to offer a
-    // one-click re-enable prompt at startup rather than silently resuming network activity.
+    // one-click re-enable prompt at startup rather than silently resuming network
+    // activity.
     public static boolean sharePortalPreviouslyEnabled = false;
     public static boolean shareSmartPortal = false;
     // True once the user has answered the first-run portal-consent prompt.
@@ -300,7 +211,7 @@ public class App {
     public static boolean multiFile = true;
     public static boolean autoRemoveData = true;
     public static boolean autoReset = true;
-    public static boolean directEnable = false;
+    public static boolean directEnable = true;
     public static boolean writeSyncEnable = false;
 
     // benchmark io options
@@ -309,12 +220,14 @@ public class App {
     // benchmark configuration
     public static BenchmarkProfile activeProfile = BenchmarkProfile.QUICK_TEST;
     public static boolean profileModified = false;
-    public static BenchmarkType benchmarkType = BenchmarkType.WRITE;
+    public static BenchmarkType benchmarkType = BenchmarkType.READ_WRITE;
     public static BlockSequence blockSequence = BlockSequence.SEQUENTIAL;
     public static int numOfSamples = 200; // desired number of samples
     public static int numOfBlocks = 32; // desired number of blocks
     public static int blockSizeKb = 512; // size of a block in KBs
     public static int numOfThreads = 1; // number of threads
+    // render / display options
+    public static RenderFrequencyMode rmOption = RenderFrequencyMode.PER_SAMPLE;
     // active benchmark state
     public static State state = State.IDLE_STATE;
     public static int nextSampleNumber = 1; // number of the next sample
@@ -327,9 +240,12 @@ public class App {
     public static Future<Benchmark> cliResult = null;
     // completed benchmarks and operations
     public static Benchmark benchmark; // last or loaded benchmark
-    public static BenchmarkOperation operation; // last loaded operation
+
+    public static BenchmarkOperation operation; // last loaded operation - not sure this is actively used
+    // saved benchmarks for loading
     public static HashMap<String, Benchmark> benchmarks = new LinkedHashMap<>();
     public static HashMap<String, BenchmarkOperation> operations = new LinkedHashMap<>();
+    public static boolean archiveViewActive = false;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
@@ -337,13 +253,25 @@ public class App {
         return DATE_FORMATTER.format(LocalDateTime.now()) + ": " + message;
     }
 
+    private static void configureLogging() {
+        try (InputStream is = App.class.getResourceAsStream("/logging.properties")) {
+            if (is != null) LogManager.getLogManager().readConfiguration(is);
+        } catch (IOException e) {
+            // non-fatal — fall back to JVM defaults
+        }
+    }
+
     /**
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-
-        // no arguments = gui mode, otherwise cmd line interface
+        configureLogging();
         mode = (args.length == 0) ? Mode.GUI : Mode.CLI;
+
+        // Initialise file-based logging before anything else so that all
+        // java.util.logging output (including Hibernate, Derby, etc.) is
+        // captured to the rotating log file from the very first log call.
+        Logging.init(mode);
         int exitCode = 0;
 
         switch (mode) {
@@ -376,13 +304,11 @@ public class App {
     }
 
     /**
-     * Get the version from the build properties. Defaults to 0.0 if not found.
-     * 
-     * @return
+     * Load build.properties from the classpath, the working directory, or the
+     * jpackage app/ directory. Returns an empty Properties on failure.
      */
-    public static String getVersion() {
+    private static Properties loadBuildProperties() {
         Properties bp = new Properties();
-        String version = "0.0";
         InputStream input = App.class.getResourceAsStream("/META-INF/build.properties");
         if (input != null) {
             try (input) {
@@ -391,8 +317,8 @@ public class App {
                 Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
             }
         } else if (Files.exists(Paths.get(BUILD_TOKEN_FILENAME))) { // ide and zip release
-            try {
-                bp.load(new FileInputStream(BUILD_TOKEN_FILENAME));
+            try (var fis = new FileInputStream(BUILD_TOKEN_FILENAME)) {
+                bp.load(fis);
             } catch (IOException ex) {
                 System.err.println("If in NetBeans please do a "
                         + "Clean and Build Project from the Run Menu or press F11");
@@ -400,14 +326,23 @@ public class App {
             }
         } else {
             // GH-14 jpackage windows environment
-            try {
-                bp.load(new FileInputStream("app/" + BUILD_TOKEN_FILENAME));
+            try (var fis = new FileInputStream("app/" + BUILD_TOKEN_FILENAME)) {
+                bp.load(fis);
             } catch (IOException ex) {
                 Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        version = bp.getProperty("version", version);
-        return version;
+        return bp;
+    }
+
+    /**
+     * Get the raw {@code version} key from build.properties.
+     * Defaults to {@code "0.0"} if not found.
+     *
+     * @return version string
+     */
+    public static String getVersion() {
+        return BUILD_PROPERTIES.getProperty("version", "0.0");
     }
 
     /**
@@ -421,7 +356,7 @@ public class App {
         arch = System.getProperty("os.arch");
         processorName = Util.getProcessorName();
         jdk = Util.getJvmInfo();
-        
+
         checkPermission();
         if (!APP_CACHE_DIR.exists()) {
             APP_CACHE_DIR.mkdirs();
@@ -437,7 +372,8 @@ public class App {
         // saveConfig() call.
         String fallbackSystemId = (systemId != null && !systemId.isBlank()) ? systemId : "";
         systemId = UtilOs.getMachineSystemId(os, fallbackSystemId);
-        // systemId persisted by the shutdown-hook saveConfig() and other normal save paths.
+        // systemId persisted by the shutdown-hook saveConfig() and other normal save
+        // paths.
 
         // initialize data dir if necessary
         if (locationDir == null) {
@@ -460,6 +396,13 @@ public class App {
             // load current drive
             Gui.updateDiskInfo();
             Gui.mainFrame.setVisible(true);
+            // Bring the window to the front and request focus so the native
+            // macOS menu bar shows all menu items (File, Action, Options, Help).
+            // On macOS 26, jpackage-launched apps can open behind other windows
+            // and never receive a focus event, which leaves the menu bar showing
+            // only the application menu (JDiskMark) without the window's menus.
+            Gui.mainFrame.toFront();
+            Gui.mainFrame.requestFocus();
             // save configuration on exit...
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 @Override
@@ -485,6 +428,14 @@ public class App {
                     }
                 });
             }
+
+            // --- Event: app started (session header) ---
+            // Logged after the window is shown so it appears as the first visible entry.
+            java.nio.file.Path logDir = Logging.getLogDir();
+            msg(String.format(
+                    "JDiskMark %s started — OS: %s | JDK: %s | CPU: %s | logs: %s",
+                    VERSION, os, jdk, processorName,
+                    logDir != null ? logDir.toAbsolutePath() : "(console only)"));
         }
     }
 
@@ -534,15 +485,18 @@ public class App {
             // Lock is held by another process — show a concise dialog, then bail.
             try {
                 instanceLockChannel.close();
-            } catch (java.io.IOException ignored) {}
+            } catch (java.io.IOException ignored) {
+            }
             instanceLockChannel = null;
 
             // Show the dialog on the EDT (we have no window yet, so null parent is fine).
             javax.swing.SwingUtilities.invokeLater(() -> {
                 javax.swing.JOptionPane.showMessageDialog(
                         null,
-                        "JDiskMark is already running.\n"
-                                + "Only one instance can be open at a time.",
+                        """
+                                JDiskMark is already running.
+                                Only one instance can be open at a time.
+                                """,
                         "JDiskMark — Already Running",
                         javax.swing.JOptionPane.WARNING_MESSAGE);
                 System.exit(0);
@@ -582,7 +536,7 @@ public class App {
             writeSyncEnable = profile.isWriteSyncEnable();
             sectorAlignment = profile.getSectorAlignment();
             multiFile = profile.isMultiFile();
-//            Smart.smartEnable = profile.getEnableSmart();
+            // Smart.smartEnable = profile.getEnableSmart();
         } finally {
             saveConfig();
         }
@@ -653,6 +607,9 @@ public class App {
         value = p.getProperty("smartEnable", String.valueOf(Smart.smartEnable));
         Smart.smartEnable = Boolean.parseBoolean(value);
 
+        value = p.getProperty("smartEnable", String.valueOf(Smart.smartEnable));
+        Smart.smartEnable = Boolean.parseBoolean(value);
+
         value = p.getProperty("autoRemoveData", String.valueOf(autoRemoveData));
         autoRemoveData = Boolean.parseBoolean(value);
 
@@ -707,8 +664,10 @@ public class App {
         GcDetector.gcHintsEnabled = Boolean.parseBoolean(value);
 
         value = p.getProperty("theme", Gui.theme.name());
+        // Backward compat: "PATRIOT" was renamed to "OLD_GLORY" in v0.8.0.
+        if ("PATRIOT".equals(value)) value = "OLD_GLORY";
         try {
-            Gui.theme = Gui.Theme.valueOf(value);
+            Gui.theme = Theme.valueOf(value);
         } catch (IllegalArgumentException e) {
             Logger.getLogger(App.class.getName()).log(
                     Level.WARNING,
@@ -717,10 +676,38 @@ public class App {
         }
 
         value = p.getProperty("palette", String.valueOf(Gui.palette));
-        Gui.palette = Gui.Palette.valueOf(value);
+        // Backward compat: palette constants renamed in v0.8.0.
+        value = switch (value) {
+            case "BLUE_GREEN" -> "LAGOON";
+            case "BARD_COOL"  -> "MARINE";
+            case "BARD_WARM"  -> "EMBER";
+            case "BETA"       -> "BETA_DARK";
+            default -> value;
+        };
+        try {
+            Gui.palette = Palette.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid palette value in properties: \"{0}\", using default: {1}",
+                    new Object[] { value, Gui.palette.name() });
+        }
+
+        value = p.getProperty("renderMode", rmOption.name());
+        try {
+            rmOption = RenderFrequencyMode.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid renderMode value in properties: \"{0}\", using default: {1}",
+                    new Object[] { value, rmOption.name() });
+        }
 
         value = p.getProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
         Gui.showMaxMin = Boolean.parseBoolean(value);
+
+        value = p.getProperty("showBadges", String.valueOf(Gui.showBadges));
+        Gui.showBadges = Boolean.parseBoolean(value);
 
         value = p.getProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
         Gui.showDriveAccess = Boolean.parseBoolean(value);
@@ -768,7 +755,9 @@ public class App {
         // display properties
         p.setProperty("theme", Gui.theme.name());
         p.setProperty("palette", Gui.palette.name());
+        p.setProperty("renderMode", rmOption.name());
         p.setProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
+        p.setProperty("showBadges", String.valueOf(Gui.showBadges));
         p.setProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
         p.setProperty("showSingleOp", String.valueOf(Gui.showSingleOp));
 
@@ -783,7 +772,7 @@ public class App {
 
     /**
      * Creates a point-in-time snapshot of the current settings.
-     * 
+     *
      * @return the configuration for benchmarking
      */
     public static BenchmarkConfig getConfig() {
@@ -824,7 +813,8 @@ public class App {
         sb.append("writeTest: ").append(hasWriteOperation()).append('\n');
         sb.append("locationDir: ").append(locationDir).append('\n');
         sb.append("multiFile: ").append(multiFile).append('\n');
-        
+
+
         sb.append("autoRemoveData: ").append(autoRemoveData).append('\n');
         sb.append("autoReset: ").append(autoReset).append('\n');
         sb.append("blockSequence: ").append(blockSequence).append('\n');
@@ -838,6 +828,7 @@ public class App {
         sb.append("directEnable: ").append(directEnable).append('\n');
         sb.append("palette: ").append(Gui.palette).append('\n');
         sb.append("showMaxMin: ").append(Gui.showMaxMin).append('\n');
+        sb.append("showBadges: ").append(Gui.showBadges).append('\n');
         return sb.toString();
     }
 
@@ -849,7 +840,8 @@ public class App {
         // populate benchmark and operation map w runs from db
         benchmarks.clear();
         operations.clear();
-        Benchmark.findAll().stream().forEach((Benchmark run) -> {
+        List<Benchmark> results = archiveViewActive ? Benchmark.findArchived() : Benchmark.findActive();
+        results.stream().forEach((Benchmark run) -> {
             benchmarks.put(run.getStartTimeString(), run);
             for (BenchmarkOperation o : run.getOperations()) {
                 operations.put(o.getStartTimeString(), o);
@@ -878,6 +870,22 @@ public class App {
         loadBenchmarks();
     }
 
+    public static void archiveBenchmarks(List<UUID> benchmarkIds) {
+        if (benchmarkIds.isEmpty())
+            return;
+        Benchmark.archive(benchmarkIds);
+        benchmarks.clear();
+        loadBenchmarks();
+    }
+
+    public static void unarchiveBenchmarks(List<UUID> benchmarkIds) {
+        if (benchmarkIds.isEmpty())
+            return;
+        Benchmark.unarchive(benchmarkIds);
+        benchmarks.clear();
+        loadBenchmarks();
+    }
+
     public static void err(String message) {
         String formattedMsg = formatWithTimestamp(message);
         switch (mode) {
@@ -897,8 +905,6 @@ public class App {
             case GUI -> {
                 if (Gui.mainFrame != null) {
                     Gui.mainFrame.msg(formattedMsg);
-                } else {
-                    System.out.println(formattedMsg);
                 }
             }
             case CLI -> System.out.println(formattedMsg);
@@ -944,7 +950,8 @@ public class App {
         // 4. create data dir reference
         dataDir = new File(locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
 
-        // 5. remove existing test data if present (recursive — File.delete() only removes empty dirs)
+        // 5. remove existing test data if present (recursive — File.delete() only
+        // removes empty dirs)
         if (autoRemoveData && dataDir.exists()) {
             boolean removed = Util.deleteDirectory(dataDir);
             if (verbose) {
@@ -1097,7 +1104,7 @@ public class App {
 
     /**
      * Get a string summary of current drive capacity info
-     * 
+     *
      * @return String summarizing the drive information.
      */
     static public String getDriveInfo() {
@@ -1139,11 +1146,13 @@ public class App {
 
     /**
      * This sets the location directory and configures the data directory within it.
-     * 
+     *
      * @param directory the dir to store
      */
     static public void setLocationDir(File directory) {
         locationDir = directory;
         dataDir = new File(locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
+        // --- Event: drive location changed ---
+        msg("Drive location set to: " + locationDir.getAbsolutePath());
     }
 }

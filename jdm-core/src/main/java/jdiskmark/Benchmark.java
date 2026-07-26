@@ -12,6 +12,8 @@ import jakarta.persistence.Convert;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -38,7 +40,11 @@ import java.util.UUID;
 @Table(name="Benchmark")
 @NamedQueries({
 @NamedQuery(name="Benchmark.findAll",
-    query="SELECT b FROM Benchmark b")    
+    query="SELECT b FROM Benchmark b"),
+@NamedQuery(name="Benchmark.findActive",
+    query="SELECT b FROM Benchmark b WHERE b.archived = false"),
+@NamedQuery(name="Benchmark.findArchived",
+    query="SELECT b FROM Benchmark b WHERE b.archived = true")
 })
 public class Benchmark implements Serializable {
     
@@ -158,6 +164,11 @@ public class Benchmark implements Serializable {
     public BenchmarkConfig getConfig() { return config; }
     
     // timestamps
+    @Column
+    private boolean archived = false;
+    public boolean isArchived() { return archived; }
+    public void setArchived(boolean archived) { this.archived = archived; }
+
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column(name = "startTime", columnDefinition = "TIMESTAMP")
     LocalDateTime startTime;
@@ -168,7 +179,20 @@ public class Benchmark implements Serializable {
     @OneToMany(mappedBy = "benchmark", cascade = CascadeType.ALL, orphanRemoval = true)
     List<BenchmarkOperation> operations = new ArrayList<>();
     public List<BenchmarkOperation> getOperations() { return operations; }
-    
+
+    // render mode recorded at benchmark start time (persisted as string for readability)
+    @Enumerated(EnumType.STRING)
+    @Column
+    private RenderFrequencyMode renderMode = RenderFrequencyMode.PER_SAMPLE;
+
+    public RenderFrequencyMode getRenderMode() {
+        return renderMode != null ? renderMode : RenderFrequencyMode.PER_SAMPLE;
+    }
+
+    public void setRenderMode(RenderFrequencyMode renderMode) {
+        this.renderMode = renderMode;
+    }
+
     // get the first operation of that type
     public BenchmarkOperation getOperation(IOMode mode) {
         for (BenchmarkOperation operation : operations) {
@@ -289,6 +313,40 @@ public class Benchmark implements Serializable {
         return deletedBenchmarksCount;
     }
     
+    @JsonIgnore
+    static void archive(List<UUID> benchmarkIds) {
+        if (benchmarkIds.isEmpty()) return;
+        EntityManager em = EM.getEntityManager();
+        em.getTransaction().begin();
+        em.createQuery("UPDATE Benchmark b SET b.archived = true WHERE b.id IN :ids")
+                .setParameter("ids", benchmarkIds)
+                .executeUpdate();
+        em.getTransaction().commit();
+    }
+
+    @JsonIgnore
+    static void unarchive(List<UUID> benchmarkIds) {
+        if (benchmarkIds.isEmpty()) return;
+        EntityManager em = EM.getEntityManager();
+        em.getTransaction().begin();
+        em.createQuery("UPDATE Benchmark b SET b.archived = false WHERE b.id IN :ids")
+                .setParameter("ids", benchmarkIds)
+                .executeUpdate();
+        em.getTransaction().commit();
+    }
+
+    @JsonIgnore
+    static List<Benchmark> findActive() {
+        EntityManager em = EM.getEntityManager();
+        return em.createNamedQuery("Benchmark.findActive", Benchmark.class).getResultList();
+    }
+
+    @JsonIgnore
+    static List<Benchmark> findArchived() {
+        EntityManager em = EM.getEntityManager();
+        return em.createNamedQuery("Benchmark.findArchived", Benchmark.class).getResultList();
+    }
+
     @JsonIgnore
     static int delete(List<UUID> benchmarkIds) {
         if (benchmarkIds.isEmpty()) {

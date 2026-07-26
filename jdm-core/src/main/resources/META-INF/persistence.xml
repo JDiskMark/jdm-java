@@ -1,15 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<persistence version="3.1" xmlns="https://jakarta.ee/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd">
+<persistence version="3.2" xmlns="https://jakarta.ee/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_2.xsd">
   <persistence-unit name="JDiskMarkPU" transaction-type="RESOURCE_LOCAL">
 
     <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
-    <exclude-unlisted-classes>false</exclude-unlisted-classes>
+    <class>jdiskmark.Benchmark</class>
+    <class>jdiskmark.BenchmarkOperation</class>
+    <class>jdiskmark.SmartSnapshot</class>
+    <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
     <properties>
       <property name="jakarta.persistence.jdbc.url" value="jdbc:derby:derbyDB;create=true"/>
       <property name="jakarta.persistence.jdbc.driver" value="org.apache.derby.jdbc.EmbeddedDriver"/>
 
       <property name="hibernate.hbm2ddl.auto" value="update"/>
+      <property name="hibernate.jdbc.fetch_size" value="25"/>
+
+      <!-- Connection pool: use Hibernate's built-in pool (no extra dependencies).
+           hibernate-agroal is excluded because it requires java.security.jgss
+           (Kerberos/GSSAPI) which jpackage strips from the bundled JRE on macOS. -->
+      <property name="hibernate.connection.pool_size" value="5"/>
 
       <property name="hibernate.show_sql" value="false"/>
     </properties>

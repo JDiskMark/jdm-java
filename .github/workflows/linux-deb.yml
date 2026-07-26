@@ -10,6 +10,11 @@ on:
   pull_request:
     branches: [ "**" ]
   workflow_dispatch:
+    inputs:
+      disable_ci_label:
+        description: 'Skip CI pre-release label and pass POM version through unchanged'
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -31,6 +36,12 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Compute CI version
+        id: ver
+        uses: ./.github/actions/ci-version
+        with:
+          disable_ci_label: ${{ inputs.disable_ci_label || false }}
+
       - name: Fetch bundled smartctl from jdm-deps
         # Downloads the pre-packaged smartctl 7.5 binary from the public
         # JDiskMark/jdm-deps release asset.  The staging directory is picked
@@ -49,7 +60,11 @@ jobs:
       - name: Build Fat Debian Package
         # -pl targets jdm-core and jdm-deb. -am also builds upstream dependencies.
         # Explicitly activating the linux-deb profile to ensure jpackage runs.
-        run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am -Plinux-deb --no-transfer-progress
+        run: |
+          mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am -Plinux-deb \
+            -Drevision=${{ steps.ver.outputs.install_version }} \
+            -Ddisplay.version=${{ steps.ver.outputs.display_version }} \
+            --no-transfer-progress
 
       - name: Upload Fat DEB Artifact
         uses: actions/upload-artifact@v7
@@ -67,6 +82,8 @@ jobs:
         run: |
           sudo dpkg -i jdm-dist/jdm-deb/target/*.deb || true
           /opt/jdiskmark/bin/jdiskmark --help
+          # Verify the PATH symlink was created so `jdiskmark` works from the terminal
+          jdiskmark --help
           # Verify bundled smartctl was installed correctly
           test -x /opt/jdiskmark/smartctl/smartctl
           /opt/jdiskmark/smartctl/smartctl --version
@@ -90,6 +107,7 @@ jobs:
         run: |
           sudo dpkg -i *.deb || true
           /opt/jdiskmark/bin/jdiskmark --help
+          jdiskmark --help
 
   # --- LINUX DEBIAN SLIM BUILD (jdeb plugin, system JRE dependency) ---
   # Builds once on ubuntu-22.04; slim package is just a JAR + wrapper script,
@@ -107,10 +125,20 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Compute CI version
+        id: ver
+        uses: ./.github/actions/ci-version
+        with:
+          disable_ci_label: ${{ inputs.disable_ci_label || false }}
+
       - name: Build Slim Debian Package
         # Builds jdm-core (shade fat jar) then assembles the slim .deb via jdeb.
         # The slim package depends on the system JRE — no bundled runtime.
-        run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb-slim -am -Plinux-deb-slim --no-transfer-progress
+        run: |
+          mvn clean install -pl jdm-core,jdm-dist/jdm-deb-slim -am -Plinux-deb-slim \
+            -Drevision=${{ steps.ver.outputs.install_version }} \
+            -Ddisplay.version=${{ steps.ver.outputs.display_version }} \
+            --no-transfer-progress
 
       - name: Upload Slim DEB Artifact
         uses: actions/upload-artifact@v7

@@ -273,4 +273,46 @@ public class Util {
         }
         return "processor name unknown";
     }
+
+    /**
+     * Returns the filesystem type for the volume containing {@code path}
+     * (e.g. "NTFS", "ext4"). Windows and Linux supported.
+     */
+    public static String getFilesystem(Path path) {
+        if (App.isWindows()) {
+            String driveLetter = UtilOs.getDriveLetterWindows(path);
+            if (driveLetter != null) return UtilOs.getFilesystemWindows(driveLetter);
+        } else if (App.isLinux()) {
+            return UtilOs.getFilesystemLinux(path);
+        }
+        return null;
+    }
+
+    /**
+     * Returns the drive interface / bus type for the volume containing {@code path}
+     * (e.g. "NVMe", "SATA", "USB"). Windows and Linux supported.
+     */
+    public static String getBusType(Path path) {
+        if (App.isWindows()) {
+            String driveLetter = UtilOs.getDriveLetterWindows(path);
+            if (driveLetter != null) return UtilOs.getBusTypeWindows(driveLetter);
+        } else if (App.isLinux()) {
+            return UtilOs.getBusTypeLinux(path);
+        }
+        return null;
+    }
+
+    /**
+     * Returns the sector size for the volume containing {@code path}
+     * (e.g. "512 B", "512 B / 4096 B"). Windows and Linux supported.
+     */
+    public static String getSectorSize(Path path) {
+        if (App.isWindows()) {
+            String driveLetter = UtilOs.getDriveLetterWindows(path);
+            if (driveLetter != null) return UtilOs.getSectorSizeWindows(driveLetter);
+        } else if (App.isLinux()) {
+            return UtilOs.getSectorSizeLinux(path);
+        }
+        return null;
+    }
 }

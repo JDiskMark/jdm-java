@@ -6,8 +6,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.URI;
 import java.net.UnknownHostException;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -52,19 +52,14 @@ public class Portal {
         String host = uploadUri.getHost();
         int port = uploadUri.getPort() != -1 ? uploadUri.getPort() : 80;
 
-        // Pre-upload checks
+        // Pre-upload check: attempt a short socket connect to verify the host is reachable.
+        // This avoids the macOS Local Network permission dialog that InetAddress.getLocalHost()
+        // would trigger unnecessarily — if there is no network the socket attempt will fail here.
         try {
-            if (InetAddress.getLocalHost() == null) {
-                App.err("No local network connection detected.");
-                return;
-            }
             if (!isHostReachable(host, port)) {
                 App.err("Target host " + host + " is unreachable.");
                 return;
             }
-        } catch (UnknownHostException e) {
-            App.err("Connectivity check failed: " + e.getMessage());
-            return;
         } catch (SecurityException e) {
             // If a local firewall or security manager blocks the socket attempt
             App.err("Security Error: Connection blocked by local system - " + e.getMessage());

@@ -158,7 +158,7 @@ public class BenchmarkOperation implements Serializable {
     // display friendly methods
     @JsonIgnore
     public String getBlocksDisplay() {
-        return numBlocks + " (" + blockSize + ")";
+        return numBlocks + " (" + (blockSize / 1024) + "K)";
     }
     @JsonIgnore
     public String getStartTimeString() {
