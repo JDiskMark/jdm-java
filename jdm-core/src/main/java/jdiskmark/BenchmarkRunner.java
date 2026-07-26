@@ -163,11 +163,12 @@ public class BenchmarkRunner {
             // Update the SMART tab if running in GUI mode, without re-triggering SMART retrieval.
             if (Gui.mainFrame != null && Gui.smartPanel != null) {
                 if (smart != null) {
+                    final Smart finalSmart = smart;
                     String devName = (smart.getDevice() != null) ? smart.getDevice().getName() : null;
                     Gui.lastSmartData = smart;
                     Gui.lastSmartDeviceName = devName;
                     javax.swing.SwingUtilities.invokeLater(() -> {
-                        Gui.smartPanel.populate(smart);
+                        Gui.smartPanel.populate(finalSmart);
                         Gui.smartPanel.onDataLoaded(devName != null ? devName : "unknown");
                     });
                 } else {
