@@ -203,6 +203,7 @@ public class App {
     // one-click re-enable prompt at startup rather than silently resuming network
     // activity.
     public static boolean sharePortalPreviouslyEnabled = false;
+    public static boolean shareSmartPortal = false;
     // True once the user has answered the first-run portal-consent prompt.
     // Persisted so the prompt is shown exactly once (issue #117).
     public static boolean portalConsentAsked = false;
@@ -569,6 +570,9 @@ public class App {
         sharePortalPreviouslyEnabled = Boolean.parseBoolean(value);
         sharePortal = false; // always start disabled; prompt offered after window visible
 
+        value = p.getProperty("shareSmartPortal", "false");
+        shareSmartPortal = Boolean.parseBoolean(value);
+
         // #117 one-time first-run consent flag
         value = p.getProperty("portalConsentAsked", "false");
         portalConsentAsked = Boolean.parseBoolean(value);
@@ -599,7 +603,7 @@ public class App {
 
         value = p.getProperty("multiFile", String.valueOf(multiFile));
         multiFile = Boolean.parseBoolean(value);
-
+        
         value = p.getProperty("smartEnable", String.valueOf(Smart.smartEnable));
         Smart.smartEnable = Boolean.parseBoolean(value);
 
@@ -716,6 +720,7 @@ public class App {
 
         // configure properties
         p.setProperty("sharePortal", String.valueOf(sharePortal));
+        p.setProperty("shareSmartPortal", String.valueOf(shareSmartPortal));
         p.setProperty("portalConsentAsked", String.valueOf(portalConsentAsked)); // #117
         if (systemId != null && !systemId.isBlank()) {
             p.setProperty("systemId", systemId);
@@ -806,6 +811,7 @@ public class App {
         sb.append("locationDir: ").append(locationDir).append('\n');
         sb.append("multiFile: ").append(multiFile).append('\n');
 
+
         sb.append("autoRemoveData: ").append(autoRemoveData).append('\n');
         sb.append("autoReset: ").append(autoReset).append('\n');
         sb.append("blockSequence: ").append(blockSequence).append('\n');
@@ -895,7 +901,7 @@ public class App {
         switch (mode) {
             case GUI -> {
                 if (Gui.mainFrame != null) {
-                    Gui.mainFrame.msg(formattedMsg);
+                    SwingUtilities.invokeLater(() -> Gui.mainFrame.msg(formattedMsg));
                 }
             }
             case CLI -> System.out.println(formattedMsg);

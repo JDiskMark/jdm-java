@@ -30,7 +30,9 @@ public class SharingPanel extends JPanel {
 
     // ── Controls ──────────────────────────────────────────────────────────────
     private final JCheckBox  enableCheckBox;
+    private final JCheckBox  enableSmartCheckBox;
     private final JLabel     statusLabel;
+    private final JLabel     smartStatusLabel;
 
     private final JRadioButton localRb;
     private final JRadioButton testRb;
@@ -57,9 +59,16 @@ public class SharingPanel extends JPanel {
         enableCheckBox = new JCheckBox(
                 "<html><b>Share benchmark results with<br>the JDiskMark community portal</b></html>");
 
+        enableSmartCheckBox = new JCheckBox(
+                "<html><b>Share SMART snapshots with<br>the JDiskMark community portal</b></html>");
+
         statusLabel = new JLabel("○ Disabled");
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 11f));
         statusLabel.setForeground(Color.GRAY);
+
+        smartStatusLabel = new JLabel("○ Disabled");
+        smartStatusLabel.setFont(smartStatusLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        smartStatusLabel.setForeground(Color.GRAY);
 
         GridBagConstraints lc = new GridBagConstraints();
         lc.gridx = 0; lc.fill = GridBagConstraints.HORIZONTAL; lc.weightx = 1;
@@ -68,7 +77,11 @@ public class SharingPanel extends JPanel {
         lc.gridy = 0; leftPanel.add(enableCheckBox, lc);
         lc.gridy = 1; lc.insets = new Insets(0, 4, 0, 0);
         leftPanel.add(statusLabel, lc);
-        lc.gridy = 2; lc.weighty = 1; lc.fill = GridBagConstraints.BOTH;
+        lc.gridy = 2; lc.insets = new Insets(8, 0, 4, 0);
+        leftPanel.add(enableSmartCheckBox, lc);
+        lc.gridy = 3; lc.insets = new Insets(0, 4, 0, 0);
+        leftPanel.add(smartStatusLabel, lc);
+        lc.gridy = 4; lc.weighty = 1; lc.fill = GridBagConstraints.BOTH;
         leftPanel.add(Box.createVerticalGlue(), lc);
 
         // ── RIGHT: developer controls ─────────────────────────────────────────
@@ -135,6 +148,7 @@ public class SharingPanel extends JPanel {
 
         // ── Listeners ──────────────────────────────────────────────────────────
         enableCheckBox.addActionListener(e -> onToggleSharing());
+        enableSmartCheckBox.addActionListener(e -> onToggleSmartSharing());
         prodRb .addActionListener(e -> onEndpointChanged(Portal.PRODUCTION_UPLOAD_LOCATOR));
         testRb .addActionListener(e -> onEndpointChanged(Portal.TEST_UPLOAD_LOCATOR));
         localRb.addActionListener(e -> onEndpointChanged(Portal.LOCAL_UPLOAD_LOCATOR));
@@ -150,6 +164,13 @@ public class SharingPanel extends JPanel {
         App.sharePortal = enableCheckBox.isSelected();
         App.saveConfig();
         App.msg(App.sharePortal ? "Portal upload enabled." : "Portal upload disabled.");
+        refresh();
+    }
+
+    private void onToggleSmartSharing() {
+        App.shareSmartPortal = enableSmartCheckBox.isSelected();
+        App.saveConfig();
+        App.msg(App.shareSmartPortal ? "SMART portal upload enabled." : "SMART portal upload disabled.");
         refresh();
     }
 
@@ -170,6 +191,7 @@ public class SharingPanel extends JPanel {
     /** Synchronises all controls to the current {@link App} / {@link Portal} state. */
     public void refresh() {
         enableCheckBox.setSelected(App.sharePortal);
+        enableSmartCheckBox.setSelected(App.shareSmartPortal);
 
         if (App.sharePortal) {
             statusLabel.setText("● Enabled");
@@ -177,6 +199,14 @@ public class SharingPanel extends JPanel {
         } else {
             statusLabel.setText("○ Disabled");
             statusLabel.setForeground(Color.GRAY);
+        }
+
+        if (App.shareSmartPortal) {
+            smartStatusLabel.setText("● Enabled");
+            smartStatusLabel.setForeground(new Color(0, 150, 60));
+        } else {
+            smartStatusLabel.setText("○ Disabled");
+            smartStatusLabel.setForeground(Color.GRAY);
         }
 
         // Endpoint
@@ -199,11 +229,22 @@ public class SharingPanel extends JPanel {
     }
 
     /**
-     * Updates the titled border of the developer panel to reflect the currently
-     * constructed upload URL.  Called whenever endpoint or protocol changes.
+     * Updates the titled border of the developer panel to reflect the active
+     * endpoint(s) based on which sharing options are currently enabled.
      */
     private void refreshBorderTitle() {
-        String title = "Endpoint \u2014 " + Portal.getUploadUrl();
+        boolean benchmark = enableCheckBox.isSelected();
+        boolean smart = enableSmartCheckBox.isSelected();
+        String title;
+        if (benchmark && smart) {
+            title = "Endpoint \u2014 " + Portal.getUploadUrl() + "  |  " + Portal.getSmartUploadUrl();
+        } else if (benchmark) {
+            title = "Endpoint \u2014 " + Portal.getUploadUrl();
+        } else if (smart) {
+            title = "Endpoint \u2014 " + Portal.getSmartUploadUrl();
+        } else {
+            title = "Endpoint \u2014 No endpoint";
+        }
         devPanel.setBorder(BorderFactory.createTitledBorder(title));
         devPanel.repaint();
     }
