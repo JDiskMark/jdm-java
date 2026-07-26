@@ -11,9 +11,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - [#67](https://github.com/JDiskMark/jdm-java/issues/67) test portal uploads (no auth)
 - [#70](https://github.com/JDiskMark/jdm-java/issues/70) app icon
 - [#117](https://github.com/JDiskMark/jdm-java/issues/117) user portal upload acknowledgement
-- archive support
-- drive selection w improved drive info panel
-- Patriot color palette
+- [#11](https://github.com/JDiskMark/jdm-java/issues/11) initial SMART support (ubuntu/win/macos)
+- Archiving benchmarks
+- Improved drive selection
+- Sakura, Harvest and Old Glory Color Themes
 
 ### Changed
 - [#33](https://github.com/JDiskMark/jdm-java/issues/33) Maven build

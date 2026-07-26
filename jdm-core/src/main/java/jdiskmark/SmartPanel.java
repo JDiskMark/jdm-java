@@ -138,7 +138,7 @@ public class SmartPanel extends JPanel {
         // Inner content panel — implements Scrollable so the scroll pane uses
         // the panel's natural preferred height instead of stretching to fill the viewport.
         ContentPanel contentPanel = new ContentPanel();
-        contentPanel.setLayout(new MigLayout("insets 12, fillx", "[grow]", "[]8[]8[]8[]8[]"));
+        contentPanel.setLayout(new MigLayout("insets 12, fillx, aligny top, hidemode 3", "[grow]", "[]8[]8[]8[]8[]8[]"));
 
         buildLayout(contentPanel);
 

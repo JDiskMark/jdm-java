@@ -223,7 +223,7 @@ public class Smart {
             if (App.isMacOs()) {
                 LOGGER.info("Starting privileged bash shell via osascript/sudo...");
 
-                // Prompt for password using native macOS authorization dialog
+                // macOS: prompt for password using native macOS authorization dialog
                 ProcessBuilder dialogPb = new ProcessBuilder("osascript", "-e",
                         "return text returned of (display dialog "
                         + "\"JDiskMark needs administrator privileges to read SMART data.\" "
@@ -259,6 +259,7 @@ public class Smart {
                 shellWriter.newLine();
                 shellWriter.flush();
             } else {
+                // Linux: use pkexec for privilege escalation (polkit)
                 LOGGER.info("Starting privileged bash shell via pkexec...");
                 ProcessBuilder pb = new ProcessBuilder("pkexec", "bash");
                 pb.redirectErrorStream(false);

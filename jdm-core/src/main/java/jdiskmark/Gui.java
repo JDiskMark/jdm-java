@@ -1151,11 +1151,11 @@ public final class Gui {
     private static final Logger SMART_LOG = Logger.getLogger(Gui.class.getName());
 
     static public void updateDiskInfo() {
-        mainFrame.setLocation(App.locationDir.getAbsolutePath());
         chart.getTitle().setText(App.getDriveInfo());
         if (drivePanel != null) {
             drivePanel.refresh();
         }
+
         // SMART data is fetched lazily via runSmart(), which is called
         // by the "Run SMART" button in SmartPanel and optionally after each
         // benchmark when "Run SMART with Benchmark" is enabled.

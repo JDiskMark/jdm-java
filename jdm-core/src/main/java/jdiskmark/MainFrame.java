@@ -1,14 +1,10 @@
 package jdiskmark;
 
-import static jdiskmark.App.SLASH_DATADIRNAME;
+
 import java.awt.BorderLayout;
-import java.awt.Desktop;
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
@@ -56,10 +52,7 @@ public final class MainFrame extends javax.swing.JFrame {
     public MainFrame() {
         initComponents();
         
-        // The Drive Location tab is superseded by the Drives tab in the main
-        // navigation pane — remove it from the bottom tabbed pane at runtime.
-        // The NetBeans-generated field (locationPanel) is kept intact in the form.
-        tabbedPane.remove(locationPanel);
+
 
         // Replace the NetBeans-generated colorPaletteMenu with our data-driven
         // GraphPaletteMenu — inserted at the same menu position.
@@ -134,7 +127,7 @@ public final class MainFrame extends javax.swing.JFrame {
         
         // Build the left-side main navigation tab pane on all platforms.
         // The Benchmark tab contains the control panel (left) + chart (right).
-        // The bottom tabbedPane (Benchmark Operations / Events / Drive Location) stays below.
+        // The bottom tabbedPane (Benchmarks / Events / All Drives / ...) stays below.
         javax.swing.JTabbedPane mainTabPane = new javax.swing.JTabbedPane(javax.swing.JTabbedPane.LEFT);
         mainTabPane.putClientProperty("JTabbedPane.tabRotation", "auto");
 
@@ -156,7 +149,7 @@ public final class MainFrame extends javax.swing.JFrame {
         if (App.isLinux() || App.isMacOs() || App.isWindows()) {
             mainTabPane.addTab("SMART", Gui.smartPanel);
             Gui.smartReportsPanel = new SmartReportsPanel();
-            // SMART Reports lives in the bottom tabbedPane alongside Benchmark Operations + Events
+            // SMART Reports lives in the bottom tabbedPane alongside Benchmarks + Events + ...
             tabbedPane.addTab("SMART Reports", Gui.smartReportsPanel);
         }
         // #117 Sharing tab — added programmatically so the NetBeans form is untouched.
@@ -248,7 +241,7 @@ public final class MainFrame extends javax.swing.JFrame {
             for (int i = 0; i < tabbedPane.getTabCount(); i++) {
                 String t = tabbedPane.getTitleAt(i);
                 if (t.equals("Benchmarks") || t.equals("Archived Benchmarks")) {
-                    tabbedPane.setTitleAt(i, App.archiveViewActive ? "Archived Benchmarks" : "Benchmark Operations");
+                    tabbedPane.setTitleAt(i, App.archiveViewActive ? "Archived Benchmarks" : "Benchmarks");
                     break;
                 }
             }
@@ -281,9 +274,6 @@ public final class MainFrame extends javax.swing.JFrame {
      */
     public void loadPropertiesConfig() {
         syncFromModel();
-        if (App.locationDir != null) { // set the location dir if not null
-            setLocation(App.locationDir.getAbsolutePath());
-        }
         
         // Sharing tab reflects the current portal state.
         if (sharingPanel != null) {
@@ -331,6 +321,7 @@ public final class MainFrame extends javax.swing.JFrame {
             case ALIGN_16K -> align16KRbMenuItem.setSelected(true);
             case ALIGN_64K -> align64KRbMenuItem.setSelected(true);
         }
+
         smartCbMenuItem.setSelected(Smart.smartEnable);
         exportMenu.setEnabled(App.benchmark != null);
         Gui.refreshChartBadges();
@@ -355,12 +346,6 @@ public final class MainFrame extends javax.swing.JFrame {
         runPanel = new jdiskmark.BenchmarkPanel();
         eventScrollPane = new javax.swing.JScrollPane();
         msgTextArea = new javax.swing.JTextArea();
-        locationPanel = new javax.swing.JPanel();
-        chooseButton = new javax.swing.JButton();
-        locationText = new javax.swing.JTextField();
-        openLocButton = new javax.swing.JButton();
-        dataDirLabel = new javax.swing.JLabel();
-        jLabel22 = new javax.swing.JLabel();
         cResultMountPanel = new javax.swing.JPanel();
         progressPanel = new javax.swing.JPanel();
         totalTxProgBar = new javax.swing.JProgressBar();
@@ -425,61 +410,7 @@ public final class MainFrame extends javax.swing.JFrame {
 
         tabbedPane.addTab("Events", eventScrollPane);
 
-        chooseButton.setText("Browse");
-        chooseButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                chooseButtonActionPerformed(evt);
-            }
-        });
 
-        locationText.setEditable(false);
-
-        openLocButton.setText("Open");
-        openLocButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                openLocButtonActionPerformed(evt);
-            }
-        });
-
-        dataDirLabel.setText(SLASH_DATADIRNAME);
-
-        jLabel22.setText("Specify drive location where data files will be generated and read from to mesaure performance.");
-
-        javax.swing.GroupLayout locationPanelLayout = new javax.swing.GroupLayout(locationPanel);
-        locationPanel.setLayout(locationPanelLayout);
-        locationPanelLayout.setHorizontalGroup(
-            locationPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(locationPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(locationPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(locationPanelLayout.createSequentialGroup()
-                        .addComponent(jLabel22, javax.swing.GroupLayout.PREFERRED_SIZE, 561, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(locationPanelLayout.createSequentialGroup()
-                        .addComponent(locationText, javax.swing.GroupLayout.PREFERRED_SIZE, 480, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(dataDirLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 191, Short.MAX_VALUE)
-                        .addGap(18, 18, 18)
-                        .addComponent(chooseButton, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(openLocButton, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap())
-        );
-        locationPanelLayout.setVerticalGroup(
-            locationPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(locationPanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(locationPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(locationText, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(chooseButton)
-                    .addComponent(openLocButton)
-                    .addComponent(dataDirLabel))
-                .addGap(18, 18, 18)
-                .addComponent(jLabel22)
-                .addContainerGap(95, Short.MAX_VALUE))
-        );
-
-        tabbedPane.addTab("Drive Location", locationPanel);
 
         cResultMountPanel.setBorder(javax.swing.BorderFactory.createEtchedBorder());
         cResultMountPanel.setMaximumSize(new java.awt.Dimension(503, 200));
@@ -872,9 +803,7 @@ public final class MainFrame extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void chooseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chooseButtonActionPerformed
-        Gui.browseLocation();
-    }//GEN-LAST:event_chooseButtonActionPerformed
+
 
     private void exitMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exitMenuItemActionPerformed
         System.exit(0);
@@ -884,13 +813,7 @@ public final class MainFrame extends javax.swing.JFrame {
         Gui.showAboutDialog();
     }//GEN-LAST:event_aboutMenuItemActionPerformed
 
-    private void openLocButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openLocButtonActionPerformed
-        try {
-            Desktop.getDesktop().open(App.locationDir);
-        } catch (IOException ex) {
-            Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }//GEN-LAST:event_openLocButtonActionPerformed
+
 
     private void clearLogsItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_clearLogsItemActionPerformed
         clearMessages();
@@ -1074,6 +997,8 @@ public final class MainFrame extends javax.swing.JFrame {
         
     }//GEN-LAST:event_smartCbMenuItemActionPerformed
 
+
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu actionMenu;
     private javax.swing.JMenuItem advancedOptionsMenuItem;
@@ -1085,12 +1010,12 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JRadioButtonMenuItem alignNoneRbMenuItem;
     private javax.swing.JPanel bControlMountPanel;
     private javax.swing.JPanel cResultMountPanel;
-    private javax.swing.JButton chooseButton;
+
     private javax.swing.JMenuItem clearLogsItem;
     private javax.swing.JMenu colorPaletteMenu;
     private javax.swing.JRadioButtonMenuItem darculaThemeRbMenuItem;
     private javax.swing.JRadioButtonMenuItem darkThemeRbMenuItem;
-    private javax.swing.JLabel dataDirLabel;
+
     private javax.swing.JMenuItem deleteAllBenchmarksItem;
     private javax.swing.JMenuItem deleteDataMenuItem;
     private javax.swing.JMenuItem deleteSelBenchmarksItem;
@@ -1107,19 +1032,15 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenu helpMenu;
     private javax.swing.JMenu ioEngineMenu;
     private javax.swing.ButtonGroup ioEnginebuttonGroup;
-    private javax.swing.JLabel jLabel22;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JPopupMenu.Separator jSeparator1;
     private javax.swing.JPopupMenu.Separator jSeparator2;
     private javax.swing.JPopupMenu.Separator jSeparator3;
     private javax.swing.JRadioButtonMenuItem lightThemeRbMenuItem;
-    private javax.swing.JPanel locationPanel;
-    private javax.swing.JTextField locationText;
     private javax.swing.JMenuBar menuBar;
     private javax.swing.JTextArea msgTextArea;
     private javax.swing.JCheckBoxMenuItem multiFileCheckBoxMenuItem;
-    private javax.swing.JButton openLocButton;
     private javax.swing.JMenu optionMenu;
     private javax.swing.ButtonGroup palettebuttonGroup;
     private javax.swing.ButtonGroup portalEndpointButtonGroup;
@@ -1142,9 +1063,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private javax.swing.JCheckBoxMenuItem writeSyncCheckBoxMenuItem;
     // End of variables declaration//GEN-END:variables
 
-    public void setLocation(String path) {
-        locationText.setText(path);
-    }
+
     
     public void msg(String message) {
         msgTextArea.append(message + '\n');
