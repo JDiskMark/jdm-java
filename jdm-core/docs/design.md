@@ -35,6 +35,8 @@ Bottom Panel Tabs (common to all):
 
 # Package organization
 
+New classes should be introduced in this structure:
+
 org.metricus.jdm
   - core - benchmark algorithms
   - io - abstract api

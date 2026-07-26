@@ -13,6 +13,7 @@ import javax.swing.text.DefaultCaret;
 import jdiskmark.Exporter.ExportFormat;
 import org.metricus.jdm.ui.GraphPaletteMenu;
 import org.metricus.jdm.ui.GraphThemeMenu;
+import org.metricus.jdm.ui.Tabs;
 import org.metricus.jdm.ui.Theme;
 import net.miginfocom.swing.MigLayout;
 
@@ -135,36 +136,37 @@ public final class MainFrame extends javax.swing.JFrame {
 
         // Drive tab — always visible on all platforms, shown first
         Gui.drivePanel = new DrivePanel();
-        mainTabPane.addTab("Drive", Gui.drivePanel);
+        mainTabPane.addTab(Tabs.TOP_DRIVE, Gui.drivePanel);
 
         // All Drives table — lives in the bottom tabbedPane
-        tabbedPane.addTab("All Drives", Gui.drivePanel.buildAllDrivesPanel());
+        tabbedPane.addTab(Tabs.BOTTOM_ALL_DRIVES, Gui.drivePanel.buildAllDrivesPanel());
 
         JPanel benchTab = new JPanel(new BorderLayout());
         benchTab.add(bControlMountPanel, BorderLayout.WEST);
         benchTab.add(cResultMountPanel, BorderLayout.CENTER);
-        mainTabPane.addTab("Benchmark", benchTab);
+        mainTabPane.addTab(Tabs.TOP_BENCHMARK, benchTab);
         // Start on the Benchmark tab — it's the primary interaction surface.
         mainTabPane.setSelectedIndex(mainTabPane.getTabCount() - 1);
 
         // SMART tab — Linux and macOS (requires bundled or system smartctl)
         if (App.isLinux() || App.isMacOs()) {
-            mainTabPane.addTab("SMART", Gui.smartPanel);
+            mainTabPane.addTab(Tabs.TOP_SMART, Gui.smartPanel);
             Gui.smartReportsPanel = new SmartReportsPanel();
             // SMART Reports lives in the bottom tabbedPane alongside Benchmarks + Events + ...
-            tabbedPane.addTab("SMART Reports", Gui.smartReportsPanel);
+            tabbedPane.addTab(Tabs.BOTTOM_SMART_REPORTS, Gui.smartReportsPanel);
         }
         // #117 Sharing tab — added programmatically so the NetBeans form is untouched.
         sharingPanel = new SharingPanel();
-        tabbedPane.addTab("Sharing", sharingPanel);
+        tabbedPane.addTab(Tabs.BOTTOM_SHARING, sharingPanel);
 
-        // Store reference so SmartReportsPanel can switch to the SMART tab on row selection.
+        // Store references so other components can switch tabs programmatically.
         Gui.mainTabPane = mainTabPane;
+        Gui.bottomTabPane = tabbedPane;
 
         // Refresh SMART Reports when its bottom-pane tab is selected.
         tabbedPane.addChangeListener(e -> {
             int sel = tabbedPane.getSelectedIndex();
-            if (sel >= 0 && "SMART Reports".equals(tabbedPane.getTitleAt(sel))) {
+            if (sel >= 0 && Tabs.BOTTOM_SMART_REPORTS.equals(tabbedPane.getTitleAt(sel))) {
                 if (Gui.smartReportsPanel != null) Gui.smartReportsPanel.refresh();
             }
         });
@@ -243,8 +245,8 @@ public final class MainFrame extends javax.swing.JFrame {
             App.msg(App.archiveViewActive ? "Viewing archived benchmarks." : "Viewing benchmark history.");
             for (int i = 0; i < tabbedPane.getTabCount(); i++) {
                 String t = tabbedPane.getTitleAt(i);
-                if (t.equals("Benchmarks") || t.equals("Archived Benchmarks")) {
-                    tabbedPane.setTitleAt(i, App.archiveViewActive ? "Archived Benchmarks" : "Benchmarks");
+                if (t.equals(Tabs.BOTTOM_BENCHMARKS) || t.equals(Tabs.BOTTOM_BENCHMARKS_ARCHIVE)) {
+                    tabbedPane.setTitleAt(i, App.archiveViewActive ? Tabs.BOTTOM_BENCHMARKS_ARCHIVE : Tabs.BOTTOM_BENCHMARKS);
                     break;
                 }
             }

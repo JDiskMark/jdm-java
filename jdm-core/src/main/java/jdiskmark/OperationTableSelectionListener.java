@@ -3,6 +3,7 @@ package jdiskmark;
 import javax.swing.JTable;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import org.metricus.jdm.ui.Tabs;
 import static jdiskmark.BenchmarkPanel.START_TIME_COLUMN;
 
 public class OperationTableSelectionListener implements ListSelectionListener {
@@ -36,7 +37,7 @@ public class OperationTableSelectionListener implements ListSelectionListener {
                     Gui.loadBenchmark(benchmark);
                 }
                 // Bring the Benchmark tab to the front so the chart updates are visible.
-                Gui.selectMainTab("Benchmark");
+                Gui.selectMainTab(Tabs.TOP_BENCHMARK);
             }
         }
     }

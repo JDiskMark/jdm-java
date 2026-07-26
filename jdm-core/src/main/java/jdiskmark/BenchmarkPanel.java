@@ -165,6 +165,18 @@ public class BenchmarkPanel extends javax.swing.JPanel {
     public void deselect() {
         runTable.getSelectionModel().clearSelection();
     }
+
+    /**
+     * Selects and scrolls to the last row in the table.
+     * Called after a benchmark completes to auto-focus the new record.
+     */
+    public void selectLastRow() {
+        int last = runTable.getRowCount() - 1;
+        if (last >= 0) {
+            runTable.setRowSelectionInterval(last, last);
+            runTable.scrollRectToVisible(runTable.getCellRect(last, 0, true));
+        }
+    }
     
     // Get the selected benchmarks
     public List<UUID> getSelectedIds() {

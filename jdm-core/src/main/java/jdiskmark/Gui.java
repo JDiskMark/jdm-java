@@ -57,6 +57,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.chart.ui.HorizontalAlignment;
 import org.jfree.chart.ui.RectangleEdge;
 import org.jfree.chart.ui.RectangleInsets;
+import org.metricus.jdm.ui.Tabs;
 
 /**
  * Store GUI references for easy access
@@ -80,6 +81,8 @@ public final class Gui {
     public static DrivePanel drivePanel = null;
     public static SmartReportsPanel smartReportsPanel = null;
     public static javax.swing.JTabbedPane mainTabPane = null;
+    /** The bottom tabbed pane (Benchmarks / Events / All Drives / SMART Reports / Sharing). */
+    public static javax.swing.JTabbedPane bottomTabPane = null;
     public static JProgressBar progressBar = null;
     // chart badge strip — declared null until createChartPanel() wires them up
     public static javax.swing.JLabel directIoLabel = null;
@@ -1179,6 +1182,23 @@ public final class Gui {
     }
 
     /**
+     * Selects the first tab in the bottom {@link #bottomTabPane} whose title
+     * equals {@code tabTitle}.  No-op if the pane is null or no match exists.
+     *
+     * @param tabTitle the exact tab label, e.g. {@code "Benchmarks"} or
+     *                 {@code "SMART Reports"}
+     */
+    public static void selectBottomTab(String tabTitle) {
+        if (bottomTabPane == null) return;
+        for (int i = 0; i < bottomTabPane.getTabCount(); i++) {
+            if (tabTitle.equals(bottomTabPane.getTitleAt(i))) {
+                bottomTabPane.setSelectedIndex(i);
+                return;
+            }
+        }
+    }
+
+    /**
      * Fetches fresh SMART data for the current drive in a background thread
      * and populates the SMART panel when done. Triggers the pkexec password
      * prompt on the very first call (or after the privileged shell dies).
@@ -1302,7 +1322,7 @@ public final class Gui {
         // Switch focus to the SMART tab
         if (mainTabPane != null) {
             for (int i = 0; i < mainTabPane.getTabCount(); i++) {
-                if ("SMART".equals(mainTabPane.getTitleAt(i))) {
+                if (Tabs.TOP_SMART.equals(mainTabPane.getTitleAt(i))) {
                     mainTabPane.setSelectedIndex(i);
                     break;
                 }
@@ -1323,8 +1343,12 @@ public final class Gui {
         try {
             SmartSnapshot.save(lastSmartData, lastSmartDeviceName);
             if (smartPanel != null) smartPanel.onDataSaved();
-            if (smartReportsPanel != null) smartReportsPanel.refresh();
             App.msg("SMART snapshot saved for /dev/" + lastSmartDeviceName + ".");
+            // Switch to SMART Reports tab — ChangeListener fires refresh() automatically.
+            // Row auto-selection is omitted: sort order may vary, making index-based
+            // selection unreliable. Can be revisited with ID-based lookup if needed.
+            if (smartReportsPanel != null) smartReportsPanel.refresh();
+            selectBottomTab(Tabs.BOTTOM_SMART_REPORTS);
         } catch (Exception ex) {
             SMART_LOG.log(Level.WARNING, "saveCurrentSmartData: failed", ex);
             App.err("Failed to save SMART snapshot: " + ex.getMessage());

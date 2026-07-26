@@ -17,6 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
+import org.metricus.jdm.ui.Tabs;
 
 /**
  * Thread running the disk benchmarking. only one of these threads can run at
@@ -236,5 +237,8 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         Gui.unlockSampleAxis();
         App.state = App.State.IDLE_STATE;
         Gui.mainFrame.adjustSensitivity();
+        // Switch to Benchmarks tab and select the new record for immediate visibility.
+        Gui.selectBottomTab(Tabs.BOTTOM_BENCHMARKS);
+        if (Gui.runPanel != null) Gui.runPanel.selectLastRow();
     }
 }
