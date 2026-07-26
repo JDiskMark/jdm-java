@@ -296,6 +296,7 @@ public class Smart {
      */
     public static void startHeartbeat() {
         if (App.isWindows()) {
+            // TODO: implement persistent process to avoid repeated UAC auth prompt
             return;
         }
         if (hbThread != null && hbThread.isAlive()) return;
