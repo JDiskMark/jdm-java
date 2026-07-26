@@ -146,7 +146,7 @@ public class BenchmarkRunner {
                         }
                         smart = Smart.getSmart(device);
                     }
-                } else if (App.isWindows() && App.isAdmin) {
+                } else if (App.isWindows()) {
                     String driveLetter = UtilOs.getDriveLetterWindows(path);
                     String driveNum = UtilOs.getPhysicalDriveNumberWindows(driveLetter);
                     if (driveNum != null) {

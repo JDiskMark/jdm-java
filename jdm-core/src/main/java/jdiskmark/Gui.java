@@ -1193,11 +1193,9 @@ public final class Gui {
             return;
         }
 
-        // On Windows, smartctl requires Administrator privileges to access raw SMART data.
-        if (App.isWindows() && !App.isAdmin) {
-            App.msg("SMART requires Administrator privileges on Windows. Please restart JDiskMark as Administrator.");
-            if (smartPanel != null) smartPanel.setStatus("Run as Administrator to read SMART data.");
-            return;
+        // On Windows, if not already admin, escalation will trigger a UAC prompt.
+        if (App.isWindows() && !App.isAdmin && smartPanel != null) {
+            smartPanel.setStatus("A Windows security (UAC) prompt will appear to authorise SMART access...");
         }
         
         if (smartPanel == null || App.locationDir == null) {
@@ -1274,8 +1272,7 @@ public final class Gui {
                         if (App.isWindows()) {
                             String hint = App.isAdmin
                                     ? "SMART data unavailable — ensure smartctl is installed (smartmontools.org)."
-                                    : "SMART requires Administrator privileges — restart as Administrator.";
-                            App.msg(hint);
+                                    : "SMART access was cancelled or failed — accept the UAC prompt to read SMART data.";
                             smartPanel.setStatus(hint);
                         }
                     }

@@ -323,13 +323,73 @@ public class Smart {
     }
     
     /**
-     * Queries SMART data for the given device by writing a {@code smartctl}
-     * command to the persistent privileged shell and reading back its output
-     * up to a unique sentinel line.  Logs the key fields at INFO level.
+     * Runs {@code smartctl} directly in-process (Windows elevated / fast path).
+     * Tries {@code /dev/<device>} first, then the bare device name as a fallback,
+     * since some Windows controller drivers require one form or the other.
      *
-     * <p>{@link #startPrivilegedShell()} must have been called before this.
+     * @param deviceName bare device name, e.g. {@code pd0}
+     * @param smartctlPath absolute path to {@code smartctl.exe}
+     * @return a populated {@link Smart} instance, or {@code null} on error
+     */
+    private static Smart getSmartDirect(String deviceName, String smartctlPath) {
+        try {
+            for (String devArg : new String[]{"/dev/" + deviceName, deviceName}) {
+                ProcessBuilder pb = new ProcessBuilder(smartctlPath, "--json", "-a", devArg);
+                pb.redirectErrorStream(true);
+                Process p = pb.start();
+
+                StringBuilder sb = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        sb.append(line).append('\n');
+                    }
+                }
+                if (!p.waitFor(15, TimeUnit.SECONDS)) {
+                    p.destroyForcibly();
+                    LOGGER.warning("getSmartDirect: smartctl timed out for: " + devArg);
+                    continue;
+                }
+                String result = sb.toString().trim();
+                if (result.isEmpty()) {
+                    LOGGER.warning("getSmartDirect: empty response for: " + devArg);
+                    continue;
+                }
+                if (!result.startsWith("{")) {
+                    LOGGER.warning("getSmartDirect: non-JSON response for " + devArg + ": " + result);
+                    continue;
+                }
+                Smart smart = fromJson(result);
+                logSmart(smart);
+                return smart;
+            }
+            LOGGER.severe("getSmartDirect: all attempts failed for: " + deviceName);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            LOGGER.log(Level.SEVERE, "getSmartDirect interrupted for: " + deviceName, ex);
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, "getSmartDirect failed for: " + deviceName, ex);
+        }
+        return null;
+    }
+
+    /**
+     * Queries SMART data for the given device.
      *
-     * @param deviceName bare device name, e.g. {@code nvme0n1}
+     * <p>On <b>Windows</b>:
+     * <ul>
+     *   <li>If the process is already elevated ({@link App#isAdmin}), runs
+     *       {@code smartctl} directly via {@link #getSmartDirect}.</li>
+     *   <li>Otherwise, delegates to {@link SmartEscalation#runElevated} which
+     *       triggers a UAC prompt and runs an elevated helper, returning the
+     *       JSON via a temp file in {@code %LOCALAPPDATA%\JDiskMark\}.</li>
+     * </ul>
+     *
+     * <p>On <b>Linux / macOS</b>, writes the command to the persistent privileged
+     * shell started by {@link #startPrivilegedShell()} and reads back the output.
+     *
+     * @param deviceName bare device name, e.g. {@code nvme0n1} or {@code pd0}
      * @return a populated {@link Smart} instance, or {@code null} on error
      */
     public static Smart getSmart(String deviceName) {
@@ -338,51 +398,36 @@ public class Smart {
             return null;
         }
         if (App.isWindows()) {
-            try {
-                String smartctlPath = resolveSmartctlPath();
-                LOGGER.info("getSmart: using smartctl at: " + smartctlPath + " for device: " + deviceName);
-                // Try /dev/<deviceName> first; fall back to bare <deviceName> if output is empty.
-                for (String devArg : new String[]{"/dev/" + deviceName, deviceName}) {
-                    ProcessBuilder pb = new ProcessBuilder(smartctlPath, "--json", "-a", devArg);
-                    pb.redirectErrorStream(true);  // merge stderr into stdout so we can log it
-                    Process p = pb.start();
+            String smartctlPath = resolveSmartctlPath();
+            LOGGER.info("getSmart: using smartctl at: " + smartctlPath + " for device: " + deviceName);
 
-                    StringBuilder sb = new StringBuilder();
-                    try (BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            sb.append(line).append('\n');
-                        }
+            if (App.isAdmin) {
+                // ── Fast path: already elevated, run smartctl directly ──────────────
+                return getSmartDirect(deviceName, smartctlPath);
+            } else {
+                // ── Escalation path: request UAC elevation for the helper ────────────
+                try {
+                    LOGGER.info("getSmart: not admin — requesting UAC elevation for device: " + deviceName);
+                    String json = SmartEscalation.runElevated(deviceName, smartctlPath);
+                    if (json == null) {
+                        LOGGER.warning("getSmart: escalation returned null (UAC cancelled?) for: " + deviceName);
+                        return null;
                     }
-                    if (!p.waitFor(15, TimeUnit.SECONDS)) {
-                        p.destroyForcibly();
-                        LOGGER.warning("getSmart: smartctl timed out for device arg: " + devArg);
-                        continue;
+                    if (!json.startsWith("{")) {
+                        LOGGER.warning("getSmart: escalation returned non-JSON for " + deviceName + ": " + json);
+                        return null;
                     }
-
-                    String result = sb.toString().trim();
-                    if (result.isEmpty()) {
-                        LOGGER.warning("getSmart: empty response from smartctl for device arg: " + devArg);
-                        continue;
-                    }
-                    // smartctl may return non-JSON error text if it can't open the device
-                    if (!result.startsWith("{")) {
-                        LOGGER.warning("getSmart: non-JSON response for " + devArg + ": " + result);
-                        continue;
-                    }
-                    Smart smart = fromJson(result);
+                    Smart smart = fromJson(json);
                     logSmart(smart);
                     return smart;
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    LOGGER.log(Level.SEVERE, "getSmart escalation interrupted for: " + deviceName, ex);
+                } catch (IOException ex) {
+                    LOGGER.log(Level.SEVERE, "getSmart escalation failed for: " + deviceName, ex);
                 }
-                LOGGER.severe("getSmart: all device arg attempts failed for: " + deviceName);
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-                LOGGER.log(Level.SEVERE, "getSmart interrupted for Windows device: " + deviceName, ex);
-            } catch (IOException ex) {
-                LOGGER.log(Level.SEVERE, "getSmart failed for Windows device: " + deviceName, ex);
+                return null;
             }
-            return null;
         }
         final String sentinel = "---SMART_DONE---";
         try {
