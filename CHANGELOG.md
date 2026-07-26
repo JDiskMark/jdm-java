@@ -3,6 +3,11 @@
 All notable changes to JDiskMark are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased] — v1.0.0
+
+### Planned
+- [#118](https://github.com/JDiskMark/jdm-java/issues/118) test interlock or OAuth upload
+
 ## [Unreleased] — v0.8.0
 
 ### Added
@@ -10,11 +15,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - [#78](https://github.com/JDiskMark/jdm-java/issues/78) throttle graphics render
 - [#67](https://github.com/JDiskMark/jdm-java/issues/67) test portal uploads (no auth)
 - [#70](https://github.com/JDiskMark/jdm-java/issues/70) app icon
-- [#117](https://github.com/JDiskMark/jdm-java/issues/117) user portal upload acknowledgement
-- [#11](https://github.com/JDiskMark/jdm-java/issues/11) initial SMART support (ubuntu/win/macos)
+- [#117](https://github.com/JDiskMark/jdm-java/issues/117) community portal sharing prompt
+- [#11](https://github.com/JDiskMark/jdm-java/issues/11) basic SMART beta (ubuntu/win/macos)
 - Archiving benchmarks
-- Improved drive selection
-- Sakura, Harvest and Old Glory Color Themes
+- Drive selection w All Drives tab
+- Color Themes: Sakura, Harvest and Old Glory
 
 ### Changed
 - [#33](https://github.com/JDiskMark/jdm-java/issues/33) Maven build
@@ -22,11 +27,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     - JFreeChart 1.5.6
     - Hibernate ORM 7.4.4 (Jakarta Persistence 3.2)
     - Explicit entity class registration for fat-JAR scanning compatibility
-
-### In Progress
-- [#95](https://github.com/JDiskMark/jdm-java/issues/95) disk cache purging
-- [#118](https://github.com/JDiskMark/jdm-java/issues/118) test interlock or OAuth upload
-- [#61](https://github.com/JDiskMark/jdm-java/issues/61) SMART monitoring ubuntu
 
 ---
 
