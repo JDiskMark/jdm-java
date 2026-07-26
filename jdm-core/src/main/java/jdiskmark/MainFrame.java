@@ -210,7 +210,8 @@ public final class MainFrame extends javax.swing.JFrame {
                     heightAdjusted = true;
                     String os = System.getProperty("os.name", "").toLowerCase();
                     int w = (os.contains("linux") || os.contains("mac")) ? Math.max(994, getWidth()) : getWidth();
-                    setSize(w, getHeight() + 30);
+                    int h = (os.contains("linux") || os.contains("mac")) ? Math.max(655, getHeight() + 30) : getHeight() + 30;
+                    setSize(w, h);
                 }
             }
         });
@@ -301,6 +302,10 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
         helpMenu.add(devModeMenuItem);
+
+        // About always last — platform convention (Windows, macOS, Linux)
+        helpMenu.addSeparator();
+        helpMenu.add(jMenuItem2);
     }
     
     public JPanel getMountPanel() {
@@ -802,13 +807,14 @@ public final class MainFrame extends javax.swing.JFrame {
 
         helpMenu.setText("Help");
 
-        jMenuItem2.setText("About...");
+        jMenuItem2.setText("About");
         jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 aboutMenuItemActionPerformed(evt);
             }
         });
-        helpMenu.add(jMenuItem2);
+        // About is added last in the Help menu (hand-written section below)
+        // so it stays at the bottom, below Dev Mode — per platform convention.
 
         menuBar.add(helpMenu);
 

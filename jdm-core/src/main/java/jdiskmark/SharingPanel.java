@@ -2,8 +2,6 @@ package jdiskmark;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.net.URI;
 
 /**
@@ -39,8 +37,8 @@ public class SharingPanel extends JPanel {
     /** The right dev-controls panel whose titled border shows the live URL. */
     private final JPanel devPanel;
 
-    /** Single clickable hyperlink in the header — opens the active portal URL. */
-    private final JLabel portalLink;
+    /** Button in the header row that opens the active portal URL in the browser. */
+    private final JButton portalButton;
 
 
     public SharingPanel() {
@@ -55,12 +53,12 @@ public class SharingPanel extends JPanel {
         leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
         leftPanel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 8));
 
-        // Row 0 — header: bold title + clickable portal link
-        portalLink = makeLinkLabel();
+        // Row 0 — header: Title Case label + "View Portal ↗" button
+        portalButton = makePortalButton();
         JPanel headerRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         headerRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        headerRow.add(new JLabel("<html><b>Community portal sharing</b></html>"));
-        headerRow.add(portalLink);
+        headerRow.add(new JLabel("<html><b>Community Portal Sharing</b></html>"));
+        headerRow.add(portalButton);
 
         // Row 1 — benchmark checkbox + status inline
         enableCheckBox = new JCheckBox("Share benchmark results");
@@ -249,33 +247,27 @@ public class SharingPanel extends JPanel {
         devPanel.setBorder(BorderFactory.createTitledBorder(title));
         devPanel.repaint();
 
-        // Keep the header link in sync with the active endpoint
-        String browseUrl = Portal.getPortalBrowseUrl();
-        portalLink.setText("<html><a href=''>" + browseUrl + "</a></html>");
-        portalLink.setToolTipText(browseUrl);
+        // Keep the portal button tooltip in sync with the active endpoint
+        portalButton.setToolTipText(Portal.getPortalBrowseUrl());
     }
 
     /**
-     * Creates a small hyperlink-styled label that opens {@link Portal#getPortalBrowseUrl()}
+     * Creates a small button that opens {@link Portal#getPortalBrowseUrl()}
      * in the system browser when clicked.
      */
-    private JLabel makeLinkLabel() {
-        String url = Portal.getPortalBrowseUrl();
-        JLabel label = new JLabel("<html><a href=''>" + url + "</a></html>");
-        label.setFont(label.getFont().deriveFont(Font.PLAIN, 11f));
-        label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        label.setToolTipText(url);
-        label.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                try {
-                    Desktop.getDesktop().browse(URI.create(Portal.getPortalBrowseUrl()));
-                } catch (Exception ex) {
-                    App.err("Could not open portal URL: " + ex.getMessage());
-                }
+    private JButton makePortalButton() {
+        JButton button = new JButton("View Portal \u2197");
+        button.setFont(button.getFont().deriveFont(Font.PLAIN, 11f));
+        button.setToolTipText(Portal.getPortalBrowseUrl());
+        button.setFocusPainted(false);
+        button.addActionListener(e -> {
+            try {
+                Desktop.getDesktop().browse(URI.create(Portal.getPortalBrowseUrl()));
+            } catch (Exception ex) {
+                App.err("Could not open portal URL: " + ex.getMessage());
             }
         });
-        return label;
+        return button;
     }
 
     /**
