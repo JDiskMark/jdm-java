@@ -2,13 +2,9 @@ package jdiskmark;
 
 
 import java.awt.BorderLayout;
-import java.awt.Desktop;
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.text.DefaultCaret;
