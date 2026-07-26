@@ -546,15 +546,16 @@ public final class Gui {
      */
     public static void promptFirstRunPortalConsent() {
         String message = "<html><body style='width:380px'>"
-                + "<b>Help the community make smarter hardware decisions!</b><br><br>"
-                + "Your benchmark data, combined with others', help users compare real-world storage "
-                + "performance and identify reliability trends across drives and platforms.<br><br>"
-                + "Would you like to share your results with the jdiskmark.net community portal?<br><br>"
+                + "<b>Help our community make smarter hardware decisions!</b><br><br>"
+                + "Share your benchmark results with our community portal (jdiskmark.net) "
+                + "to help us compare real-world storage performance and identify "
+                + "reliability trends across drives and platforms.<br><br>"
+                + "What's shared:"
                 + "<ul>"
                 + "<li>Performance metrics (speeds, IOPS, latency) and hardware context (CPU, drive, OS).</li>"
-                + "<li>A non-reversible system identifier — no name or account required.</li>"
-                + "<li>You can change this at any time via the <i>Sharing</i> tab.</li>"
+                + "<li>An anonymous device fingerprint — no name or account required.</li>"
                 + "</ul>"
+                + "<i>You can change this at any time via the Sharing tab.</i>"
                 + "</body></html>";
         int choice = javax.swing.JOptionPane.showConfirmDialog(
                 mainFrame,

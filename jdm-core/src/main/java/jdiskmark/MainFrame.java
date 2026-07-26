@@ -3,10 +3,12 @@ package jdiskmark;
 
 import java.awt.BorderLayout;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.text.DefaultCaret;
 import jdiskmark.Exporter.ExportFormat;
 import org.metricus.jdm.ui.GraphPaletteMenu;
@@ -262,6 +264,43 @@ public final class MainFrame extends javax.swing.JFrame {
             App.msg("Benchmark(s) unarchived.");
         });
         actionMenu.add(unarchiveSelectedItem);
+
+        // ── Dev Mode menu item (Help menu) ─────────────────────────────────────
+        // Toggles visibility of the endpoint/protocol panel in the Sharing tab.
+        // Requires a password so regular users cannot inadvertently change the
+        // upload endpoint.
+        helpMenu.addSeparator();
+        javax.swing.JMenuItem devModeMenuItem = new javax.swing.JMenuItem("Enter Dev Mode");
+        devModeMenuItem.addActionListener(evt -> {
+            if (sharingPanel != null && sharingPanel.isDevModeVisible()) {
+                // Already in dev mode — toggle off without re-prompting
+                sharingPanel.setDevModeVisible(false);
+                devModeMenuItem.setText("Enter Dev Mode");
+                App.msg("Dev mode disabled.");
+                return;
+            }
+            // Prompt for password
+            JPasswordField pwField = new JPasswordField(20);
+            int result = JOptionPane.showConfirmDialog(
+                    this, pwField, "Enter Dev Mode Password",
+                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+            if (result != JOptionPane.OK_OPTION) return;
+            char[] entered = pwField.getPassword();
+            char[] expected = "G0Hamsters!".toCharArray();
+            boolean correct = Arrays.equals(entered, expected);
+            Arrays.fill(entered, '\0');   // clear from memory
+            Arrays.fill(expected, '\0');
+            if (correct) {
+                if (sharingPanel != null) sharingPanel.setDevModeVisible(true);
+                devModeMenuItem.setText("Exit Dev Mode");
+                App.msg("Dev mode enabled.");
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        "Incorrect password.", "Dev Mode",
+                        JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        helpMenu.add(devModeMenuItem);
     }
     
     public JPanel getMountPanel() {

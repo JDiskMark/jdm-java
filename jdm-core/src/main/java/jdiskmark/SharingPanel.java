@@ -2,37 +2,32 @@ package jdiskmark;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.net.URI;
 
 /**
  * Sharing tab panel (issue #117).
  *
  * Layout:
  *
- *  ┌──────────────────────────┬───────────────────────────────────────────────────────────────────────┐
- *  │ ☑ Share benchmark        │ Endpoint — https://test.jdiskmark.net:5000/api/benchmarks/upload      │
- *  │   results with the       │  ○ Production  ○ Test (test.jdiskmark.net)  ○ Localhost               │
- *  │   JDiskMark community    │  Protocol:  ○ HTTPS  ○ HTTP                                           │
- *  │   portal                 │                                                                       │
- *  │                          │                                                                       │
- *  │   ● Enabled              │                                                                       │
- *  └──────────────────────────┴───────────────────────────────────────────────────────────────────────┘
+ *  ┌──────────────────────────────────────────────────┬──────────────────────────────────────────────┐
+ *  │ Community portal sharing  http://test.jdisk…     │ Endpoint — http://test.jdiskmark.net:5000/…  │
+ *  │ ☑ Share benchmark results          ● Enabled     │  ○ Production  ● Test  ○ Localhost            │
+ *  │ ☐ Share SMART snapshots            ○ Disabled    │  Protocol:  ○ HTTPS  ● HTTP                  │
+ *  └──────────────────────────────────────────────────┴──────────────────────────────────────────────┘
  *
- * Radios are laid out horizontally to keep the vertical footprint minimal — no
- * scroll bar is triggered at the default window height.
- *
- * The titled border on the right panel doubles as a URL preview; it is updated
+ * The titled border on the right dev panel doubles as a URL preview updated
  * live whenever the endpoint or protocol changes.
- *
- * Developer controls (endpoint / protocol) will be hidden in a future
- * production build; they remain here for testing.
+ * Developer controls are hidden by default — unlocked via Help > Dev Mode.
  */
 public class SharingPanel extends JPanel {
 
     // ── Controls ──────────────────────────────────────────────────────────────
-    private final JCheckBox  enableCheckBox;
-    private final JCheckBox  enableSmartCheckBox;
-    private final JLabel     statusLabel;
-    private final JLabel     smartStatusLabel;
+    private final JCheckBox enableCheckBox;
+    private final JCheckBox enableSmartCheckBox;
+    private final JLabel    statusLabel;
+    private final JLabel    smartStatusLabel;
 
     private final JRadioButton localRb;
     private final JRadioButton testRb;
@@ -44,48 +39,57 @@ public class SharingPanel extends JPanel {
     /** The right dev-controls panel whose titled border shows the live URL. */
     private final JPanel devPanel;
 
+    /** Single clickable hyperlink in the header — opens the active portal URL. */
+    private final JLabel portalLink;
+
 
     public SharingPanel() {
         setLayout(new BorderLayout());
 
-        // ── Outer split: left (toggle) | right (dev controls) ─────────────────
+        // ── Outer split: left (toggles) | right (dev controls) ────────────────
         JPanel grid = new JPanel(new GridBagLayout());
         grid.setBorder(BorderFactory.createEmptyBorder(8, 6, 8, 6));
 
-        // ── LEFT ──────────────────────────────────────────────────────────────
-        JPanel leftPanel = new JPanel(new GridBagLayout());
+        // ── LEFT: three compact rows ───────────────────────────────────────────
+        JPanel leftPanel = new JPanel();
+        leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
         leftPanel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 8));
 
-        enableCheckBox = new JCheckBox(
-                "<html><b>Share benchmark results with<br>the JDiskMark community portal</b></html>");
+        // Row 0 — header: bold title + clickable portal link
+        portalLink = makeLinkLabel();
+        JPanel headerRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        headerRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        headerRow.add(new JLabel("<html><b>Community portal sharing</b></html>"));
+        headerRow.add(portalLink);
 
-        enableSmartCheckBox = new JCheckBox(
-                "<html><b>Share SMART snapshots with<br>the JDiskMark community portal</b></html>");
-
-        statusLabel = new JLabel("○ Disabled");
+        // Row 1 — benchmark checkbox + status inline
+        enableCheckBox = new JCheckBox("Share benchmark results");
+        statusLabel = new JLabel("\u25cb Disabled");
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 11f));
         statusLabel.setForeground(Color.GRAY);
 
-        smartStatusLabel = new JLabel("○ Disabled");
+        JPanel benchRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
+        benchRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        benchRow.add(enableCheckBox);
+        benchRow.add(statusLabel);
+
+        // Row 2 — SMART checkbox + status inline
+        enableSmartCheckBox = new JCheckBox("Share SMART snapshots");
+        smartStatusLabel = new JLabel("\u25cb Disabled");
         smartStatusLabel.setFont(smartStatusLabel.getFont().deriveFont(Font.PLAIN, 11f));
         smartStatusLabel.setForeground(Color.GRAY);
 
-        GridBagConstraints lc = new GridBagConstraints();
-        lc.gridx = 0; lc.fill = GridBagConstraints.HORIZONTAL; lc.weightx = 1;
-        lc.anchor = GridBagConstraints.NORTHWEST; lc.insets = new Insets(0, 0, 4, 0);
+        JPanel smartRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
+        smartRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        smartRow.add(enableSmartCheckBox);
+        smartRow.add(smartStatusLabel);
 
-        lc.gridy = 0; leftPanel.add(enableCheckBox, lc);
-        lc.gridy = 1; lc.insets = new Insets(0, 4, 0, 0);
-        leftPanel.add(statusLabel, lc);
-        lc.gridy = 2; lc.insets = new Insets(8, 0, 4, 0);
-        leftPanel.add(enableSmartCheckBox, lc);
-        lc.gridy = 3; lc.insets = new Insets(0, 4, 0, 0);
-        leftPanel.add(smartStatusLabel, lc);
-        lc.gridy = 4; lc.weighty = 1; lc.fill = GridBagConstraints.BOTH;
-        leftPanel.add(Box.createVerticalGlue(), lc);
+        leftPanel.add(headerRow);
+        leftPanel.add(benchRow);
+        leftPanel.add(smartRow);
+        leftPanel.add(Box.createVerticalGlue());
 
         // ── RIGHT: developer controls ─────────────────────────────────────────
-        // Endpoint radios
         ButtonGroup endpointGroup = new ButtonGroup();
         prodRb  = new JRadioButton("Production (www.jdiskmark.net)");
         testRb  = new JRadioButton("Test (test.jdiskmark.net)");
@@ -94,32 +98,26 @@ public class SharingPanel extends JPanel {
         endpointGroup.add(testRb);
         endpointGroup.add(localRb);
 
-        // Protocol radios
         ButtonGroup protocolGroup = new ButtonGroup();
         httpsRb = new JRadioButton("HTTPS");
         httpRb  = new JRadioButton("HTTP");
         protocolGroup.add(httpsRb);
         protocolGroup.add(httpRb);
 
-        // Endpoint row
         JPanel endpointRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
         endpointRow.add(prodRb);
         endpointRow.add(testRb);
         endpointRow.add(localRb);
 
-        // Protocol row
         JPanel protocolRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 2));
         protocolRow.add(new JLabel("Protocol:"));
         protocolRow.add(httpsRb);
         protocolRow.add(httpRb);
 
-        // Assemble with GridBagLayout so rows stretch horizontally
         devPanel = new JPanel(new GridBagLayout());
-        // border title is set in refreshBorderTitle()
         GridBagConstraints dc = new GridBagConstraints();
         dc.gridx = 0; dc.fill = GridBagConstraints.HORIZONTAL; dc.weightx = 1;
         dc.anchor = GridBagConstraints.NORTHWEST; dc.insets = new Insets(0, 0, 2, 0);
-
         dc.gridy = 0; devPanel.add(endpointRow, dc);
         dc.gridy = 1; devPanel.add(protocolRow, dc);
         dc.gridy = 2; dc.weighty = 1; dc.fill = GridBagConstraints.BOTH;
@@ -130,13 +128,13 @@ public class SharingPanel extends JPanel {
         oc.gridy = 0; oc.fill = GridBagConstraints.BOTH; oc.weighty = 1;
         oc.anchor = GridBagConstraints.NORTHWEST;
 
-        oc.gridx = 0; oc.weightx = 0.35; oc.insets = new Insets(0, 0, 0, 4);
+        oc.gridx = 0; oc.weightx = 0.45; oc.insets = new Insets(0, 0, 0, 4);
         grid.add(leftPanel, oc);
 
-        oc.gridx = 1; oc.weightx = 0.65; oc.insets = new Insets(0, 0, 0, 0);
+        oc.gridx = 1; oc.weightx = 0.55; oc.insets = new Insets(0, 0, 0, 0);
         grid.add(devPanel, oc);
 
-        // ── Scroll pane: vertical only ─────────────────────────────────────────
+        // ── Scroll pane ────────────────────────────────────────────────────────
         JPanel northWrapper = new JPanel(new BorderLayout());
         northWrapper.add(grid, BorderLayout.NORTH);
 
@@ -145,6 +143,9 @@ public class SharingPanel extends JPanel {
                 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         add(scrollPane, BorderLayout.CENTER);
+
+        // Dev panel hidden by default — unlocked via Help > Dev Mode
+        devPanel.setVisible(false);
 
         // ── Listeners ──────────────────────────────────────────────────────────
         enableCheckBox.addActionListener(e -> onToggleSharing());
@@ -194,22 +195,22 @@ public class SharingPanel extends JPanel {
         enableSmartCheckBox.setSelected(App.shareSmartPortal);
 
         if (App.sharePortal) {
-            statusLabel.setText("● Enabled");
+            statusLabel.setText("\u25cf Enabled");
             statusLabel.setForeground(new Color(0, 150, 60));
         } else {
-            statusLabel.setText("○ Disabled");
+            statusLabel.setText("\u25cb Disabled");
             statusLabel.setForeground(Color.GRAY);
         }
 
         if (App.shareSmartPortal) {
-            smartStatusLabel.setText("● Enabled");
+            smartStatusLabel.setText("\u25cf Enabled");
             smartStatusLabel.setForeground(new Color(0, 150, 60));
         } else {
-            smartStatusLabel.setText("○ Disabled");
+            smartStatusLabel.setText("\u25cb Disabled");
             smartStatusLabel.setForeground(Color.GRAY);
         }
 
-        // Endpoint
+        // Endpoint radio
         if (Portal.uploadResourceLocator.equalsIgnoreCase(Portal.LOCAL_UPLOAD_LOCATOR)) {
             localRb.setSelected(true);
         } else if (Portal.uploadResourceLocator.equalsIgnoreCase(Portal.TEST_UPLOAD_LOCATOR)) {
@@ -218,7 +219,7 @@ public class SharingPanel extends JPanel {
             prodRb.setSelected(true);
         }
 
-        // Protocol
+        // Protocol radio
         if (Portal.uploadProtocol.equalsIgnoreCase(Portal.HTTPS)) {
             httpsRb.setSelected(true);
         } else {
@@ -229,12 +230,12 @@ public class SharingPanel extends JPanel {
     }
 
     /**
-     * Updates the titled border of the developer panel to reflect the active
-     * endpoint(s) based on which sharing options are currently enabled.
+     * Updates the titled border of the dev panel and the header portal link
+     * to reflect the currently active endpoint.
      */
     private void refreshBorderTitle() {
         boolean benchmark = enableCheckBox.isSelected();
-        boolean smart = enableSmartCheckBox.isSelected();
+        boolean smart     = enableSmartCheckBox.isSelected();
         String title;
         if (benchmark && smart) {
             title = "Endpoint \u2014 " + Portal.getUploadUrl() + "  |  " + Portal.getSmartUploadUrl();
@@ -247,5 +248,48 @@ public class SharingPanel extends JPanel {
         }
         devPanel.setBorder(BorderFactory.createTitledBorder(title));
         devPanel.repaint();
+
+        // Keep the header link in sync with the active endpoint
+        String browseUrl = Portal.getPortalBrowseUrl();
+        portalLink.setText("<html><a href=''>" + browseUrl + "</a></html>");
+        portalLink.setToolTipText(browseUrl);
+    }
+
+    /**
+     * Creates a small hyperlink-styled label that opens {@link Portal#getPortalBrowseUrl()}
+     * in the system browser when clicked.
+     */
+    private JLabel makeLinkLabel() {
+        String url = Portal.getPortalBrowseUrl();
+        JLabel label = new JLabel("<html><a href=''>" + url + "</a></html>");
+        label.setFont(label.getFont().deriveFont(Font.PLAIN, 11f));
+        label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        label.setToolTipText(url);
+        label.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                try {
+                    Desktop.getDesktop().browse(URI.create(Portal.getPortalBrowseUrl()));
+                } catch (Exception ex) {
+                    App.err("Could not open portal URL: " + ex.getMessage());
+                }
+            }
+        });
+        return label;
+    }
+
+    /**
+     * Shows or hides the developer endpoint/protocol controls.
+     * Called by the Help > Dev Mode menu item after password verification.
+     */
+    public void setDevModeVisible(boolean visible) {
+        devPanel.setVisible(visible);
+        revalidate();
+        repaint();
+    }
+
+    /** Returns true if the dev panel is currently visible. */
+    public boolean isDevModeVisible() {
+        return devPanel.isVisible();
     }
 }

@@ -98,6 +98,21 @@ public class Portal {
         return uploadProtocol + locator;
     }
 
+    /**
+     * Returns a user-navigable portal URL — just the protocol + host, no API
+     * path, and no port number (except localhost where the port is meaningful).
+     * Reflects whichever endpoint is currently active (production/test/localhost).
+     */
+    static String getPortalBrowseUrl() {
+        java.net.URI uri = java.net.URI.create(getUploadUrl());
+        String host = uri.getHost();
+        if ("localhost".equalsIgnoreCase(host)) {
+            int port = uri.getPort();
+            return uploadProtocol + "localhost" + (port != -1 ? ":" + port : "");
+        }
+        return uploadProtocol + host;
+    }
+
     static void uploadSmart(SmartSnapshot snap) {
         String uploadUrl = getSmartUploadUrl();
         URI uploadUri = URI.create(uploadUrl);
