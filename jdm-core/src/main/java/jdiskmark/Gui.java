@@ -1188,9 +1188,14 @@ public final class Gui {
      */
     static public void runSmart() {
         
-        if (!App.isLinux() && !App.isMacOs()) { 
-            App.msg("SMART is only available on Linux and macOS");
+        if (!App.isLinux() && !App.isMacOs() && !App.isWindows()) {
+            App.msg("SMART is only available on Linux, macOS, and Windows");
             return;
+        }
+
+        // On Windows, if not already admin, escalation will trigger a UAC prompt.
+        if (App.isWindows() && !App.isAdmin && smartPanel != null) {
+            smartPanel.setStatus("A Windows security (UAC) prompt will appear to authorise SMART access...");
         }
         
         if (smartPanel == null || App.locationDir == null) {
@@ -1224,10 +1229,22 @@ public final class Gui {
                             SMART_LOG.log(Level.WARNING, "runSmart: no device for {0}", locDir);
                             return null;
                         }
+                    } else if (App.isWindows()) {
+                        String driveLetter = UtilOs.getDriveLetterWindows(path);
+                        String driveNum = UtilOs.getPhysicalDriveNumberWindows(driveLetter);
+                        if (driveNum != null) {
+                            deviceRef[0] = "pd" + driveNum;
+                        }
                     }
-                    if (Smart.process == null || !Smart.process.isAlive()) {
-                        Smart.startPrivilegedShell();
-                        Smart.startHeartbeat();
+                    if (deviceRef[0] == null) {
+                        SMART_LOG.log(Level.WARNING, "runSmart: no device for {0}", locDir);
+                        return null;
+                    }
+                    if (!App.isWindows()) {
+                        if (Smart.process == null || !Smart.process.isAlive()) {
+                            Smart.startPrivilegedShell();
+                            Smart.startHeartbeat();
+                        }
                     }
                     return Smart.getSmart(deviceRef[0]);
                 } catch (IOException ex) {
@@ -1251,6 +1268,13 @@ public final class Gui {
                         lastSmartData = null;
                         lastSmartDeviceName = null;
                         smartPanel.clear();
+                        // Give the user a specific hint on Windows
+                        if (App.isWindows()) {
+                            String hint = App.isAdmin
+                                    ? "SMART data unavailable — ensure smartctl is installed (smartmontools.org)."
+                                    : "SMART access was cancelled or failed — accept the UAC prompt to read SMART data.";
+                            smartPanel.setStatus(hint);
+                        }
                     }
                 } catch (InterruptedException | ExecutionException ex) {
                     SMART_LOG.log(Level.WARNING, "runSmart: panel update failed", ex);

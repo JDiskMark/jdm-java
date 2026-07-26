@@ -88,6 +88,62 @@ public class Smart {
      * </ol>
      */
     static String resolveSmartctlPath() {
+        if (App.isWindows()) {
+            // 1. Bundled copy — derive app dir from the running jar's location.
+            //    jpackage on Windows does NOT set APPDIR (that's Linux-only).
+            //    jar lives at <install-dir>\app\<jar>.jar
+            //    → <install-dir>\app\smartctl\smartctl.exe
+            try {
+                java.net.URL jarUrl = Smart.class.getProtectionDomain().getCodeSource().getLocation();
+                if (jarUrl != null) {
+                    Path jarPath = Path.of(jarUrl.toURI());
+                    Path appDir  = jarPath.getParent();   // …\app\
+                    Path bundled = appDir.resolve("smartctl/smartctl.exe");
+                    if (Files.isExecutable(bundled)) {
+                        LOGGER.info("Using bundled smartctl (jar-relative): " + bundled);
+                        return bundled.toString();
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.warning("resolveSmartctlPath: jar URL lookup failed: " + e.getMessage());
+            }
+            // 2. Fallback via java.home: runtime\ is sibling of app\
+            //    <install-dir>\runtime  →  <install-dir>\app\smartctl\smartctl.exe
+            try {
+                Path runtimeDir = Path.of(System.getProperty("java.home"));
+                Path bundled = runtimeDir.getParent().resolve("app/smartctl/smartctl.exe");
+                if (Files.isExecutable(bundled)) {
+                    LOGGER.info("Using bundled smartctl (java.home-relative): " + bundled);
+                    return bundled.toString();
+                }
+            } catch (Exception e) {
+                LOGGER.warning("resolveSmartctlPath: java.home lookup failed: " + e.getMessage());
+            }
+            // 3. Legacy: APPDIR env var (set by some custom launchers, not standard jpackage on Windows)
+            String appDirEnv = System.getenv("APPDIR");
+            if (appDirEnv != null) {
+                Path bundled = Path.of(appDirEnv).resolve("smartctl/smartctl.exe");
+                if (Files.isExecutable(bundled)) {
+                    LOGGER.info("Using bundled smartctl (APPDIR): " + bundled);
+                    return bundled.toString();
+                }
+            }
+            // 4. Well-known system installation paths
+            Path installed = Path.of("C:\\Program Files\\smartmontools\\bin\\smartctl.exe");
+            if (Files.isExecutable(installed)) {
+                LOGGER.info("Using installed smartctl: " + installed);
+                return installed.toString();
+            }
+            installed = Path.of("C:\\Program Files (x86)\\smartmontools\\bin\\smartctl.exe");
+            if (Files.isExecutable(installed)) {
+                LOGGER.info("Using installed smartctl: " + installed);
+                return installed.toString();
+            }
+            // 5. System PATH fallback
+            LOGGER.info("Using system smartctl: smartctl.exe");
+            return "smartctl.exe";
+        }
+
         // 1. Bundled copy via APPDIR (Linux jpackage sets this; macOS does not).
         String appDir = System.getenv("APPDIR");
         if (appDir != null) {
@@ -156,6 +212,9 @@ public class Smart {
      * @throws IOException if the process cannot be started
      */
     public static void startPrivilegedShell() throws IOException {
+        if (App.isWindows()) {
+            return;
+        }
         synchronized (pLock) {
             if (process != null && process.isAlive()) {
                 return; // already running
@@ -237,6 +296,10 @@ public class Smart {
      * Only one thread is started; subsequent calls are ignored.
      */
     public static void startHeartbeat() {
+        if (App.isWindows()) {
+            // TODO: implement persistent process to avoid repeated UAC auth prompt
+            return;
+        }
         if (hbThread != null && hbThread.isAlive()) return;
         hbThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
@@ -262,19 +325,111 @@ public class Smart {
     }
     
     /**
-     * Queries SMART data for the given device by writing a {@code smartctl}
-     * command to the persistent privileged shell and reading back its output
-     * up to a unique sentinel line.  Logs the key fields at INFO level.
+     * Runs {@code smartctl} directly in-process (Windows elevated / fast path).
+     * Tries {@code /dev/<device>} first, then the bare device name as a fallback,
+     * since some Windows controller drivers require one form or the other.
      *
-     * <p>{@link #startPrivilegedShell()} must have been called before this.
+     * @param deviceName bare device name, e.g. {@code pd0}
+     * @param smartctlPath absolute path to {@code smartctl.exe}
+     * @return a populated {@link Smart} instance, or {@code null} on error
+     */
+    private static Smart getSmartDirect(String deviceName, String smartctlPath) {
+        try {
+            for (String devArg : new String[]{"/dev/" + deviceName, deviceName}) {
+                ProcessBuilder pb = new ProcessBuilder(smartctlPath, "--json", "-a", devArg);
+                pb.redirectErrorStream(true);
+                Process p = pb.start();
+
+                StringBuilder sb = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        sb.append(line).append('\n');
+                    }
+                }
+                if (!p.waitFor(15, TimeUnit.SECONDS)) {
+                    p.destroyForcibly();
+                    LOGGER.warning("getSmartDirect: smartctl timed out for: " + devArg);
+                    continue;
+                }
+                String result = sb.toString().trim();
+                if (result.isEmpty()) {
+                    LOGGER.warning("getSmartDirect: empty response for: " + devArg);
+                    continue;
+                }
+                if (!result.startsWith("{")) {
+                    LOGGER.warning("getSmartDirect: non-JSON response for " + devArg + ": " + result);
+                    continue;
+                }
+                Smart smart = fromJson(result);
+                logSmart(smart);
+                return smart;
+            }
+            LOGGER.severe("getSmartDirect: all attempts failed for: " + deviceName);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            LOGGER.log(Level.SEVERE, "getSmartDirect interrupted for: " + deviceName, ex);
+        } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, "getSmartDirect failed for: " + deviceName, ex);
+        }
+        return null;
+    }
+
+    /**
+     * Queries SMART data for the given device.
      *
-     * @param deviceName bare device name, e.g. {@code nvme0n1}
+     * <p>On <b>Windows</b>:
+     * <ul>
+     *   <li>If the process is already elevated ({@link App#isAdmin}), runs
+     *       {@code smartctl} directly via {@link #getSmartDirect}.</li>
+     *   <li>Otherwise, delegates to {@link SmartEscalation#runElevated} which
+     *       triggers a UAC prompt and runs an elevated helper, returning the
+     *       JSON via a temp file in {@code %LOCALAPPDATA%\JDiskMark\}.</li>
+     * </ul>
+     *
+     * <p>On <b>Linux / macOS</b>, writes the command to the persistent privileged
+     * shell started by {@link #startPrivilegedShell()} and reads back the output.
+     *
+     * @param deviceName bare device name, e.g. {@code nvme0n1} or {@code pd0}
      * @return a populated {@link Smart} instance, or {@code null} on error
      */
     public static Smart getSmart(String deviceName) {
         if (deviceName == null || !deviceName.matches("[A-Za-z0-9._-]+")) {
             LOGGER.severe("getSmart: invalid device name: " + deviceName);
             return null;
+        }
+        if (App.isWindows()) {
+            String smartctlPath = resolveSmartctlPath();
+            LOGGER.info("getSmart: using smartctl at: " + smartctlPath + " for device: " + deviceName);
+
+            if (App.isAdmin) {
+                // ── Fast path: already elevated, run smartctl directly ──────────────
+                return getSmartDirect(deviceName, smartctlPath);
+            } else {
+                // ── Escalation path: request UAC elevation for the helper ────────────
+                try {
+                    LOGGER.info("getSmart: not admin — requesting UAC elevation for device: " + deviceName);
+                    String json = SmartEscalation.runElevated(deviceName, smartctlPath);
+                    if (json == null) {
+                        LOGGER.warning("getSmart: escalation returned null (UAC cancelled?) for: " + deviceName);
+                        return null;
+                    }
+                    if (!json.startsWith("{")) {
+                        LOGGER.warning("getSmart: escalation returned non-JSON for " + deviceName + ": " + json);
+                        return null;
+                    }
+                    Smart smart = fromJson(json);
+                    logSmart(smart);
+                    return smart;
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    LOGGER.log(Level.SEVERE, "getSmart escalation interrupted for: " + deviceName, ex);
+                } catch (IOException ex) {
+                    LOGGER.log(Level.SEVERE, "getSmart escalation failed for: " + deviceName, ex);
+                }
+                return null;
+            }
         }
         final String sentinel = "---SMART_DONE---";
         try {

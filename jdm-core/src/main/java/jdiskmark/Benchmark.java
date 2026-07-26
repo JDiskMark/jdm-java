@@ -21,6 +21,7 @@ import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import java.io.IOException;
@@ -192,6 +193,11 @@ public class Benchmark implements Serializable {
     public void setRenderMode(RenderFrequencyMode renderMode) {
         this.renderMode = renderMode;
     }
+
+    @Transient
+    private Smart smartData;
+    public Smart getSmartData() { return smartData; }
+    public void setSmartData(Smart smartData) { this.smartData = smartData; }
 
     // get the first operation of that type
     public BenchmarkOperation getOperation(IOMode mode) {
