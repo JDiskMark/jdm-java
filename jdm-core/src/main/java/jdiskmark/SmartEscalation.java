@@ -53,6 +53,11 @@ public class SmartEscalation {
     public static String runElevated(String device, String smartctlPath)
             throws IOException, InterruptedException {
 
+        if (device == null || !device.matches("[A-Za-z0-9._-]+")) {
+            LOGGER.warning("SmartEscalation: invalid device name: " + device);
+            return null;
+        }
+
         Path ipcDir = resolveIpcDir();
         Files.createDirectories(ipcDir);
 
@@ -114,8 +119,10 @@ public class SmartEscalation {
         pb.redirectErrorStream(true);
         Process launcher = pb.start();
 
-        // Drain stdout/stderr to prevent pipe-full stalls
-        launcher.getInputStream().transferTo(OutputStream.nullOutputStream());
+        // Drain stdout/stderr to prevent pipe-full stalls (async so timeout still works)
+        Thread.startVirtualThread(() -> {
+            try { launcher.getInputStream().transferTo(OutputStream.nullOutputStream()); } catch (IOException ignored) {}
+        });
 
         if (!launcher.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
             launcher.destroyForcibly();
@@ -141,7 +148,7 @@ public class SmartEscalation {
 
         String json = Files.readString(outputFile, StandardCharsets.UTF_8).trim();
         Files.deleteIfExists(outputFile);
-        // Strip UTF-8 BOM (U+FEFF) if present — .NET's Encoding.UTF8 includes a BOM by default
+        // Strip UTF-8 BOM (U+FEFF) if present (some writers may include a BOM).
         if (json.startsWith("\uFEFF")) {
             json = json.substring(1).trim();
         }

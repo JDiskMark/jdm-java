@@ -64,6 +64,13 @@
                                                  dest="${project.build.directory}/smartctl-win.zip"
                                                  verbose="true"
                                                  retries="3"/>
+                                            <checksum file="${project.build.directory}/smartctl-win.zip" algorithm="SHA-256" property="smartctl.checksum"/>
+                                            <condition property="smartctl.checksum.ok">
+                                                <equals arg1="${smartctl.checksum}" arg2="cc32cc0ca24258933953182f0fcacd964c8762b947e96007ff69210a215eccf3" casesensitive="false"/>
+                                            </condition>
+                                            <fail message="Checksum mismatch for smartctl-win.zip! Expected cc32cc0ca24258933953182f0fcacd964c8762b947e96007ff69210a215eccf3 but got ${smartctl.checksum}">
+                                                <condition><not><isset property="smartctl.checksum.ok"/></not></condition>
+                                            </fail>
                                             <unzip src="${project.build.directory}/smartctl-win.zip"
                                                    dest="${project.basedir}/../../jdm-core/target"
                                                    overwrite="true"/>

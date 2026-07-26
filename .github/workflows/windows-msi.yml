@@ -53,6 +53,11 @@ jobs:
           New-Item -ItemType Directory -Force -Path $dest | Out-Null
           Write-Host "[smartctl] Downloading smartctl-7.5-windows-x86_64.zip from jdm-deps..."
           Invoke-WebRequest -Uri "https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-7.5-win64/smartctl-7.5-windows-x86_64.zip" -OutFile $zip
+          $expectedHash = "CC32CC0CA24258933953182F0FCACD964C8762B947E96007FF69210A215ECCF3"
+          $actualHash = (Get-FileHash -Path $zip -Algorithm SHA256).Hash
+          if ($actualHash -ne $expectedHash) {
+              throw "Checksum mismatch for smartctl zip! Expected $expectedHash, got $actualHash"
+          }
           Expand-Archive -Path $zip -DestinationPath (Split-Path $dest) -Force
           $exe = Get-Item "$dest/smartctl.exe" -ErrorAction Stop
           Write-Host "[smartctl] Staged: $($exe.FullName) ($($exe.Length) bytes)"
