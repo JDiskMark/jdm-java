@@ -95,7 +95,7 @@ jobs:
 
       - name: Smoke test — install RPM and verify SMART assets
         run: |
-          rpm -ivh --nodeps jdm-dist/jdm-rpm/target/*.rpm || true
+          rpm -ivh --nodeps jdm-dist/jdm-rpm/target/*.rpm
           # Verify bundled smartctl was installed correctly
           test -x /opt/jdiskmark/smartctl/smartctl
           /opt/jdiskmark/smartctl/smartctl --version
