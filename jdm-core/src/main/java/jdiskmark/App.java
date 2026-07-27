@@ -182,6 +182,24 @@ public class App {
     }
 
     /**
+     * Returns {@code true} when running inside a Flatpak sandbox.
+     *
+     * @return
+     */
+    public static boolean isFlatpak() {
+        return UtilOs.isFlatpak();
+    }
+
+    /**
+     * Returns {@code true} when the current packaging context supports SMART.
+     *
+     * @return
+     */
+    public static boolean isSmartSupported() {
+        return UtilOs.isSmartSupported(osName());
+    }
+
+    /**
      * Resolves the OS name, falling back to the system property when {@link #os} is
      * not yet set.Safe to call before {@link #init()} and in CLI mode.
      * 

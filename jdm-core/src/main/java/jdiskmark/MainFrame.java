@@ -148,13 +148,17 @@ public final class MainFrame extends javax.swing.JFrame {
         // Start on the Benchmark tab — it's the primary interaction surface.
         mainTabPane.setSelectedIndex(mainTabPane.getTabCount() - 1);
 
-        // SMART tab — Linux and macOS (requires bundled or system smartctl)
-        if (App.isLinux() || App.isMacOs() || App.isWindows()) {
+        // SMART tab — only on packaging contexts where smartctl + privilege
+        // escalation work (DEB, RPM-with-smartctl, macOS, Windows).
+        // Hidden inside Flatpak until host-escape support is added.
+        if (App.isSmartSupported()) {
             mainTabPane.addTab(Tabs.TOP_SMART, Gui.smartPanel);
 
             Gui.smartReportsPanel = new SmartReportsPanel();
             // SMART Reports lives in bottom tabbedPane
             tabbedPane.addTab(Tabs.BOTTOM_SMART_REPORTS, Gui.smartReportsPanel);
+        } else {
+            smartCbMenuItem.setVisible(false);
         }
         // #117 Sharing tab — added programmatically so the NetBeans form is untouched.
         sharingPanel = new SharingPanel();

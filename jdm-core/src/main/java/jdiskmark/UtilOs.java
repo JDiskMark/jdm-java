@@ -42,6 +42,33 @@ public class UtilOs {
         return osName != null && osName.contains("Linux");
     }
 
+    /**
+     * Returns {@code true} when running inside a Flatpak sandbox.
+     * Flatpak always creates {@code /.flatpak-info} inside the container.
+     */
+    public static boolean isFlatpak() {
+        return java.nio.file.Files.exists(java.nio.file.Path.of("/.flatpak-info"));
+    }
+
+    /**
+     * Returns {@code true} when the current packaging context supports SMART.
+     *
+     * <p>SMART requires {@code smartctl} plus privilege escalation
+     * ({@code pkexec} on Linux, UAC on Windows, {@code sudo} on macOS).
+     * Flatpak sandboxing blocks {@code pkexec} and direct block-device
+     * access, so SMART is disabled there until a host-escape mechanism
+     * (e.g.&nbsp;{@code flatpak-spawn --host}) is implemented.
+     */
+    public static boolean isSmartSupported(String osName) {
+        if (isMacOs(osName) || isWindows(osName)) {
+            return true;
+        }
+        if (isLinux(osName)) {
+            return !isFlatpak();
+        }
+        return false;
+    }
+
     /** The disk model power shell utility. */
     public static final String DISK_MODEL_PS_FILENAME = "disk-model.ps1";
     

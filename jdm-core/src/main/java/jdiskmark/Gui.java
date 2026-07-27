@@ -1209,8 +1209,8 @@ public final class Gui {
      */
     static public void runSmart() {
         
-        if (!App.isLinux() && !App.isMacOs() && !App.isWindows()) {
-            App.msg("SMART is only available on Linux, macOS, and Windows");
+        if (!App.isSmartSupported()) {
+            App.msg("SMART is not available in this packaging context");
             return;
         }
 
