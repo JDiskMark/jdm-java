@@ -57,6 +57,8 @@
 
         <!-- RPM version must not contain hyphens -->
         <rpm.version>0.8.0</rpm.version>
+        <!-- RPM release field: CI overrides with pre-release label (e.g. ci.d.47) -->
+        <rpm.release>1</rpm.release>
 
         <!-- macos versions do not accept values less than 1.0.0 -->
         <dmg.version>1.0.0</dmg.version>
