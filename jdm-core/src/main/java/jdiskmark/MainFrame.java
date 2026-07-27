@@ -149,10 +149,11 @@ public final class MainFrame extends javax.swing.JFrame {
         mainTabPane.setSelectedIndex(mainTabPane.getTabCount() - 1);
 
         // SMART tab — Linux and macOS (requires bundled or system smartctl)
-        if (App.isLinux() || App.isMacOs()) {
+        if (App.isLinux() || App.isMacOs() || App.isWindows()) {
             mainTabPane.addTab(Tabs.TOP_SMART, Gui.smartPanel);
+
             Gui.smartReportsPanel = new SmartReportsPanel();
-            // SMART Reports lives in the bottom tabbedPane alongside Benchmarks + Events + ...
+            // SMART Reports lives in bottom tabbedPane
             tabbedPane.addTab(Tabs.BOTTOM_SMART_REPORTS, Gui.smartReportsPanel);
         }
         // #117 Sharing tab — added programmatically so the NetBeans form is untouched.

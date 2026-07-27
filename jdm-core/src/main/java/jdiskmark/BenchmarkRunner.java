@@ -5,6 +5,7 @@ import static jdiskmark.GcDetector.MAX_GC_RETRIES;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.time.LocalDateTime;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -129,11 +130,51 @@ public class BenchmarkRunner {
             GcDetector.triggerAndWait(); // Initial cleanup
         }
         
-        // Fetch SMART data before the benchmark starts (Linux/macOS only, non-fatal if it fails).
-        // Gui.runSmart() handles null/missing locationDir, dead privileged shell, and
-        // device-resolution failures internally — no risk of crashing the benchmark.
-        if (Smart.smartEnable && (App.isLinux() || App.isMacOs())) {
-            Gui.runSmart();
+        // Fetch SMART data before the benchmark starts (Linux, macOS, and Windows, non-fatal if it fails).
+        if (Smart.smartEnable) {
+            Smart smart = null;
+            try {
+                Path path = App.locationDir.toPath();
+                if (App.isLinux() || App.isMacOs()) {
+                    String partition = UtilOs.getPartitionFromFilePathLinux(path);
+                    List<String> devices = UtilOs.getDeviceNamesFromPartitionLinux(partition);
+                    if (devices != null && !devices.isEmpty()) {
+                        String device = devices.get(0);
+                        if (Smart.process == null || !Smart.process.isAlive()) {
+                            Smart.startPrivilegedShell();
+                            Smart.startHeartbeat();
+                        }
+                        smart = Smart.getSmart(device);
+                    }
+                } else if (App.isWindows()) {
+                    String driveLetter = UtilOs.getDriveLetterWindows(path);
+                    String driveNum = UtilOs.getPhysicalDriveNumberWindows(driveLetter);
+                    if (driveNum != null) {
+                        smart = Smart.getSmart("pd" + driveNum);
+                    }
+                }
+            } catch (Exception ex) {
+                logger.log(Level.WARNING, "Failed to fetch SMART data for benchmark", ex);
+            }
+            if (smart != null) {
+                benchmark.setSmartData(smart);
+            }
+
+            // Update the SMART tab if running in GUI mode, without re-triggering SMART retrieval.
+            if (Gui.mainFrame != null && Gui.smartPanel != null) {
+                if (smart != null) {
+                    final Smart finalSmart = smart;
+                    String devName = (smart.getDevice() != null) ? smart.getDevice().getName() : null;
+                    Gui.lastSmartData = smart;
+                    Gui.lastSmartDeviceName = devName;
+                    javax.swing.SwingUtilities.invokeLater(() -> {
+                        Gui.smartPanel.populate(finalSmart);
+                        Gui.smartPanel.onDataLoaded(devName != null ? devName : "unknown");
+                    });
+                } else {
+                    Gui.runSmart();
+                }
+            }
         }
         
         benchmark.recordStartTime();

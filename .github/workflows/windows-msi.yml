@@ -41,6 +41,28 @@ jobs:
         with:
           disable_ci_label: ${{ inputs.disable_ci_label || false }}
 
+      - name: Fetch bundled smartctl from jdm-deps
+        # Downloads the pre-packaged smartctl 7.5 binary from the public
+        # JDiskMark/jdm-deps release asset into jdm-core/target/smartctl/.
+        # The windows-msi Maven profile passes jdm-core/target as jpackage --input,
+        # so smartctl.exe is included at <install-dir>\app\smartctl\smartctl.exe in the installed image.
+        shell: pwsh
+        run: |
+          $dest = "jdm-core/target/smartctl"
+          $zip  = "$env:TEMP/smartctl-win.zip"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Write-Host "[smartctl] Downloading smartctl-7.5-windows-x86_64.zip from jdm-deps..."
+          Invoke-WebRequest -Uri "https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-7.5-win64/smartctl-7.5-windows-x86_64.zip" -OutFile $zip
+          $expectedHash = "CC32CC0CA24258933953182F0FCACD964C8762B947E96007FF69210A215ECCF3"
+          $actualHash = (Get-FileHash -Path $zip -Algorithm SHA256).Hash
+          if ($actualHash -ne $expectedHash) {
+              throw "Checksum mismatch for smartctl zip! Expected $expectedHash, got $actualHash"
+          }
+          Expand-Archive -Path $zip -DestinationPath (Split-Path $dest) -Force
+          $exe = Get-Item "$dest/smartctl.exe" -ErrorAction Stop
+          Write-Host "[smartctl] Staged: $($exe.FullName) ($($exe.Length) bytes)"
+          & "$dest/smartctl.exe" --version
+
       - name: Build Windows MSI (unsigned)
         # Builds jdm-core first (-am = also build upstream dependencies),
         # then jdm-msi. Explicitly activating the windows-msi profile.
