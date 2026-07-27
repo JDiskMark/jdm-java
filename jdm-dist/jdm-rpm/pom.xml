@@ -69,7 +69,7 @@
                                         <argument>--name</argument><argument>${pkg.name}</argument>
                                         <!-- RPM supports numeric versions without hyphens. -->
                                         <argument>--app-version</argument><argument>${rpm.version}</argument>
-                                        <argument>--vendor</argument><argument>${app.name} Maintainers</argument>
+                                        <argument>--vendor</argument><argument>${app.name} Developers</argument>
                                         <argument>--description</argument><argument>Java disk benchmark utility for read/write performance testing</argument>
                                         <argument>--input</argument><argument>${project.basedir}/../../jdm-core/target</argument>
                                         <argument>--main-jar</argument><argument>jdm-core-${project.version}.jar</argument>

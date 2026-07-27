@@ -129,7 +129,7 @@
                                              The generated MSI is renamed to pkg.name-version.msi in install phase. -->
                                         <argument>--name</argument><argument>${app.name} ${project.version}</argument>
                                         <argument>--app-version</argument><argument>${msi.version}</argument>
-                                        <argument>--vendor</argument><argument>${app.name} Maintainers</argument>
+                                        <argument>--vendor</argument><argument>${app.name} Developers</argument>
                                         <!-- install-dir matches name for side-by-side version installs -->
                                         <argument>--install-dir</argument><argument>${app.name} ${project.version}</argument>
                                         <argument>--input</argument><argument>${project.basedir}/../../jdm-core/target</argument>
@@ -206,4 +206,4 @@
         </profile>
 
     </profiles>
-</project>
+</project>
