@@ -45,7 +45,7 @@ public class Cli {
 
                         Removable drives can be disconnected and reconnected.
 
-                        runn command `sudo purge`
+                        run command `sudo purge`
 
                         Press OK to continue when disk cache has been cleared.""";
                 System.out.println(message);

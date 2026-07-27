@@ -152,10 +152,9 @@ public class BenchmarkRunner {
         // cache reset if
         // 1. not cancelled
         // 2. read operation
-        // 3. !directIo || (directIo & macOs)
+        // 3. direct I/O not enabled (direct I/O bypasses cache on all platforms)
         if (!listener.isCancelled() && config.hasReadOperation() &&
-                (!config.getDirectIoEnabled() || 
-                (config.getDirectIoEnabled() && App.isMacOs()))) {    
+                !config.getDirectIoEnabled()) {
             listener.attemptCacheDrop();
         }
         
