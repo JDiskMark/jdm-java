@@ -549,9 +549,9 @@ public final class Gui {
      */
     public static void promptFirstRunPortalConsent() {
         String message = "<html><body style='width:380px'>"
-                + "<b>Help our community make smarter hardware decisions!</b><br><br>"
-                + "Share your benchmark results with our community portal (jdiskmark.net) "
-                + "to help us compare real-world storage performance and identify "
+                + "<b>Help us make smarter hardware decisions!</b><br><br>"
+                + "Sharing benchmark results with our community portal (jdiskmark.net) "
+                + "will help us measure real-world storage performance and identify "
                 + "reliability trends across drives and platforms.<br><br>"
                 + "What's shared:"
                 + "<ul>"
