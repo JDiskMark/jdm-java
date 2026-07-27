@@ -59,6 +59,21 @@ jobs:
         with:
           disable_ci_label: ${{ inputs.disable_ci_label || false }}
 
+      - name: Fetch bundled smartctl from jdm-deps
+        # Downloads the pre-packaged smartctl 7.5 binary from the public
+        # JDiskMark/jdm-deps release asset.  The staging directory is picked
+        # up by the spec template's %install section and lands at
+        # /opt/jdiskmark/smartctl/smartctl in the installed image.
+        run: |
+          curl -fsSL -o smartctl.tar.gz \
+            https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-7.5/smartctl-7.5-linux-x86_64.tar.gz
+          mkdir -p jdm-dist/jdm-rpm/src/main/app-content
+          tar -xzf smartctl.tar.gz -C jdm-dist/jdm-rpm/src/main/app-content
+          # Sanity check: binary must exist and be executable
+          test -x jdm-dist/jdm-rpm/src/main/app-content/smartctl/smartctl
+          echo "smartctl staging OK:"
+          jdm-dist/jdm-rpm/src/main/app-content/smartctl/smartctl --version || true
+
       - name: Build RPM Package
         # Explicitly activating the linux-rpm profile to ensure jpackage runs.
         run: |
@@ -76,3 +91,13 @@ jobs:
           if-no-files-found: error
           # Disable zipping so it can be downloaded raw from the Actions tab
           archive: false
+
+      - name: Smoke test — install RPM and verify SMART assets
+        run: |
+          rpm -ivh --nodeps jdm-dist/jdm-rpm/target/*.rpm || true
+          # Verify bundled smartctl was installed correctly
+          test -x /opt/jdiskmark/smartctl/smartctl
+          /opt/jdiskmark/smartctl/smartctl --version
+          # Verify polkit policy was deployed
+          test -f /usr/share/polkit-1/actions/net.jdiskmark.smartctl.policy
+          echo "SMART assets verified OK"

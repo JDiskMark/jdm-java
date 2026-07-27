@@ -25,11 +25,12 @@
                         <executions>
                             <!--
                                 Render the spec template into target/rpm-resources/jdiskmark.spec.
-                                Substitutes @VERSION@ and @LICENSE_PATH@ via sed, mirroring the
-                                Ant build. The spec file creates the /usr/bin/jdiskmark symlink
-                                so users can run jdiskmark from the command line after install.
-                                The %post section of the spec patches the generated desktop entry
-                                to add StartupWMClass, Name, GenericName, Keywords.
+                                Substitutes @VERSION@, @LICENSE_PATH@, @APP_CONTENT_DIR@, and
+                                @POLICY_PATH@ via sed, mirroring the Ant build. The spec file
+                                creates the /usr/bin/jdiskmark symlink so users can run jdiskmark
+                                from the command line after install. The %post section of the spec
+                                patches the generated desktop entry to add StartupWMClass, Name,
+                                GenericName, Keywords, and installs the polkit policy for SMART.
                             -->
                             <execution>
                                 <id>render-rpm-spec</id>
@@ -41,7 +42,7 @@
                                     <executable>bash</executable>
                                     <arguments>
                                         <argument>-c</argument>
-                                        <argument>mkdir -p "${project.build.directory}/rpm-resources" &amp;&amp; sed -e "s|@VERSION@|${rpm.version}|g" -e "s|@LICENSE_PATH@|${project.basedir}/../../LICENSE.md|g" "${project.basedir}/resources/jdiskmark.spec.template" &gt; "${project.build.directory}/rpm-resources/jdiskmark.spec"</argument>
+                                        <argument>mkdir -p "${project.build.directory}/rpm-resources" &amp;&amp; sed -e "s|@VERSION@|${rpm.version}|g" -e "s|@LICENSE_PATH@|${project.basedir}/../../LICENSE.md|g" -e "s|@APP_CONTENT_DIR@|${project.basedir}/src/main/app-content|g" -e "s|@POLICY_PATH@|${project.basedir}/resources/net.jdiskmark.smartctl.policy|g" "${project.basedir}/resources/jdiskmark.spec.template" &gt; "${project.build.directory}/rpm-resources/jdiskmark.spec"</argument>
                                     </arguments>
                                 </configuration>
                             </execution>

@@ -97,6 +97,16 @@ jobs:
           RPM_VERSION=$(echo $VERSION | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo "0.0.0")
           sed -i "s|<rpm.version>.*</rpm.version>|<rpm.version>$RPM_VERSION</rpm.version>|" pom.xml
 
+      - name: Fetch bundled smartctl from jdm-deps
+        run: |
+          curl -fsSL -o smartctl.tar.gz \
+            https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-7.5/smartctl-7.5-linux-x86_64.tar.gz
+          mkdir -p jdm-dist/jdm-rpm/src/main/app-content
+          tar -xzf smartctl.tar.gz -C jdm-dist/jdm-rpm/src/main/app-content
+          test -x jdm-dist/jdm-rpm/src/main/app-content/smartctl/smartctl
+          echo "smartctl staging OK:"
+          jdm-dist/jdm-rpm/src/main/app-content/smartctl/smartctl --version || true
+
       - name: Build RPM Package
         run: mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm --no-transfer-progress
 

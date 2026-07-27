@@ -57,6 +57,17 @@ cp -r %{_sourcedir}/opt/jdiskmark/* %{buildroot}/opt/jdiskmark
 install -d -m 755 %{buildroot}/usr/bin
 ln -sf /opt/jdiskmark/bin/jdiskmark %{buildroot}/usr/bin/jdiskmark
 
+# Stage bundled smartctl binary (fetched by CI; absent in local dev builds)
+if [ -d "@APP_CONTENT_DIR@/smartctl" ]; then
+  install -d -m 755 %{buildroot}/opt/jdiskmark/smartctl
+  install -m 755 "@APP_CONTENT_DIR@/smartctl/smartctl" %{buildroot}/opt/jdiskmark/smartctl/smartctl
+fi
+
+# Stage polkit policy alongside application files so %post can deploy it
+if [ -f "@POLICY_PATH@" ]; then
+  install -m 644 "@POLICY_PATH@" %{buildroot}/opt/jdiskmark/net.jdiskmark.smartctl.policy
+fi
+
 if [ "$(echo %{_sourcedir}/lib/systemd/system/*.service)" != '%{_sourcedir}/lib/systemd/system/*.service' ]; then
   install -d -m 755 %{buildroot}/lib/systemd/system
   cp %{_sourcedir}/lib/systemd/system/*.service %{buildroot}/lib/systemd/system
@@ -105,6 +116,14 @@ else
   echo "[post] Desktop entry not found: $DESKTOP (skipping xdg-desktop-menu)" >&2
 fi
 
+# Install the polkit action file so pkexec shows a branded JDiskMark
+# prompt when the app requests SMART data access.
+if [ -f /opt/jdiskmark/net.jdiskmark.smartctl.policy ]; then
+  install -D -m 644 \
+      /opt/jdiskmark/net.jdiskmark.smartctl.policy \
+      /usr/share/polkit-1/actions/net.jdiskmark.smartctl.policy || true
+fi
+
 %pre
 package_type=rpm
 file_belongs_to_single_package ()
@@ -137,6 +156,12 @@ fi
 
 %preun
 package_type=rpm
+
+# Remove the polkit policy on uninstall (but not on upgrade).
+# $1 == 0 means full removal; $1 >= 1 means upgrade.
+if [ "$1" -eq 0 ]; then
+  rm -f /usr/share/polkit-1/actions/net.jdiskmark.smartctl.policy
+fi
 file_belongs_to_single_package ()
 {
   if [ ! -e "$1" ]; then
