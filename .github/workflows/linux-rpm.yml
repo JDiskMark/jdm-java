@@ -81,6 +81,7 @@ jobs:
             -Drevision=${{ steps.ver.outputs.install_version }} \
             -Ddisplay.version=${{ steps.ver.outputs.display_version }} \
             -Drpm.version=${{ steps.ver.outputs.rpm_version }} \
+            -Drpm.release=${{ steps.ver.outputs.rpm_release }} \
             --no-transfer-progress
 
       - name: Upload RPM Artifact

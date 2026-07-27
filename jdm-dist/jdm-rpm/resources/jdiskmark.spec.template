@@ -1,7 +1,7 @@
 Summary: jdiskmark
 Name: jdiskmark
 Version: @VERSION@
-Release: 1
+Release: @RPM_RELEASE@
 License: Apache-2.0
 Vendor: Unknown
 

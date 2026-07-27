@@ -28,6 +28,9 @@ outputs:
   rpm_version:
     description: 'No-hyphen version for RPM spec (e.g. 0.8.0)'
     value: ${{ steps.compute.outputs.rpm_version }}
+  rpm_release:
+    description: 'RPM Release field — CI label for dev builds, 1 for releases (e.g. ci.d.47)'
+    value: ${{ steps.compute.outputs.rpm_release }}
 
 runs:
   using: composite
@@ -58,6 +61,7 @@ runs:
           echo "base_version=${BASE}"   >> "$GITHUB_OUTPUT"
           echo "msi_version=${BASE}"    >> "$GITHUB_OUTPUT"
           echo "rpm_version=${BASE}"    >> "$GITHUB_OUTPUT"
+          echo "rpm_release=1"           >> "$GITHUB_OUTPUT"
           echo "CI label skipped (branch=${BRANCH}, disable=${DISABLE})"
           exit 0
         fi
@@ -89,5 +93,6 @@ runs:
         echo "base_version=${BASE}"       >> "$GITHUB_OUTPUT"
         echo "msi_version=${BASE}"        >> "$GITHUB_OUTPUT"
         echo "rpm_version=${BASE}"        >> "$GITHUB_OUTPUT"
+        echo "rpm_release=ci.${SLUG}.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
         echo "CI version:      ${DISPLAY}"
         echo "Install version: ${INSTALL}"
