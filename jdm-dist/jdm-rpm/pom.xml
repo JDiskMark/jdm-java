@@ -85,6 +85,40 @@
                                     </arguments>
                                 </configuration>
                             </execution>
+
+                            <!--
+                                Rename the RPM to include the actual Release label.
+                                jpackage hardcodes %_rpmfilename with Release=1, so
+                                the output file is always *-1.x86_64.rpm regardless
+                                of the spec's Release field. This step renames it to
+                                match the real Release value from ${rpm.release}.
+                                For release builds where rpm.release=1, this is a no-op.
+                            -->
+                            <execution>
+                                <id>rename-rpm</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>bash</executable>
+                                    <arguments>
+                                        <argument>-c</argument>
+                                        <argument><![CDATA[
+for rpm in "${project.build.directory}"/jdiskmark-*-1.x86_64.rpm; do
+    [ -f "$rpm" ] || continue
+    new=$(echo "$rpm" | sed "s/-1\\.x86_64\\.rpm/-${rpm.release}.x86_64.rpm/")
+    if [ "$rpm" != "$new" ]; then
+        mv "$rpm" "$new"
+        echo "[rename] $(basename $rpm) -> $(basename $new)"
+    else
+        echo "[rename] no-op (release=1)"
+    fi
+done
+                                        ]]></argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
                         </executions>
                     </plugin>
                 </plugins>
