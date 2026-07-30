@@ -8,6 +8,8 @@ import static jdiskmark.Benchmark.BlockSequence.RANDOM;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+// See https://github.com/JDiskMark/jdm-java/issues/190
+// on approaches to formally resolve
 import com.sun.nio.file.ExtendedOpenOption;
 import java.io.File;
 import java.io.IOException;
