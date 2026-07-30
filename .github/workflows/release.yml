@@ -112,9 +112,19 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
-          # Strip suffixes for RPM format (e.g., 0.8.0-beta -> 0.8.0)
+          # Strip suffixes for RPM format (e.g., 0.8.0-rc1 -> 0.8.0)
           RPM_VERSION=$(echo $VERSION | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo "0.0.0")
           sed -i "s|<rpm.version>.*</rpm.version>|<rpm.version>$RPM_VERSION</rpm.version>|" pom.xml
+          # Extract pre-release suffix for RPM Release field.
+          # v0.8.0-rc1 -> 0.rc1 (sorts before final), v0.8.0 -> 1
+          SUFFIX=$(echo $VERSION | sed -n 's/^[0-9]\+\.[0-9]\+\.[0-9]\+-//p')
+          if [ -n "$SUFFIX" ]; then
+            RPM_RELEASE="0.${SUFFIX}"
+          else
+            RPM_RELEASE="1"
+          fi
+          sed -i "s|<rpm.release>.*</rpm.release>|<rpm.release>$RPM_RELEASE</rpm.release>|" pom.xml
+          echo "RPM version=$RPM_VERSION release=$RPM_RELEASE"
 
       - name: Fetch bundled smartctl from jdm-deps
         run: |
