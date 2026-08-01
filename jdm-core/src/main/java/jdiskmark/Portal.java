@@ -18,15 +18,15 @@ public class Portal {
     static public final String HTTP = "http://";
     static public final String HTTPS = "https://";
     // resource locators
-    static public final String PRODUCTION_UPLOAD_LOCATOR = "www.jdiskmark.net:5000/api/benchmarks/upload";
-    static public final String TEST_UPLOAD_LOCATOR = "test.jdiskmark.net:5000/api/benchmarks/upload";
+    static public final String PRODUCTION_UPLOAD_LOCATOR = "www.jdiskmark.net/api/benchmarks/upload";
+    static public final String TEST_UPLOAD_LOCATOR = "test.jdiskmark.net/api/benchmarks/upload";
     static public final String LOCAL_UPLOAD_LOCATOR = "localhost:5000/api/benchmarks/upload";
     // SMART upload path (substituted into the active locator at runtime)
     static public final String SMART_UPLOAD_PATH = "/api/smart/upload";
     static public final String BENCHMARK_UPLOAD_PATH = "/api/benchmarks/upload";
 
     static public String uploadResourceLocator = TEST_UPLOAD_LOCATOR;
-    static public String uploadProtocol = HTTP;
+    static public String uploadProtocol = HTTPS;
 
     static String getUploadUrl() {
         return uploadProtocol + uploadResourceLocator;
@@ -48,7 +48,8 @@ public class Portal {
         String uploadUrl = getUploadUrl();
         URI uploadUri = URI.create(uploadUrl);
         String host = uploadUri.getHost();
-        int port = uploadUri.getPort() != -1 ? uploadUri.getPort() : 80;
+        int port = uploadUri.getPort() != -1 ? uploadUri.getPort()
+                : uploadProtocol.equals(HTTPS) ? 443 : 80;
 
         // Pre-upload check: attempt a short socket connect to verify the host is reachable.
         // This avoids the macOS Local Network permission dialog that InetAddress.getLocalHost()

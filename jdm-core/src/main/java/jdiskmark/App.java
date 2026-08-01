@@ -601,6 +601,11 @@ public class App {
         Portal.uploadResourceLocator = p.getProperty("uploadResourceLocator", Portal.uploadResourceLocator);
         Portal.uploadProtocol = p.getProperty("uploadProtocol", Portal.uploadProtocol);
 
+        // Migrate legacy locators that included the explicit :5000 port.
+        // Uploads now go through Nginx on the standard HTTPS port (443).
+        Portal.uploadResourceLocator = Portal.uploadResourceLocator
+                .replace("jdiskmark.net:5000/", "jdiskmark.net/");
+
         value = p.getProperty("activeProfile", activeProfile.name());
         BenchmarkProfile previousActiveProfile = activeProfile;
         try {

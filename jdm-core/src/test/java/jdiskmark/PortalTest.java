@@ -27,14 +27,14 @@ class PortalTest {
     void getUploadUrl_productionLocatorWithHttps_returnsProductionUrl() {
         Portal.uploadResourceLocator = Portal.PRODUCTION_UPLOAD_LOCATOR;
         Portal.uploadProtocol = Portal.HTTPS;
-        assertEquals("https://www.jdiskmark.net:5000/api/benchmarks/upload", Portal.getUploadUrl());
+        assertEquals("https://www.jdiskmark.net/api/benchmarks/upload", Portal.getUploadUrl());
     }
 
     @Test
     void getUploadUrl_testLocatorWithHttps_returnsTestUrl() {
         Portal.uploadResourceLocator = Portal.TEST_UPLOAD_LOCATOR;
         Portal.uploadProtocol = Portal.HTTPS;
-        assertEquals("https://test.jdiskmark.net:5000/api/benchmarks/upload", Portal.getUploadUrl());
+        assertEquals("https://test.jdiskmark.net/api/benchmarks/upload", Portal.getUploadUrl());
     }
 
     @Test
