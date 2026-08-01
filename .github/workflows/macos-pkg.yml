@@ -40,22 +40,6 @@ jobs:
         with:
           disable_ci_label: ${{ inputs.disable_ci_label || false }}
           
-      - name: Fetch bundled smartctl from jdm-deps
-        # Downloads the pre-packaged smartctl 7.5 binary from the public
-        # JDiskMark/jdm-deps release asset.  The staging directory is picked
-        # up by package-pkg.sh and injected into the .app bundle at
-        # Contents/smartctl/smartctl in the installed image.
-        run: |
-          curl -fsSL -o smartctl.tar.gz \
-            https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-7.5-macos-arm64/smartctl-7.5-macos-arm64.tar.gz
-          echo "ac42f5c73ba271d0bc2140e0b755b8645f9cee96d3aa177ce55eec3a8a579a58  smartctl.tar.gz" | shasum -a 256 --check
-          mkdir -p jdm-dist/jdm-pkg/app-content
-          tar -xzf smartctl.tar.gz -C jdm-dist/jdm-pkg/app-content
-          # Sanity check: binary must exist and be executable
-          test -x jdm-dist/jdm-pkg/app-content/smartctl/smartctl
-          echo "smartctl staging OK:"
-          jdm-dist/jdm-pkg/app-content/smartctl/smartctl --version || true
-
       - name: Build macOS PKG
         run: |
           mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am -Pmacos-pkg \

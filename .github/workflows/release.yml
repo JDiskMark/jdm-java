@@ -25,16 +25,6 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
           mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
 
-      - name: Fetch bundled smartctl from jdm-deps
-        run: |
-          curl -fsSL -o smartctl.tar.gz \
-            https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-7.5/smartctl-7.5-linux-x86_64.tar.gz
-          mkdir -p jdm-dist/jdm-deb/src/main/app-content
-          tar -xzf smartctl.tar.gz -C jdm-dist/jdm-deb/src/main/app-content
-          test -x jdm-dist/jdm-deb/src/main/app-content/smartctl/smartctl
-          echo "smartctl staging OK:"
-          jdm-dist/jdm-deb/src/main/app-content/smartctl/smartctl --version || true
-
       - name: Build Debian Package
         run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am -Plinux-deb --no-transfer-progress
 
@@ -126,16 +116,6 @@ jobs:
           sed -i "s|<rpm.release>.*</rpm.release>|<rpm.release>$RPM_RELEASE</rpm.release>|" pom.xml
           echo "RPM version=$RPM_VERSION release=$RPM_RELEASE"
 
-      - name: Fetch bundled smartctl from jdm-deps
-        run: |
-          curl -fsSL -o smartctl.tar.gz \
-            https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-7.5/smartctl-7.5-linux-x86_64.tar.gz
-          mkdir -p jdm-dist/jdm-rpm/src/main/app-content
-          tar -xzf smartctl.tar.gz -C jdm-dist/jdm-rpm/src/main/app-content
-          test -x jdm-dist/jdm-rpm/src/main/app-content/smartctl/smartctl
-          echo "smartctl staging OK:"
-          jdm-dist/jdm-rpm/src/main/app-content/smartctl/smartctl --version || true
-
       - name: Build RPM Package
         run: mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm --no-transfer-progress
 
@@ -219,17 +199,6 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
-
-      - name: Fetch bundled smartctl from jdm-deps
-        run: |
-          curl -fsSL -o smartctl.tar.gz \
-            https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-7.5-macos-arm64/smartctl-7.5-macos-arm64.tar.gz
-          echo "ac42f5c73ba271d0bc2140e0b755b8645f9cee96d3aa177ce55eec3a8a579a58  smartctl.tar.gz" | shasum -a 256 --check
-          mkdir -p jdm-dist/jdm-pkg/app-content
-          tar -xzf smartctl.tar.gz -C jdm-dist/jdm-pkg/app-content
-          test -x jdm-dist/jdm-pkg/app-content/smartctl/smartctl
-          echo "smartctl staging OK:"
-          jdm-dist/jdm-pkg/app-content/smartctl/smartctl --version || true
 
       - name: Build macOS PKG
         run: mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am -Pmacos-pkg --no-transfer-progress
