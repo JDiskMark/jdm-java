@@ -70,7 +70,6 @@ jpackage --type app-image \
          --add-modules "java.base,java.desktop,java.logging,java.prefs,java.management,java.instrument,java.sql,java.rmi,java.naming,jdk.unsupported,java.net.http"
 
 # Step 3: Inject bundled smartctl (staged by jdm-core's smartctl-macos profile)
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SMARTCTL_STAGE="${INPUT_DIR}/smartctl"
 if [ -x "$SMARTCTL_STAGE/smartctl" ]; then
     echo "Step 3: Injecting bundled smartctl into app bundle..."
