@@ -429,12 +429,13 @@
                                 <goals><goal>run</goal></goals>
                                 <configuration>
                                     <target>
-                                        <mkdir dir="${project.build.directory}/smartctl"/>
+                                        <!-- Extract to target/ — the tarball contains smartctl/smartctl,
+                                             so this creates target/smartctl/smartctl. -->
                                         <exec executable="tar" failonerror="true">
                                             <arg value="-xzf"/>
                                             <arg value="${project.build.directory}/smartctl-download/smartctl-linux.tar.gz"/>
                                             <arg value="-C"/>
-                                            <arg value="${project.build.directory}/smartctl"/>
+                                            <arg value="${project.build.directory}"/>
                                         </exec>
                                         <available file="${project.build.directory}/smartctl/smartctl"
                                                    type="file"
@@ -492,12 +493,13 @@
                                 <goals><goal>run</goal></goals>
                                 <configuration>
                                     <target>
-                                        <mkdir dir="${project.build.directory}/smartctl"/>
+                                        <!-- Extract to target/ — the tarball contains smartctl/smartctl,
+                                             so this creates target/smartctl/smartctl. -->
                                         <exec executable="tar" failonerror="true">
                                             <arg value="-xzf"/>
                                             <arg value="${project.build.directory}/smartctl-download/smartctl-macos.tar.gz"/>
                                             <arg value="-C"/>
-                                            <arg value="${project.build.directory}/smartctl"/>
+                                            <arg value="${project.build.directory}"/>
                                         </exec>
                                         <available file="${project.build.directory}/smartctl/smartctl"
                                                    type="file"
