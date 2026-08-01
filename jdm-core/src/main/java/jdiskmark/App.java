@@ -253,7 +253,7 @@ public class App {
     public static double rMax = -1, rMin = -1, rAvg = -1, rAcc = -1;
     public static long wIops = -1;
     public static long rIops = -1;
-    // rolling window state for volatility band (Welford's algorithm)
+    // rolling window state for volatility band (sum-of-squares method)
     static final int BAND_WINDOW = 20;
     static final double BAND_K = 2.0;
     static double[] wBwWindow = new double[BAND_WINDOW];
