@@ -144,6 +144,9 @@ public enum Palette {
                 if (leg != null) leg.setItemPaint(tp);
             }
         }
+
+        // 8. Volatility band colours (derived from trend line colours)
+        Gui.updateBandColors();
     }
 
     // -----------------------------------------------------------------------

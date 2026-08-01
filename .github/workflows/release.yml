@@ -28,6 +28,15 @@ jobs:
       - name: Build Debian Package
         run: mvn clean install -pl jdm-core,jdm-dist/jdm-deb -am -Plinux-deb --no-transfer-progress
 
+      - name: Smoke test — verify DEB contents
+        run: |
+          sudo dpkg -i jdm-dist/jdm-deb/target/*.deb || true
+          /opt/jdiskmark/bin/jdiskmark --help
+          jdiskmark --help
+          test -x /opt/jdiskmark/smartctl/smartctl
+          /opt/jdiskmark/smartctl/smartctl --version
+          echo "DEB smoke test passed"
+
       - name: Upload DEB Artifact
         uses: actions/upload-artifact@v7
         with:
@@ -93,22 +102,30 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME#v}
           mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
-          # Strip suffixes for RPM format (e.g., 0.8.0-beta -> 0.8.0)
+          # Strip suffixes for RPM format (e.g., 0.8.0-rc1 -> 0.8.0)
           RPM_VERSION=$(echo $VERSION | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo "0.0.0")
           sed -i "s|<rpm.version>.*</rpm.version>|<rpm.version>$RPM_VERSION</rpm.version>|" pom.xml
-
-      - name: Fetch bundled smartctl from jdm-deps
-        run: |
-          curl -fsSL -o smartctl.tar.gz \
-            https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-7.5/smartctl-7.5-linux-x86_64.tar.gz
-          mkdir -p jdm-dist/jdm-rpm/src/main/app-content
-          tar -xzf smartctl.tar.gz -C jdm-dist/jdm-rpm/src/main/app-content
-          test -x jdm-dist/jdm-rpm/src/main/app-content/smartctl/smartctl
-          echo "smartctl staging OK:"
-          jdm-dist/jdm-rpm/src/main/app-content/smartctl/smartctl --version || true
+          # Extract pre-release suffix for RPM Release field.
+          # v0.8.0-rc1 -> 0.rc1 (sorts before final), v0.8.0 -> 1
+          SUFFIX=$(echo $VERSION | sed -n 's/^[0-9]\+\.[0-9]\+\.[0-9]\+-//p')
+          if [ -n "$SUFFIX" ]; then
+            RPM_RELEASE="0.${SUFFIX}"
+          else
+            RPM_RELEASE="1"
+          fi
+          sed -i "s|<rpm.release>.*</rpm.release>|<rpm.release>$RPM_RELEASE</rpm.release>|" pom.xml
+          echo "RPM version=$RPM_VERSION release=$RPM_RELEASE"
 
       - name: Build RPM Package
         run: mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm --no-transfer-progress
+
+      - name: Smoke test — verify RPM contents
+        run: |
+          sudo rpm -ivh --nodeps jdm-dist/jdm-rpm/target/*.rpm || true
+          test -x /opt/jdiskmark/smartctl/smartctl
+          /opt/jdiskmark/smartctl/smartctl --version
+          test -f /usr/share/polkit-1/actions/net.jdiskmark.smartctl.policy
+          echo "RPM smoke test passed"
 
       - name: Upload RPM Artifact
         uses: actions/upload-artifact@v7
@@ -183,17 +200,6 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
           mvn versions:set -DnewVersion=$VERSION -DgenerateBackupPoms=false
 
-      - name: Fetch bundled smartctl from jdm-deps
-        run: |
-          curl -fsSL -o smartctl.tar.gz \
-            https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-7.5-macos-arm64/smartctl-7.5-macos-arm64.tar.gz
-          echo "ac42f5c73ba271d0bc2140e0b755b8645f9cee96d3aa177ce55eec3a8a579a58  smartctl.tar.gz" | shasum -a 256 --check
-          mkdir -p jdm-dist/jdm-pkg/app-content
-          tar -xzf smartctl.tar.gz -C jdm-dist/jdm-pkg/app-content
-          test -x jdm-dist/jdm-pkg/app-content/smartctl/smartctl
-          echo "smartctl staging OK:"
-          jdm-dist/jdm-pkg/app-content/smartctl/smartctl --version || true
-
       - name: Build macOS PKG
         run: mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am -Pmacos-pkg --no-transfer-progress
 
@@ -217,7 +223,7 @@ jobs:
           security list-keychain -d user -s "$KEYCHAIN_PATH"
           
           VERSION=${GITHUB_REF_NAME#v}
-          mvn install -pl jdm-dist/jdm-pkg -Psign \
+          mvn install -pl jdm-dist/jdm-pkg -Pmacos-pkg \
             -Dproject.version=$VERSION \
             -Dsigning.identity="Developer ID Application: Tyler Lui (232JY57U23)" \
             -Dmac.installer.signing.identity="Developer ID Installer: Tyler Lui (232JY57U23)" \

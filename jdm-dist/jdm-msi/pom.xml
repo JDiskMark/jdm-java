@@ -60,15 +60,15 @@
                                         </condition>
                                         <sequential unless:set="smartctl.already.staged">
                                             <mkdir dir="${project.basedir}/../../jdm-core/target/smartctl"/>
-                                            <get src="https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-7.5-win64/smartctl-7.5-windows-x86_64.zip"
+                                            <get src="${smartctl.windows.url}"
                                                  dest="${project.build.directory}/smartctl-win.zip"
                                                  verbose="true"
                                                  retries="3"/>
                                             <checksum file="${project.build.directory}/smartctl-win.zip" algorithm="SHA-256" property="smartctl.checksum"/>
                                             <condition property="smartctl.checksum.ok">
-                                                <equals arg1="${smartctl.checksum}" arg2="cc32cc0ca24258933953182f0fcacd964c8762b947e96007ff69210a215eccf3" casesensitive="false"/>
+                                                <equals arg1="${smartctl.checksum}" arg2="${smartctl.windows.sha256}" casesensitive="false"/>
                                             </condition>
-                                            <fail message="Checksum mismatch for smartctl-win.zip! Expected cc32cc0ca24258933953182f0fcacd964c8762b947e96007ff69210a215eccf3 but got ${smartctl.checksum}">
+                                            <fail message="Checksum mismatch for smartctl-win.zip! Expected ${smartctl.windows.sha256} but got ${smartctl.checksum}">
                                                 <condition><not><isset property="smartctl.checksum.ok"/></not></condition>
                                             </fail>
                                             <unzip src="${project.build.directory}/smartctl-win.zip"

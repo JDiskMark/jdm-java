@@ -87,6 +87,12 @@ public class SharingPanel extends JPanel {
         leftPanel.add(smartRow);
         leftPanel.add(Box.createVerticalGlue());
 
+        // Hide SMART sharing controls when smartctl is not available (e.g. Flatpak)
+        if (!App.isSmartSupported()) {
+            smartRow.setVisible(false);
+            App.shareSmartPortal = false;
+        }
+
         // ── RIGHT: developer controls ─────────────────────────────────────────
         ButtonGroup endpointGroup = new ButtonGroup();
         prodRb  = new JRadioButton("Production (www.jdiskmark.net)");
@@ -200,12 +206,14 @@ public class SharingPanel extends JPanel {
             statusLabel.setForeground(Color.GRAY);
         }
 
-        if (App.shareSmartPortal) {
-            smartStatusLabel.setText("\u25cf Enabled");
-            smartStatusLabel.setForeground(new Color(0, 150, 60));
-        } else {
-            smartStatusLabel.setText("\u25cb Disabled");
-            smartStatusLabel.setForeground(Color.GRAY);
+        if (App.isSmartSupported()) {
+            if (App.shareSmartPortal) {
+                smartStatusLabel.setText("\u25cf Enabled");
+                smartStatusLabel.setForeground(new Color(0, 150, 60));
+            } else {
+                smartStatusLabel.setText("\u25cb Disabled");
+                smartStatusLabel.setForeground(Color.GRAY);
+            }
         }
 
         // Endpoint radio

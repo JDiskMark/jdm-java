@@ -8,7 +8,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Planned
 - [#118](https://github.com/JDiskMark/jdm-java/issues/118) test interlock or OAuth upload
 
-## [0.8.0] — 2026-07-26
+## [0.8.0] — 2026-08-01
 
 ### Added
 - [#16](https://github.com/JDiskMark/jdm-java/issues/16) macOS PKG installer
@@ -20,6 +20,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Archiving benchmarks
 - Drive selection w All Drives tab
 - Color Themes: Sakura, Harvest and Old Glory
+- [#202](https://github.com/JDiskMark/jdm-java/issues/202) Variance Bands for thermal throttling
 
 ### Changed
 - [#33](https://github.com/JDiskMark/jdm-java/issues/33) Maven build

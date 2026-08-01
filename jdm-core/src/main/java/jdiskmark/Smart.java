@@ -278,6 +278,7 @@ public class Smart {
                     String l;
                     while ((l = errReader.readLine()) != null) {
                         LOGGER.warning("[smart-shell] " + l);
+                        App.err("Smart - [smart-shell] " + l);
                     }
                 } catch (IOException e) {
                     LOGGER.log(Level.FINE, "smart-shell stderr reader stopped", e);
@@ -351,15 +352,18 @@ public class Smart {
                 if (!p.waitFor(15, TimeUnit.SECONDS)) {
                     p.destroyForcibly();
                     LOGGER.warning("getSmartDirect: smartctl timed out for: " + devArg);
+                    App.err("Smart - smartctl timed out for: " + devArg);
                     continue;
                 }
                 String result = sb.toString().trim();
                 if (result.isEmpty()) {
                     LOGGER.warning("getSmartDirect: empty response for: " + devArg);
+                    App.err("Smart - empty response for: " + devArg);
                     continue;
                 }
                 if (!result.startsWith("{")) {
                     LOGGER.warning("getSmartDirect: non-JSON response for " + devArg + ": " + result);
+                    App.err("Smart - non-JSON response for: " + devArg);
                     continue;
                 }
                 Smart smart = fromJson(result);
@@ -367,11 +371,14 @@ public class Smart {
                 return smart;
             }
             LOGGER.severe("getSmartDirect: all attempts failed for: " + deviceName);
+            App.err("Smart - all attempts failed for: " + deviceName);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             LOGGER.log(Level.SEVERE, "getSmartDirect interrupted for: " + deviceName, ex);
+            App.err("Smart - interrupted for: " + deviceName);
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, "getSmartDirect failed for: " + deviceName, ex);
+            App.err("Smart - failed for: " + deviceName + " — " + ex.getMessage());
         }
         return null;
     }
@@ -436,6 +443,7 @@ public class Smart {
             synchronized (pLock) {
                 if (shellWriter == null || shellReader == null) {
                     LOGGER.severe("getSmart: privileged shell not initialised");
+                    App.err("Smart - privileged shell not initialised");
                     return null;
                 }
                 // Write the smartctl command followed by an echo of the sentinel
@@ -455,6 +463,7 @@ public class Smart {
                 String result = sb.toString().trim();
                 if (result.isEmpty()) {
                     LOGGER.severe("getSmart: empty response from shell for device " + deviceName);
+                    App.err("Smart - empty response from shell for device " + deviceName);
                     return null;
                 }
 
@@ -464,6 +473,7 @@ public class Smart {
             }
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, "getSmart failed for device: " + deviceName, ex);
+            App.err("Smart - failed for device: " + deviceName + " — " + ex.getMessage());
         }
         return null;
     }

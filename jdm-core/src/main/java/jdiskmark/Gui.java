@@ -51,6 +51,7 @@ import org.jfree.chart.LegendItemSource;
 import org.jfree.chart.title.LegendTitle;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.renderer.xy.XYDifferenceRenderer;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -69,6 +70,7 @@ public final class Gui {
     public static Palette palette = Palette.BETA_DARK;
     public static boolean showBadges = true;
     public static boolean showMaxMin = false;
+    public static boolean showVolatilityBand = false;
     public static boolean showDriveAccess = true;
     public static boolean showSingleOp = false;
     // form components
@@ -234,8 +236,11 @@ public final class Gui {
     public static NumberAxis msAxis, bwAxis, sampleAxis;
     public static XYSeries wSeries, wAvgSeries, wMaxSeries, wMinSeries, wDrvAccess;
     public static XYSeries rSeries, rAvgSeries, rMaxSeries, rMinSeries, rDrvAccess;
+    public static XYSeries wUpperBand, wLowerBand, rUpperBand, rLowerBand;
     public static XYLineAndShapeRenderer bwRenderer;
     public static XYLineAndShapeRenderer msRenderer;
+    public static XYDifferenceRenderer wBandRenderer;
+    public static XYDifferenceRenderer rBandRenderer;
     public static LegendTitle writeLegend;
     public static LegendTitle readLegend;
     public static LegendTitle combinedLegend;
@@ -357,6 +362,9 @@ public final class Gui {
         String style = t.definition().startButtonStyle();
         if (style == null) style = ButtonStyles.DEFAULT_START;
         controlPanel.startButton.putClientProperty("FlatLaf.style", style);
+        if (smartPanel != null) {
+            smartPanel.runButton.putClientProperty("FlatLaf.style", style.replace("font: bold ", "font: "));
+        }
     }
 
     /**
@@ -662,6 +670,11 @@ public final class Gui {
         rMinSeries = new XYSeries("Read Min");
         rDrvAccess = new XYSeries("Read Latency");
         
+        wUpperBand = new XYSeries("Write Upper Band");
+        wLowerBand = new XYSeries("Write Lower Band");
+        rUpperBand = new XYSeries("Read Upper Band");
+        rLowerBand = new XYSeries("Read Lower Band");
+        
         // primary dataset mapped against the bw axis
         XYSeriesCollection bwDataset = new XYSeriesCollection();
         bwDataset.addSeries(wSeries);
@@ -678,15 +691,26 @@ public final class Gui {
         msDataset.addSeries(wDrvAccess);
         msDataset.addSeries(rDrvAccess);
         
+        // volatility band datasets (separate for write and read)
+        XYSeriesCollection wBandDataset = new XYSeriesCollection();
+        wBandDataset.addSeries(wUpperBand);
+        wBandDataset.addSeries(wLowerBand);
+        XYSeriesCollection rBandDataset = new XYSeriesCollection();
+        rBandDataset.addSeries(rUpperBand);
+        rBandDataset.addSeries(rLowerBand);
+        
         // setup plot
         XYPlot plot = new XYPlot();
         plot.setBackgroundPaint(Color.DARK_GRAY.darker());
         plot.setOutlinePaint(Color.WHITE);
         plot.setDataset(0, bwDataset);
         plot.setDataset(1, msDataset);
+        plot.setDataset(2, wBandDataset);
+        plot.setDataset(3, rBandDataset);
         
         //customize the plot with renderers and axis
         bwRenderer = new XYLineAndShapeRenderer(true, false);
+        bwRenderer.setDrawSeriesLineAsPath(true);
         msRenderer = new XYLineAndShapeRenderer(true, false);
         
         // disable lines and enable shapes
@@ -702,6 +726,26 @@ public final class Gui {
         // link renderers to the plot
         plot.setRenderer(0, bwRenderer);
         plot.setRenderer(1, msRenderer);
+        
+        // volatility band renderers (translucent filled regions)
+        wBandRenderer = new XYDifferenceRenderer(new Color(200, 200, 200, 50),
+                new Color(200, 200, 200, 50), false);
+        wBandRenderer.setSeriesPaint(0, new Color(200, 200, 200, 0));
+        wBandRenderer.setSeriesPaint(1, new Color(200, 200, 200, 0));
+        wBandRenderer.setSeriesStroke(0, new java.awt.BasicStroke(0.5f));
+        wBandRenderer.setSeriesStroke(1, new java.awt.BasicStroke(0.5f));
+        wBandRenderer.setSeriesVisibleInLegend(0, false);
+        wBandRenderer.setSeriesVisibleInLegend(1, false);
+        rBandRenderer = new XYDifferenceRenderer(new Color(200, 200, 200, 50),
+                new Color(200, 200, 200, 50), false);
+        rBandRenderer.setSeriesPaint(0, new Color(200, 200, 200, 0));
+        rBandRenderer.setSeriesPaint(1, new Color(200, 200, 200, 0));
+        rBandRenderer.setSeriesStroke(0, new java.awt.BasicStroke(0.5f));
+        rBandRenderer.setSeriesStroke(1, new java.awt.BasicStroke(0.5f));
+        rBandRenderer.setSeriesVisibleInLegend(0, false);
+        rBandRenderer.setSeriesVisibleInLegend(1, false);
+        plot.setRenderer(2, wBandRenderer);
+        plot.setRenderer(3, rBandRenderer);
         
         // y axis on the left
         bwAxis = new NumberAxis("Bandwidth (MB/s)");
@@ -733,6 +777,8 @@ public final class Gui {
         // Map the data to the appropriate axis
         plot.mapDatasetToRangeAxis(0, 0);
         plot.mapDatasetToRangeAxis(1, 1);
+        plot.mapDatasetToRangeAxis(2, 0);
+        plot.mapDatasetToRangeAxis(3, 0);
         
         chart = new JFreeChart("", null , plot, false);
 
@@ -916,10 +962,16 @@ public final class Gui {
 
     /** Creates a badge label with shared styling. */
     private static javax.swing.JLabel makeBadge() {
-        javax.swing.JLabel lbl = new javax.swing.JLabel();
+        javax.swing.JLabel lbl = new javax.swing.JLabel() {
+            @Override public boolean isOpaque() { return false; }
+            @Override protected void paintComponent(java.awt.Graphics g) {
+                g.setColor(getBackground());
+                g.fillRect(0, 0, getWidth(), getHeight());
+                super.paintComponent(g);
+            }
+        };
         lbl.setFont(new Font("SansSerif", Font.BOLD, 11));
         lbl.setForeground(BADGE_DEFAULT_FG);
-        lbl.setOpaque(true);
         lbl.setBackground(BADGE_DEFAULT_BG);
         lbl.setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6));
         return lbl;
@@ -1038,6 +1090,12 @@ public final class Gui {
             wMaxSeries.add(s.sampleNum, s.cumMax);
             wMinSeries.add(s.sampleNum, s.cumMin);
         }
+        if (showVolatilityBand && s.cumStdDev > 0) {
+            double upper = s.cumAvg + App.BAND_K * s.cumStdDev;
+            double lower = Math.max(0, s.cumAvg - App.BAND_K * s.cumStdDev);
+            wUpperBand.add(s.sampleNum, upper);
+            wLowerBand.add(s.sampleNum, lower);
+        }
         if (showDriveAccess) {
             wDrvAccess.add(s.sampleNum, s.accessTimeMs);
         }
@@ -1050,6 +1108,12 @@ public final class Gui {
         if (showMaxMin) {
             rMaxSeries.add(s.sampleNum, s.cumMax);
             rMinSeries.add(s.sampleNum, s.cumMin);
+        }
+        if (showVolatilityBand && s.cumStdDev > 0) {
+            double upper = s.cumAvg + App.BAND_K * s.cumStdDev;
+            double lower = Math.max(0, s.cumAvg - App.BAND_K * s.cumStdDev);
+            rUpperBand.add(s.sampleNum, upper);
+            rLowerBand.add(s.sampleNum, lower);
         }
         if (showDriveAccess) {
             rDrvAccess.add(s.sampleNum, s.accessTimeMs);
@@ -1068,6 +1132,10 @@ public final class Gui {
         rMinSeries.clear();
         wDrvAccess.clear();
         rDrvAccess.clear();
+        wUpperBand.clear();
+        wLowerBand.clear();
+        rUpperBand.clear();
+        rLowerBand.clear();
         progressBar.setValue(0);
         controlPanel.refreshReadMetrics();
         controlPanel.refreshWriteMetrics();
@@ -1081,6 +1149,24 @@ public final class Gui {
 
     public static void unlockSampleAxis() {
         sampleAxis.setAutoRange(true);
+    }
+    
+    public static void updateBandColors() {
+        if (wBandRenderer == null || rBandRenderer == null) return;
+        Color wTrend = (Color) bwRenderer.getSeriesPaint(1);
+        Color rTrend = (Color) bwRenderer.getSeriesPaint(5);
+        Color wFill = new Color(wTrend.getRed(), wTrend.getGreen(), wTrend.getBlue(), 50);
+        Color rFill = new Color(rTrend.getRed(), rTrend.getGreen(), rTrend.getBlue(), 50);
+        Color wEdge = new Color(wTrend.getRed(), wTrend.getGreen(), wTrend.getBlue(), 100);
+        Color rEdge = new Color(rTrend.getRed(), rTrend.getGreen(), rTrend.getBlue(), 100);
+        wBandRenderer.setPositivePaint(wFill);
+        wBandRenderer.setNegativePaint(wFill);
+        wBandRenderer.setSeriesPaint(0, wEdge);
+        wBandRenderer.setSeriesPaint(1, wEdge);
+        rBandRenderer.setPositivePaint(rFill);
+        rBandRenderer.setNegativePaint(rFill);
+        rBandRenderer.setSeriesPaint(0, rEdge);
+        rBandRenderer.setSeriesPaint(1, rEdge);
     }
     
     public static void updateLegendAndAxis() {
@@ -1102,6 +1188,9 @@ public final class Gui {
         readLegend.setVisible(splitLegend && App.hasReadOperation());
 
         msAxis.setVisible(showDriveAccess);
+        
+        wBandRenderer.setDefaultSeriesVisible(showVolatilityBand && App.hasWriteOperation());
+        rBandRenderer.setDefaultSeriesVisible(showVolatilityBand && App.hasReadOperation());
     }
 
     // update for a specific benchmark
@@ -1126,6 +1215,9 @@ public final class Gui {
         readLegend.setVisible(splitLegend && hasRead);
 
         msAxis.setVisible(showDriveAccess);
+        
+        wBandRenderer.setDefaultSeriesVisible(showVolatilityBand && hasWrite);
+        rBandRenderer.setDefaultSeriesVisible(showVolatilityBand && hasRead);
     }
     
     // update for a specific operation
@@ -1150,6 +1242,9 @@ public final class Gui {
         readLegend.setVisible(splitLegend && isReadTest);
 
         msAxis.setVisible(showDriveAccess);
+        
+        wBandRenderer.setDefaultSeriesVisible(showVolatilityBand && isWriteTest);
+        rBandRenderer.setDefaultSeriesVisible(showVolatilityBand && isReadTest);
     }
     
     private static final Logger SMART_LOG = Logger.getLogger(Gui.class.getName());

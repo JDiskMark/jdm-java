@@ -16,6 +16,7 @@ import javax.swing.Scrollable;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import net.miginfocom.swing.MigLayout;
+import org.metricus.jdm.ui.ButtonStyles;
 
 /**
  * Displays parsed S.M.A.R.T. data in the main "SMART" tab.
@@ -100,7 +101,7 @@ public class SmartPanel extends JPanel {
     // -------------------------------------------------------------------------
     // Toolbar controls
     // -------------------------------------------------------------------------
-    private JButton runButton;
+    JButton runButton;
     private JButton saveButton;
     private JLabel  statusLabel;
 
@@ -163,6 +164,7 @@ public class SmartPanel extends JPanel {
         bar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(80, 80, 80)));
 
         runButton  = new JButton("Run SMART");
+        runButton.putClientProperty("FlatLaf.style", ButtonStyles.DEFAULT_START.replace("font: bold ", "font: "));
         saveButton = new JButton("Save Snapshot");
         saveButton.setEnabled(false);
 
