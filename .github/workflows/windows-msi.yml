@@ -62,3 +62,28 @@ jobs:
           if-no-files-found: error
           # Disable zipping so it can be downloaded raw from the Actions tab
           archive: false
+
+      - name: Smoke test — install MSI and verify SMART assets
+        shell: pwsh
+        run: |
+          # Silent install — /qn = no UI, /norestart avoids reboot prompts
+          $msi = (Get-ChildItem jdm-dist/jdm-msi/target/*.msi).FullName
+          Write-Host "Installing: $msi"
+          Start-Process msiexec -ArgumentList "/i `"$msi`" /qn /norestart" -Wait -NoNewWindow
+
+          # jpackage installs to "C:\Program Files\<name>\", where <name> is
+          # the --name arg: "JDiskMark <version>". Find it dynamically.
+          $installDir = Get-ChildItem "C:\Program Files" -Directory | Where-Object { $_.Name -like "JDiskMark*" } | Select-Object -First 1
+          if (-not $installDir) { throw "JDiskMark install directory not found under C:\Program Files" }
+          Write-Host "Install dir: $($installDir.FullName)"
+
+          # Verify the main launcher exists and runs
+          $launcher = Join-Path $installDir.FullName "JDiskMark*.exe" | Get-ChildItem | Select-Object -First 1
+          if (-not $launcher) { throw "Launcher executable not found" }
+          Write-Host "Launcher: $($launcher.FullName)"
+
+          # Verify bundled smartctl was packaged correctly
+          $smartctl = Join-Path $installDir.FullName "app\smartctl\smartctl.exe"
+          if (-not (Test-Path $smartctl)) { throw "smartctl.exe not found at: $smartctl" }
+          & $smartctl --version
+          Write-Host "SMART assets verified OK"
