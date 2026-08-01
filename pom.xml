@@ -17,7 +17,8 @@
 
     <properties>
         <!-- CI-friendly version placeholder. Override with -Drevision=<value> at build time.
-             Default produces the standard SNAPSHOT build used by NetBeans and plain mvn. -->
+             Default produces the current release build used by NetBeans and plain mvn.
+             CI workflows set this to a labelled version (e.g. 0.8.0-ci.d.47). -->
         <revision>0.8.0</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>25</maven.compiler.release>
@@ -68,6 +69,7 @@
              the version/URLs/checksums here — no workflow changes needed. -->
         <smartctl.version>7.5</smartctl.version>
         <smartctl.linux.url>https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-${smartctl.version}/smartctl-${smartctl.version}-linux-x86_64.tar.gz</smartctl.linux.url>
+        <smartctl.linux.sha256>319c62349999858d267e617bb7b0a2e19e8f2eda64482a9bb8bc9096e9f8165b</smartctl.linux.sha256>
         <smartctl.windows.url>https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-${smartctl.version}-win64/smartctl-${smartctl.version}-windows-x86_64.zip</smartctl.windows.url>
         <smartctl.windows.sha256>cc32cc0ca24258933953182f0fcacd964c8762b947e96007ff69210a215eccf3</smartctl.windows.sha256>
         <smartctl.macos.url>https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-${smartctl.version}-macos-arm64/smartctl-${smartctl.version}-macos-arm64.tar.gz</smartctl.macos.url>
