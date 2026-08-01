@@ -216,7 +216,7 @@ public final class MainFrame extends javax.swing.JFrame {
                 if (!heightAdjusted) {
                     heightAdjusted = true;
                     String os = System.getProperty("os.name", "").toLowerCase();
-                    int w = (os.contains("linux") || os.contains("mac")) ? Math.max(994, getWidth()) : getWidth();
+                    int w = (os.contains("linux") || os.contains("mac")) ? Math.max(994, getWidth()) : Math.max(886, getWidth());
                     int h = (os.contains("linux") || os.contains("mac")) ? Math.max(655, getHeight() + 30) : getHeight() + 30;
                     setSize(w, h);
                 }

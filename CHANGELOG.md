@@ -8,7 +8,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Planned
 - [#118](https://github.com/JDiskMark/jdm-java/issues/118) test interlock or OAuth upload
 
-## [Unreleased] — v0.8.0
+## [0.8.0] — 2026-07-26
 
 ### Added
 - [#16](https://github.com/JDiskMark/jdm-java/issues/16) macOS PKG installer
@@ -16,7 +16,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - [#67](https://github.com/JDiskMark/jdm-java/issues/67) test portal uploads (no auth)
 - [#70](https://github.com/JDiskMark/jdm-java/issues/70) app icon
 - [#117](https://github.com/JDiskMark/jdm-java/issues/117) community portal sharing prompt
-- [#11](https://github.com/JDiskMark/jdm-java/issues/11) basic SMART beta (ubuntu/win/macos)
+- [#11](https://github.com/JDiskMark/jdm-java/issues/11) basic SMART beta (deb/msi/pkg/rpm)
 - Archiving benchmarks
 - Drive selection w All Drives tab
 - Color Themes: Sakura, Harvest and Old Glory
