@@ -253,6 +253,14 @@ public class App {
     public static double rMax = -1, rMin = -1, rAvg = -1, rAcc = -1;
     public static long wIops = -1;
     public static long rIops = -1;
+    // rolling window state for volatility band (Welford's algorithm)
+    static final int BAND_WINDOW = 20;
+    static final double BAND_K = 2.0;
+    static double[] wBwWindow = new double[BAND_WINDOW];
+    static double[] rBwWindow = new double[BAND_WINDOW];
+    static int wWindowCount = 0, rWindowCount = 0;
+    static double wWindowSum = 0, rWindowSum = 0;
+    static double wWindowSumSq = 0, rWindowSumSq = 0;
     // benchmark result containers
     public static BenchmarkWorker worker = null;
     public static Future<Benchmark> cliResult = null;
@@ -726,6 +734,9 @@ public class App {
         value = p.getProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
         Gui.showMaxMin = Boolean.parseBoolean(value);
 
+        value = p.getProperty("showVolatilityBand", String.valueOf(Gui.showVolatilityBand));
+        Gui.showVolatilityBand = Boolean.parseBoolean(value);
+
         value = p.getProperty("showBadges", String.valueOf(Gui.showBadges));
         Gui.showBadges = Boolean.parseBoolean(value);
 
@@ -777,6 +788,7 @@ public class App {
         p.setProperty("palette", Gui.palette.name());
         p.setProperty("renderMode", rmOption.name());
         p.setProperty("showMaxMin", String.valueOf(Gui.showMaxMin));
+        p.setProperty("showVolatilityBand", String.valueOf(Gui.showVolatilityBand));
         p.setProperty("showBadges", String.valueOf(Gui.showBadges));
         p.setProperty("showDriveAccess", String.valueOf(Gui.showDriveAccess));
         p.setProperty("showSingleOp", String.valueOf(Gui.showSingleOp));
@@ -848,6 +860,7 @@ public class App {
         sb.append("directEnable: ").append(directEnable).append('\n');
         sb.append("palette: ").append(Gui.palette).append('\n');
         sb.append("showMaxMin: ").append(Gui.showMaxMin).append('\n');
+        sb.append("showVolatilityBand: ").append(Gui.showVolatilityBand).append('\n');
         sb.append("showBadges: ").append(Gui.showBadges).append('\n');
         return sb.toString();
     }
@@ -1075,6 +1088,23 @@ public class App {
             s.cumMax = wMax;
             s.cumMin = wMin;
             s.cumAccTimeMs = wAcc;
+            // rolling window std dev for volatility band
+            int wi = (s.sampleNum - 1) % BAND_WINDOW;
+            if (wWindowCount >= BAND_WINDOW) {
+                double old = wBwWindow[wi];
+                wWindowSum -= old;
+                wWindowSumSq -= old * old;
+            }
+            wBwWindow[wi] = s.bwMbSec;
+            wWindowSum += s.bwMbSec;
+            wWindowSumSq += s.bwMbSec * s.bwMbSec;
+            wWindowCount++;
+            int wn = Math.min(wWindowCount, BAND_WINDOW);
+            if (wn >= 2) {
+                double mean = wWindowSum / wn;
+                double variance = (wWindowSumSq / wn) - (mean * mean);
+                s.cumStdDev = Math.sqrt(Math.max(0, variance));
+            }
         } else {
             if (rMax == -1 || rMax < s.bwMbSec) {
                 rMax = s.bwMbSec;
@@ -1101,6 +1131,23 @@ public class App {
             s.cumMax = rMax;
             s.cumMin = rMin;
             s.cumAccTimeMs = rAcc;
+            // rolling window std dev for volatility band
+            int ri = (s.sampleNum - 1) % BAND_WINDOW;
+            if (rWindowCount >= BAND_WINDOW) {
+                double old = rBwWindow[ri];
+                rWindowSum -= old;
+                rWindowSumSq -= old * old;
+            }
+            rBwWindow[ri] = s.bwMbSec;
+            rWindowSum += s.bwMbSec;
+            rWindowSumSq += s.bwMbSec * s.bwMbSec;
+            rWindowCount++;
+            int rn = Math.min(rWindowCount, BAND_WINDOW);
+            if (rn >= 2) {
+                double mean = rWindowSum / rn;
+                double variance = (rWindowSumSq / rn) - (mean * mean);
+                s.cumStdDev = Math.sqrt(Math.max(0, variance));
+            }
         }
     }
 
@@ -1120,6 +1167,11 @@ public class App {
         rMin = -1;
         rAcc = -1;
         rIops = -1;
+        wBwWindow = new double[BAND_WINDOW];
+        rBwWindow = new double[BAND_WINDOW];
+        wWindowCount = 0; rWindowCount = 0;
+        wWindowSum = 0; rWindowSum = 0;
+        wWindowSumSq = 0; rWindowSumSq = 0;
     }
 
     /**

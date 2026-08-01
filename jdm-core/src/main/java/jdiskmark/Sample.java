@@ -42,6 +42,7 @@ public class Sample {
     double cumAvg = 0;
     double cumMax = 0;
     double cumMin = 0;
+    double cumStdDev = 0;
     double accessTimeMs;
     double cumAccTimeMs;
         
@@ -90,6 +91,11 @@ public class Sample {
     @JsonSerialize(using = RoundingSerializer.class)
     public double getMin() { return cumMin; }
     public void setMin(double min) { cumMin = min; }
+
+    @JsonProperty("sd") // bandwidth standard deviation
+    @JsonSerialize(using = RoundingSerializer.class)
+    public double getStdDev() { return cumStdDev; }
+    public void setStdDev(double stdDev) { cumStdDev = stdDev; }
 
     // access time statistics
     
