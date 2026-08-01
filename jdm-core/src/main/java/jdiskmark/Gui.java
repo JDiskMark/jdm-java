@@ -690,6 +690,7 @@ public final class Gui {
         
         //customize the plot with renderers and axis
         bwRenderer = new XYLineAndShapeRenderer(true, false);
+        bwRenderer.setDrawSeriesLineAsPath(true);
         msRenderer = new XYLineAndShapeRenderer(true, false);
         
         // disable lines and enable shapes
