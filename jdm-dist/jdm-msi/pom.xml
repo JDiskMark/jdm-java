@@ -45,47 +45,6 @@
                                 </configuration>
                             </execution>
                             <execution>
-                                <!-- Stage bundled smartctl.exe from jdm-deps so jpackage app-content
-                                     picks it up. Downloads from the jdm-deps GitHub release if not
-                                     already present. Idempotent: skipped when smartctl.exe exists. -->
-                                <id>stage-smartctl-windows</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <configuration>
-                                    <target xmlns:unless="ant:unless">
-                                        <condition property="smartctl.already.staged">
-                                            <available file="${project.basedir}/../../jdm-core/target/smartctl/smartctl.exe" type="file"/>
-                                        </condition>
-                                        <sequential unless:set="smartctl.already.staged">
-                                            <mkdir dir="${project.basedir}/../../jdm-core/target/smartctl"/>
-                                            <get src="${smartctl.windows.url}"
-                                                 dest="${project.build.directory}/smartctl-win.zip"
-                                                 verbose="true"
-                                                 retries="3"/>
-                                            <checksum file="${project.build.directory}/smartctl-win.zip" algorithm="SHA-256" property="smartctl.checksum"/>
-                                            <condition property="smartctl.checksum.ok">
-                                                <equals arg1="${smartctl.checksum}" arg2="${smartctl.windows.sha256}" casesensitive="false"/>
-                                            </condition>
-                                            <fail message="Checksum mismatch for smartctl-win.zip! Expected ${smartctl.windows.sha256} but got ${smartctl.checksum}">
-                                                <condition><not><isset property="smartctl.checksum.ok"/></not></condition>
-                                            </fail>
-                                            <unzip src="${project.build.directory}/smartctl-win.zip"
-                                                   dest="${project.basedir}/../../jdm-core/target"
-                                                   overwrite="true"/>
-                                        </sequential>
-                                        <available file="${project.basedir}/../../jdm-core/target/smartctl/smartctl.exe"
-                                                   type="file"
-                                                   property="smartctl.staged.ok"/>
-                                        <fail message="[smartctl] staging failed: expected smartctl.exe at ${project.basedir}/../../jdm-core/target/smartctl/smartctl.exe">
-                                            <condition><not><isset property="smartctl.staged.ok"/></not></condition>
-                                        </fail>
-                                        <echo message="[smartctl] smartctl.exe staged: ${smartctl.staged.ok}"/>
-                                    </target>
-                                </configuration>
-                            </execution>
-                            <execution>
                                 <!-- Rename the MSI from jpackage's verbose output name
                                      ("JDiskMark 0.8.0-SNAPSHOT-0.8.0.msi") to the clean convention
                                      ("jdiskmark-0.8.0-SNAPSHOT.msi"). Runs at install phase, after

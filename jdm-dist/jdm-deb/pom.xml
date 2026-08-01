@@ -23,67 +23,6 @@
             <id>linux-deb</id>
             <build>
                 <plugins>
-                    <!-- Stage bundled smartctl binary from jdm-deps.
-                         Downloads the Linux x86_64 tarball if not already
-                         present. Idempotent: skipped when smartctl exists.
-                         Fails the build if staging fails. -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <version>3.1.0</version>
-                        <executions>
-                            <execution>
-                                <id>stage-smartctl-linux</id>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <configuration>
-                                    <target>
-                                        <property name="smartctl.stage.dir"
-                                                  value="${project.basedir}/src/main/app-content"/>
-                                        <property name="smartctl.bin"
-                                                  value="${smartctl.stage.dir}/smartctl/smartctl"/>
-                                        <condition property="smartctl.already.staged">
-                                            <available file="${smartctl.bin}" type="file"/>
-                                        </condition>
-                                        <sequential xmlns:unless="ant:unless"
-                                                    unless:set="smartctl.already.staged">
-                                            <mkdir dir="${smartctl.stage.dir}"/>
-                                            <get src="${smartctl.linux.url}"
-                                                 dest="${project.build.directory}/smartctl-linux.tar.gz"
-                                                 verbose="true"
-                                                 retries="3"/>
-                                            <checksum file="${project.build.directory}/smartctl-linux.tar.gz"
-                                                      algorithm="SHA-256"
-                                                      property="smartctl.checksum"/>
-                                            <condition property="smartctl.checksum.ok">
-                                                <equals arg1="${smartctl.checksum}"
-                                                        arg2="${smartctl.linux.sha256}"
-                                                        casesensitive="false"/>
-                                            </condition>
-                                            <fail message="[smartctl] Checksum mismatch! Expected ${smartctl.linux.sha256} got ${smartctl.checksum}">
-                                                <condition><not><isset property="smartctl.checksum.ok"/></not></condition>
-                                            </fail>
-                                            <exec executable="tar" failonerror="true">
-                                                <arg value="-xzf"/>
-                                                <arg value="${project.build.directory}/smartctl-linux.tar.gz"/>
-                                                <arg value="-C"/>
-                                                <arg value="${smartctl.stage.dir}"/>
-                                            </exec>
-                                        </sequential>
-                                        <available file="${smartctl.bin}"
-                                                   type="file"
-                                                   property="smartctl.staged.ok"/>
-                                        <fail message="[smartctl] staging failed: expected ${smartctl.bin}">
-                                            <condition><not><isset property="smartctl.staged.ok"/></not></condition>
-                                        </fail>
-                                        <echo message="[smartctl] staged OK: ${smartctl.bin}"/>
-                                    </target>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
@@ -155,15 +94,16 @@ if [ -n "$DESKTOP" ]; then
     cat "$DESKTOP"
 fi
 
-# Inject bundled smartctl runtime (staged by stage-smartctl-linux Ant task).
+# Inject bundled smartctl runtime staged by jdm-core's smartctl-linux profile.
 # --app-content is not reliable for the DEB format so we inject here instead.
-APP_CONTENT="${project.basedir}/src/main/app-content"
-if [ -d "$APP_CONTENT/smartctl" ]; then
-    cp -r "$APP_CONTENT/smartctl" "$WORK/pkg/opt/jdiskmark/smartctl"
+APP_CONTENT="${project.basedir}/../../jdm-core/target/smartctl"
+if [ -d "$APP_CONTENT" ]; then
+    mkdir -p "$WORK/pkg/opt/jdiskmark/smartctl"
+    cp -r "$APP_CONTENT/." "$WORK/pkg/opt/jdiskmark/smartctl"
     chmod 755 "$WORK/pkg/opt/jdiskmark/smartctl/smartctl"
     echo "[patch] Injected smartctl: $($WORK/pkg/opt/jdiskmark/smartctl/smartctl --version 2>&1 | head -1)"
 else
-    echo "[patch] WARNING: app-content/smartctl not found — skipping (slim build or local dev)"
+    echo "[patch] WARNING: jdm-core/target/smartctl not found — skipping (slim build or no staging)"
 fi
 
 # Copy the polkit policy file so postinst can install it from the package root.

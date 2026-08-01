@@ -69,9 +69,9 @@ jpackage --type app-image \
          --java-options "-XX:+UseZGC" \
          --add-modules "java.base,java.desktop,java.logging,java.prefs,java.management,java.instrument,java.sql,java.rmi,java.naming,jdk.unsupported,java.net.http"
 
-# Step 3: Inject bundled smartctl (if staged by CI)
+# Step 3: Inject bundled smartctl (staged by jdm-core's smartctl-macos profile)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SMARTCTL_STAGE="$SCRIPT_DIR/app-content/smartctl"
+SMARTCTL_STAGE="${INPUT_DIR}/smartctl"
 if [ -x "$SMARTCTL_STAGE/smartctl" ]; then
     echo "Step 3: Injecting bundled smartctl into app bundle..."
     rm -rf "$APP_BUNDLE/Contents/smartctl"
@@ -81,7 +81,7 @@ if [ -x "$SMARTCTL_STAGE/smartctl" ]; then
     echo "smartctl injection OK:"
     "$APP_BUNDLE/Contents/smartctl/smartctl" --version || true
 else
-    echo "Step 3: WARNING: app-content/smartctl not found (or smartctl not executable) — skipping (local dev or no CI staging)"
+    echo "Step 3: WARNING: jdm-core/target/smartctl not found (or smartctl not executable) — skipping (local dev or no CI staging)"
 fi
 
 # Step 4: Sign app bundle (Optional)

@@ -318,4 +318,203 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- =========================================================
+             Windows: download smartctl.exe and stage to target/.
+             Activated automatically on Windows; skipped on Linux/macOS.
+             download-maven-plugin caches the zip in ~/.m2 so mvn clean
+             does not require a re-download.
+             ========================================================= -->
+        <profile>
+            <id>smartctl-windows</id>
+            <activation>
+                <os><family>windows</family></os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.googlecode.maven-download-plugin</groupId>
+                        <artifactId>download-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>download-smartctl-windows</id>
+                                <phase>generate-resources</phase>
+                                <goals><goal>wget</goal></goals>
+                                <configuration>
+                                    <url>${smartctl.windows.url}</url>
+                                    <sha256>${smartctl.windows.sha256}</sha256>
+                                    <outputDirectory>${project.build.directory}/smartctl-download</outputDirectory>
+                                    <outputFileName>smartctl-win.zip</outputFileName>
+                                    <overwrite>false</overwrite>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>unpack-smartctl-windows</id>
+                                <phase>generate-resources</phase>
+                                <goals><goal>run</goal></goals>
+                                <configuration>
+                                    <target>
+                                        <mkdir dir="${project.build.directory}/smartctl-tmp"/>
+                                        <unzip src="${project.build.directory}/smartctl-download/smartctl-win.zip"
+                                               dest="${project.build.directory}/smartctl-tmp"
+                                               overwrite="true"/>
+                                        <!-- The zip extracts to smartctl-tmp/smartctl/smartctl.exe;
+                                             move the inner smartctl/ dir up to target/smartctl/. -->
+                                        <move todir="${project.build.directory}/smartctl" overwrite="true">
+                                            <fileset dir="${project.build.directory}/smartctl-tmp/smartctl"/>
+                                        </move>
+                                        <delete dir="${project.build.directory}/smartctl-tmp"/>
+                                        <available file="${project.build.directory}/smartctl/smartctl.exe"
+                                                   type="file"
+                                                   property="smartctl.staged.ok"/>
+                                        <fail message="[smartctl] staging failed: smartctl.exe not found in target/smartctl/">
+                                            <condition><not><isset property="smartctl.staged.ok"/></not></condition>
+                                        </fail>
+                                        <echo message="[smartctl] staged OK: ${project.build.directory}/smartctl/smartctl.exe"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- =========================================================
+             Linux: download smartctl and stage to target/.
+             Activated automatically on Linux; skipped on Windows/macOS.
+             ========================================================= -->
+        <profile>
+            <id>smartctl-linux</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>linux</name>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.googlecode.maven-download-plugin</groupId>
+                        <artifactId>download-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>download-smartctl-linux</id>
+                                <phase>generate-resources</phase>
+                                <goals><goal>wget</goal></goals>
+                                <configuration>
+                                    <url>${smartctl.linux.url}</url>
+                                    <sha256>${smartctl.linux.sha256}</sha256>
+                                    <outputDirectory>${project.build.directory}/smartctl-download</outputDirectory>
+                                    <outputFileName>smartctl-linux.tar.gz</outputFileName>
+                                    <overwrite>false</overwrite>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>unpack-smartctl-linux</id>
+                                <phase>generate-resources</phase>
+                                <goals><goal>run</goal></goals>
+                                <configuration>
+                                    <target>
+                                        <mkdir dir="${project.build.directory}/smartctl"/>
+                                        <exec executable="tar" failonerror="true">
+                                            <arg value="-xzf"/>
+                                            <arg value="${project.build.directory}/smartctl-download/smartctl-linux.tar.gz"/>
+                                            <arg value="-C"/>
+                                            <arg value="${project.build.directory}/smartctl"/>
+                                        </exec>
+                                        <available file="${project.build.directory}/smartctl/smartctl"
+                                                   type="file"
+                                                   property="smartctl.staged.ok"/>
+                                        <fail message="[smartctl] staging failed: smartctl not found in target/smartctl/">
+                                            <condition><not><isset property="smartctl.staged.ok"/></not></condition>
+                                        </fail>
+                                        <chmod file="${project.build.directory}/smartctl/smartctl" perm="755"/>
+                                        <echo message="[smartctl] staged OK: ${project.build.directory}/smartctl/smartctl"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- =========================================================
+             macOS: download smartctl and stage to target/.
+             Activated automatically on macOS; skipped on Windows/Linux.
+             ========================================================= -->
+        <profile>
+            <id>smartctl-macos</id>
+            <activation>
+                <os><family>mac</family></os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.googlecode.maven-download-plugin</groupId>
+                        <artifactId>download-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>download-smartctl-macos</id>
+                                <phase>generate-resources</phase>
+                                <goals><goal>wget</goal></goals>
+                                <configuration>
+                                    <url>${smartctl.macos.url}</url>
+                                    <sha256>${smartctl.macos.sha256}</sha256>
+                                    <outputDirectory>${project.build.directory}/smartctl-download</outputDirectory>
+                                    <outputFileName>smartctl-macos.tar.gz</outputFileName>
+                                    <overwrite>false</overwrite>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>unpack-smartctl-macos</id>
+                                <phase>generate-resources</phase>
+                                <goals><goal>run</goal></goals>
+                                <configuration>
+                                    <target>
+                                        <mkdir dir="${project.build.directory}/smartctl"/>
+                                        <exec executable="tar" failonerror="true">
+                                            <arg value="-xzf"/>
+                                            <arg value="${project.build.directory}/smartctl-download/smartctl-macos.tar.gz"/>
+                                            <arg value="-C"/>
+                                            <arg value="${project.build.directory}/smartctl"/>
+                                        </exec>
+                                        <available file="${project.build.directory}/smartctl/smartctl"
+                                                   type="file"
+                                                   property="smartctl.staged.ok"/>
+                                        <fail message="[smartctl] staging failed: smartctl not found in target/smartctl/">
+                                            <condition><not><isset property="smartctl.staged.ok"/></not></condition>
+                                        </fail>
+                                        <chmod file="${project.build.directory}/smartctl/smartctl" perm="755"/>
+                                        <echo message="[smartctl] staged OK: ${project.build.directory}/smartctl/smartctl"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>
