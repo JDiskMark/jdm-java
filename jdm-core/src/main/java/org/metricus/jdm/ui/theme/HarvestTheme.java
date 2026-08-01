@@ -76,7 +76,7 @@ public final class HarvestTheme implements ThemeDefinition {
     }
 
     @Override public Color titleBarForeground()    { return UMBER; }
-    @Override public Color progressBarForeground() { return AMBER; }
+    @Override public Color progressBarForeground() { return ORANGE; }
 
     @Override public Color badgeDefaultBg()   { return BADGE_BG; }
     @Override public Color badgeDefaultFg()   { return ORANGE; }

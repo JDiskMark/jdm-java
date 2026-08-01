@@ -357,6 +357,9 @@ public final class Gui {
         String style = t.definition().startButtonStyle();
         if (style == null) style = ButtonStyles.DEFAULT_START;
         controlPanel.startButton.putClientProperty("FlatLaf.style", style);
+        if (smartPanel != null) {
+            smartPanel.runButton.putClientProperty("FlatLaf.style", style.replace("font: bold ", "font: "));
+        }
     }
 
     /**
