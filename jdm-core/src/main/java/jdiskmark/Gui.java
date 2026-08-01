@@ -919,10 +919,16 @@ public final class Gui {
 
     /** Creates a badge label with shared styling. */
     private static javax.swing.JLabel makeBadge() {
-        javax.swing.JLabel lbl = new javax.swing.JLabel();
+        javax.swing.JLabel lbl = new javax.swing.JLabel() {
+            @Override public boolean isOpaque() { return false; }
+            @Override protected void paintComponent(java.awt.Graphics g) {
+                g.setColor(getBackground());
+                g.fillRect(0, 0, getWidth(), getHeight());
+                super.paintComponent(g);
+            }
+        };
         lbl.setFont(new Font("SansSerif", Font.BOLD, 11));
         lbl.setForeground(BADGE_DEFAULT_FG);
-        lbl.setOpaque(true);
         lbl.setBackground(BADGE_DEFAULT_BG);
         lbl.setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6));
         return lbl;
