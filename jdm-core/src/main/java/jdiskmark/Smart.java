@@ -173,6 +173,27 @@ public class Smart {
             LOGGER.log(Level.FINE, "macOS bundle smartctl lookup failed", ex);
         }
 
+        // 2b. Dev / IDE mode: when running from NetBeans (or any IDE) the
+        //     CodeSource points to target/classes/ (or the fat jar in target/).
+        //     One level up lands in target/, where the Maven smartctl-macos
+        //     profile stages the binary at target/smartctl/smartctl.
+        //     The packaged .app bundle check above goes up two levels
+        //     (Contents/app/<jar> → Contents/), which overshoots in dev mode.
+        try {
+            java.net.URL jarUrl = Smart.class.getProtectionDomain().getCodeSource().getLocation();
+            if (jarUrl != null) {
+                Path jarPath  = Path.of(jarUrl.toURI());
+                Path buildDir = jarPath.getParent();              // …/target/
+                Path devBundled = buildDir.resolve("smartctl/smartctl");
+                if (Files.isExecutable(devBundled)) {
+                    LOGGER.info("Using dev/IDE smartctl (CodeSource-relative): " + devBundled);
+                    return devBundled.toString();
+                }
+            }
+        } catch (Exception ex) {
+            LOGGER.log(Level.FINE, "Dev/IDE smartctl lookup failed", ex);
+        }
+
         // 3. Well-known absolute path (fat DEB install without APPDIR in env)
         Path installed = Path.of("/opt/jdiskmark/smartctl/smartctl");
         if (Files.isExecutable(installed)) {
