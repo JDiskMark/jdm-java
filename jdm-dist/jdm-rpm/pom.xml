@@ -42,7 +42,7 @@
                                     <executable>bash</executable>
                                     <arguments>
                                         <argument>-c</argument>
-                                        <argument>mkdir -p "${project.build.directory}/rpm-resources" &amp;&amp; sed -e "s|@VERSION@|${rpm.version}|g" -e "s|@RPM_RELEASE@|${rpm.release}|g" -e "s|@LICENSE_PATH@|${project.basedir}/../../LICENSE.md|g" -e "s|@APP_CONTENT_DIR@|${project.basedir}/src/main/app-content|g" -e "s|@POLICY_PATH@|${project.basedir}/resources/net.jdiskmark.smartctl.policy|g" "${project.basedir}/resources/jdiskmark.spec.template" &gt; "${project.build.directory}/rpm-resources/jdiskmark.spec"</argument>
+                                        <argument>mkdir -p "${project.build.directory}/rpm-resources" &amp;&amp; sed -e "s|@VERSION@|${rpm.version}|g" -e "s|@RPM_RELEASE@|${rpm.release}|g" -e "s|@LICENSE_PATH@|${project.basedir}/../../LICENSE.md|g" -e "s|@APP_CONTENT_DIR@|${project.basedir}/../../jdm-core/target|g" -e "s|@POLICY_PATH@|${project.basedir}/resources/net.jdiskmark.smartctl.policy|g" "${project.basedir}/resources/jdiskmark.spec.template" &gt; "${project.build.directory}/rpm-resources/jdiskmark.spec"</argument>
                                     </arguments>
                                 </configuration>
                             </execution>

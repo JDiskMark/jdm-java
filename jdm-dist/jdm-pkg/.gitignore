@@ -1,4 +1,4 @@
-# CI-populated content — not tracked in source control.
-# The macos-pkg.yml workflow downloads and extracts the smartctl binary here
-# before the Maven build runs package-pkg.sh against this directory.
+# Maven-populated content — not tracked in source control.
+# The stage-smartctl-macos Ant task downloads and extracts the smartctl
+# binary here during the Maven build.
 app-content/

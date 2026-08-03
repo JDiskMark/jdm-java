@@ -363,6 +363,32 @@ grid: new Color(80, 80, 80)
 Clears per-series strokes: bw[0], bw[1], bw[4], bw[5] → null
 ```
 
+### Volatility Band Renderer
+
+The volatility band is an optional overlay (toggled via **Options > Volatility Band**)
+that renders ±2σ standard deviation bands around the trend lines to help detect
+thermal throttling.  It uses two additional datasets and renderers, separate from
+the main bandwidth series:
+
+| Dataset | Renderer | Series | Mapped Axis |
+|---|---|---|---|
+| 2 (write band) | `wBandRenderer` (`XYDifferenceRenderer`) | 0: Write Upper Band, 1: Write Lower Band | Axis 0 (MB/s) |
+| 3 (read band) | `rBandRenderer` (`XYDifferenceRenderer`) | 0: Read Upper Band, 1: Read Lower Band | Axis 0 (MB/s) |
+
+**Color derivation rule** — band colors are **not** defined in `PaletteDefinition`.
+They are derived at runtime from the active palette's trend line colors via
+`Gui.updateBandColors()`, which is called at the end of `Palette.apply()`:
+
+| Element | Source | Alpha |
+|---|---|---|
+| Band fill (positive + negative) | `bwRenderer` series 1 / 5 paint (write / read trend) | 50 (~20%) |
+| Band edge (series 0 + 1 stroke) | same source color | 100 (~40%) |
+| Stroke width | hardcoded | `0.5f` |
+
+**No legend entries** — both band renderers have `setSeriesVisibleInLegend(false)`
+on all series.  Visibility is controlled by `setDefaultSeriesVisible()` in the
+three `updateLegendAndAxis()` overloads.
+
 ### Tab Behavior Summary
 
 | Theme | Selected bg | Selected fg | Hover | Underline |

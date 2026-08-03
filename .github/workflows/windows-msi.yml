@@ -41,28 +41,6 @@ jobs:
         with:
           disable_ci_label: ${{ inputs.disable_ci_label || false }}
 
-      - name: Fetch bundled smartctl from jdm-deps
-        # Downloads the pre-packaged smartctl 7.5 binary from the public
-        # JDiskMark/jdm-deps release asset into jdm-core/target/smartctl/.
-        # The windows-msi Maven profile passes jdm-core/target as jpackage --input,
-        # so smartctl.exe is included at <install-dir>\app\smartctl\smartctl.exe in the installed image.
-        shell: pwsh
-        run: |
-          $dest = "jdm-core/target/smartctl"
-          $zip  = "$env:TEMP/smartctl-win.zip"
-          New-Item -ItemType Directory -Force -Path $dest | Out-Null
-          Write-Host "[smartctl] Downloading smartctl-7.5-windows-x86_64.zip from jdm-deps..."
-          Invoke-WebRequest -Uri "https://github.com/JDiskMark/jdm-deps/releases/download/tools%2Fsmartctl-7.5-win64/smartctl-7.5-windows-x86_64.zip" -OutFile $zip
-          $expectedHash = "CC32CC0CA24258933953182F0FCACD964C8762B947E96007FF69210A215ECCF3"
-          $actualHash = (Get-FileHash -Path $zip -Algorithm SHA256).Hash
-          if ($actualHash -ne $expectedHash) {
-              throw "Checksum mismatch for smartctl zip! Expected $expectedHash, got $actualHash"
-          }
-          Expand-Archive -Path $zip -DestinationPath (Split-Path $dest) -Force
-          $exe = Get-Item "$dest/smartctl.exe" -ErrorAction Stop
-          Write-Host "[smartctl] Staged: $($exe.FullName) ($($exe.Length) bytes)"
-          & "$dest/smartctl.exe" --version
-
       - name: Build Windows MSI (unsigned)
         # Builds jdm-core first (-am = also build upstream dependencies),
         # then jdm-msi. Explicitly activating the windows-msi profile.
@@ -84,3 +62,28 @@ jobs:
           if-no-files-found: error
           # Disable zipping so it can be downloaded raw from the Actions tab
           archive: false
+
+      - name: Smoke test — install MSI and verify SMART assets
+        shell: pwsh
+        run: |
+          # Silent install — /qn = no UI, /norestart avoids reboot prompts
+          $msi = (Get-ChildItem jdm-dist/jdm-msi/target/*.msi).FullName
+          Write-Host "Installing: $msi"
+          Start-Process msiexec -ArgumentList "/i `"$msi`" /qn /norestart" -Wait -NoNewWindow
+
+          # jpackage installs to "C:\Program Files\<name>\", where <name> is
+          # the --name arg: "JDiskMark <version>". Find it dynamically.
+          $installDir = Get-ChildItem "C:\Program Files" -Directory | Where-Object { $_.Name -like "JDiskMark*" } | Select-Object -First 1
+          if (-not $installDir) { throw "JDiskMark install directory not found under C:\Program Files" }
+          Write-Host "Install dir: $($installDir.FullName)"
+
+          # Verify the main launcher exists and runs
+          $launcher = Join-Path $installDir.FullName "JDiskMark*.exe" | Get-ChildItem | Select-Object -First 1
+          if (-not $launcher) { throw "Launcher executable not found" }
+          Write-Host "Launcher: $($launcher.FullName)"
+
+          # Verify bundled smartctl was packaged correctly
+          $smartctl = Join-Path $installDir.FullName "app\smartctl\smartctl.exe"
+          if (-not (Test-Path $smartctl)) { throw "smartctl.exe not found at: $smartctl" }
+          & $smartctl --version
+          Write-Host "SMART assets verified OK"

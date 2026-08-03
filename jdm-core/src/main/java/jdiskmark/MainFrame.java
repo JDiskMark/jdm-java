@@ -34,6 +34,7 @@ public final class MainFrame extends javax.swing.JFrame {
     private final javax.swing.JMenuItem archiveViewItem = new javax.swing.JMenuItem("View Archive");
     /** Unarchive menu item — only meaningful while in archive view. */
     private final javax.swing.JMenuItem unarchiveSelectedItem = new javax.swing.JMenuItem("Unarchive Selected");
+    private final javax.swing.JCheckBoxMenuItem showVolatilityBandCbMenuItem = new javax.swing.JCheckBoxMenuItem("Volatility Band");
 
     /**
      * Graph Palette submenu — built programmatically from the {@link org.metricus.jdm.ui.Palette}
@@ -83,6 +84,26 @@ public final class MainFrame extends javax.swing.JFrame {
         if (themeIndex >= 0) {
             optionMenu.remove(themeMenu);
             optionMenu.add(graphThemeMenu, themeIndex);
+        }
+        
+        // Insert Volatility Band toggle after Show Max Min
+        int maxMinIndex = -1;
+        for (int i = 0; i < optionMenu.getMenuComponentCount(); i++) {
+            if (optionMenu.getMenuComponent(i) == showMaxMinCheckBoxMenuItem) {
+                maxMinIndex = i;
+                break;
+            }
+        }
+        showVolatilityBandCbMenuItem.setSelected(Gui.showVolatilityBand);
+        showVolatilityBandCbMenuItem.addActionListener(e -> {
+            Gui.showVolatilityBand = showVolatilityBandCbMenuItem.getState();
+            App.saveConfig();
+            Gui.singleOpTrigReloadGraph();
+        });
+        if (maxMinIndex >= 0) {
+            optionMenu.add(showVolatilityBandCbMenuItem, maxMinIndex + 1);
+        } else {
+            optionMenu.add(showVolatilityBandCbMenuItem);
         }
         
         //for diagnostics
@@ -335,6 +356,7 @@ public final class MainFrame extends javax.swing.JFrame {
         // display preferences
         showSingleOpMenuItem.setSelected(Gui.showSingleOp);
         showMaxMinCheckBoxMenuItem.setSelected(Gui.showMaxMin);
+        showVolatilityBandCbMenuItem.setSelected(Gui.showVolatilityBand);
         showAccessCheckBoxMenuItem.setSelected(Gui.showDriveAccess);
         showBadgesCbMenuItem.setSelected(Gui.showBadges); // overrides initComponents() which hardcodes setSelected(true)
         graphThemeMenu.syncFromModel();
