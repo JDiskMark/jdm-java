@@ -45,10 +45,13 @@ public class SmartPanel extends JPanel {
     // Drive Info labels
     // -------------------------------------------------------------------------
     private final JLabel modelValueLabel        = value("-");
+    private final JLabel modelFamilyValueLabel  = value("-");
     private final JLabel serialValueLabel       = value("-");
     private final JLabel firmwareValueLabel     = value("-");
     private final JLabel capacityValueLabel     = value("-");
     private final JLabel protocolValueLabel     = value("-");
+    private final JLabel driveTypeValueLabel    = value("-");
+    private final JLabel inDatabaseValueLabel   = value("-");
 
     // -------------------------------------------------------------------------
     // NVMe Device Details labels
@@ -68,6 +71,7 @@ public class SmartPanel extends JPanel {
     // -------------------------------------------------------------------------
     private final JLabel statusValueLabel         = value("-");
     private final JLabel tempValueLabel           = value("-");
+    private final JLabel tempTripValueLabel       = value("-");
     private final JLabel powerOnValueLabel        = value("-");
     private final JLabel powerCyclesValueLabel    = value("-");
     private final JLabel remainingLifeValueLabel  = value("-");
@@ -113,6 +117,13 @@ public class SmartPanel extends JPanel {
     private       JPanel            ataSection;
 
     // -------------------------------------------------------------------------
+    // NVMe Attributes table
+    // -------------------------------------------------------------------------
+    private final DefaultTableModel nvmeAttrModel;
+    private final JTable            nvmeAttrTable;
+    private       JPanel            nvmeAttrSection;
+
+    // -------------------------------------------------------------------------
     // Constructor
     // -------------------------------------------------------------------------
 
@@ -135,6 +146,19 @@ public class SmartPanel extends JPanel {
         ataTable.getColumnModel().getColumn(4).setPreferredWidth(60);
         ataTable.getColumnModel().getColumn(5).setPreferredWidth(80);
         ataTable.getColumnModel().getColumn(6).setPreferredWidth(60);
+
+        nvmeAttrModel = new DefaultTableModel(
+            new String[]{"Attribute Name", "Value", "Status"},
+            0
+        ) {
+            @Override
+            public boolean isCellEditable(int row, int col) { return false; }
+        };
+        nvmeAttrTable = new JTable(nvmeAttrModel);
+        nvmeAttrTable.setFillsViewportHeight(true);
+        nvmeAttrTable.getColumnModel().getColumn(0).setPreferredWidth(220);
+        nvmeAttrTable.getColumnModel().getColumn(1).setPreferredWidth(200);
+        nvmeAttrTable.getColumnModel().getColumn(2).setPreferredWidth(60);
 
         // Inner content panel — implements Scrollable so the scroll pane uses
         // the panel's natural preferred height instead of stretching to fill the viewport.
@@ -190,15 +214,21 @@ public class SmartPanel extends JPanel {
         JPanel driveSection = section("Drive Info");
         driveSection.setLayout(new MigLayout("insets 8, wrap 4", COL_SPEC));
         driveSection.add(label("Model:"));
-        driveSection.add(modelValueLabel,    "growx");
+        driveSection.add(modelValueLabel,       "growx");
         driveSection.add(label("Protocol:"));
-        driveSection.add(protocolValueLabel, "growx");
+        driveSection.add(protocolValueLabel,    "growx");
+        driveSection.add(label("Model Family:"));
+        driveSection.add(modelFamilyValueLabel, "growx");
+        driveSection.add(label("Drive Type:"));
+        driveSection.add(driveTypeValueLabel,   "growx");
         driveSection.add(label("Serial:"));
-        driveSection.add(serialValueLabel,   "growx");
+        driveSection.add(serialValueLabel,      "growx");
         driveSection.add(label("Firmware:"));
-        driveSection.add(firmwareValueLabel, "growx");
+        driveSection.add(firmwareValueLabel,    "growx");
         driveSection.add(label("Capacity:"));
-        driveSection.add(capacityValueLabel, "growx, span 3");
+        driveSection.add(capacityValueLabel,    "growx");
+        driveSection.add(label("In SMART DB:"));
+        driveSection.add(inDatabaseValueLabel,  "growx");
         p.add(driveSection, "growx, wrap");
 
         // --- NVMe Device Details section ---
@@ -234,6 +264,8 @@ public class SmartPanel extends JPanel {
         healthSection.add(tempValueLabel,          "growx");
         healthSection.add(label("Power-On Hours:"));
         healthSection.add(powerOnValueLabel,       "growx");
+        healthSection.add(label("Trip Temperature:"));
+        healthSection.add(tempTripValueLabel,      "growx");
         healthSection.add(label("Power Cycles:"));
         healthSection.add(powerCyclesValueLabel,   "growx");
         healthSection.add(label("Remaining Life:"));
@@ -292,6 +324,15 @@ public class SmartPanel extends JPanel {
         ataSection.add(ataScroll, "grow");
         ataSection.setVisible(false);
         p.add(ataSection, "growx, wrap");
+
+        // --- NVMe Attributes section (hidden until NVMe data is present) ---
+        nvmeAttrSection = section("NVMe SMART Attributes");
+        nvmeAttrSection.setLayout(new MigLayout("insets 8, fill", "[grow]", "[grow]"));
+        JScrollPane nvmeAttrScroll = new JScrollPane(nvmeAttrTable);
+        nvmeAttrScroll.setPreferredSize(new java.awt.Dimension(600, 200));
+        nvmeAttrSection.add(nvmeAttrScroll, "grow");
+        nvmeAttrSection.setVisible(false);
+        p.add(nvmeAttrSection, "growx, wrap");
     }
 
     // -------------------------------------------------------------------------
@@ -316,6 +357,7 @@ public class SmartPanel extends JPanel {
             fillNvme(data.getNvmeHealthLog());
             fillEndurance(data);
             fillAtaAttributes(data.getAtaSmartAttributes());
+            fillNvmeAttributes(data.getNvmeHealthLog());
             revalidate();
             repaint();
         });
@@ -325,13 +367,15 @@ public class SmartPanel extends JPanel {
     public void clear() {
         SwingUtilities.invokeLater(() -> {
             for (JLabel l : new JLabel[]{
-                modelValueLabel, serialValueLabel, firmwareValueLabel,
+                modelValueLabel, modelFamilyValueLabel,
+                serialValueLabel, firmwareValueLabel,
                 capacityValueLabel, protocolValueLabel,
+                driveTypeValueLabel, inDatabaseValueLabel,
                 nvmeVersionValueLabel, nvmeControllerIdValueLabel,
                 nvmeOuiValueLabel, nvmeVendorValueLabel,
                 nvmeTotalCapValueLabel, nvmeUnallocCapValueLabel,
                 nvmeNsCountValueLabel, localTimeValueLabel,
-                statusValueLabel, tempValueLabel,
+                statusValueLabel, tempValueLabel, tempTripValueLabel,
                 powerOnValueLabel, powerCyclesValueLabel,
                 remainingLifeValueLabel,
                 spareValueLabel, usedPctValueLabel, writtenValueLabel,
@@ -346,10 +390,12 @@ public class SmartPanel extends JPanel {
                 l.setForeground(null);
             }
             ataModel.setRowCount(0);
+            nvmeAttrModel.setRowCount(0);
             nvmeDevSection.setVisible(true);   // keep visible with dashes
             nvmeSection.setVisible(true);
             enduranceSection.setVisible(false);
             ataSection.setVisible(false);
+            nvmeAttrSection.setVisible(false);
             // Reset toolbar state
             saveButton.setEnabled(false);
             statusLabel.setText("Click \u2018Run SMART\u2019 to fetch live data.");
@@ -432,13 +478,15 @@ public class SmartPanel extends JPanel {
         SwingUtilities.invokeLater(() -> {
             // Reset all value labels to dash
             for (JLabel l : new JLabel[]{
-                modelValueLabel, serialValueLabel, firmwareValueLabel,
+                modelValueLabel, modelFamilyValueLabel,
+                serialValueLabel, firmwareValueLabel,
                 capacityValueLabel, protocolValueLabel,
+                driveTypeValueLabel, inDatabaseValueLabel,
                 nvmeVersionValueLabel, nvmeControllerIdValueLabel,
                 nvmeOuiValueLabel, nvmeVendorValueLabel,
                 nvmeTotalCapValueLabel, nvmeUnallocCapValueLabel,
                 nvmeNsCountValueLabel, localTimeValueLabel,
-                statusValueLabel, tempValueLabel,
+                statusValueLabel, tempValueLabel, tempTripValueLabel,
                 powerOnValueLabel, powerCyclesValueLabel,
                 remainingLifeValueLabel,
                 spareValueLabel, usedPctValueLabel, writtenValueLabel,
@@ -450,6 +498,7 @@ public class SmartPanel extends JPanel {
                 eccErrorValueLabel, uncorrErrorValueLabel
             }) { l.setText("-"); l.setForeground(null); }
             ataModel.setRowCount(0);
+            nvmeAttrModel.setRowCount(0);
 
             // Drive Info
             modelValueLabel.setText(orDash(snap.getModelName()));
@@ -511,6 +560,7 @@ public class SmartPanel extends JPanel {
             nvmeDevSection.setVisible(false);
             enduranceSection.setVisible(false);
             ataSection.setVisible(false);
+            nvmeAttrSection.setVisible(false);
 
             // Toolbar: disable Save (this is a read-only view), show snapshot timestamp
             saveButton.setEnabled(false);
@@ -532,6 +582,7 @@ public class SmartPanel extends JPanel {
 
     private void fillDriveInfo(Smart d) {
         modelValueLabel.setText(orDash(d.getModelName()));
+        modelFamilyValueLabel.setText(orDash(d.getModelFamily()));
         serialValueLabel.setText(orDash(d.getSerialNumber()));
         firmwareValueLabel.setText(orDash(d.getFirmwareVersion()));
 
@@ -540,6 +591,19 @@ public class SmartPanel extends JPanel {
         }
         if (d.getDevice() != null) {
             protocolValueLabel.setText(orDash(d.getDevice().getProtocol()));
+        }
+
+        // rotation_rate: 0 = SSD, >0 = HDD with that RPM, null = unknown
+        if (d.getRotationRate() != null) {
+            int rpm = d.getRotationRate();
+            driveTypeValueLabel.setText(rpm == 0 ? "SSD (non-rotating)" : "HDD (" + rpm + " RPM)");
+        }
+
+        // in_smartctl_database: whether attribute names/thresholds are reliable
+        if (d.getInSmartctlDatabase() != null) {
+            boolean inDb = d.getInSmartctlDatabase();
+            inDatabaseValueLabel.setText(inDb ? "Yes ✔" : "No — thresholds may be unreliable");
+            inDatabaseValueLabel.setForeground(inDb ? null : new Color(0xFF9800));
         }
     }
 
@@ -604,6 +668,10 @@ public class SmartPanel extends JPanel {
             int t = d.getTemperature().getCurrent();
             tempValueLabel.setText(t + " °C");
             tempValueLabel.setForeground(tempColor(t));
+            // Drive trip temperature (ATA only)
+            if (d.getTemperature().getDriveTrip() != null) {
+                tempTripValueLabel.setText(d.getTemperature().getDriveTrip() + " °C");
+            }
         } else if (d.getNvmeHealthLog() != null && d.getNvmeHealthLog().getTemperature() != null) {
             int t = d.getNvmeHealthLog().getTemperature();
             tempValueLabel.setText(t + " °C");
@@ -749,6 +817,81 @@ public class SmartPanel extends JPanel {
                 raw, status
             });
         }
+    }
+
+    private void fillNvmeAttributes(Smart.NvmeHealthLog nvme) {
+        nvmeAttrModel.setRowCount(0);
+        if (nvme == null) {
+            nvmeAttrSection.setVisible(false);
+            return;
+        }
+        nvmeAttrSection.setVisible(true);
+
+        addNvmeRow("Temperature",
+                nvme.getTemperature() != null ? nvme.getTemperature() + " \u00b0C" : null,
+                nvme.getTemperature() != null && nvme.getTemperature() >= 60 ? "WARN" : "OK");
+        addNvmeRow("Available Spare",
+                nvme.getAvailableSpare() != null ? nvme.getAvailableSpare() + "%" : null,
+                nvme.getAvailableSpareThreshold() != null && nvme.getAvailableSpare() != null
+                        && nvme.getAvailableSpare() <= nvme.getAvailableSpareThreshold() ? "WARN" : "OK");
+        addNvmeRow("Available Spare Threshold",
+                nvme.getAvailableSpareThreshold() != null ? nvme.getAvailableSpareThreshold() + "%" : null,
+                "OK");
+        addNvmeRow("Percentage Used",
+                nvme.getPercentageUsed() != null ? nvme.getPercentageUsed() + "%" : null,
+                nvme.getPercentageUsed() != null && nvme.getPercentageUsed() >= 90 ? "WARN" : "OK");
+        addNvmeRow("Data Units Written",
+                nvme.getDataUnitsWritten() != null
+                        ? nvme.getDataWrittenGb() + " GB  (" + nvme.getDataUnitsWritten() + " units)" : null,
+                "OK");
+        addNvmeRow("Data Units Read",
+                nvme.getDataUnitsRead() != null
+                        ? nvme.getDataReadGb() + " GB  (" + nvme.getDataUnitsRead() + " units)" : null,
+                "OK");
+        addNvmeRow("Host Write Commands",
+                nvme.getHostWrites() != null ? String.valueOf(nvme.getHostWrites()) : null,
+                "OK");
+        addNvmeRow("Host Read Commands",
+                nvme.getHostReads() != null ? String.valueOf(nvme.getHostReads()) : null,
+                "OK");
+        addNvmeRow("Controller Busy Time",
+                nvme.getControllerBusyTime() != null ? nvme.getControllerBusyTime() + " min" : null,
+                "OK");
+        addNvmeRow("Power Cycles",
+                nvme.getPowerCycles() != null ? String.valueOf(nvme.getPowerCycles()) : null,
+                "OK");
+        addNvmeRow("Power On Hours",
+                nvme.getPowerOnHours() != null ? nvme.getPowerOnHours() + " h" : null,
+                "OK");
+        addNvmeRow("Unsafe Shutdowns",
+                nvme.getUnsafeShutdowns() != null ? String.valueOf(nvme.getUnsafeShutdowns()) : null,
+                nvme.getUnsafeShutdowns() != null && nvme.getUnsafeShutdowns() > 0 ? "WARN" : "OK");
+        addNvmeRow("Media and Data Integrity Errors",
+                nvme.getMediaErrors() != null ? String.valueOf(nvme.getMediaErrors()) : null,
+                nvme.getMediaErrors() != null && nvme.getMediaErrors() > 0 ? "WARN" : "OK");
+        addNvmeRow("Error Information Log Entries",
+                nvme.getNumErrLogEntries() != null ? String.valueOf(nvme.getNumErrLogEntries()) : null,
+                nvme.getNumErrLogEntries() != null && nvme.getNumErrLogEntries() > 0 ? "WARN" : "OK");
+        addNvmeRow("Warning Composite Temp Time",
+                nvme.getWarningTempTime() != null ? nvme.getWarningTempTime() + " min" : null,
+                nvme.getWarningTempTime() != null && nvme.getWarningTempTime() > 0 ? "WARN" : "OK");
+        addNvmeRow("Critical Composite Temp Time",
+                nvme.getCriticalCompTime() != null ? nvme.getCriticalCompTime() + " min" : null,
+                nvme.getCriticalCompTime() != null && nvme.getCriticalCompTime() > 0 ? "WARN" : "OK");
+        List<Integer> sensors = nvme.getTemperatureSensors();
+        if (sensors != null) {
+            for (int i = 0; i < sensors.size(); i++) {
+                Integer s = sensors.get(i);
+                addNvmeRow("Temperature Sensor " + (i + 1),
+                        s != null ? s + " \u00b0C" : null,
+                        s != null && s >= 60 ? "WARN" : "OK");
+            }
+        }
+    }
+
+    private void addNvmeRow(String name, String value, String status) {
+        if (value == null) return;
+        nvmeAttrModel.addRow(new Object[]{name, value, status});
     }
 
     // -------------------------------------------------------------------------

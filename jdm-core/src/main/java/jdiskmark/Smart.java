@@ -603,6 +603,12 @@ public class Smart {
     @JsonProperty("local_time")
     private LocalTimeInfo localTime;
 
+    @JsonProperty("rotation_rate")
+    private Integer rotationRate;
+
+    @JsonProperty("in_smartctl_database")
+    private Boolean inSmartctlDatabase;
+
     // -------------------------------------------------------------------------
     // Factory / parsing
     // -------------------------------------------------------------------------
@@ -696,6 +702,12 @@ public class Smart {
 
     public LocalTimeInfo getLocalTime() { return localTime; }
     public void setLocalTime(LocalTimeInfo localTime) { this.localTime = localTime; }
+
+    public Integer getRotationRate() { return rotationRate; }
+    public void setRotationRate(Integer rotationRate) { this.rotationRate = rotationRate; }
+
+    public Boolean getInSmartctlDatabase() { return inSmartctlDatabase; }
+    public void setInSmartctlDatabase(Boolean inSmartctlDatabase) { this.inSmartctlDatabase = inSmartctlDatabase; }
 
     // =========================================================================
     // Nested classes
