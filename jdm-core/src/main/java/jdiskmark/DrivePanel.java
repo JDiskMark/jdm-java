@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
@@ -334,7 +335,7 @@ public class DrivePanel extends JPanel {
         suppressComboEvents = true;
         try {
             driveCombo.removeAllItems();
-            for (File root : File.listRoots()) {
+            for (File root : listDriveRoots()) {
                 if (root.getTotalSpace() == 0) continue;
                 DriveEntry entry = new DriveEntry(root);
                 driveCombo.addItem(entry);
@@ -363,18 +364,26 @@ public class DrivePanel extends JPanel {
 
     private void syncComboToLocation() {
         if (App.locationDir == null) return;
-        java.nio.file.Path locRoot = App.locationDir.toPath().getRoot();
-        if (locRoot == null) return;
+        String locPath = App.locationDir.getAbsolutePath();
 
+        // Find the combo entry whose mount point is the longest prefix of
+        // the current location. On Windows this still matches by drive root
+        // (e.g. "C:\"); on Linux it correctly picks /run/media/user/Drive
+        // over / when both are present.
+        int bestIndex  = -1;
+        int bestLength = -1;
         for (int i = 0; i < driveCombo.getItemCount(); i++) {
             DriveEntry entry = driveCombo.getItemAt(i);
-            if (entry.root.toPath().equals(locRoot)
-                    || entry.root.getAbsolutePath().equalsIgnoreCase(locRoot.toString())) {
-                suppressComboEvents = true;
-                driveCombo.setSelectedIndex(i);
-                suppressComboEvents = false;
-                return;
+            String mountPath = entry.root.getAbsolutePath();
+            if (locPath.startsWith(mountPath) && mountPath.length() > bestLength) {
+                bestIndex  = i;
+                bestLength = mountPath.length();
             }
+        }
+        if (bestIndex >= 0) {
+            suppressComboEvents = true;
+            driveCombo.setSelectedIndex(bestIndex);
+            suppressComboEvents = false;
         }
     }
 
@@ -382,16 +391,16 @@ public class DrivePanel extends JPanel {
         DriveEntry entry = (DriveEntry) driveCombo.getSelectedItem();
         if (entry == null) return;
 
+        // Always refresh the summary panel to show info for the selected
+        // drive, even when it is read-only or otherwise not usable.
+        refreshDriveInfo(entry.root);
+
         File resolved = resolveLocationForRoot(entry.root);
         if (resolved == null) {
-            accessLabel.setText("Access: ✗  No writable location found on this drive");
-            accessLabel.setForeground(java.awt.Color.RED);
             return;
         }
 
         if (!DriveAccessChecker.validateTargetDirectory(resolved, true)) {
-            accessLabel.setText("Access: ✗  Cannot read/write test directory");
-            accessLabel.setForeground(java.awt.Color.RED);
             return;
         }
 
@@ -424,7 +433,7 @@ public class DrivePanel extends JPanel {
         if (allDrivesTableModel == null) return;
         allDrivesTableModel.setRowCount(0);
 
-        for (File root : File.listRoots()) {
+        for (File root : listDriveRoots()) {
             long total = root.getTotalSpace();
             long free  = root.getFreeSpace();
             long used  = total - free;
@@ -474,13 +483,30 @@ public class DrivePanel extends JPanel {
         }
     }
 
+    /**
+     * Returns drive roots appropriate for the current OS. On Linux, reads
+     * {@code /proc/mounts} via {@link UtilOs#getMountedDrivesLinux()} to
+     * discover all mounted drives; on other platforms delegates to
+     * {@link File#listRoots()}.
+     */
+    private static List<File> listDriveRoots() {
+        if (App.isLinux()) {
+            return UtilOs.getMountedDrivesLinux();
+        }
+        return List.of(File.listRoots());
+    }
+
     private void refreshDriveInfo() {
-        if (App.locationDir == null) return;
+        refreshDriveInfo(App.locationDir);
+    }
+
+    private void refreshDriveInfo(File dir) {
+        if (dir == null) return;
 
         // Update path field immediately on EDT
         String testPath = (App.dataDir != null)
                 ? App.dataDir.getAbsolutePath()
-                : App.locationDir.getAbsolutePath() + File.separator + App.DATADIRNAME;
+                : dir.getAbsolutePath() + File.separator + App.DATADIRNAME;
         pathField.setText(testPath);
 
         // Reset info labels while loading
@@ -493,8 +519,6 @@ public class DrivePanel extends JPanel {
         infoUsageLabel.setText("Usage: loading…");
         usageBar.setValue(0);
         usageBar.setString("…");
-
-        final File dir = App.locationDir;
 
         new SwingWorker<String[], Void>() {
             @Override

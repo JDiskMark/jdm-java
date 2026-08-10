@@ -264,6 +264,57 @@ public class UtilOs {
     }
     
     /**
+     * Returns mount points for real block-device-backed filesystems on Linux
+     * by reading {@code /proc/mounts}. Virtual filesystems (procfs, sysfs,
+     * tmpfs, etc.), snap loopback mounts, and boot partitions are excluded.
+     *
+     * <p>This replaces {@code File.listRoots()} for Linux drive enumeration,
+     * since {@code listRoots()} only returns {@code /} on Linux and never
+     * discovers additional mounted drives.
+     *
+     * @return list of mount-point directories; always includes {@code /} if
+     *         it was discovered and never empty on a running Linux system
+     */
+    static public List<File> getMountedDrivesLinux() {
+        List<File> mounts = new ArrayList<>();
+        try {
+            List<String> lines = java.nio.file.Files.readAllLines(
+                    java.nio.file.Path.of("/proc/mounts"));
+            for (String line : lines) {
+                String[] parts = line.split("\\s+");
+                if (parts.length < 3) continue;
+
+                String device     = parts[0];
+                String mountPoint = parts[1];
+
+                // Only real block devices
+                if (!device.startsWith("/dev/")) continue;
+
+                // Exclude snap loopback mounts (Ubuntu)
+                if (mountPoint.startsWith("/snap/")) continue;
+
+                // Exclude boot partitions
+                if (mountPoint.startsWith("/boot/") || mountPoint.equals("/boot")) continue;
+
+                File mountDir = new File(mountPoint);
+                if (mountDir.getTotalSpace() == 0) continue;
+
+                mounts.add(mountDir);
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Failed to read /proc/mounts", e);
+        }
+
+        // Guarantee root is always present
+        File rootDir = new File("/");
+        if (mounts.stream().noneMatch(f -> f.getAbsolutePath().equals("/"))) {
+            mounts.addFirst(rootDir);
+        }
+
+        return mounts;
+    }
+
+    /**
      * On Linux OS get the device path when given a file path.
      * eg.  filePath = /home/james/Desktop/jdm-data
      * devicePath = /dev/sda
@@ -1218,8 +1269,22 @@ public class UtilOs {
     static String getBusTypeLinux(Path path) {
         String partition = getPartitionFromFilePathLinux(path);
         if (partition == null || partition.isBlank()) return null;
+        // TRAN is only reported on the parent disk device, not on partitions.
+        // Try the partition first; if empty, resolve the parent device and retry.
+        String tran = lsblkTran(partition);
+        if (tran != null) return tran;
+
+        List<String> parents = getDeviceNamesFromPartitionLinux(partition);
+        if (!parents.isEmpty()) {
+            tran = lsblkTran("/dev/" + parents.getFirst());
+            if (tran != null) return tran;
+        }
+        return null;
+    }
+
+    private static String lsblkTran(String device) {
         try {
-            ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "TRAN", partition);
+            ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "TRAN", device);
             pb.environment().put("LC_ALL", "C");
             pb.redirectErrorStream(true);
             Process process = pb.start();
@@ -1229,13 +1294,13 @@ public class UtilOs {
                 while ((line = reader.readLine()) != null) {
                     String trimmed = line.trim();
                     if (!trimmed.isEmpty()) {
-                        return trimmed.toUpperCase(); // e.g. "NVME", "SATA"
+                        return trimmed.toUpperCase();
                     }
                 }
             }
             process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
         } catch (IOException | InterruptedException e) {
-            LOGGER.log(Level.WARNING, "lsblk TRAN failed for " + partition, e);
+            LOGGER.log(Level.WARNING, "lsblk TRAN failed for " + device, e);
         }
         return null;
     }
