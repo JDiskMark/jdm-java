@@ -1,6 +1,6 @@
 package jdiskmark;
 
-import static jdiskmark.DriveAccessChecker.validateTargetDirectory;
+import static jdiskmark.DriveChecker.validateTargetDirectory;
 
 import picocli.CommandLine;
 import java.io.File;
@@ -975,16 +975,21 @@ public class App {
             return;
         }
 
-        // 3. update state
+        // 3. check enough disk space for the configured benchmark
+        if (!DriveChecker.checkDiskSpace(locationDir)) {
+            return;
+        }
+
+        // 4. update state
         state = State.DISK_TEST_STATE;
         if (mode == Mode.GUI) {
             Gui.mainFrame.adjustSensitivity();
         }
 
-        // 4. create data dir reference
+        // 5. create data dir reference
         dataDir = new File(locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
 
-        // 5. remove existing test data if present (recursive — File.delete() only
+        // 6. remove existing test data if present (recursive — File.delete() only
         // removes empty dirs)
         if (autoRemoveData && dataDir.exists()) {
             boolean removed = Util.deleteDirectory(dataDir);
@@ -997,12 +1002,12 @@ public class App {
             }
         }
 
-        // 6. create data dir if not already present
+        // 7. create data dir if not already present
         if (dataDir.exists() == false) {
             dataDir.mkdirs();
         }
 
-        // 7. start benchmark job thread
+        // 8. start benchmark job thread
         switch (mode) {
             case GUI -> {
                 worker = new BenchmarkWorker();

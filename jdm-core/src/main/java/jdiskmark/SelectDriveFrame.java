@@ -2,7 +2,7 @@ package jdiskmark;
 
 import java.io.File;
 
-import static jdiskmark.DriveAccessChecker.validateTargetDirectory;
+import static jdiskmark.DriveChecker.validateTargetDirectory;
 
 /**
  *

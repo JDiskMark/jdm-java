@@ -400,7 +400,7 @@ public class DrivePanel extends JPanel {
             return;
         }
 
-        if (!DriveAccessChecker.validateTargetDirectory(resolved, true)) {
+        if (!DriveChecker.validateTargetDirectory(resolved, true)) {
             return;
         }
 
