@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
@@ -33,7 +34,7 @@ import javax.swing.table.DefaultTableModel;
  *
  * <pre>
  * ┌──────────────────────────────────────────────────────┐
- * │  Drive:  [combo box ──────────────────────────────]  │  ← NORTH
+ * │  Drive:  [combo box ─────────────────────────] [⟳]  │  ← NORTH
  * ├──────────────────────────────────────────────────────┤
  * │   Summary                                           │
  * │   Model: …                                          │
@@ -104,7 +105,8 @@ public class DrivePanel extends JPanel {
     private JTable            allDrivesTable;
 
     private static final String[] ALL_DRIVES_COLUMNS = {
-        "Drive / Mount", "Model", "Total (GB)", "Used (GB)", "Free (GB)", "Usage"
+        "Drive / Mount", "Model", "Interface", "File System",
+        "Total (GB)", "Used (GB)", "Free (GB)", "Usage"
     };
 
     private static final Logger LOG = Logger.getLogger(DrivePanel.class.getName());
@@ -133,6 +135,12 @@ public class DrivePanel extends JPanel {
         driveCombo.setMaximumRowCount(12);
         populateCombo();
         selectorRow.add(driveCombo, BorderLayout.CENTER);
+
+        JButton refreshButton = new JButton("\u27F3");
+        refreshButton.setToolTipText("Refresh drive list");
+        refreshButton.setMargin(new Insets(2, 6, 2, 6));
+        refreshButton.addActionListener(e -> refresh());
+        selectorRow.add(refreshButton, BorderLayout.EAST);
         northPanel.add(selectorRow, BorderLayout.NORTH);
 
         // Test Directory row — directly below the drive selector
@@ -253,8 +261,8 @@ public class DrivePanel extends JPanel {
             @Override public boolean isCellEditable(int r, int c) { return false; }
             @Override public Class<?> getColumnClass(int col) {
                 return switch (col) {
-                    case 2, 3, 4 -> Double.class;
-                    case 5       -> Integer.class;  // Usage % for progress bar
+                    case 4, 5, 6 -> Double.class;
+                    case 7       -> Integer.class;  // Usage % for progress bar
                     default      -> String.class;
                 };
             }
@@ -272,16 +280,18 @@ public class DrivePanel extends JPanel {
 
         DefaultTableCellRenderer centerR = new DefaultTableCellRenderer();
         centerR.setHorizontalAlignment(SwingConstants.CENTER);
-        for (int i = 2; i <= 4; i++) {
+        for (int i = 2; i <= 6; i++) {
             allDrivesTable.getColumnModel().getColumn(i).setCellRenderer(centerR);
         }
         // Usage column — render as a progress bar with percentage text
-        allDrivesTable.getColumnModel().getColumn(5).setCellRenderer(new ProgressBarRenderer());
+        allDrivesTable.getColumnModel().getColumn(7).setCellRenderer(new ProgressBarRenderer());
 
         allDrivesTable.getColumnModel().getColumn(0).setPreferredWidth(120);
         allDrivesTable.getColumnModel().getColumn(1).setPreferredWidth(200);
-        for (int i = 2; i <= 4; i++) allDrivesTable.getColumnModel().getColumn(i).setPreferredWidth(75);
-        allDrivesTable.getColumnModel().getColumn(5).setPreferredWidth(100);
+        allDrivesTable.getColumnModel().getColumn(2).setPreferredWidth(75);
+        allDrivesTable.getColumnModel().getColumn(3).setPreferredWidth(80);
+        for (int i = 4; i <= 6; i++) allDrivesTable.getColumnModel().getColumn(i).setPreferredWidth(75);
+        allDrivesTable.getColumnModel().getColumn(7).setPreferredWidth(100);
 
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(new JScrollPane(allDrivesTable), BorderLayout.CENTER);
@@ -334,7 +344,7 @@ public class DrivePanel extends JPanel {
         suppressComboEvents = true;
         try {
             driveCombo.removeAllItems();
-            for (File root : File.listRoots()) {
+            for (File root : listDriveRoots()) {
                 if (root.getTotalSpace() == 0) continue;
                 DriveEntry entry = new DriveEntry(root);
                 driveCombo.addItem(entry);
@@ -363,18 +373,30 @@ public class DrivePanel extends JPanel {
 
     private void syncComboToLocation() {
         if (App.locationDir == null) return;
-        java.nio.file.Path locRoot = App.locationDir.toPath().getRoot();
-        if (locRoot == null) return;
+        String locPath = App.locationDir.getAbsolutePath();
 
+        // Find the combo entry whose mount point is the longest prefix of
+        // the current location. On Windows this still matches by drive root
+        // (e.g. "C:\"); on Linux it correctly picks /run/media/user/Drive
+        // over / when both are present.
+        int bestIndex  = -1;
+        int bestLength = -1;
         for (int i = 0; i < driveCombo.getItemCount(); i++) {
             DriveEntry entry = driveCombo.getItemAt(i);
-            if (entry.root.toPath().equals(locRoot)
-                    || entry.root.getAbsolutePath().equalsIgnoreCase(locRoot.toString())) {
-                suppressComboEvents = true;
-                driveCombo.setSelectedIndex(i);
-                suppressComboEvents = false;
-                return;
+            String mountPath = entry.root.getAbsolutePath();
+            String mountPrefix = mountPath.endsWith(File.separator)
+                    ? mountPath
+                    : mountPath + File.separator;
+            if ((locPath.equals(mountPath) || locPath.startsWith(mountPrefix))
+                    && mountPath.length() > bestLength) {
+                bestIndex  = i;
+                bestLength = mountPath.length();
             }
+        }
+        if (bestIndex >= 0) {
+            suppressComboEvents = true;
+            driveCombo.setSelectedIndex(bestIndex);
+            suppressComboEvents = false;
         }
     }
 
@@ -382,16 +404,16 @@ public class DrivePanel extends JPanel {
         DriveEntry entry = (DriveEntry) driveCombo.getSelectedItem();
         if (entry == null) return;
 
+        // Always refresh the summary panel to show info for the selected
+        // drive, even when it is read-only or otherwise not usable.
+        refreshDriveInfo(entry.root);
+
         File resolved = resolveLocationForRoot(entry.root);
         if (resolved == null) {
-            accessLabel.setText("Access: ✗  No writable location found on this drive");
-            accessLabel.setForeground(java.awt.Color.RED);
             return;
         }
 
-        if (!DriveAccessChecker.validateTargetDirectory(resolved, true)) {
-            accessLabel.setText("Access: ✗  Cannot read/write test directory");
-            accessLabel.setForeground(java.awt.Color.RED);
+        if (!DriveChecker.validateTargetDirectory(resolved, true)) {
             return;
         }
 
@@ -424,7 +446,7 @@ public class DrivePanel extends JPanel {
         if (allDrivesTableModel == null) return;
         allDrivesTableModel.setRowCount(0);
 
-        for (File root : File.listRoots()) {
+        for (File root : listDriveRoots()) {
             long total = root.getTotalSpace();
             long free  = root.getFreeSpace();
             long used  = total - free;
@@ -435,10 +457,12 @@ public class DrivePanel extends JPanel {
             double freeGb  = free  / (double) App.GIGABYTE;
             double pct     = 100.0 * used / total;
 
-            // Add row with placeholder model — filled in asynchronously
+            // Add row with placeholders — filled in asynchronously
             int rowIndex = allDrivesTableModel.getRowCount();
             allDrivesTableModel.addRow(new Object[]{
                 root.getAbsolutePath(),
+                "loading…",
+                "loading…",
                 "loading…",
                 Math.round(totalGb * 10.0) / 10.0,
                 Math.round(usedGb  * 10.0) / 10.0,
@@ -446,27 +470,40 @@ public class DrivePanel extends JPanel {
                 (int) Math.round(pct)
             });
 
-            // Fetch model in background
+            // Fetch model, interface, and filesystem in background
             final int row = rowIndex;
             final File driveRoot = root;
-            new SwingWorker<String, Void>() {
+            new SwingWorker<String[], Void>() {
                 @Override
-                protected String doInBackground() {
-                    return Util.getDriveModel(driveRoot);
+                protected String[] doInBackground() {
+                    String model = Util.getDriveModel(driveRoot);
+                    String busType = Util.getBusType(driveRoot.toPath());
+                    String busDisplay = busType;
+                    if ("USB".equalsIgnoreCase(busType)) {
+                        String usbVer = Util.getUsbVersion(driveRoot.toPath());
+                        if (usbVer != null) busDisplay = busType + " " + usbVer;
+                    }
+                    String filesystem = Util.getFilesystem(driveRoot.toPath());
+                    return new String[]{ model, busDisplay, filesystem };
                 }
                 @Override
                 protected void done() {
                     try {
-                        String model = get();
+                        String[] r = get();
                         if (row < allDrivesTableModel.getRowCount()) {
                             allDrivesTableModel.setValueAt(
-                                    (model != null && !model.isBlank()) ? model : "—",
-                                    row, 1);
+                                    (r[0] != null && !r[0].isBlank()) ? r[0] : "—", row, 1);
+                            allDrivesTableModel.setValueAt(
+                                    (r[1] != null && !r[1].isBlank()) ? r[1] : "—", row, 2);
+                            allDrivesTableModel.setValueAt(
+                                    (r[2] != null && !r[2].isBlank()) ? r[2] : "—", row, 3);
                         }
                     } catch (Exception ex) {
-                        LOG.log(Level.WARNING, "drive model lookup failed for " + driveRoot, ex);
+                        LOG.log(Level.WARNING, "drive attribute lookup failed for " + driveRoot, ex);
                         if (row < allDrivesTableModel.getRowCount()) {
                             allDrivesTableModel.setValueAt("—", row, 1);
+                            allDrivesTableModel.setValueAt("—", row, 2);
+                            allDrivesTableModel.setValueAt("—", row, 3);
                         }
                     }
                 }
@@ -474,13 +511,30 @@ public class DrivePanel extends JPanel {
         }
     }
 
+    /**
+     * Returns drive roots appropriate for the current OS. On Linux, reads
+     * {@code /proc/mounts} via {@link UtilOs#getMountedDrivesLinux()} to
+     * discover all mounted drives; on other platforms delegates to
+     * {@link File#listRoots()}.
+     */
+    private static List<File> listDriveRoots() {
+        if (App.isLinux()) {
+            return UtilOs.getMountedDrivesLinux();
+        }
+        return List.of(File.listRoots());
+    }
+
     private void refreshDriveInfo() {
-        if (App.locationDir == null) return;
+        refreshDriveInfo(App.locationDir);
+    }
+
+    private void refreshDriveInfo(File dir) {
+        if (dir == null) return;
 
         // Update path field immediately on EDT
         String testPath = (App.dataDir != null)
                 ? App.dataDir.getAbsolutePath()
-                : App.locationDir.getAbsolutePath() + File.separator + App.DATADIRNAME;
+                : dir.getAbsolutePath() + File.separator + App.DATADIRNAME;
         pathField.setText(testPath);
 
         // Reset info labels while loading
@@ -493,8 +547,6 @@ public class DrivePanel extends JPanel {
         infoUsageLabel.setText("Usage: loading…");
         usageBar.setValue(0);
         usageBar.setString("…");
-
-        final File dir = App.locationDir;
 
         new SwingWorker<String[], Void>() {
             @Override
@@ -511,6 +563,11 @@ public class DrivePanel extends JPanel {
                 // Drive attributes — null on unsupported OS
                 String filesystem  = Util.getFilesystem(dir.toPath());
                 String busType     = Util.getBusType(dir.toPath());
+                String busDisplay  = busType;
+                if ("USB".equalsIgnoreCase(busType)) {
+                    String usbVer = Util.getUsbVersion(dir.toPath());
+                    if (usbVer != null) busDisplay = busType + " " + usbVer;
+                }
                 String sectorSize  = Util.getSectorSize(dir.toPath());
                 return new String[]{
                     model, partition,
@@ -518,7 +575,7 @@ public class DrivePanel extends JPanel {
                     String.valueOf(usage.percentUsed),
                     dir.canRead()  ? "✓" : "✗",
                     dir.canWrite() ? "✓" : "✗",
-                    filesystem, busType, sectorSize
+                    filesystem, busDisplay, sectorSize
                 };
             }
 

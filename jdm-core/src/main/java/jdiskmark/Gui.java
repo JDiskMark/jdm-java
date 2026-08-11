@@ -521,7 +521,7 @@ public final class Gui {
         String html = "<html><body style='font-family:sans-serif;font-size:11px'>"
                 + "<b>" + App.APP_NAME + " " + App.VERSION + "</b><br>"
                 + "JVM: " + App.jdk + "<br>"
-                + "OS:&nbsp; " + App.os + "<br><br>"
+                + "OS:&nbsp; " + App.osLabel + "<br><br>"
                 + "<span style='color:gray;font-size:10px'>"
                 + "FlatLaf " + App.buildProp("lib.flatlaf")
                 + " &middot; JFreeChart " + App.buildProp("lib.jfreechart")
@@ -1318,6 +1318,20 @@ public final class Gui {
             App.msg("smartPanel and locationDir must first be initialized");
             return;
         }
+
+        // USB-attached drives commonly fail SMART queries in the current Linux
+        // implementation.  Detect early so we can give the user a clear
+        // message without launching a privileged shell and waiting for smartctl to fail.
+        if (App.isLinux()) {
+            String busType = UtilOs.getBusTypeLinux(App.locationDir.toPath());
+            if ("USB".equalsIgnoreCase(busType)) {
+                smartPanel.clear();
+                smartPanel.setStatus(
+                        "SMART diagnostics are not available for USB-attached drives.");
+                return;
+            }
+        }
+
         // A live query is starting — we are no longer viewing a stored snapshot.
         viewingSnapshot = false;
         final File locDir = App.locationDir;

@@ -1,6 +1,6 @@
 package jdiskmark;
 
-import static jdiskmark.DriveAccessChecker.validateTargetDirectory;
+import static jdiskmark.DriveChecker.validateTargetDirectory;
 
 import picocli.CommandLine;
 import java.io.File;
@@ -106,6 +106,7 @@ public class App {
         ALIGN_4K(4096, "4 KB (Standard)"),
         ALIGN_8K(8192, "8 KB (Enterprise)"),
         ALIGN_16K(16384, "16 KB (High-End)"),
+        ALIGN_32K(32768, "32 KB (FAT32)"),
         ALIGN_64K(65536, "64 KB (RAID/Stripe)");
 
         public final int bytes;
@@ -139,6 +140,7 @@ public class App {
     public static String arch;
     public static String processorName;
     public static String jdk;
+    public static String osLabel;
     // PII: OS username collection removed (#117 — use anonymous or a non-PII system
     // id instead).
     // public static String username;
@@ -382,6 +384,8 @@ public class App {
         arch = System.getProperty("os.arch");
         processorName = Util.getProcessorName();
         jdk = Util.getJvmInfo();
+        osLabel = isLinux() ? UtilOs.getLinuxDistroName() : null;
+        if (osLabel == null) osLabel = os;
 
         checkPermission();
         if (!APP_CACHE_DIR.exists()) {
@@ -974,16 +978,21 @@ public class App {
             return;
         }
 
-        // 3. update state
+        // 3. check enough disk space for the configured benchmark
+        if (!DriveChecker.checkDiskSpace(locationDir)) {
+            return;
+        }
+
+        // 4. update state
         state = State.DISK_TEST_STATE;
         if (mode == Mode.GUI) {
             Gui.mainFrame.adjustSensitivity();
         }
 
-        // 4. create data dir reference
+        // 5. create data dir reference
         dataDir = new File(locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
 
-        // 5. remove existing test data if present (recursive — File.delete() only
+        // 6. remove existing test data if present (recursive — File.delete() only
         // removes empty dirs)
         if (autoRemoveData && dataDir.exists()) {
             boolean removed = Util.deleteDirectory(dataDir);
@@ -996,12 +1005,12 @@ public class App {
             }
         }
 
-        // 6. create data dir if not already present
+        // 7. create data dir if not already present
         if (dataDir.exists() == false) {
             dataDir.mkdirs();
         }
 
-        // 7. start benchmark job thread
+        // 8. start benchmark job thread
         switch (mode) {
             case GUI -> {
                 worker = new BenchmarkWorker();

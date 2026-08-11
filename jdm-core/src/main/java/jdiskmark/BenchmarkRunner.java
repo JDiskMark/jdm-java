@@ -2,12 +2,16 @@ package jdiskmark;
 
 import static jdiskmark.GcDetector.MAX_GC_RETRIES;
 
+import java.io.File;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.time.LocalDateTime;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.lang.foreign.MemoryLayout;
+import java.lang.foreign.ValueLayout;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -54,6 +58,7 @@ public class BenchmarkRunner {
     final LongAdder readUnitsComplete = new LongAdder();
     long unitsTotal;
     long blockSize;
+    long effectiveAlignment;
     byte[] blockArr; // for legacy jdk io
 
     public static int[][] divideIntoRanges(int startIndex, int endIndex, int numThreads) {
@@ -102,6 +107,7 @@ public class BenchmarkRunner {
         unitsTotal = wUnitsTotal + rUnitsTotal;
         
         blockSize = config.blockSize;
+        effectiveAlignment = resolveAlignment(config);
         
         if (config.ioEngine == IoEngine.LEGACY) {
             blockArr = new byte[(int)blockSize];
@@ -110,10 +116,10 @@ public class BenchmarkRunner {
             }
         }
 
-        //TODO: use config if possible
-        String driveModel = Util.getDriveModel(App.locationDir);
-        String partitionId = Util.getPartitionId(App.locationDir.toPath());
-        DiskUsageInfo usageInfo = Util.getDiskUsage(App.locationDir.toString());
+        File configDir = new File(config.testDir);
+        String driveModel = Util.getDriveModel(configDir);
+        String partitionId = Util.getPartitionId(configDir.toPath());
+        DiskUsageInfo usageInfo = Util.getDiskUsage(configDir.getAbsolutePath());
 
         // Initialize Benchmark
         
@@ -381,6 +387,7 @@ public class BenchmarkRunner {
         b.systemInfo.os = App.os;
         b.systemInfo.arch = App.arch;
         b.systemInfo.jdk = App.jdk;
+        b.systemInfo.osLabel = App.osLabel;
         b.systemInfo.locationDir = App.locationDir.toString();
         
         b.driveInfo.driveModel = model;
@@ -388,5 +395,67 @@ public class BenchmarkRunner {
         b.driveInfo.percentUsed = u.percentUsed;
         b.driveInfo.usedGb = u.usedGb;
         b.driveInfo.totalGb = u.totalGb;
+    }
+
+    /**
+     * Determines the effective byte alignment for Direct IO. When Direct IO is
+     * enabled, the alignment must be at least the filesystem block size or the
+     * write/read will fail with an {@code IOException}. This is critical for
+     * vfat (FAT32) which typically uses 32 KB blocks.
+     */
+    private static long resolveAlignment(BenchmarkConfig config) {
+        long userAlign = config.sectorAlignment.bytes;
+        if (userAlign <= 0) {
+            return MemoryLayout.sequenceLayout(
+                    config.blockSize, ValueLayout.JAVA_BYTE).byteAlignment();
+        }
+        if (config.getDirectIoEnabled() == null || !config.getDirectIoEnabled()) {
+            return userAlign;
+        }
+        try {
+            long fsBlockSize = java.nio.file.Files.getFileStore(
+                    Path.of(config.testDir)).getBlockSize();
+
+            // Java's ExtendedOpenOption.DIRECT enforces that every I/O
+            // transfer is a multiple of FileStore.getBlockSize(), which on
+            // vfat returns the cluster size (e.g. 32 KB) rather than the
+            // device sector size (512 B).  The Linux kernel itself only
+            // requires sector-size alignment, but Java's NIO layer is more
+            // restrictive.  When the user-chosen block size is smaller than
+            // the cluster size, disable Direct IO upfront and inform the
+            // user rather than silently retrying on every sample.
+            if (config.blockSize < fsBlockSize) {
+                App.msg("Direct I/O disabled: block size ("
+                        + (config.blockSize / 1024) + " KB) is smaller than "
+                        + "the filesystem block size ("
+                        + (fsBlockSize / 1024) + " KB).");
+                config.setDirectIoEnabled(false);
+                App.directEnable = false;
+                Gui.refreshChartBadges();
+                return userAlign;
+            }
+
+            if (fsBlockSize > userAlign) {
+                App.msg("Direct I/O: adjusting alignment from "
+                        + userAlign + " to " + fsBlockSize
+                        + " (filesystem block size)");
+                // Update config so the benchmark record reflects
+                // the actual alignment used during this run.
+                for (App.SectorAlignment sa : App.SectorAlignment.values()) {
+                    if (sa.bytes == fsBlockSize) {
+                        config.setSectorAlignment(sa);
+                        // Also update the live global so the GUI badge
+                        // shows the effective alignment during this run.
+                        App.sectorAlignment = sa;
+                        Gui.refreshChartBadges();
+                        break;
+                    }
+                }
+                return fsBlockSize;
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Could not query filesystem block size", e);
+        }
+        return userAlign;
     }
 }

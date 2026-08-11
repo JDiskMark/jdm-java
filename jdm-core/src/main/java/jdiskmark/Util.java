@@ -133,7 +133,7 @@ public class Util {
             // handle single physical drive
             if (deviceNames.size() == 1) {
                 String devicePath = "/dev/" + deviceNames.getFirst();
-                return UtilOs.getDeviceModelLinux(devicePath);
+                return UtilOs.getVendorModelLinux(devicePath);
             }
             
             // GH-3 handle multiple drives (LVM or RAID partitions)
@@ -141,7 +141,7 @@ public class Util {
                 StringBuilder sb = new StringBuilder();
                 for (String dName : deviceNames) {
                     String devicePath = "/dev/" + dName;
-                    deviceModel = UtilOs.getDeviceModelLinux(devicePath);
+                    deviceModel = UtilOs.getVendorModelLinux(devicePath);
                     if (sb.length() > 0) {
                         sb.append(":");
                     }
@@ -298,6 +298,18 @@ public class Util {
             if (driveLetter != null) return UtilOs.getBusTypeWindows(driveLetter);
         } else if (App.isLinux()) {
             return UtilOs.getBusTypeLinux(path);
+        }
+        return null;
+    }
+
+    /**
+     * Returns the USB version string for the device at {@code path}
+     * (e.g. "3.0", "3.2 Gen 2"). Linux only; returns {@code null}
+     * on other platforms or when the device is not USB-attached.
+     */
+    public static String getUsbVersion(Path path) {
+        if (App.isLinux()) {
+            return UtilOs.getUsbVersionLinux(path);
         }
         return null;
     }

@@ -22,6 +22,9 @@ public class BenchmarkSystemInfo implements Serializable {
     @Column
     String locationDir;
     public String getLocationDir() { return locationDir; }
+    @Column
+    String osLabel;
+    public String getOsLabel() { return osLabel; }
     
     public BenchmarkSystemInfo() {}
 }

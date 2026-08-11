@@ -264,6 +264,60 @@ public class UtilOs {
     }
     
     /**
+     * Returns mount points for real block-device-backed filesystems on Linux
+     * by reading {@code /proc/mounts}. Virtual filesystems (procfs, sysfs,
+     * tmpfs, etc.), snap loopback mounts, and boot partitions are excluded.
+     *
+     * <p>This replaces {@code File.listRoots()} for Linux drive enumeration,
+     * since {@code listRoots()} only returns {@code /} on Linux and never
+     * discovers additional mounted drives.
+     *
+     * @return list of mount-point directories; always includes {@code /} if
+     *         it was discovered and never empty on a running Linux system
+     */
+    static public List<File> getMountedDrivesLinux() {
+        List<File> mounts = new ArrayList<>();
+        try {
+            List<String> lines = java.nio.file.Files.readAllLines(
+                    java.nio.file.Path.of("/proc/mounts"));
+            for (String line : lines) {
+                String[] parts = line.split("\\s+");
+                if (parts.length < 3) continue;
+
+                String device     = parts[0];
+                String mountPoint = parts[1].replace("\\040", " ")
+                        .replace("\\011", "\t")
+                        .replace("\\012", "\n")
+                        .replace("\\134", "\\");
+
+                // Only real block devices
+                if (!device.startsWith("/dev/")) continue;
+
+                // Exclude snap loopback mounts (Ubuntu)
+                if (mountPoint.startsWith("/snap/")) continue;
+
+                // Exclude boot partitions
+                if (mountPoint.startsWith("/boot/") || mountPoint.equals("/boot")) continue;
+
+                File mountDir = new File(mountPoint);
+                if (mountDir.getTotalSpace() == 0) continue;
+
+                mounts.add(mountDir);
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Failed to read /proc/mounts", e);
+        }
+
+        // Guarantee root is always present
+        File rootDir = new File("/");
+        if (mounts.stream().noneMatch(f -> f.getAbsolutePath().equals("/"))) {
+            mounts.addFirst(rootDir);
+        }
+
+        return mounts;
+    }
+
+    /**
      * On Linux OS get the device path when given a file path.
      * eg.  filePath = /home/james/Desktop/jdm-data
      * devicePath = /dev/sda
@@ -360,6 +414,61 @@ public class UtilOs {
             LOGGER.log(Level.SEVERE, null, e);
         }
         return null;
+    }
+
+    /**
+     * On Linux OS use the lsblk command to get the combined vendor and model
+     * for a specific device (e.g. /dev/sda, /dev/sdb).
+     *
+     * <p>For NVMe drives, the MODEL column already includes the manufacturer
+     * (e.g. "SAMSUNG MZVLB512HBJQ-000L7"), so the vendor is not prepended.
+     * For USB drives, the VENDOR and MODEL columns are separate
+     * (e.g. VENDOR="Lexar", MODEL="USB Flash Drive"), so they are combined
+     * into "Lexar USB Flash Drive".
+     *
+     * @param devicePath path of the device (e.g. "/dev/sdb")
+     * @return the combined vendor and model string, or null if unavailable
+     */
+    static public String getVendorModelLinux(String devicePath) {
+        String result = null;
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    "lsblk", devicePath, "--nodeps", "--output", "VENDOR,MODEL");
+            Map<String, String> env = pb.environment();
+            env.put("LC_ALL", "C");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            try (BufferedReader reader = new BufferedReader(new
+                    InputStreamReader(process.getInputStream()))) {
+                String headerLine = reader.readLine();
+                int modelOffset = headerLine != null ?
+                        headerLine.indexOf("MODEL") : -1;
+                if (modelOffset >= 0) {
+                    String dataLine = reader.readLine();
+                    if (dataLine != null && !dataLine.trim().isEmpty()) {
+                        String vendor = dataLine.length() > modelOffset
+                                ? dataLine.substring(0, modelOffset).trim() :
+                                "";
+                        String model  = dataLine.length() > modelOffset
+                                ? dataLine.substring(modelOffset).trim() :
+                                dataLine.trim();
+                        if (!vendor.isEmpty() && !model.toUpperCase()
+                                .startsWith(vendor.toUpperCase())) {
+                            result = vendor + " " + model;
+                        } else if (!model.isEmpty()) {
+                            result = model;
+                        }
+                    }
+                }
+            }
+            process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            LOGGER.log(Level.SEVERE, null, e);
+        }
+        return result;
     }
     
     /**
@@ -1218,8 +1327,22 @@ public class UtilOs {
     static String getBusTypeLinux(Path path) {
         String partition = getPartitionFromFilePathLinux(path);
         if (partition == null || partition.isBlank()) return null;
+        // TRAN is only reported on the parent disk device, not on partitions.
+        // Try the partition first; if empty, resolve the parent device and retry.
+        String tran = lsblkTran(partition);
+        if (tran != null) return tran;
+
+        List<String> parents = getDeviceNamesFromPartitionLinux(partition);
+        if (!parents.isEmpty()) {
+            tran = lsblkTran("/dev/" + parents.getFirst());
+            if (tran != null) return tran;
+        }
+        return null;
+    }
+
+    private static String lsblkTran(String device) {
         try {
-            ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "TRAN", partition);
+            ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "TRAN", device);
             pb.environment().put("LC_ALL", "C");
             pb.redirectErrorStream(true);
             Process process = pb.start();
@@ -1229,13 +1352,88 @@ public class UtilOs {
                 while ((line = reader.readLine()) != null) {
                     String trimmed = line.trim();
                     if (!trimmed.isEmpty()) {
-                        return trimmed.toUpperCase(); // e.g. "NVME", "SATA"
+                        return trimmed.toUpperCase();
                     }
                 }
             }
             process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
         } catch (IOException | InterruptedException e) {
-            LOGGER.log(Level.WARNING, "lsblk TRAN failed for " + partition, e);
+            LOGGER.log(Level.WARNING, "lsblk TRAN failed for " + device, e);
+        }
+        return null;
+    }
+
+    /**
+     * Detects the negotiated USB link speed for a block device by reading
+     * the {@code speed} file from its sysfs USB ancestor. Returns a
+     * human-readable USB version string (e.g. {@code "3.0"}), or
+     * {@code null} if the device is not USB-attached or detection fails.
+     *
+     * @param path path on the target filesystem
+     * @return USB version string or {@code null}
+     */
+    static String getUsbVersionLinux(Path path) {
+        String partition = getPartitionFromFilePathLinux(path);
+        if (partition == null || partition.isBlank()) return null;
+
+        List<String> parents = getDeviceNamesFromPartitionLinux(partition);
+        String devName = parents.isEmpty()
+                ? partition.replace("/dev/", "")
+                : parents.getFirst().trim();
+
+        try {
+            java.nio.file.Path sysPath = java.nio.file.Path.of("/sys/block", devName);
+            if (!java.nio.file.Files.exists(sysPath)) return null;
+            java.nio.file.Path realPath = sysPath.toRealPath();
+
+            java.nio.file.Path current = realPath;
+            while (current != null && current.getNameCount() > 0) {
+                java.nio.file.Path speedFile = current.resolve("speed");
+                if (java.nio.file.Files.isRegularFile(speedFile)) {
+                    String speed = java.nio.file.Files.readString(speedFile).trim();
+                    return mapUsbSpeed(speed);
+                }
+                current = current.getParent();
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "USB version detection failed for " + devName, e);
+        }
+        return null;
+    }
+
+    private static String mapUsbSpeed(String speedMbps) {
+        return switch (speedMbps) {
+            case "1.5"   -> "1.0";
+            case "12"    -> "1.1";
+            case "480"   -> "2.0";
+            case "5000"  -> "3.0";
+            case "10000" -> "3.2 Gen 2";
+            case "20000" -> "3.2 Gen 2x2";
+            default      -> null;
+        };
+    }
+
+    /**
+     * Returns the Linux distribution name by reading {@code PRETTY_NAME}
+     * from {@code /etc/os-release}. Returns {@code null} if the file is
+     * missing or the field is absent.
+     */
+    static String getLinuxDistroName() {
+        try {
+            java.nio.file.Path osRelease = java.nio.file.Path.of("/etc/os-release");
+            if (!java.nio.file.Files.isReadable(osRelease)) return null;
+            for (String line : java.nio.file.Files.readAllLines(osRelease)) {
+                if (line.startsWith("PRETTY_NAME=")) {
+                    String value = line.substring("PRETTY_NAME=".length());
+                    if (value.length() >= 2
+                            && value.startsWith("\"") && value.endsWith("\"")) {
+                        value = value.substring(1, value.length() - 1);
+                    }
+                    return value.isBlank() ? null : value;
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Failed to read /etc/os-release", e);
         }
         return null;
     }

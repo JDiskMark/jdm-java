@@ -57,7 +57,7 @@ BenchmarkWorker, DiskUsageInfo, GcDetector, RenderFrequencyMode,
 Sample, Smart, SmartSnapshot,
 GcRetriedSamplesConverter, SampleAttributeConverter, LocalDateTimeAttributeConverter
 
-**io** — DriveAccessChecker, UtilOs (abstract interface)
+**io** — DriveChecker, UtilOs (abstract interface)
 **io.win / io.mac / io.linux** — platform implementations (split from UtilOs)
 
 **cli** — Cli, RunBenchmarkCommand, VersionProvider
