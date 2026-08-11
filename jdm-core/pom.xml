@@ -326,10 +326,15 @@
                                     </or>
                                 </condition>
 
-                                <!-- Mark unknown/empty branch (git unavailable or detached HEAD
-                                     returning HEAD) so the fallback slug fires first. -->
+                                <!-- Mark unknown/empty branch: git unavailable (property unset
+                                     or empty), or detached HEAD (git returns literal "HEAD").
+                                     Must be first so subsequent slug routing is skipped. -->
                                 <condition property="local.slug" value="local">
-                                    <equals arg1="${git.branch.raw}" arg2=""/>
+                                    <or>
+                                        <not><isset property="git.branch.raw"/></not>
+                                        <equals arg1="${git.branch.raw}" arg2=""/>
+                                        <equals arg1="${git.branch.raw}" arg2="HEAD"/>
+                                    </or>
                                 </condition>
 
                                 <!-- Slug routing — first match wins (Ant properties are write-once).
@@ -358,15 +363,32 @@
                                 </condition>
 
                                 <!-- Assemble local version strings.
-                                     Release/main: bare base version (no prerelease segment).
-                                     All other branches: base-a.SLUG with +MMdd.HHmm metadata
-                                     on the display version only. -->
-                                <condition property="local.display.version" value="${local.base.version}">
+                                     Priority order (Ant write-once means first setter wins):
+                                     1. Release/main   — project.version unchanged (keeps -SNAPSHOT
+                                        if that is what is set; avoids .jdm/0.9.0/ collision).
+                                     2. Non-SNAPSHOT   — -Drevision carried a real label already;
+                                        pass through to avoid double-labelling (0.9.0-ci.d.47-a.d).
+                                     3. SNAPSHOT + dev — generate the a.SLUG[+meta] label. -->
+                                <condition property="local.version.is.snapshot">
+                                    <matches pattern=".*-SNAPSHOT$" string="${project.version}"/>
+                                </condition>
+
+                                <condition property="local.display.version" value="${project.version}">
                                     <isset property="local.is.release"/>
                                 </condition>
-                                <condition property="local.install.version" value="${local.base.version}">
+                                <condition property="local.install.version" value="${project.version}">
                                     <isset property="local.is.release"/>
                                 </condition>
+
+                                <!-- Non-SNAPSHOT, non-release: -Drevision already set a real label. -->
+                                <condition property="local.display.version" value="${project.version}">
+                                    <not><isset property="local.version.is.snapshot"/></not>
+                                </condition>
+                                <condition property="local.install.version" value="${project.version}">
+                                    <not><isset property="local.version.is.snapshot"/></not>
+                                </condition>
+
+                                <!-- SNAPSHOT on a non-release branch: generate the a.SLUG label. -->
                                 <condition property="local.display.version"
                                            value="${local.base.version}-a.${local.slug}+${local.build.meta}">
                                     <not><isset property="local.display.version"/></not>
