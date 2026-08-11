@@ -140,6 +140,7 @@ public class App {
     public static String arch;
     public static String processorName;
     public static String jdk;
+    public static String osLabel;
     // PII: OS username collection removed (#117 — use anonymous or a non-PII system
     // id instead).
     // public static String username;
@@ -383,6 +384,8 @@ public class App {
         arch = System.getProperty("os.arch");
         processorName = Util.getProcessorName();
         jdk = Util.getJvmInfo();
+        osLabel = isLinux() ? UtilOs.getLinuxDistroName() : null;
+        if (osLabel == null) osLabel = os;
 
         checkPermission();
         if (!APP_CACHE_DIR.exists()) {

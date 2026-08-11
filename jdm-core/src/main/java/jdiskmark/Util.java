@@ -303,6 +303,18 @@ public class Util {
     }
 
     /**
+     * Returns the USB version string for the device at {@code path}
+     * (e.g. "3.0", "3.2 Gen 2"). Linux only; returns {@code null}
+     * on other platforms or when the device is not USB-attached.
+     */
+    public static String getUsbVersion(Path path) {
+        if (App.isLinux()) {
+            return UtilOs.getUsbVersionLinux(path);
+        }
+        return null;
+    }
+
+    /**
      * Returns the sector size for the volume containing {@code path}
      * (e.g. "512 B", "512 B / 4096 B"). Windows and Linux supported.
      */

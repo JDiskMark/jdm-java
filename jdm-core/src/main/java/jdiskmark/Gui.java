@@ -521,7 +521,7 @@ public final class Gui {
         String html = "<html><body style='font-family:sans-serif;font-size:11px'>"
                 + "<b>" + App.APP_NAME + " " + App.VERSION + "</b><br>"
                 + "JVM: " + App.jdk + "<br>"
-                + "OS:&nbsp; " + App.os + "<br><br>"
+                + "OS:&nbsp; " + App.osLabel + "<br><br>"
                 + "<span style='color:gray;font-size:10px'>"
                 + "FlatLaf " + App.buildProp("lib.flatlaf")
                 + " &middot; JFreeChart " + App.buildProp("lib.jfreechart")

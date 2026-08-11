@@ -1364,6 +1364,81 @@ public class UtilOs {
     }
 
     /**
+     * Detects the negotiated USB link speed for a block device by reading
+     * the {@code speed} file from its sysfs USB ancestor. Returns a
+     * human-readable USB version string (e.g. {@code "3.0"}), or
+     * {@code null} if the device is not USB-attached or detection fails.
+     *
+     * @param path path on the target filesystem
+     * @return USB version string or {@code null}
+     */
+    static String getUsbVersionLinux(Path path) {
+        String partition = getPartitionFromFilePathLinux(path);
+        if (partition == null || partition.isBlank()) return null;
+
+        List<String> parents = getDeviceNamesFromPartitionLinux(partition);
+        String devName = parents.isEmpty()
+                ? partition.replace("/dev/", "")
+                : parents.getFirst().trim();
+
+        try {
+            java.nio.file.Path sysPath = java.nio.file.Path.of("/sys/block", devName);
+            if (!java.nio.file.Files.exists(sysPath)) return null;
+            java.nio.file.Path realPath = sysPath.toRealPath();
+
+            java.nio.file.Path current = realPath;
+            while (current != null && current.getNameCount() > 0) {
+                java.nio.file.Path speedFile = current.resolve("speed");
+                if (java.nio.file.Files.isRegularFile(speedFile)) {
+                    String speed = java.nio.file.Files.readString(speedFile).trim();
+                    return mapUsbSpeed(speed);
+                }
+                current = current.getParent();
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "USB version detection failed for " + devName, e);
+        }
+        return null;
+    }
+
+    private static String mapUsbSpeed(String speedMbps) {
+        return switch (speedMbps) {
+            case "1.5"   -> "1.0";
+            case "12"    -> "1.1";
+            case "480"   -> "2.0";
+            case "5000"  -> "3.0";
+            case "10000" -> "3.2 Gen 2";
+            case "20000" -> "3.2 Gen 2x2";
+            default      -> null;
+        };
+    }
+
+    /**
+     * Returns the Linux distribution name by reading {@code PRETTY_NAME}
+     * from {@code /etc/os-release}. Returns {@code null} if the file is
+     * missing or the field is absent.
+     */
+    static String getLinuxDistroName() {
+        try {
+            java.nio.file.Path osRelease = java.nio.file.Path.of("/etc/os-release");
+            if (!java.nio.file.Files.isReadable(osRelease)) return null;
+            for (String line : java.nio.file.Files.readAllLines(osRelease)) {
+                if (line.startsWith("PRETTY_NAME=")) {
+                    String value = line.substring("PRETTY_NAME=".length());
+                    if (value.length() >= 2
+                            && value.startsWith("\"") && value.endsWith("\"")) {
+                        value = value.substring(1, value.length() - 1);
+                    }
+                    return value.isBlank() ? null : value;
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Failed to read /etc/os-release", e);
+        }
+        return null;
+    }
+
+    /**
      * Returns the sector size for the given path on Linux
      * (e.g. "512 B", "512 B / 4096 B").
      * Uses {@code lsblk -no LOG-SEC,PHY-SEC}. No admin required.

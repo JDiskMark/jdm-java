@@ -387,6 +387,7 @@ public class BenchmarkRunner {
         b.systemInfo.os = App.os;
         b.systemInfo.arch = App.arch;
         b.systemInfo.jdk = App.jdk;
+        b.systemInfo.osLabel = App.osLabel;
         b.systemInfo.locationDir = App.locationDir.toString();
         
         b.driveInfo.driveModel = model;

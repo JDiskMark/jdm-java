@@ -539,6 +539,11 @@ public class DrivePanel extends JPanel {
                 // Drive attributes — null on unsupported OS
                 String filesystem  = Util.getFilesystem(dir.toPath());
                 String busType     = Util.getBusType(dir.toPath());
+                String busDisplay  = busType;
+                if ("USB".equalsIgnoreCase(busType)) {
+                    String usbVer = Util.getUsbVersion(dir.toPath());
+                    if (usbVer != null) busDisplay = busType + " " + usbVer;
+                }
                 String sectorSize  = Util.getSectorSize(dir.toPath());
                 return new String[]{
                     model, partition,
@@ -546,7 +551,7 @@ public class DrivePanel extends JPanel {
                     String.valueOf(usage.percentUsed),
                     dir.canRead()  ? "✓" : "✗",
                     dir.canWrite() ? "✓" : "✗",
-                    filesystem, busType, sectorSize
+                    filesystem, busDisplay, sectorSize
                 };
             }
 
