@@ -34,7 +34,7 @@ import javax.swing.table.DefaultTableModel;
  *
  * <pre>
  * ┌──────────────────────────────────────────────────────┐
- * │  Drive:  [combo box ──────────────────────────────]  │  ← NORTH
+ * │  Drive:  [combo box ─────────────────────────] [⟳]  │  ← NORTH
  * ├──────────────────────────────────────────────────────┤
  * │   Summary                                           │
  * │   Model: …                                          │
@@ -105,7 +105,8 @@ public class DrivePanel extends JPanel {
     private JTable            allDrivesTable;
 
     private static final String[] ALL_DRIVES_COLUMNS = {
-        "Drive / Mount", "Model", "Total (GB)", "Used (GB)", "Free (GB)", "Usage"
+        "Drive / Mount", "Model", "Interface", "File System",
+        "Total (GB)", "Used (GB)", "Free (GB)", "Usage"
     };
 
     private static final Logger LOG = Logger.getLogger(DrivePanel.class.getName());
@@ -134,6 +135,12 @@ public class DrivePanel extends JPanel {
         driveCombo.setMaximumRowCount(12);
         populateCombo();
         selectorRow.add(driveCombo, BorderLayout.CENTER);
+
+        JButton refreshButton = new JButton("\u27F3");
+        refreshButton.setToolTipText("Refresh drive list");
+        refreshButton.setMargin(new Insets(2, 6, 2, 6));
+        refreshButton.addActionListener(e -> refresh());
+        selectorRow.add(refreshButton, BorderLayout.EAST);
         northPanel.add(selectorRow, BorderLayout.NORTH);
 
         // Test Directory row — directly below the drive selector
@@ -254,8 +261,8 @@ public class DrivePanel extends JPanel {
             @Override public boolean isCellEditable(int r, int c) { return false; }
             @Override public Class<?> getColumnClass(int col) {
                 return switch (col) {
-                    case 2, 3, 4 -> Double.class;
-                    case 5       -> Integer.class;  // Usage % for progress bar
+                    case 4, 5, 6 -> Double.class;
+                    case 7       -> Integer.class;  // Usage % for progress bar
                     default      -> String.class;
                 };
             }
@@ -273,16 +280,18 @@ public class DrivePanel extends JPanel {
 
         DefaultTableCellRenderer centerR = new DefaultTableCellRenderer();
         centerR.setHorizontalAlignment(SwingConstants.CENTER);
-        for (int i = 2; i <= 4; i++) {
+        for (int i = 2; i <= 6; i++) {
             allDrivesTable.getColumnModel().getColumn(i).setCellRenderer(centerR);
         }
         // Usage column — render as a progress bar with percentage text
-        allDrivesTable.getColumnModel().getColumn(5).setCellRenderer(new ProgressBarRenderer());
+        allDrivesTable.getColumnModel().getColumn(7).setCellRenderer(new ProgressBarRenderer());
 
         allDrivesTable.getColumnModel().getColumn(0).setPreferredWidth(120);
         allDrivesTable.getColumnModel().getColumn(1).setPreferredWidth(200);
-        for (int i = 2; i <= 4; i++) allDrivesTable.getColumnModel().getColumn(i).setPreferredWidth(75);
-        allDrivesTable.getColumnModel().getColumn(5).setPreferredWidth(100);
+        allDrivesTable.getColumnModel().getColumn(2).setPreferredWidth(75);
+        allDrivesTable.getColumnModel().getColumn(3).setPreferredWidth(80);
+        for (int i = 4; i <= 6; i++) allDrivesTable.getColumnModel().getColumn(i).setPreferredWidth(75);
+        allDrivesTable.getColumnModel().getColumn(7).setPreferredWidth(100);
 
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(new JScrollPane(allDrivesTable), BorderLayout.CENTER);
@@ -448,10 +457,12 @@ public class DrivePanel extends JPanel {
             double freeGb  = free  / (double) App.GIGABYTE;
             double pct     = 100.0 * used / total;
 
-            // Add row with placeholder model — filled in asynchronously
+            // Add row with placeholders — filled in asynchronously
             int rowIndex = allDrivesTableModel.getRowCount();
             allDrivesTableModel.addRow(new Object[]{
                 root.getAbsolutePath(),
+                "loading…",
+                "loading…",
                 "loading…",
                 Math.round(totalGb * 10.0) / 10.0,
                 Math.round(usedGb  * 10.0) / 10.0,
@@ -459,27 +470,40 @@ public class DrivePanel extends JPanel {
                 (int) Math.round(pct)
             });
 
-            // Fetch model in background
+            // Fetch model, interface, and filesystem in background
             final int row = rowIndex;
             final File driveRoot = root;
-            new SwingWorker<String, Void>() {
+            new SwingWorker<String[], Void>() {
                 @Override
-                protected String doInBackground() {
-                    return Util.getDriveModel(driveRoot);
+                protected String[] doInBackground() {
+                    String model = Util.getDriveModel(driveRoot);
+                    String busType = Util.getBusType(driveRoot.toPath());
+                    String busDisplay = busType;
+                    if ("USB".equalsIgnoreCase(busType)) {
+                        String usbVer = Util.getUsbVersion(driveRoot.toPath());
+                        if (usbVer != null) busDisplay = busType + " " + usbVer;
+                    }
+                    String filesystem = Util.getFilesystem(driveRoot.toPath());
+                    return new String[]{ model, busDisplay, filesystem };
                 }
                 @Override
                 protected void done() {
                     try {
-                        String model = get();
+                        String[] r = get();
                         if (row < allDrivesTableModel.getRowCount()) {
                             allDrivesTableModel.setValueAt(
-                                    (model != null && !model.isBlank()) ? model : "—",
-                                    row, 1);
+                                    (r[0] != null && !r[0].isBlank()) ? r[0] : "—", row, 1);
+                            allDrivesTableModel.setValueAt(
+                                    (r[1] != null && !r[1].isBlank()) ? r[1] : "—", row, 2);
+                            allDrivesTableModel.setValueAt(
+                                    (r[2] != null && !r[2].isBlank()) ? r[2] : "—", row, 3);
                         }
                     } catch (Exception ex) {
-                        LOG.log(Level.WARNING, "drive model lookup failed for " + driveRoot, ex);
+                        LOG.log(Level.WARNING, "drive attribute lookup failed for " + driveRoot, ex);
                         if (row < allDrivesTableModel.getRowCount()) {
                             allDrivesTableModel.setValueAt("—", row, 1);
+                            allDrivesTableModel.setValueAt("—", row, 2);
+                            allDrivesTableModel.setValueAt("—", row, 3);
                         }
                     }
                 }
