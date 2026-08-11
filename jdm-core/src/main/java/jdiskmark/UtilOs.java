@@ -285,7 +285,10 @@ public class UtilOs {
                 if (parts.length < 3) continue;
 
                 String device     = parts[0];
-                String mountPoint = parts[1];
+                String mountPoint = parts[1].replace("\\040", " ")
+                        .replace("\\011", "\t")
+                        .replace("\\012", "\n")
+                        .replace("\\134", "\\");
 
                 // Only real block devices
                 if (!device.startsWith("/dev/")) continue;
@@ -435,25 +438,34 @@ public class UtilOs {
             env.put("LC_ALL", "C");
             pb.redirectErrorStream(true);
             Process process = pb.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String headerLine = reader.readLine();
-            int modelOffset = headerLine != null ? headerLine.indexOf("MODEL") : -1;
-            if (modelOffset >= 0) {
-                String dataLine = reader.readLine();
-                if (dataLine != null && !dataLine.trim().isEmpty()) {
-                    String vendor = dataLine.length() > modelOffset
-                            ? dataLine.substring(0, modelOffset).trim() : "";
-                    String model  = dataLine.length() > modelOffset
-                            ? dataLine.substring(modelOffset).trim() : dataLine.trim();
-                    if (!vendor.isEmpty() && !model.toUpperCase()
-                            .startsWith(vendor.toUpperCase())) {
-                        result = vendor + " " + model;
-                    } else if (!model.isEmpty()) {
-                        result = model;
+            try (BufferedReader reader = new BufferedReader(new
+                    InputStreamReader(process.getInputStream()))) {
+                String headerLine = reader.readLine();
+                int modelOffset = headerLine != null ?
+                        headerLine.indexOf("MODEL") : -1;
+                if (modelOffset >= 0) {
+                    String dataLine = reader.readLine();
+                    if (dataLine != null && !dataLine.trim().isEmpty()) {
+                        String vendor = dataLine.length() > modelOffset
+                                ? dataLine.substring(0, modelOffset).trim() :
+                                "";
+                        String model  = dataLine.length() > modelOffset
+                                ? dataLine.substring(modelOffset).trim() :
+                                dataLine.trim();
+                        if (!vendor.isEmpty() && !model.toUpperCase()
+                                .startsWith(vendor.toUpperCase())) {
+                            result = vendor + " " + model;
+                        } else if (!model.isEmpty()) {
+                            result = model;
+                        }
                     }
                 }
             }
-        } catch (IOException e) {
+            process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             LOGGER.log(Level.SEVERE, null, e);
         }
         return result;

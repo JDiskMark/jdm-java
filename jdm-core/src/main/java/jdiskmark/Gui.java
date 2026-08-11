@@ -1319,15 +1319,15 @@ public final class Gui {
             return;
         }
 
-        // USB flash drives do not support SMART diagnostics.  Detect this
-        // early so we can give the user a clear message without launching the
-        // privileged shell and waiting for smartctl to fail.
+        // USB-attached drives commonly fail SMART queries in the current Linux
+        // implementation.  Detect early so we can give the user a clear
+        // message without launching a privileged shell and waiting for smartctl to fail.
         if (App.isLinux()) {
             String busType = UtilOs.getBusTypeLinux(App.locationDir.toPath());
             if ("USB".equalsIgnoreCase(busType)) {
                 smartPanel.clear();
                 smartPanel.setStatus(
-                        "SMART diagnostics are not available for USB flash drives.");
+                        "SMART diagnostics are not available for USB-attached drives.");
                 return;
             }
         }

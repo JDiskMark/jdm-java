@@ -375,7 +375,11 @@ public class DrivePanel extends JPanel {
         for (int i = 0; i < driveCombo.getItemCount(); i++) {
             DriveEntry entry = driveCombo.getItemAt(i);
             String mountPath = entry.root.getAbsolutePath();
-            if (locPath.startsWith(mountPath) && mountPath.length() > bestLength) {
+            String mountPrefix = mountPath.endsWith(File.separator)
+                    ? mountPath
+                    : mountPath + File.separator;
+            if ((locPath.equals(mountPath) || locPath.startsWith(mountPrefix))
+                    && mountPath.length() > bestLength) {
                 bestIndex  = i;
                 bestLength = mountPath.length();
             }

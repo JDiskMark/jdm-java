@@ -189,15 +189,14 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         }
         
         if (App.autoSave) {
+            EntityManager em = EM.getEntityManager();
             try {
-                EntityManager em = EM.getEntityManager();
                 em.getTransaction().begin();
                 em.persist(benchmark);
                 em.getTransaction().commit();
             } catch (Exception e) {
                 Logger.getLogger(BenchmarkWorker.class.getName())
                       .log(Level.SEVERE, "Failed to save benchmark to DB", e);
-                EntityManager em = EM.getEntityManager();
                 if (em.getTransaction().isActive()) {
                     em.getTransaction().rollback();
                 }
