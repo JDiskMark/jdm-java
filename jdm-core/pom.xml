@@ -203,6 +203,10 @@
                                     <format property="builtat"
                                             pattern="MM/dd/yyyy hh:mm aa"
                                             timezone="America/Los_Angeles"/>
+                                    <!-- Build metadata segment for local display.version: MMdd.HHmm -->
+                                    <format property="local.build.meta"
+                                            pattern="MMdd.HHmm"
+                                            timezone="America/Los_Angeles"/>
                                 </tstamp>
                                 <exec executable="whoami" outputproperty="whoami"
                                       failonerror="false"/>
@@ -210,6 +214,12 @@
                                       failonerror="false" failifexecutionfails="false">
                                     <arg value="rev-parse"/>
                                     <arg value="--short"/>
+                                    <arg value="HEAD"/>
+                                </exec>
+                                <exec executable="git" outputproperty="git.branch.raw"
+                                      failonerror="false" failifexecutionfails="false">
+                                    <arg value="rev-parse"/>
+                                    <arg value="--abbrev-ref"/>
                                     <arg value="HEAD"/>
                                 </exec>
                                 <exec executable="git" outputproperty="git.status.out"
@@ -220,15 +230,160 @@
                                 <condition property="git.dirty.flag" value="true" else="false">
                                     <not><equals arg1="${git.status.out}" arg2=""/></not>
                                 </condition>
-                                <!-- display.version: set by CI -Ddisplay.version or build-local.sh;
-                                     falls back to the raw POM version for default local builds. -->
+                                <!-- ============================================================
+                                     LOCAL PRE-RELEASE LABEL
+                                     Computed when display.version / install.version are NOT
+                                     already set externally (CI passes -Ddisplay.version=...).
+                                     Produces:  install = 0.9.0-a.d
+                                               display = 0.9.0-a.d+MMdd.HHmm
+                                     On release/* and main: no prerelease label.
+                                     ============================================================ -->
+
+                                <!-- Strip -SNAPSHOT to get the numeric base (e.g. 0.9.0) -->
+                                <loadresource property="local.base.version">
+                                    <string value="${project.version}"/>
+                                    <filterchain>
+                                        <tokenfilter>
+                                            <replaceregex pattern="-SNAPSHOT$" replace=""/>
+                                        </tokenfilter>
+                                    </filterchain>
+                                </loadresource>
+
+                                <!-- Sanitize the full branch name:
+                                     hyphens/underscores become dots; slashes kept for leaf
+                                     extraction; non-[a-zA-Z0-9./] stripped; consecutive dots
+                                     collapsed; leading/trailing dots trimmed. -->
+                                <loadresource property="git.branch.san">
+                                    <string value="${git.branch.raw}"/>
+                                    <filterchain>
+                                        <tokenfilter>
+                                            <replaceregex pattern="[-_]"             replace="." flags="g"/>
+                                            <replaceregex pattern="[^a-zA-Z0-9./]"   replace=""  flags="g"/>
+                                            <replaceregex pattern="\.{2,}"           replace="." flags="g"/>
+                                            <replaceregex pattern="^[.]+"            replace=""/>
+                                            <replaceregex pattern="[.]+$"            replace=""/>
+                                        </tokenfilter>
+                                    </filterchain>
+                                </loadresource>
+
+                                <!-- Extract the leaf (part after the last /).
+                                     Strip any non-[a-zA-Z0-9.] chars left, then
+                                     lowercase A-Z, truncate to 16 chars. -->
+                                <loadresource property="git.branch.leaf.raw">
+                                    <string value="${git.branch.san}"/>
+                                    <filterchain>
+                                        <tokenfilter>
+                                            <replaceregex pattern="^.*/"                replace=""/>
+                                            <replaceregex pattern="[^a-zA-Z0-9.]+"     replace=""  flags="g"/>
+                                            <replaceregex pattern="^(.{1,16}).*$"       replace="\1"/>
+                                            <replaceregex pattern="[.]+$"               replace=""/>
+                                        </tokenfilter>
+                                    </filterchain>
+                                </loadresource>
+                                <!-- Lowercase the leaf via A-Z → a-z character substitution chains.
+                                     Ant has no single lowercase op; we map each uppercase letter. -->
+                                <loadresource property="git.branch.leaf">
+                                    <string value="${git.branch.leaf.raw}"/>
+                                    <filterchain>
+                                        <tokenfilter>
+                                            <replaceregex pattern="A" replace="a" flags="g"/>
+                                            <replaceregex pattern="B" replace="b" flags="g"/>
+                                            <replaceregex pattern="C" replace="c" flags="g"/>
+                                            <replaceregex pattern="D" replace="d" flags="g"/>
+                                            <replaceregex pattern="E" replace="e" flags="g"/>
+                                            <replaceregex pattern="F" replace="f" flags="g"/>
+                                            <replaceregex pattern="G" replace="g" flags="g"/>
+                                            <replaceregex pattern="H" replace="h" flags="g"/>
+                                            <replaceregex pattern="I" replace="i" flags="g"/>
+                                            <replaceregex pattern="J" replace="j" flags="g"/>
+                                            <replaceregex pattern="K" replace="k" flags="g"/>
+                                            <replaceregex pattern="L" replace="l" flags="g"/>
+                                            <replaceregex pattern="M" replace="m" flags="g"/>
+                                            <replaceregex pattern="N" replace="n" flags="g"/>
+                                            <replaceregex pattern="O" replace="o" flags="g"/>
+                                            <replaceregex pattern="P" replace="p" flags="g"/>
+                                            <replaceregex pattern="Q" replace="q" flags="g"/>
+                                            <replaceregex pattern="R" replace="r" flags="g"/>
+                                            <replaceregex pattern="S" replace="s" flags="g"/>
+                                            <replaceregex pattern="T" replace="t" flags="g"/>
+                                            <replaceregex pattern="U" replace="u" flags="g"/>
+                                            <replaceregex pattern="V" replace="v" flags="g"/>
+                                            <replaceregex pattern="W" replace="w" flags="g"/>
+                                            <replaceregex pattern="X" replace="x" flags="g"/>
+                                            <replaceregex pattern="Y" replace="y" flags="g"/>
+                                            <replaceregex pattern="Z" replace="z" flags="g"/>
+                                        </tokenfilter>
+                                    </filterchain>
+                                </loadresource>
+
+                                <!-- Mark release and main branches — they get no prerelease label.
+                                     Case-insensitive match via (?i) prefix. -->
+                                <condition property="local.is.release">
+                                    <or>
+                                        <matches pattern="(?i)^main$"        string="${git.branch.san}"/>
+                                        <matches pattern="(?i)^release$"     string="${git.branch.san}"/>
+                                        <matches pattern="(?i)^release/"     string="${git.branch.san}"/>
+                                    </or>
+                                </condition>
+
+                                <!-- Mark unknown/empty branch (git unavailable or detached HEAD
+                                     returning HEAD) so the fallback slug fires first. -->
+                                <condition property="local.slug" value="local">
+                                    <equals arg1="${git.branch.raw}" arg2=""/>
+                                </condition>
+
+                                <!-- Slug routing — first match wins (Ant properties are write-once).
+                                     Case-insensitive matching via (?i); slug values are always lowercase. -->
+                                <condition property="local.slug" value="d">
+                                    <matches pattern="(?i)^dev$" string="${git.branch.san}"/>
+                                </condition>
+                                <condition property="local.slug" value="d.${git.branch.leaf}">
+                                    <matches pattern="(?i)^dev/" string="${git.branch.san}"/>
+                                </condition>
+                                <condition property="local.slug" value="f.${git.branch.leaf}">
+                                    <or>
+                                        <matches pattern="(?i)^feature/" string="${git.branch.san}"/>
+                                        <matches pattern="(?i)^feat/"    string="${git.branch.san}"/>
+                                    </or>
+                                </condition>
+                                <condition property="local.slug" value="b.${git.branch.leaf}">
+                                    <or>
+                                        <matches pattern="(?i)^bug/"    string="${git.branch.san}"/>
+                                        <matches pattern="(?i)^bugfix/" string="${git.branch.san}"/>
+                                    </or>
+                                </condition>
+                                <!-- Final fallback: use the leaf (any other branch shape) -->
+                                <condition property="local.slug" value="${git.branch.leaf}">
+                                    <not><isset property="local.slug"/></not>
+                                </condition>
+
+                                <!-- Assemble local version strings.
+                                     Release/main: bare base version (no prerelease segment).
+                                     All other branches: base-a.SLUG with +MMdd.HHmm metadata
+                                     on the display version only. -->
+                                <condition property="local.display.version" value="${local.base.version}">
+                                    <isset property="local.is.release"/>
+                                </condition>
+                                <condition property="local.install.version" value="${local.base.version}">
+                                    <isset property="local.is.release"/>
+                                </condition>
+                                <condition property="local.display.version"
+                                           value="${local.base.version}-a.${local.slug}+${local.build.meta}">
+                                    <not><isset property="local.display.version"/></not>
+                                </condition>
+                                <condition property="local.install.version"
+                                           value="${local.base.version}-a.${local.slug}">
+                                    <not><isset property="local.install.version"/></not>
+                                </condition>
+
+                                <!-- Effective versions: CI override wins; local label is the fallback. -->
                                 <condition property="eff.display.version"
-                                           value="${display.version}" else="${project.version}">
+                                           value="${display.version}" else="${local.display.version}">
                                     <isset property="display.version"/>
                                 </condition>
-                                <!-- install.version: same, but no +MMDD.HHMM build-metadata suffix. -->
+                                <!-- install.version: same, but no +MMdd.HHmm build-metadata suffix. -->
                                 <condition property="eff.install.version"
-                                           value="${install.version}" else="${project.version}">
+                                           value="${install.version}" else="${local.install.version}">
                                     <isset property="install.version"/>
                                 </condition>
                                 <!-- Extract library versions from the dependency
