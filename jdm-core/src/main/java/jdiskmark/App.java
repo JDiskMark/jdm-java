@@ -106,6 +106,7 @@ public class App {
         ALIGN_4K(4096, "4 KB (Standard)"),
         ALIGN_8K(8192, "8 KB (Enterprise)"),
         ALIGN_16K(16384, "16 KB (High-End)"),
+        ALIGN_32K(32768, "32 KB (FAT32)"),
         ALIGN_64K(65536, "64 KB (RAID/Stripe)");
 
         public final int bytes;

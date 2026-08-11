@@ -412,6 +412,52 @@ public class UtilOs {
         }
         return null;
     }
+
+    /**
+     * On Linux OS use the lsblk command to get the combined vendor and model
+     * for a specific device (e.g. /dev/sda, /dev/sdb).
+     *
+     * <p>For NVMe drives, the MODEL column already includes the manufacturer
+     * (e.g. "SAMSUNG MZVLB512HBJQ-000L7"), so the vendor is not prepended.
+     * For USB drives, the VENDOR and MODEL columns are separate
+     * (e.g. VENDOR="Lexar", MODEL="USB Flash Drive"), so they are combined
+     * into "Lexar USB Flash Drive".
+     *
+     * @param devicePath path of the device (e.g. "/dev/sdb")
+     * @return the combined vendor and model string, or null if unavailable
+     */
+    static public String getVendorModelLinux(String devicePath) {
+        String result = null;
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    "lsblk", devicePath, "--nodeps", "--output", "VENDOR,MODEL");
+            Map<String, String> env = pb.environment();
+            env.put("LC_ALL", "C");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String headerLine = reader.readLine();
+            int modelOffset = headerLine != null ? headerLine.indexOf("MODEL") : -1;
+            if (modelOffset >= 0) {
+                String dataLine = reader.readLine();
+                if (dataLine != null && !dataLine.trim().isEmpty()) {
+                    String vendor = dataLine.length() > modelOffset
+                            ? dataLine.substring(0, modelOffset).trim() : "";
+                    String model  = dataLine.length() > modelOffset
+                            ? dataLine.substring(modelOffset).trim() : dataLine.trim();
+                    if (!vendor.isEmpty() && !model.toUpperCase()
+                            .startsWith(vendor.toUpperCase())) {
+                        result = vendor + " " + model;
+                    } else if (!model.isEmpty()) {
+                        result = model;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, null, e);
+        }
+        return result;
+    }
     
     /**
      * On Linux OS use the lsblk command to get the disk size for a 

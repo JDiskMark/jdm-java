@@ -133,7 +133,7 @@ public class Util {
             // handle single physical drive
             if (deviceNames.size() == 1) {
                 String devicePath = "/dev/" + deviceNames.getFirst();
-                return UtilOs.getDeviceModelLinux(devicePath);
+                return UtilOs.getVendorModelLinux(devicePath);
             }
             
             // GH-3 handle multiple drives (LVM or RAID partitions)
@@ -141,7 +141,7 @@ public class Util {
                 StringBuilder sb = new StringBuilder();
                 for (String dName : deviceNames) {
                     String devicePath = "/dev/" + dName;
-                    deviceModel = UtilOs.getDeviceModelLinux(devicePath);
+                    deviceModel = UtilOs.getVendorModelLinux(devicePath);
                     if (sb.length() > 0) {
                         sb.append(":");
                     }

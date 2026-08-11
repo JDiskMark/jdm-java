@@ -199,12 +199,7 @@ public class Sample {
     
     public void measureWrite(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
         long totalBytesWritten = 0;
-        long byteAlignment = bRunner.config.sectorAlignment.bytes;
-        if (byteAlignment <= 0) {
-            // if not selected use default layout alignment
-            MemoryLayout layout = MemoryLayout.sequenceLayout(blockSize, ValueLayout.JAVA_BYTE);
-            byteAlignment = layout.byteAlignment();
-        }
+        long byteAlignment = bRunner.effectiveAlignment;
         File testFile = getTestFile(bRunner);
         long startTime = System.nanoTime();
         
@@ -239,20 +234,37 @@ public class Sample {
             }
         }
         
-        try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
-            MemorySegment segment = arena.allocate(blockSize, byteAlignment);
-            for (int b = 0; b < numOfBlocks; b++) {
-                if (bRunner.listener.isCancelled()) break;
-                long blockIndex = (bRunner.config.blockOrder == RANDOM) ?
-                        Util.randInt(0, numOfBlocks - 1) : b;
-                long byteOffset = blockIndex * blockSize;
+        boolean directRetried = false;
+        retry:
+        while (true) {
+            FileChannel retryFc = directRetried
+                    ? openWithoutDirect(testFile, options)
+                    : initialFc;
+            if (retryFc == null) break;
+            try (FileChannel fc = retryFc; Arena arena = Arena.ofConfined()) {
+                MemorySegment segment = arena.allocate(blockSize, byteAlignment);
+                totalBytesWritten = 0;
+                for (int b = 0; b < numOfBlocks; b++) {
+                    if (bRunner.listener.isCancelled()) break;
+                    long blockIndex = (bRunner.config.blockOrder == RANDOM) ?
+                            Util.randInt(0, numOfBlocks - 1) : b;
+                    long byteOffset = blockIndex * blockSize;
 
-                int written = fc.write(segment.asByteBuffer(), byteOffset);
-                totalBytesWritten += written;
-                bRunner.updateWriteProgress();
+                    int written = fc.write(segment.asByteBuffer(), byteOffset);
+                    totalBytesWritten += written;
+                    bRunner.updateWriteProgress();
+                }
+                break retry;
+            } catch (IOException e) {
+                if (!directRetried && App.directEnable) {
+                    App.err("Direct I/O write failed: " + e.getMessage()
+                            + ". Retrying with buffered I/O.");
+                    directRetried = true;
+                    continue retry;
+                }
+                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
+                break retry;
             }
-        } catch (IOException e) {
-            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
         }
         long elapsedTimeNs = System.nanoTime() - startTime;
         accessTimeMs = (elapsedTimeNs / 1_000_000f) / (float) numOfBlocks;
@@ -261,11 +273,7 @@ public class Sample {
     }
     
 public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
-    long byteAlignment = bRunner.config.sectorAlignment.bytes;
-    if (byteAlignment <= 0) {
-        MemoryLayout layout = MemoryLayout.sequenceLayout(blockSize, ValueLayout.JAVA_BYTE);
-        byteAlignment = layout.byteAlignment();
-    }
+    long byteAlignment = bRunner.effectiveAlignment;
     
     File testFile = getTestFile(bRunner);
     Set<OpenOption> options = new HashSet<>();
@@ -309,12 +317,7 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
         long totalBytesRead = 0;
         File testFile = getTestFile(bRunner);
         long startTime = System.nanoTime();
-        long byteAlignment = bRunner.config.sectorAlignment.bytes;
-        if (byteAlignment <= 0) {
-            // if not selected use default layout alignment
-            MemoryLayout layout = MemoryLayout.sequenceLayout(blockSize, ValueLayout.JAVA_BYTE);
-            byteAlignment = layout.byteAlignment();
-        }
+        long byteAlignment = bRunner.effectiveAlignment;
         
         Set<OpenOption> options = new HashSet<>();
         options.add(StandardOpenOption.READ);
@@ -344,22 +347,53 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
             }
         }
         
-        try (FileChannel fc = initialFc; Arena arena = Arena.ofConfined()) {
-            MemorySegment segment = arena.allocate(blockSize, byteAlignment);
-            for (int b = 0; b < numOfBlocks; b++) {
-                if (bRunner.listener.isCancelled()) break;
-                long blockIndex = (bRunner.config.blockOrder == RANDOM) ? Util.randInt(0, (int)(numOfBlocks - 1)) : b;
-                long byteOffset = blockIndex * blockSize;
-                int read = fc.read(segment.asByteBuffer(), byteOffset);
-                totalBytesRead += read;
-                bRunner.updateReadProgress();
+        boolean directRetried = false;
+        retry:
+        while (true) {
+            FileChannel retryFc = directRetried
+                    ? openWithoutDirect(testFile, options)
+                    : initialFc;
+            if (retryFc == null) break;
+            try (FileChannel fc = retryFc; Arena arena = Arena.ofConfined()) {
+                MemorySegment segment = arena.allocate(blockSize, byteAlignment);
+                totalBytesRead = 0;
+                for (int b = 0; b < numOfBlocks; b++) {
+                    if (bRunner.listener.isCancelled()) break;
+                    long blockIndex = (bRunner.config.blockOrder == RANDOM) ? Util.randInt(0, (int)(numOfBlocks - 1)) : b;
+                    long byteOffset = blockIndex * blockSize;
+                    int read = fc.read(segment.asByteBuffer(), byteOffset);
+                    totalBytesRead += read;
+                    bRunner.updateReadProgress();
+                }
+                break retry;
+            } catch (IOException e) {
+                if (!directRetried && App.directEnable) {
+                    App.err("Direct I/O read failed: " + e.getMessage()
+                            + ". Retrying with buffered I/O.");
+                    directRetried = true;
+                    continue retry;
+                }
+                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
+                break retry;
             }
-        } catch (IOException ex) {
-            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
         }
         long elapsedTimeNs = System.nanoTime() - startTime;
         accessTimeMs = (elapsedTimeNs / 1_000_000f) / (float) numOfBlocks;
         double sec = (double) elapsedTimeNs / 1_000_000_000d;
         bwMbSec = ((double) totalBytesRead / (double) MEGABYTE) / sec;
+    }
+
+    private static FileChannel openWithoutDirect(File testFile,
+            Set<OpenOption> originalOptions) {
+        Set<OpenOption> fallback = new HashSet<>(originalOptions);
+        fallback.remove(ExtendedOpenOption.DIRECT);
+        try {
+            return FileChannel.open(testFile.toPath(), fallback);
+        } catch (IOException e) {
+            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE,
+                    "Buffered I/O fallback failed", e);
+            App.err("Failed to open FileChannel for buffered I/O fallback");
+            return null;
+        }
     }
 }

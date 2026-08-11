@@ -1318,6 +1318,20 @@ public final class Gui {
             App.msg("smartPanel and locationDir must first be initialized");
             return;
         }
+
+        // USB flash drives do not support SMART diagnostics.  Detect this
+        // early so we can give the user a clear message without launching the
+        // privileged shell and waiting for smartctl to fail.
+        if (App.isLinux()) {
+            String busType = UtilOs.getBusTypeLinux(App.locationDir.toPath());
+            if ("USB".equalsIgnoreCase(busType)) {
+                smartPanel.clear();
+                smartPanel.setStatus(
+                        "SMART diagnostics are not available for USB flash drives.");
+                return;
+            }
+        }
+
         // A live query is starting — we are no longer viewing a stored snapshot.
         viewingSnapshot = false;
         final File locDir = App.locationDir;

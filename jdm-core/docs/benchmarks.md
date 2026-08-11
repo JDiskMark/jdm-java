@@ -530,3 +530,51 @@ vs. CDM's pre-pinned buffer pool.
 - `jdm-core/src/main/java/jdiskmark/Benchmark.java` — CDM grid in `toResultString()`
 - `jdm-core/src/main/java/jdiskmark/RunBenchmarkCommand.java` — `--cdm` flag
 - `jdm-core/src/main/java/jdiskmark/BenchmarkCallable.java` — CLI CDM execution
+
+---
+
+## 4. USB Drive Benchmarking (Linux / Ubuntu)
+
+USB flash drives present several constraints not encountered with NVMe or SATA
+drives. The following findings were verified on Ubuntu with a Lexar USB 3.0
+flash drive formatted as vfat (FAT32).
+
+### 4.1 Direct IO Constraints
+
+Java's `ExtendedOpenOption.DIRECT` enforces alignment and I/O size requirements
+based on `FileStore.getBlockSize()`. On vfat, this returns the **filesystem
+cluster size** (e.g. 32 KB) rather than the device's logical sector size
+(512 B). The Linux kernel itself only requires 512-byte sector alignment for
+Direct IO — verified with `dd oflag=direct` at 4 KB and 512 B block sizes.
+
+Consequences of the Java NIO restriction:
+
+- **Block size ≥ cluster size**: Direct IO works when the benchmark block size
+  matches or exceeds the cluster size (e.g. 32 KB blocks on a 32 KB cluster
+  vfat volume).
+- **Block size < cluster size**: Java rejects the I/O with
+  `"Number of remaining bytes is not a multiple of the block size"`.
+  The application auto-disables Direct IO for the run and notifies the user.
+- **Buffer alignment**: The native memory address of the `ByteBuffer` must also
+  be aligned to the cluster size. `Arena.allocate(size, alignment)` with the
+  cluster size as alignment satisfies this.
+
+#### Future Improvement
+
+Bypassing Java's NIO restriction via the Foreign Function & Memory API (FFI) to call `open()` with `O_DIRECT` at the syscall level would allow Direct IO with the device's true 512-byte sector alignment, matching `dd` behaviour.
+
+### 4.2 Sector Alignment Auto-Adjustment
+
+When Direct IO is enabled and the filesystem cluster size exceeds the user-selected sector alignment, `BenchmarkRunner.resolveAlignment()` adjusts the effective alignment upward and updates the GUI badge to reflect the value actually used during the run.
+
+### 4.3 SMART Diagnostics
+
+USB flash drives do not support SMART. `smartctl` reports `"Unknown USB bridge"` and cannot query device health data. The application detects the USB bus type via `lsblk TRAN` and shows a message instead of launching the privileged `smartctl` shell.
+
+### 4.4 Drive Model Detection
+
+USB drives report VENDOR and MODEL as separate `lsblk` columns (e.g. VENDOR=`Lexar`, MODEL=`USB Flash Drive`), unlike NVMe drives where MODEL includes the manufacturer. `getVendorModelLinux()` combines both columns for display, while `getDeviceModelLinux()` returns MODEL only.
+
+### 4.5 Write Performance Characteristics
+
+With Direct IO enabled and per-sample file creation (the default benchmark pattern), write throughput on vfat is significantly lower than raw device capability. Each new file requires synchronous FAT table metadata updates that bypass the OS write cache. Verified with `dd oflag=direct` writing to a single file at 47 MB/s versus the benchmark pattern at ~0.5 MB/s.

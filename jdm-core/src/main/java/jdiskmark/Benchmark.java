@@ -308,15 +308,26 @@ public class Benchmark implements Serializable {
     @JsonIgnore
     static int deleteAll() {
         EntityManager em = EM.getEntityManager();
-        em.getTransaction().begin();
-        int deletedOperationsCount = em.createQuery("DELETE FROM BenchmarkOperation").executeUpdate();
-        int deletedBenchmarksCount = em.createQuery("DELETE FROM Benchmark").executeUpdate();
-        if (App.verbose) {
-            App.msg("deletedOperations=" + deletedOperationsCount);
-            App.msg("deletedBenchmarks=" + deletedBenchmarksCount);
+        // If a prior operation left a transaction open, roll it back first.
+        if (em.getTransaction().isActive()) {
+            em.getTransaction().rollback();
         }
-        em.getTransaction().commit();
-        return deletedBenchmarksCount;
+        try {
+            em.getTransaction().begin();
+            int deletedOperationsCount = em.createQuery("DELETE FROM BenchmarkOperation").executeUpdate();
+            int deletedBenchmarksCount = em.createQuery("DELETE FROM Benchmark").executeUpdate();
+            if (App.verbose) {
+                App.msg("deletedOperations=" + deletedOperationsCount);
+                App.msg("deletedBenchmarks=" + deletedBenchmarksCount);
+            }
+            em.getTransaction().commit();
+            return deletedBenchmarksCount;
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            throw e;
+        }
     }
     
     @JsonIgnore
