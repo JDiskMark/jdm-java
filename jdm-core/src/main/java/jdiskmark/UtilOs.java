@@ -512,104 +512,6 @@ public class UtilOs {
         return null;
     }
     
-    static public String getDeviceFromPathMacOs(Path path) {
-        try {
-            ProcessBuilder pb = new ProcessBuilder("df", "-k", path.toString());
-            Map<String, String> env = pb.environment();
-            env.put("LC_ALL", "C"); // set language to english
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                System.out.println(line);
-                if (line.contains("/dev/")) {
-                    return line.split(" ")[0];
-                }
-            }
-        } catch(IOException e) {
-            LOGGER.log(Level.SEVERE, null, e);
-        }
-        return null;
-    }
-    
-    /**
-     * Extracts the whole-disk device name from a macOS partition path.
-     *
-     * <p>macOS partitions follow the {@code /dev/disk<N>s<P>} convention, where
-     * APFS volumes can be nested further (e.g. {@code /dev/disk1s5s1}).
-     * {@code smartctl} requires the whole disk ({@code disk0}, {@code disk1}, …),
-     * so this method strips everything after the first {@code s} suffix.
-     *
-     * @param partitionPath full device path from {@code df}, e.g. {@code /dev/disk1s5s1}
-     * @return the whole-disk identifier, e.g. {@code disk1}, or {@code null} on parse failure
-     */
-    static public String getWholeDeviceNameMacOs(String partitionPath) {
-        if (partitionPath == null) return null;
-        // Strip /dev/ prefix if present
-        String dev = partitionPath.startsWith("/dev/") ? partitionPath.substring(5) : partitionPath;
-        // Match disk<digits> at the start, ignoring any s<partition> suffixes
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile("^(disk\\d+)").matcher(dev);
-        return m.find() ? m.group(1) : null;
-    }
-    
-    static public String getDeviceModelMacOs(String devicePath) {
-
-        if (devicePath == null || devicePath.isEmpty()) {
-            throw new IllegalArgumentException("Invalid device path");
-        }
-
-        try {
-            ProcessBuilder pb = new ProcessBuilder("diskutil", "info", devicePath);
-            Map<String, String> env = pb.environment();
-            env.put("LC_ALL", "C"); // set language to english
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.contains("Device / Media Name:")) {
-                    return line.split("Device / Media Name:")[1].trim();
-                }
-            }
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, null, e);
-        }
-
-        String deviceId = devicePath;
-        if (deviceId.contains("/dev/")) {
-            deviceId = deviceId.split("/dev/")[1];
-        }
-
-        try {
-            ProcessBuilder pb = new ProcessBuilder("system_profiler", "SPStorageDataType");
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.contains(deviceId)) {
-                    // Lines after deviceId
-                    String lineAfterId;
-                    while ((lineAfterId = reader.readLine()) != null) {
-                        if (lineAfterId.contains("Device Name: ")) {
-                            return lineAfterId.split("Device Name: ")[1];
-                        }
-                    }
-                }
-            }
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, null, e);
-        }
-
-        return "Model unavailable for " + deviceId;
-    }
-    
-    static public void flushDataToDriveMacOs() {
-        flushDataToDriveLinux();
-    }
     
     /**
      * GH-2 flush data to disk
@@ -665,38 +567,6 @@ public class UtilOs {
         }
     }
     
-    static public void dropWriteCacheMacOs() {
-
-        String[] command = {"purge"};
-        System.out.println("running: " + Arrays.toString(command));
-
-        try {
-            ProcessBuilder builder = new ProcessBuilder(command);
-            Process process = builder.start();
-            int exitValue = process.waitFor();
-
-            try (BufferedReader outputReader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line;
-                System.out.println("Standard Output:");
-                while ((line = outputReader.readLine()) != null) {
-                    System.out.println(line);
-                }
-            }
-
-            try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-                String line;
-                System.err.println("Standard Error:");
-                while ((line = errorReader.readLine()) != null) {
-                    System.err.println(line);
-                }
-            }
-
-            System.out.println("EXIT VALUE: " + exitValue);
-
-        } catch (IOException | InterruptedException e) {
-            LOGGER.log(Level.SEVERE, "Error executing command", e);
-        }
-    }
     
     /**
      * GH-2 Drop the write cache, used to prevent invalid read measurement
@@ -753,9 +623,6 @@ public class UtilOs {
         }
     }
     
-    public static boolean isRunningAsRootMacOs() {
-        return isRunningAsRootLinux();
-    }
     
     public static boolean isRunningAsRootLinux() {
         try {
@@ -845,24 +712,6 @@ public class UtilOs {
         return new DiskUsageInfo(percentUsed, usedGb, totalGb);
     }
     
-    /**
-     * $ df -h /Users/james
-     * Filesystem     Size   Used  Avail Capacity iused               ifree %iused  Mounted on
-     * /dev/disk1s1  466Gi  191Gi  273Gi    42%  947563 9223372036853828244   0%   /
-     * * @param outputLines
-     * @return usage object
-     */
-    static DiskUsageInfo parseDiskUsageInfoMacOs(List<String> outputLines) {
-        String usageLine = outputLines.get(1); // Assuming the relevant information is on the second line
-        String[] parts = usageLine.trim().split("\\s+");
-
-        /* Grab relevant bits from df output and convert from kilobytes to gigabytes. - JSL 2024-01-06 */
-        double usedGb = Double.parseDouble(parts[2])/Math.pow(2,20);
-        double totalGb = Double.parseDouble(parts[1])/Math.pow(2,20);
-        double percentUsed = usedGb / totalGb * 100;
-
-        return new DiskUsageInfo(percentUsed, usedGb, totalGb);
-    }
     
     /**
      * This parses disk usage on windows, tested on w11.
@@ -976,23 +825,6 @@ public class UtilOs {
         return "";
     }
     
-    public static String getProcessorNameMacOS() {
-        try {
-            ProcessBuilder pb = new ProcessBuilder("sysctl", "-n", "machdep.cpu.brand_string");
-            Map<String, String> env = pb.environment();
-            env.put("LC_ALL", "C"); // set language to english
-            Process process = pb.start();
-
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-                String line = reader.readLine();
-                return line.trim(); // The first line contains the processor name
-            }
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, null, e);
-        }
-
-        return "";
-    }
     
     public static String getProcessorNameLinux() {
         try {

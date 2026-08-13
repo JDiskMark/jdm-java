@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import javax.swing.filechooser.FileSystemView;
+import org.metricus.jdm.os.UtilsMacOs;
 
 /**
  * Utility methods for JDiskMark
@@ -153,9 +154,9 @@ public class Util {
             return ERROR_DRIVE_INFO;
         } else if (App.isMacOs()) {
             // get disk info for os x
-            String devicePath = UtilOs.getDeviceFromPathMacOs(dataDirPath);
+            String devicePath = UtilsMacOs.getDeviceFromPath(dataDirPath);
             System.out.println("devicePath=" + devicePath);
-            deviceModel = UtilOs.getDeviceModelMacOs(devicePath);
+            deviceModel = UtilsMacOs.getDeviceModel(devicePath);
             //System.out.println("deviceModel=" + deviceModel);
             return deviceModel;
         } else if (App.isWindows()) {
@@ -235,7 +236,7 @@ public class Util {
             // Original capicity implementation w english and spanish support
             //return UtilOs.parseDiskUsageInfoWindows(outputLines);
         } else if (App.isMacOs()) {
-            return UtilOs.parseDiskUsageInfoMacOs(outputLines);
+            return UtilsMacOs.parseDiskUsageInfo(outputLines);
         } else if (App.isLinux()) {
             return UtilOs.parseDiskUsageInfoLinux(outputLines);
         }
@@ -246,6 +247,12 @@ public class Util {
         if (App.isWindows()) {
             String driveLetter = UtilOs.getDriveLetterWindows(path);
             return driveLetter;
+        } else if (App.isMacOs()) {
+            String devicePath = UtilsMacOs.getDeviceFromPath(path);
+            if (devicePath != null && devicePath.contains("/dev/")) {
+                return devicePath.split("/dev/")[1];
+            }
+            return devicePath;
         } else {
             String partitionPath = UtilOs.getPartitionFromFilePathLinux(path);
             if (partitionPath.contains("/dev/")) {
@@ -267,7 +274,7 @@ public class Util {
         if (App.isWindows()) {
             return UtilOs.getProcessorNameWindows();
         } else if (App.isMacOs()) {
-            return UtilOs.getProcessorNameMacOS();
+            return UtilsMacOs.getProcessorName();
         } else if (App.isLinux()) {
             return UtilOs.getProcessorNameLinux();
         }
@@ -282,6 +289,8 @@ public class Util {
         if (App.isWindows()) {
             String driveLetter = UtilOs.getDriveLetterWindows(path);
             if (driveLetter != null) return UtilOs.getFilesystemWindows(driveLetter);
+        } else if (App.isMacOs()) {
+            return UtilsMacOs.getFilesystem(path);
         } else if (App.isLinux()) {
             return UtilOs.getFilesystemLinux(path);
         }
@@ -296,6 +305,8 @@ public class Util {
         if (App.isWindows()) {
             String driveLetter = UtilOs.getDriveLetterWindows(path);
             if (driveLetter != null) return UtilOs.getBusTypeWindows(driveLetter);
+        } else if (App.isMacOs()) {
+            return UtilsMacOs.getBusType(path);
         } else if (App.isLinux()) {
             return UtilOs.getBusTypeLinux(path);
         }
@@ -310,6 +321,8 @@ public class Util {
     public static String getUsbVersion(Path path) {
         if (App.isLinux()) {
             return UtilOs.getUsbVersionLinux(path);
+        } else if (App.isMacOs()) {
+            return UtilsMacOs.getUsbVersion(path);
         }
         return null;
     }
@@ -322,6 +335,8 @@ public class Util {
         if (App.isWindows()) {
             String driveLetter = UtilOs.getDriveLetterWindows(path);
             if (driveLetter != null) return UtilOs.getSectorSizeWindows(driveLetter);
+        } else if (App.isMacOs()) {
+            return UtilsMacOs.getSectorSize(path);
         } else if (App.isLinux()) {
             return UtilOs.getSectorSizeLinux(path);
         }

@@ -520,6 +520,8 @@ public class DrivePanel extends JPanel {
     private static List<File> listDriveRoots() {
         if (App.isLinux()) {
             return UtilOs.getMountedDrivesLinux();
+        } else if (App.isMacOs()) {
+            return org.metricus.jdm.os.UtilsMacOs.getMountedDrives();
         }
         return List.of(File.listRoots());
     }
