@@ -2,6 +2,7 @@ package jdiskmark;
 
 import java.io.File;
 import java.util.Scanner;
+import org.metricus.jdm.os.UtilsMacOs;
 import picocli.CommandLine.Command;
 
 @Command(name = "jdiskmark", mixinStandardHelpOptions = true,
@@ -37,8 +38,8 @@ public class Cli {
         } else if (App.isMacOs()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
-                UtilOs.flushDataToDriveMacOs();
-                UtilOs.dropWriteCacheMacOs();
+                UtilsMacOs.flushDataToDrive();
+                UtilsMacOs.dropWriteCache();
             } else {
                 String message = """
                         \nFor valid READ benchmarks please clear the disk cache.

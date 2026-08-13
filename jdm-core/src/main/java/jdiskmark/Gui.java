@@ -9,6 +9,7 @@ import org.metricus.jdm.ui.ButtonStyles;
 import org.metricus.jdm.ui.Palette;
 import org.metricus.jdm.ui.Theme;
 import org.metricus.jdm.ui.ThemeDefinition;
+import org.metricus.jdm.os.UtilsMacOs;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -1353,8 +1354,8 @@ public final class Gui {
                         }
                         deviceRef[0] = devices.get(0);
                     } else if (App.isMacOs()) {
-                        String partitionPath = UtilOs.getDeviceFromPathMacOs(path);
-                        deviceRef[0] = UtilOs.getWholeDeviceNameMacOs(partitionPath);
+                        String partitionPath = UtilsMacOs.getDeviceFromPath(path);
+                        deviceRef[0] = UtilsMacOs.getWholeDeviceName(partitionPath);
                         if (deviceRef[0] == null) {
                             SMART_LOG.log(Level.WARNING, "runSmart: no device for {0}", locDir);
                             return null;
@@ -1513,8 +1514,8 @@ public final class Gui {
         } else if (App.isMacOs()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
-                UtilOs.flushDataToDriveMacOs();
-                UtilOs.dropWriteCacheMacOs();
+                UtilsMacOs.flushDataToDrive();
+                UtilsMacOs.dropWriteCache();
             } else {
                 String message = """
                         For valid READ benchmarks please clear the disk cache.
