@@ -1387,8 +1387,8 @@ public final class Gui {
             return;
         }
 
-        // On Windows, if not already admin, escalation will trigger a UAC prompt.
-        if (App.isWindows() && !App.isAdmin && smartPanel != null) {
+        // On Windows, if not already admin, first-time escalation triggers a UAC prompt.
+        if (App.isWindows() && !App.isAdmin && !SmartEscalation.isAgentReady() && smartPanel != null) {
             smartPanel.setStatus("A Windows security (UAC) prompt will appear to authorise SMART access...");
         }
         

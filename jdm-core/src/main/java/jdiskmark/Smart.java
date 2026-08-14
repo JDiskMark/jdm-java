@@ -420,8 +420,8 @@ public class Smart {
      *   <li>If the process is already elevated ({@link App#isAdmin}), runs
      *       {@code smartctl} directly via {@link #getSmartDirect}.</li>
      *   <li>Otherwise, delegates to {@link SmartEscalation#runElevated} which
-     *       triggers a UAC prompt and runs an elevated helper, returning the
-     *       JSON via a temp file in {@code %LOCALAPPDATA%\JDiskMark\}.</li>
+     *       triggers a UAC prompt on the <em>first</em> call to start a persistent
+     *       elevated agent; subsequent calls reuse that agent — no further prompts.</li>
      * </ul>
      *
      * <p>On <b>Linux / macOS</b>, writes the command to the persistent privileged
