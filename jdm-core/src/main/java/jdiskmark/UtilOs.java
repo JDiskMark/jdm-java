@@ -364,6 +364,9 @@ public class UtilOs {
      */
     static public List<String> getDeviceNamesFromPartitionLinux(String partition) {
         List<String> deviceNames = new ArrayList<>();
+        if (partition == null) {
+            return deviceNames;
+        }
         try {
             ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "pkname", partition);
             Map<String, String> env = pb.environment();

@@ -466,6 +466,7 @@
                                     <entry key="lib.hibernate"   value="${lib.hibernate.ver}"/>
                                     <entry key="lib.derby"       value="${lib.derby.ver}"/>
                                     <entry key="lib.picocli"     value="${lib.picocli.ver}"/>
+                                    <entry key="lib.smartctl"    value="${smartctl.version}"/>
                                 </propertyfile>
                             </target>
                         </configuration>

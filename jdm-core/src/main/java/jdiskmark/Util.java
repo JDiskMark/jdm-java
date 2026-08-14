@@ -129,6 +129,9 @@ public class Util {
         if (App.isLinux()) {
             // get disk info for linux
             String partition = UtilOs.getPartitionFromFilePathLinux(dataDirPath);
+            if (partition == null) {
+                return ERROR_DRIVE_INFO;
+            }
             List<String> deviceNames = UtilOs.getDeviceNamesFromPartitionLinux(partition);
             
             // handle single physical drive

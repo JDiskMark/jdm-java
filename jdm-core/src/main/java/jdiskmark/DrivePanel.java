@@ -606,6 +606,7 @@ public class DrivePanel extends JPanel {
                     infoSectorSizeLabel.setText("Sector Size: " + ((r[8] != null && !r[8].isBlank()) ? r[8] : "—"));
                 } catch (Exception ex) {
                     LOG.log(Level.WARNING, "refreshDriveInfo worker failed", ex);
+                    App.err("Drive info lookup failed: " + ex.getMessage());
                 }
             }
         }.execute();

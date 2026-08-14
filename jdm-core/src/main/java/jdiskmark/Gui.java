@@ -529,6 +529,7 @@ public final class Gui {
                 + " &middot; Hibernate " + App.buildProp("lib.hibernate") + "<br>"
                 + "Derby " + App.buildProp("lib.derby")
                 + " &middot; Picocli " + App.buildProp("lib.picocli")
+                + " &middot; smartctl " + App.buildProp("lib.smartctl")
                 + "</span><br><br>"
                 + "<a href='" + url + "'>" + url + "</a>"
                 + "</body></html>";
