@@ -356,8 +356,16 @@ public class Smart {
      * @return a populated {@link Smart} instance, or {@code null} on error
      */
     private static Smart getSmartDirect(String deviceName, String smartctlPath) {
+        // Derive the Win32 device path from the bare name, e.g. pd0 → \\.\PhysicalDrive0
+        String win32Path = null;
+        if (deviceName.startsWith("pd")) {
+            win32Path = "\\\\.\\PhysicalDrive" + deviceName.substring(2);
+        }
+        String[] candidates = win32Path != null
+                ? new String[]{"/dev/" + deviceName, deviceName, win32Path}
+                : new String[]{"/dev/" + deviceName, deviceName};
         try {
-            for (String devArg : new String[]{"/dev/" + deviceName, deviceName}) {
+            for (String devArg : candidates) {
                 ProcessBuilder pb = new ProcessBuilder(smartctlPath, "--json", "-a", devArg);
                 pb.redirectErrorStream(true);
                 Process p = pb.start();
@@ -502,6 +510,17 @@ public class Smart {
     /** Logs the key SMART fields at INFO level. */
     public static void logSmart(Smart smart) {
         if (smart == null) return;
+        if (smart.getSmartctlInfo() != null) {
+            SmartctlInfo info = smart.getSmartctlInfo();
+            LOGGER.log(Level.INFO, "smartctl version : {0}", info.getVersionString());
+            LOGGER.log(Level.INFO, "smartctl exit    : {0}", info.getExitStatus());
+            if (info.getMessages() != null) {
+                for (SmartMessage msg : info.getMessages()) {
+                    LOGGER.log(Level.WARNING, "smartctl message : [{0}] {1}",
+                            new Object[]{msg.getSeverity(), msg.getString()});
+                }
+            }
+        }
         LOGGER.log(Level.INFO, "SMART model      : {0}", smart.getModelName());
         LOGGER.log(Level.INFO, "SMART serial     : {0}", smart.getSerialNumber());
         LOGGER.log(Level.INFO, "SMART firmware   : {0}", smart.getFirmwareVersion());

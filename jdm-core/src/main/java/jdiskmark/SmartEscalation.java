@@ -74,13 +74,21 @@ public class SmartEscalation {
         String outputPs   = outputFile.toString().replace("'", "''");
         String statusPs   = statusFile.toString().replace("'", "''");
 
-        // The script tries /dev/<device> first, then the bare device name.
+        // The numeric part of pdN, used to build \\.\PhysicalDriveN
+        String driveNum = device.startsWith("pd") ? device.substring(2) : null;
+        String win32Dev  = driveNum != null ? "\\\\.\\PhysicalDrive" + driveNum : null;
+        String win32Ps   = win32Dev != null ? win32Dev.replace("'", "''") : null;
+
+        // The script tries /dev/<device>, bare device name, then \\.\PhysicalDriveN.
         // Uses [System.IO.File]::WriteAllText which handles paths with spaces.
         // Writes a status file if smartctl doesn't produce JSON (for diagnostics).
+        String devList = win32Ps != null
+                ? "@('/dev/" + device + "', '" + device + "', '" + win32Ps + "')"
+                : "@('/dev/" + device + "', '" + device + "')";
         String innerScript = String.join("\r\n",
             "$ErrorActionPreference = 'Continue'",
             "$written = $false",
-            "foreach ($d in @('/dev/" + device + "', '" + device + "')) {",
+            "foreach ($d in " + devList + ") {",
             "    $out = & '" + smartctlPs + "' --json -a $d 2>&1",
             "    $text = ($out | ForEach-Object { $_.ToString() }) -join \"`n\"",
             "    if ($text.TrimStart().StartsWith('{')) {",
