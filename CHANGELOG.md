@@ -8,6 +8,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Planned
 - [#118](https://github.com/JDiskMark/jdm-java/issues/118) test interlock or OAuth upload
 
+## [0.9.0] - in development
+- #205 drive dropdown linux
+- #209 usb support linux
+- #213 usb support macos
+- #207 drive capacity check
+- #11 nvme smart err reporting
+
 ## [0.8.0] — 2026-08-01
 
 ### Added
