@@ -34,7 +34,7 @@ Theme enum
                   ├─ updateChartPanelStyle()
                   ├─ titleBarForeground → JRootPane client property
                   ├─ progressBarForeground → progressBar.setForeground()
-                  └─ applyLinkedPalette() (Old Glory, Sakura only)
+                  └─ applyLinkedPalette() (Old Glory, Sakura, Harvest, Trick or Treat, Yuletide)
 ```
 
 ### ThemeDefinition Interface
@@ -63,7 +63,7 @@ Theme enum
 
 **`Theme`** drives **Graph > Window Theme** menu (via `GraphThemeMenu` iterating `values()`):
 
-    DARK, LIGHT, DARCULA, OLD_GLORY, SAKURA, HARVEST
+      DARK, LIGHT, DARCULA, OLD_GLORY, SAKURA, HARVEST, TRICK_OR_TREAT, YULETIDE
 
 ---
 
@@ -102,7 +102,7 @@ Unlinked palettes are LAF-agnostic and can be applied to any window theme
 that may be unreadable on the current LAF — for example, forcing dark text
 while the Dark LAF renders a dark background.
 
-Linked palettes (Old Glory, Sakura, Harvest) are exempt because they are
+Linked palettes (Old Glory, Sakura, Harvest, Trick or Treat, Yuletide) are exempt because they are
 always applied together with a specific LAF that they control end-to-end.
 
 ### Adding a new unlinked palette — checklist
@@ -320,6 +320,184 @@ cycleBadgeColors = true
 
 ---
 
+## Trick or Treat Theme
+
+**Identity:** Halloween night - pumpkin orange + candy violet on deep twilight.
+
+**Class:** [`TrickOrTreatTheme.java`](../src/main/java/org/metricus/jdm/ui/theme/TrickOrTreatTheme.java)
+
+### Color Constants
+
+| Constant | Hex | Role |
+|---|---|---|
+| `NIGHT` | `#12091F` | Base chart + legend background (midnight backdrop) |
+| `VIOLET` | `#3A1C57` | UI secondary accent (scrollbar + focus) |
+| `ORANGE` | `#F47B20` | Primary accent, write sample, progress bar |
+| `ORANGE_FADE` | `#F47B20` a=170 | Write trend dashed line |
+| `ORANGE_LIGHT` | `#FFB15E` | Write max |
+| `ORANGE_DARK` | `#B84E06` | Write min + stale badge bg |
+| `PURPLE` | `#B28BFF` | Read sample + badge fg |
+| `PURPLE_FADE` | `#B28BFF` a=170 | Read trend dashed line |
+| `PURPLE_LIGHT` | `#D5C0FF` | Read max + icon secondary tint |
+| `PURPLE_DARK` | `#7A55C8` | Read min + cancel accent |
+| `BADGE_BG` | `#261139` | Badge default background |
+
+### LAF Configuration
+
+**Base LAF:** `FlatDarkLaf` / `FlatMacDarkLaf`
+
+**Global extra defaults (before setLookAndFeel):**
+```
+@accentColor  = #F47B20   (ORANGE)
+@background   = #12091F   (NIGHT)
+@foreground   = #EBDCFD   (moonlit lavender)
+TitlePane.foreground = #EBDCFD
+```
+
+**UIManager overrides (after setLookAndFeel):**
+```
+Table/List/Tree.selectionBackground = ORANGE + BLACK fg
+TabbedPane.underlineColor           = ORANGE
+TabbedPane.inactiveUnderlineColor   = ORANGE
+TabbedPane.focusColor               = VIOLET
+TabbedPane.hoverColor               = #2B153F
+TabbedPane.hoverForeground          = PURPLE
+ScrollBar.thumb                     = VIOLET
+ScrollBar.thumbHover                = #542D77
+ScrollBar.thumbPressed              = #3A1C57
+```
+
+**Runtime extras (via `applyTheme`):**
+- `JRootPane.titleBarForeground` -> `#EBDCFD`
+- `progressBar.setForeground(ORANGE)`
+- Auto-applies linked `TrickOrTreatPalette`
+
+### Badge Colors
+
+```
+badgeStaleBg   = ORANGE_DARK
+badgeStaleFg   = Color.WHITE
+badgeDefaultBg = BADGE_BG      (#261139)
+badgeDefaultFg = PURPLE
+badgeBorder    = 1px ORANGE outline + 2/5/2/5 padding
+cycleBadgeColors = true
+   even index -> ORANGE
+   odd index  -> PURPLE
+```
+
+### Chart Palette
+
+**Canvas:** `NIGHT` outer chart, `#1B0E2B` plot background  
+**Grid:** `#3C2757` (subtle violet)  
+**Legend:** `NIGHT` bg, `#5A3B7E` border  
+**Strokes:** bold 1.5f for sample series; short-dash 2.0/6.0 1.2f for trend lines
+
+| Series | Role | Color | Hex |
+|---|---|---|---|
+| bw[0] | Write sample | `ORANGE` + bold | `#F47B20` |
+| bw[1] | Write trend | `ORANGE_FADE` + dash | `#F47B20` a170 |
+| bw[2] | Write max | `ORANGE_LIGHT` | `#FFB15E` |
+| bw[3] | Write min | `ORANGE_DARK` | `#B84E06` |
+| bw[4] | Read sample | `PURPLE` + bold | `#B28BFF` |
+| bw[5] | Read trend | `PURPLE_FADE` + dash | `#B28BFF` a170 |
+| bw[6] | Read max | `PURPLE_LIGHT` | `#D5C0FF` |
+| bw[7] | Read min | `PURPLE_DARK` | `#7A55C8` |
+| ms[0] | Write latency | `ORANGE` | `#F47B20` |
+| ms[1] | Read latency | `PURPLE` | `#B28BFF` |
+
+**Axes + title + legend text:** `#EBDCFD`
+
+---
+
+## Yuletide Theme
+
+**Identity:** Christmas holiday - holly crimson + pine green on winter white.
+
+**Class:** [`YuletideTheme.java`](../src/main/java/org/metricus/jdm/ui/theme/YuletideTheme.java)
+
+### Color Constants
+
+| Constant | Hex | Role |
+|---|---|---|
+| `PINE` | `#1D5A3A` | Primary selection + read sample |
+| `HOLLY` | `#9F1F2E` | Accent, underline, write sample, progress bar |
+| `NOEL_BG` | `#F8FCF8` | Theme + chart background |
+| `NOEL_TEXT` | `#1B2E22` | Foreground text + title bar |
+| `HOLLY_FADE` | `#9F1F2E` a=170 | Write trend dashed line |
+| `HOLLY_LIGHT` | `#D15263` | Write max |
+| `HOLLY_DARK` | `#6F121E` | Write min |
+| `PINE_FADE` | `#1D5A3A` a=170 | Read trend dashed line |
+| `PINE_LIGHT` | `#5C8F70` | Read max + icon secondary tint |
+| `PINE_DARK` | `#103825` | Read min |
+| `BADGE_BG` | `#EAF4EC` | Badge default background |
+
+### LAF Configuration
+
+**Base LAF:** `FlatLightLaf` / `FlatMacLightLaf`
+
+**Global extra defaults (before setLookAndFeel):**
+```
+@accentColor  = #9F1F2E   (HOLLY)
+@background   = #F8FCF8   (NOEL_BG)
+@foreground   = #1B2E22   (NOEL_TEXT)
+TitlePane.foreground = #1B2E22
+```
+
+**UIManager overrides (after setLookAndFeel):**
+```
+Table/List/Tree.selectionBackground = PINE + WHITE fg
+TabbedPane.underlineColor           = HOLLY
+TabbedPane.inactiveUnderlineColor   = HOLLY
+TabbedPane.focusColor               = #DDECDF
+TabbedPane.hoverColor               = #EEF6EF
+TabbedPane.hoverForeground          = PINE
+ScrollBar.thumb                     = PINE
+ScrollBar.thumbHover                = #184B31
+ScrollBar.thumbPressed              = #123723
+```
+
+**Runtime extras (via `applyTheme`):**
+- `JRootPane.titleBarForeground` -> `NOEL_TEXT`
+- `progressBar.setForeground(HOLLY)`
+- Auto-applies linked `YuletidePalette`
+
+### Badge Colors
+
+```
+badgeStaleBg   = HOLLY
+badgeStaleFg   = Color.WHITE
+badgeDefaultBg = BADGE_BG      (#EAF4EC)
+badgeDefaultFg = PINE
+badgeBorder    = 1px PINE outline + 2/5/2/5 padding
+cycleBadgeColors = true
+   even index -> PINE
+   odd index  -> HOLLY
+```
+
+### Chart Palette
+
+**Canvas:** `NOEL_BG` outer chart, white plot background  
+**Grid:** `#E4EEE6` (soft winter mint)  
+**Legend:** `NOEL_BG` bg, `#C9D8CC` border  
+**Strokes:** bold 1.5f for sample series; short-dash 2.0/6.0 1.2f for trend lines
+
+| Series | Role | Color | Hex |
+|---|---|---|---|
+| bw[0] | Write sample | `HOLLY` + bold | `#9F1F2E` |
+| bw[1] | Write trend | `HOLLY_FADE` + dash | `#9F1F2E` a170 |
+| bw[2] | Write max | `HOLLY_LIGHT` | `#D15263` |
+| bw[3] | Write min | `HOLLY_DARK` | `#6F121E` |
+| bw[4] | Read sample | `PINE` + bold | `#1D5A3A` |
+| bw[5] | Read trend | `PINE_FADE` + dash | `#1D5A3A` a170 |
+| bw[6] | Read max | `PINE_LIGHT` | `#5C8F70` |
+| bw[7] | Read min | `PINE_DARK` | `#103825` |
+| ms[0] | Write latency | `HOLLY` | `#9F1F2E` |
+| ms[1] | Read latency | `PINE` | `#1D5A3A` |
+
+**Axes + title + legend text:** `NOEL_TEXT` (#1B2E22)
+
+---
+
 ## Standard Themes (Dark / Light / Darcula)
 
 These themes use their FlatLaf defaults without custom extras or UIManager overrides.
@@ -330,6 +508,8 @@ These themes use their FlatLaf defaults without custom extras or UIManager overr
 | Light | [`LightTheme.java`](../src/main/java/org/metricus/jdm/ui/theme/LightTheme.java) | `FlatLightLaf` / `FlatMacLightLaf` |
 | Darcula | [`DarculaTheme.java`](../src/main/java/org/metricus/jdm/ui/theme/DarculaTheme.java) | `FlatDarculaLaf` |
 | Harvest | [`HarvestTheme.java`](../src/main/java/org/metricus/jdm/ui/theme/HarvestTheme.java) | `FlatDarkLaf` with autumn overrides — linked palette |
+| Trick or Treat | [`TrickOrTreatTheme.java`](../src/main/java/org/metricus/jdm/ui/theme/TrickOrTreatTheme.java) | `FlatDarkLaf` with Halloween orange/violet overrides — linked palette |
+| Yuletide | [`YuletideTheme.java`](../src/main/java/org/metricus/jdm/ui/theme/YuletideTheme.java) | `FlatLightLaf` with Christmas holly/pine overrides — linked palette |
 
 Badge colors follow the same `ThemeDefinition` interface but with simpler values:
 
@@ -402,6 +582,4 @@ three `updateLegendAndAxis()` overloads.
 
 ## Planned Themes (not yet implemented)
 
-- **Halloween** — orange + dark purple
-- **Christmas** — forest green + crimson
 - **Turtle, Rabbit, Polar Bear, Cat** — animal-themed seasonal palettes
