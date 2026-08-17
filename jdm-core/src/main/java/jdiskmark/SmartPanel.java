@@ -594,10 +594,8 @@ public class SmartPanel extends JPanel {
         }
 
         // rotation_rate: 0 = SSD, >0 = HDD with that RPM, null = unknown
-        if (d.getRotationRate() != null) {
-            int rpm = d.getRotationRate();
-            driveTypeValueLabel.setText(rpm == 0 ? "SSD (non-rotating)" : "HDD (" + rpm + " RPM)");
-        }
+        Integer rpm = d.getRotationRate();
+        driveTypeValueLabel.setText(rpm == null ? "-" : (rpm == 0 ? "SSD (non-rotating)" : "HDD (" + rpm + " RPM)"));
 
         // in_smartctl_database: whether attribute names/thresholds are reliable
         if (d.getInSmartctlDatabase() != null) {
