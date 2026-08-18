@@ -78,10 +78,11 @@ public final class TrickOrTreatTheme implements ThemeDefinition {
     @Override public Color badgeDefaultBg()   { return BADGE_BG; }
     @Override public Color badgeDefaultFg()   { return PURPLE; }
     @Override public Color badgeStaleBg()     { return ORANGE_DARK; }
-    @Override public Color badgeBorderColor() { return ORANGE; }
     @Override public boolean cycleBadgeColors() { return true; }
     @Override public Color badgeEvenFg()      { return ORANGE; }
     @Override public Color badgeOddFg()       { return PURPLE; }
+    @Override public boolean useGeneratedBadgeBorderWhenUnset() { return true; }
+    @Override public boolean cycleBadgeBorderColors() { return true; }
 
     @Override public boolean hasLinkedPalette() { return true; }
     @Override public PaletteDefinition linkedPalette() { return new TrickOrTreatPalette(); }

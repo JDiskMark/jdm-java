@@ -28,6 +28,25 @@ public interface ThemeDefinition {
 
     default Color badgeBorderColor() { return null; }
 
+    /**
+     * Experimental: when {@link #badgeBorderColor()} (or even/odd border colors)
+     * are not provided, allow the UI to generate a border color from badge text
+     * colors so themes can test border visibility without hard-coding values.
+     */
+    default boolean useGeneratedBadgeBorderWhenUnset() { return false; }
+
+    /**
+     * Experimental: alternate badge border colors by index.
+     * If true, even/odd colors come from {@link #badgeEvenBorderColor()} and
+     * {@link #badgeOddBorderColor()}; null values fall back to generated colors
+     * (when enabled) or to the base border color.
+     */
+    default boolean cycleBadgeBorderColors() { return false; }
+
+    default Color badgeEvenBorderColor() { return badgeBorderColor(); }
+
+    default Color badgeOddBorderColor() { return badgeBorderColor(); }
+
     default boolean cycleBadgeColors() { return false; }
 
     default Color badgeEvenFg() { return badgeDefaultFg(); }
