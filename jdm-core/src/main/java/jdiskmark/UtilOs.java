@@ -380,7 +380,9 @@ public class UtilOs {
                 if (App.verbose) {
                     System.err.println("devName=" + line);
                 }
-                deviceNames.add(line);
+                if (!line.trim().isEmpty()) {
+                    deviceNames.add(line);
+                }
             }
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, null, e);
