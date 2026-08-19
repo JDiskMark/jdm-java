@@ -134,6 +134,11 @@ public class Util {
             }
             List<String> deviceNames = UtilOs.getDeviceNamesFromPartitionLinux(partition);
             
+            // handle whole-disk filesystem (no partition table) — pkname is empty
+            if (deviceNames.isEmpty()) {
+                return UtilOs.getVendorModelLinux(partition);
+            }
+            
             // handle single physical drive
             if (deviceNames.size() == 1) {
                 String devicePath = "/dev/" + deviceNames.getFirst();
