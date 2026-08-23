@@ -566,10 +566,18 @@ public final class Gui {
 
         // Build an HTML panel so the website URL is a clickable hyperlink.
         String url = "https://www.jdiskmark.net";
+        boolean hasSystemId = App.systemId != null && !App.systemId.isBlank();
+        String systemIdDisplay = hasSystemId ? App.systemId : "(unavailable)";
         String html = "<html><body style='font-family:sans-serif;font-size:11px'>"
                 + "<b>" + App.APP_NAME + " " + App.VERSION + "</b><br>"
                 + "JVM: " + App.jdk + "<br>"
-                + "OS:&nbsp; " + App.osLabel + "<br><br>"
+                + "OS:&nbsp; " + App.osLabel + "<br>"
+                + "System ID: "
+                + (hasSystemId
+                        ? "<a href='#select-system-id' style='text-decoration:none'><code>" + systemIdDisplay + "</code></a>"
+                              + " <a href='#copy-system-id' style='text-decoration:none'>\u29C9</a>"
+                        : "<code>" + systemIdDisplay + "</code>")
+                + "<br><br>"
                 + "<span style='color:gray;font-size:10px'>"
                 + "FlatLaf " + App.buildProp("lib.flatlaf")
                 + " &middot; JFreeChart " + App.buildProp("lib.jfreechart")
@@ -585,11 +593,32 @@ public final class Gui {
         msgPane.setEditable(false);
         msgPane.setOpaque(false);
         msgPane.addHyperlinkListener(e -> {
-            if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
-                try {
-                    java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
-                } catch (IOException | URISyntaxException | RuntimeException ex) {
-                    App.msg("Could not open browser: " + ex.getMessage());
+            // Tooltip on hover (Swing's HTML ignores the title attribute)
+            if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ENTERED) {
+                if ("#copy-system-id".equals(e.getDescription())) {
+                    msgPane.setToolTipText("Copy System ID to clipboard");
+                } else if ("#select-system-id".equals(e.getDescription())) {
+                    msgPane.setToolTipText("Click to select System ID");
+                }
+            } else if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.EXITED) {
+                msgPane.setToolTipText(null);
+            } else if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
+                if ("#copy-system-id".equals(e.getDescription())) {
+                    var clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
+                    clipboard.setContents(new java.awt.datatransfer.StringSelection(App.systemId), null);
+                    App.msg("System ID copied to clipboard");
+                } else if ("#select-system-id".equals(e.getDescription())) {
+                    // Select the systemId text so the user can see it highlighted
+                    javax.swing.text.Element el = e.getSourceElement();
+                    if (el != null) {
+                        msgPane.select(el.getStartOffset(), el.getEndOffset());
+                    }
+                } else {
+                    try {
+                        java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+                    } catch (IOException | URISyntaxException | RuntimeException ex) {
+                        App.msg("Could not open browser: " + ex.getMessage());
+                    }
                 }
             }
         });
