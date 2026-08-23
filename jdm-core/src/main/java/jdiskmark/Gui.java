@@ -182,22 +182,38 @@ public final class Gui {
         BADGE_STALE_FG   = def.badgeStaleFg();
 
         if (chartBadgeList != null) {
-            Color borderColor = def.badgeBorderColor();
-            javax.swing.border.Border badge_border = (borderColor != null)
-                    ? javax.swing.BorderFactory.createCompoundBorder(
-                            javax.swing.BorderFactory.createLineBorder(borderColor, 1),
-                            javax.swing.BorderFactory.createEmptyBorder(2, 5, 2, 5))
-                    : javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6);
+            javax.swing.border.Border sharedBorder = null;
+            if (!def.cycleBadgeBorderColors() && !def.useGeneratedBadgeBorderWhenUnset()) {
+                Color borderColor = def.badgeBorderColor();
+                sharedBorder = (borderColor != null)
+                        ? javax.swing.BorderFactory.createCompoundBorder(
+                                javax.swing.BorderFactory.createLineBorder(borderColor, 1),
+                                javax.swing.BorderFactory.createEmptyBorder(2, 5, 2, 5))
+                        : javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6);
+            }
 
             for (int i = 0; i < chartBadgeList.size(); i++) {
                 javax.swing.JLabel b = chartBadgeList.get(i);
                 b.setBackground(BADGE_DEFAULT_BG);
+                Color fg;
                 if (def.cycleBadgeColors()) {
-                    b.setForeground(i % 2 == 0 ? def.badgeEvenFg() : def.badgeOddFg());
+                    fg = (i % 2 == 0) ? def.badgeEvenFg() : def.badgeOddFg();
                 } else {
-                    b.setForeground(BADGE_DEFAULT_FG);
+                    fg = BADGE_DEFAULT_FG;
                 }
-                b.setBorder(badge_border);
+                b.setForeground(fg);
+
+                if (sharedBorder != null) {
+                    b.setBorder(sharedBorder);
+                } else {
+                    Color borderColor = resolveBadgeBorderColor(def, i, fg);
+                    javax.swing.border.Border badgeBorder = (borderColor != null)
+                            ? javax.swing.BorderFactory.createCompoundBorder(
+                                    javax.swing.BorderFactory.createLineBorder(borderColor, 1),
+                                    javax.swing.BorderFactory.createEmptyBorder(2, 5, 2, 5))
+                            : javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6);
+                    b.setBorder(badgeBorder);
+                }
             }
         }
         applyBadgeHighlights();
@@ -206,6 +222,37 @@ public final class Gui {
                 && chart.getSubtitles().contains(modifiedSubtitle)) {
             modifiedSubtitle.setPaint(BADGE_STALE_BG);
         }
+    }
+
+    /** Returns the effective badge border color for one badge index. */
+    private static Color resolveBadgeBorderColor(ThemeDefinition def, int index, Color fg) {
+        Color border = def.cycleBadgeBorderColors()
+                ? (index % 2 == 0 ? def.badgeEvenBorderColor() : def.badgeOddBorderColor())
+                : def.badgeBorderColor();
+        if (border != null) return border;
+        if (def.cycleBadgeBorderColors() && def.badgeBorderColor() != null) {
+            return def.badgeBorderColor();
+        }
+        if (!def.useGeneratedBadgeBorderWhenUnset()) return null;
+        return generateRecommendedBadgeBorder(fg);
+    }
+
+    /**
+     * Experimental border recommendation: derive a slightly darker, less saturated
+     * version of the text color for better edge separation without stealing focus.
+     */
+    static Color generateRecommendedBadgeBorder(Color textColor) {
+        if (textColor == null) return null;
+        float[] hsb = Color.RGBtoHSB(textColor.getRed(), textColor.getGreen(), textColor.getBlue(), null);
+        float sat = clamp01(hsb[1] * 0.85f);
+        float bri = clamp01(hsb[2] * 0.72f);
+        int rgb = Color.HSBtoRGB(hsb[0], sat, bri);
+        Color c = new Color(rgb);
+        return new Color(c.getRed(), c.getGreen(), c.getBlue(), Math.min(255, textColor.getAlpha()));
+    }
+
+    private static float clamp01(float v) {
+        return Math.max(0f, Math.min(1f, v));
     }
     // lazy-init singleton — created on first access after the LAF is applied
     private static AdvancedOptionsFrame advancedFrame = null;
