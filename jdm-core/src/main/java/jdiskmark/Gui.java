@@ -182,6 +182,16 @@ public final class Gui {
         BADGE_STALE_FG   = def.badgeStaleFg();
 
         if (chartBadgeList != null) {
+            javax.swing.border.Border sharedBorder = null;
+            if (!def.cycleBadgeBorderColors() && !def.useGeneratedBadgeBorderWhenUnset()) {
+                Color borderColor = def.badgeBorderColor();
+                sharedBorder = (borderColor != null)
+                        ? javax.swing.BorderFactory.createCompoundBorder(
+                                javax.swing.BorderFactory.createLineBorder(borderColor, 1),
+                                javax.swing.BorderFactory.createEmptyBorder(2, 5, 2, 5))
+                        : javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6);
+            }
+
             for (int i = 0; i < chartBadgeList.size(); i++) {
                 javax.swing.JLabel b = chartBadgeList.get(i);
                 b.setBackground(BADGE_DEFAULT_BG);
@@ -193,13 +203,17 @@ public final class Gui {
                 }
                 b.setForeground(fg);
 
-                Color borderColor = resolveBadgeBorderColor(def, i, fg);
-                javax.swing.border.Border badgeBorder = (borderColor != null)
-                        ? javax.swing.BorderFactory.createCompoundBorder(
-                                javax.swing.BorderFactory.createLineBorder(borderColor, 1),
-                                javax.swing.BorderFactory.createEmptyBorder(2, 5, 2, 5))
-                        : javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6);
-                b.setBorder(badgeBorder);
+                if (sharedBorder != null) {
+                    b.setBorder(sharedBorder);
+                } else {
+                    Color borderColor = resolveBadgeBorderColor(def, i, fg);
+                    javax.swing.border.Border badgeBorder = (borderColor != null)
+                            ? javax.swing.BorderFactory.createCompoundBorder(
+                                    javax.swing.BorderFactory.createLineBorder(borderColor, 1),
+                                    javax.swing.BorderFactory.createEmptyBorder(2, 5, 2, 5))
+                            : javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6);
+                    b.setBorder(badgeBorder);
+                }
             }
         }
         applyBadgeHighlights();
@@ -216,6 +230,9 @@ public final class Gui {
                 ? (index % 2 == 0 ? def.badgeEvenBorderColor() : def.badgeOddBorderColor())
                 : def.badgeBorderColor();
         if (border != null) return border;
+        if (def.cycleBadgeBorderColors() && def.badgeBorderColor() != null) {
+            return def.badgeBorderColor();
+        }
         if (!def.useGeneratedBadgeBorderWhenUnset()) return null;
         return generateRecommendedBadgeBorder(fg);
     }

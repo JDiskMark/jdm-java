@@ -379,7 +379,10 @@ badgeStaleBg   = ORANGE_DARK
 badgeStaleFg   = Color.WHITE
 badgeDefaultBg = BADGE_BG      (#261139)
 badgeDefaultFg = PURPLE
-badgeBorder    = 1px ORANGE outline + 2/5/2/5 padding
+badgeBorder    = generated (auto-derived from per-badge fg)
+cycleBadgeBorderColors = true
+   even index -> generated from ORANGE fg
+   odd index  -> generated from PURPLE fg
 cycleBadgeColors = true
    even index -> ORANGE
    odd index  -> PURPLE

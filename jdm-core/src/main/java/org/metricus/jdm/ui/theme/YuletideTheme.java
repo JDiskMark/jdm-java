@@ -27,7 +27,6 @@ public final class YuletideTheme implements ThemeDefinition {
     private static final Color PINE_PRESS   = new Color(0x123723);
     private static final Color TAB_HOVER    = new Color(0xEEF6EF);
 
-    private static final String HEX_PINE = "#1D5A3A";
     private static final String HEX_HOLLY = "#9F1F2E";
     private static final String HEX_BG = "#F8FCF8";
     private static final String HEX_TEXT = "#1B2E22";

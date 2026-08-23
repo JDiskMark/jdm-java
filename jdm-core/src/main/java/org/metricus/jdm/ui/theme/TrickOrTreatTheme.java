@@ -48,7 +48,7 @@ public final class TrickOrTreatTheme implements ThemeDefinition {
         extras.put("@accentColor", HEX_ORANGE);
         extras.put("@background", HEX_BG);
         extras.put("@foreground", HEX_FG);
-        extras.put("TitlePane.foreground", "#EBDCFD");
+        extras.put("TitlePane.foreground", HEX_FG);
         return extras;
     }
 
