@@ -95,8 +95,17 @@ public class BenchmarkConfig {
     boolean gcHintsEnabled = false;
     public boolean getGcHintsEnabled() { return gcHintsEnabled; }
     public void setGcHintsEnabled(boolean enable) { gcHintsEnabled = enable; }
-    
+
+    @Column
+    String devicePath;
+    public String getDevicePath() { return devicePath; }
+    public void setDevicePath(String path) { devicePath = path; }
+
     public BenchmarkConfig() {}
+
+    public boolean isDriveRead() {
+        return ioEngine == App.IoEngine.DRIVE_READ;
+    }
     
     public boolean hasReadOperation() {
         return benchmarkType == Benchmark.BenchmarkType.READ || benchmarkType == Benchmark.BenchmarkType.READ_WRITE;

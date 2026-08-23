@@ -38,6 +38,7 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
     private JComboBox<RenderFrequencyMode> renderModeCombo;
     private JRadioButton ioModernRadio;
     private JRadioButton ioLegacyRadio;
+    private JRadioButton ioDriveReadRadio;
     private JCheckBox gcHintsCheckBox;
     private JCheckBox gcRetryCheckBox;
     private JCheckBox autoDeleteCheckBox;
@@ -88,15 +89,25 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
         ButtonGroup ioGroup = new ButtonGroup();
         ioModernRadio = new JRadioButton("Modern (FFM API)");
         ioLegacyRadio = new JRadioButton("Legacy (RandomAccessFile)");
+        ioDriveReadRadio = new JRadioButton("Drive Read (Raw Device)");
         ioGroup.add(ioModernRadio);
         ioGroup.add(ioLegacyRadio);
+        ioGroup.add(ioDriveReadRadio);
 
         ioModernRadio.addActionListener(e -> applyIoEngine(App.IoEngine.MODERN));
         ioLegacyRadio.addActionListener(e -> applyIoEngine(App.IoEngine.LEGACY));
+        ioDriveReadRadio.addActionListener(e -> applyIoEngine(App.IoEngine.DRIVE_READ));
+
+        boolean isAdmin = DriveReader.isRunningAsAdmin();
+        ioDriveReadRadio.setEnabled(isAdmin);
+        if (!isAdmin) {
+            ioDriveReadRadio.setToolTipText("Requires admin/root privileges");
+        }
 
         content.add(new JLabel("IO Engine:"));
         content.add(ioModernRadio);
         content.add(ioLegacyRadio, "skip 1, gapy 0 4");
+        content.add(ioDriveReadRadio, "skip 1, gapy 0 4");
 
         // ---- separator ----------------------------------------------------
         content.add(new JSeparator(), "span 2, growx, gapy 4 4");
@@ -165,6 +176,7 @@ public class AdvancedOptionsFrame extends javax.swing.JFrame {
         switch (App.ioEngine) {
             case MODERN -> ioModernRadio.setSelected(true);
             case LEGACY -> ioLegacyRadio.setSelected(true);
+            case DRIVE_READ -> ioDriveReadRadio.setSelected(true);
         }
 
         gcHintsCheckBox.setSelected(GcDetector.gcHintsEnabled);

@@ -86,7 +86,8 @@ public class App {
     // io api, modern introduced w jdk 25 lts
     public enum IoEngine {
         MODERN("Modern (FFM API)"),
-        LEGACY("Legacy (RandomAccessFile)");
+        LEGACY("Legacy (RandomAccessFile)"),
+        DRIVE_READ("Drive Read (Raw Device)");
 
         private final String display;
 
@@ -831,6 +832,9 @@ public class App {
         config.gcHintsEnabled = GcDetector.gcHintsEnabled;
         config.multiFileEnabled = multiFile;
         config.testDir = dataDir.getAbsolutePath();
+        if (ioEngine == IoEngine.DRIVE_READ) {
+            config.devicePath = DriveReader.resolveDevicePath(dataDir.toPath());
+        }
         return config;
     }
 

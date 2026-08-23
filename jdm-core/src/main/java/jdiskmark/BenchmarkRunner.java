@@ -97,7 +97,9 @@ public class BenchmarkRunner {
         long rUnitsTotal = config.hasReadOperation() ? blocksPerPhase : 0L;
 
         // #132 Handle the Read-Preparation phase for Read-Only benchmarks
-        if (config.benchmarkType == Benchmark.BenchmarkType.READ) {
+        // Drive-read mode skips file generation entirely
+        if (config.benchmarkType == Benchmark.BenchmarkType.READ
+                && !config.isDriveRead()) {
             // We set wUnitsTotal to blocksPerPhase because prepareRead() 
             // calls updateWriteProgress()
             wUnitsTotal = blocksPerPhase;
@@ -187,10 +189,12 @@ public class BenchmarkRunner {
         
         // Execution Loops
         if (config.hasWriteOperation()) {
+            // DRIVE_READ never writes to raw devices; fall back to MODERN write path
             runOperation(benchmark, IOMode.WRITE, tRanges);
             listener.onOperationComplete();
-        } else if (config.hasReadOperation()) {
+        } else if (config.hasReadOperation() && !config.isDriveRead()) {
             // #132 this is a read without a write so we need to generate files
+            // Drive-read mode skips file generation entirely
             runReadPreparation(tRanges);
         }
         
@@ -200,8 +204,9 @@ public class BenchmarkRunner {
         // 1. not cancelled
         // 2. read operation
         // 3. direct I/O not enabled (direct I/O bypasses cache on all platforms)
+        // 4. not drive-read mode (raw device reads bypass filesystem cache)
         if (!listener.isCancelled() && config.hasReadOperation() &&
-                !config.getDirectIoEnabled()) {
+                !config.getDirectIoEnabled() && !config.isDriveRead()) {
             listener.attemptCacheDrop();
         }
         
@@ -229,6 +234,7 @@ public class BenchmarkRunner {
         List<Future<?>> futures = new ArrayList<>();
 
         // use action to avoid adding a field in sample object
+        final DriveReader driveReader = config.isDriveRead() ? new DriveReader() : null;
         final IOAction ioAction = switch (config.ioEngine) {
             case LEGACY -> switch (mode) {
                 case WRITE -> (s) -> s.measureWriteLegacy(blockSize, config.numBlocks, blockArr, this);
@@ -237,6 +243,10 @@ public class BenchmarkRunner {
             case MODERN -> switch (mode) {
                 case WRITE -> (s) -> s.measureWrite(blockSize, config.numBlocks, this);
                 case READ -> (s) -> s.measureRead(blockSize, config.numBlocks, this);
+            };
+            case DRIVE_READ -> switch (mode) {
+                case WRITE -> (s) -> s.measureWrite(blockSize, config.numBlocks, this);
+                case READ -> (s) -> driveReader.measureRead(s, blockSize, config.numBlocks, this);
             };
         };
         
@@ -375,6 +385,9 @@ public class BenchmarkRunner {
         op.numThreads = config.numThreads;
         if (mode == IOMode.WRITE) {
             op.setWriteSyncEnabled(config.writeSyncEnabled);
+        }
+        if (mode == IOMode.READ) {
+            op.setDriveReadEnabled(config.isDriveRead());
         }
         b.getOperations().add(op);
         return op;

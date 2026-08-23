@@ -382,6 +382,11 @@ public final class MainFrame extends javax.swing.JFrame {
                 directIoCbMenuItem.setEnabled(false);
                 sectorAlignmentMenu.setEnabled(false);
             }
+            case DRIVE_READ -> {
+                // Drive-read uses FFM API internally; direct IO and alignment apply
+                directIoCbMenuItem.setEnabled(true);
+                sectorAlignmentMenu.setEnabled(true);
+            }
         }
         writeSyncCheckBoxMenuItem.setSelected(App.writeSyncEnable);
         directIoCbMenuItem.setSelected(App.directEnable);

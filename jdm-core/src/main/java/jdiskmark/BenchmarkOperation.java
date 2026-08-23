@@ -77,6 +77,9 @@ public class BenchmarkOperation implements Serializable {
     // NEW: whether write-sync was enabled for this run (only meaningful for WRITE; may be null for READ)
     @Column
     Boolean writeSyncEnabled;
+    // whether drive-read (raw device) was used for this run (only meaningful for READ; may be null for WRITE)
+    @Column
+    Boolean driveReadEnabled;
     
     // timestamps
     @Convert(converter = LocalDateTimeAttributeConverter.class)
@@ -142,6 +145,10 @@ public class BenchmarkOperation implements Serializable {
         // Show "Write*" when write-sync was enabled for a WRITE run
         if (ioMode == IOMode.WRITE && Boolean.TRUE.equals(getWriteSyncEnabled())) {
             return "Write*";
+        }
+        // Show "Read (Drive)" when drive-read (raw device) was used for a READ run
+        if (ioMode == IOMode.READ && Boolean.TRUE.equals(getDriveReadEnabled())) {
+            return "Read (Drive)";
         }
         return (ioMode == null) ? "" : ioMode.toString(); // "Read", "Write", "Read & Write"
     }
@@ -215,6 +222,14 @@ public class BenchmarkOperation implements Serializable {
 
     public void setWriteSyncEnabled(Boolean writeSyncEnabled) {
         this.writeSyncEnabled = writeSyncEnabled;
+    }
+
+    public Boolean getDriveReadEnabled() {
+        return driveReadEnabled;
+    }
+
+    public void setDriveReadEnabled(Boolean driveReadEnabled) {
+        this.driveReadEnabled = driveReadEnabled;
     }
 
     // primary results
