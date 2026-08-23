@@ -23,6 +23,9 @@ public class BenchmarkDriveInfo {
     double totalGb;
     @JsonSerialize(using = RoundingSerializer.class)
     public double getTotalGb() { return totalGb; }
+    @Column
+    String driveInterface = null;
+    public String getDriveInterface() { return driveInterface; }
     
     public BenchmarkDriveInfo() {}
 }

@@ -181,6 +181,42 @@ public class Util {
         return "OS not supported";
     }
     
+    /**
+     * Get the storage bus interface (NVMe, SATA, USB, etc.) for the drive
+     * the path is mapped to. Returns null if the interface cannot be
+     * determined.
+     *
+     * @param dataDir the data directory being used in the run.
+     * @return interface string (e.g. "NVMe", "SATA", "USB") or null
+     */
+    public static String getDriveInterface(File dataDir) {
+        Path dataDirPath = Paths.get(dataDir.getAbsolutePath());
+        String iface = null;
+        try {
+            if (App.isLinux()) {
+                String partition = UtilOs.getPartitionFromFilePathLinux(dataDirPath);
+                if (partition != null) {
+                    List<String> deviceNames = UtilOs.getDeviceNamesFromPartitionLinux(partition);
+                    String devicePath = deviceNames.isEmpty()
+                            ? partition
+                            : "/dev/" + deviceNames.getFirst();
+                    iface = UtilOs.getDriveInterfaceLinux(devicePath);
+                }
+            } else if (App.isMacOs()) {
+                String devicePath = UtilsMacOs.getDeviceFromPath(dataDirPath);
+                iface = UtilsMacOs.getDriveInterfaceMacOs(devicePath);
+            } else if (App.isWindows()) {
+                String driveLetter = dataDirPath.getRoot().toFile().toString().split(":")[0];
+                if (driveLetter.length() == 1 && Character.isLetter(driveLetter.charAt(0))) {
+                    iface = UtilOs.getDriveInterfaceWindows(driveLetter);
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Could not detect drive interface: " + e.getMessage());
+        }
+        return iface;
+    }
+    
     /*
      * Example input win11 (english):
      *
