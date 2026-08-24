@@ -155,17 +155,29 @@ public final class UtilsMacOs {
             pb.redirectErrorStream(true);
             Process process = pb.start();
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.contains("Protocol:")) {
-                    String protocol = line.split("Protocol:")[1].trim();
-                    // Normalise common macOS protocol values
-                    if (protocol.contains("PCI-Express") || protocol.contains("PCI")) {
-                        return "NVMe";
+            String protocol = null;
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.contains("Protocol:")) {
+                        protocol = line.split("Protocol:")[1].trim();
+                        break;
                     }
-                    return protocol;
                 }
+            }
+
+            try {
+                process.waitFor();
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+            }
+
+            if (protocol != null) {
+                // Normalise common macOS protocol values
+                if (protocol.contains("PCI-Express") || protocol.contains("PCI")) {
+                    return "NVMe";
+                }
+                return protocol;
             }
         } catch (IOException e) {
             LOGGER.log(Level.WARNING, "Could not detect drive interface on macOS", e);
