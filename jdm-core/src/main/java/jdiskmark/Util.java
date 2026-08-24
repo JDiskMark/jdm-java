@@ -197,10 +197,22 @@ public class Util {
                 String partition = UtilOs.getPartitionFromFilePathLinux(dataDirPath);
                 if (partition != null) {
                     List<String> deviceNames = UtilOs.getDeviceNamesFromPartitionLinux(partition);
-                    String devicePath = deviceNames.isEmpty()
-                            ? partition
-                            : "/dev/" + deviceNames.getFirst();
-                    iface = UtilOs.getDriveInterfaceLinux(devicePath);
+                    if (deviceNames.size() > 1) {
+                        StringBuilder sb = new StringBuilder();
+                        for (String dName : deviceNames) {
+                            String dIface = UtilOs.getDriveInterfaceLinux("/dev/" + dName);
+                            if (dIface != null) {
+                                if (sb.length() > 0) sb.append(":");
+                                sb.append(dIface);
+                            }
+                        }
+                        iface = (sb.length() > 0) ? "Multiple drives: " + sb : null;
+                    } else {
+                        String devicePath = deviceNames.isEmpty()
+                                ? partition
+                                : "/dev/" + deviceNames.getFirst();
+                        iface = UtilOs.getDriveInterfaceLinux(devicePath);
+                    }
                 }
             } else if (App.isMacOs()) {
                 String devicePath = UtilsMacOs.getDeviceFromPath(dataDirPath);
