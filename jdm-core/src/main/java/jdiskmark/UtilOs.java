@@ -209,7 +209,7 @@ public class UtilOs {
      * Get the storage bus interface for a Windows drive letter using
      * PowerShell's Get-Partition / Get-Disk pipeline.
      *
-     * <p>Returns the BusType string from {@code Get-PhysicalDisk}, e.g.
+     * <p>Returns the BusType string from {@code Get-Disk}, e.g.
      * {@code NVMe}, {@code SATA}, {@code USB}, {@code RAID}, {@code SAS}.
      *
      * @param driveLetter single drive letter (e.g. "C")
@@ -1393,4 +1393,4 @@ public class UtilOs {
         return null;
     }
 }
-
+
