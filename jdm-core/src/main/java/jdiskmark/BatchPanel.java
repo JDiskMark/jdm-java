@@ -633,6 +633,11 @@ public class BatchPanel extends JPanel {
                 activeLabel.setText("Batch complete");
                 showResults(e.finalResult());
             }
+            case BatchEvent.BatchCancelled e -> {
+                activeLabel.setText("Batch cancelled");
+                showResults(e.partialResult());
+                App.msg("Batch cancelled — partial results shown");
+            }
         }
     }
 

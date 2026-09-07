@@ -87,18 +87,22 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
             }
         }
 
-        if (App.sharePortal) {
-            for (BatchResult.RunResult rr : batchResult.getSuccessfulResults()) {
-                CompletableFuture.runAsync(() -> Portal.upload(rr.benchmark()))
-                    .exceptionally(ex -> {
-                        App.err("Batch portal upload error: " + ex.getMessage());
-                        return null;
-                    });
-            }
-        }
-
         batchResult.recordEndTime();
-        publish(new BatchEvent.BatchCompleted(batchResult));
+
+        if (isCancelled()) {
+            publish(new BatchEvent.BatchCancelled(batchResult));
+        } else {
+            if (App.sharePortal) {
+                for (BatchResult.RunResult rr : batchResult.getSuccessfulResults()) {
+                    CompletableFuture.runAsync(() -> Portal.upload(rr.benchmark()))
+                        .exceptionally(ex -> {
+                            App.err("Batch portal upload error: " + ex.getMessage());
+                            return null;
+                        });
+                }
+            }
+            publish(new BatchEvent.BatchCompleted(batchResult));
+        }
         return batchResult;
     }
 
@@ -183,10 +187,11 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
 
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Batch benchmark failed for " + drive + " / " + profile.getName(), e);
+            String err = (e.getMessage() == null || e.getMessage().isBlank()) ? e.toString() : e.getMessage();
             return new BatchResult.RunResult(drive, driveModel, profile, null,
                     isRetry ? BatchResult.DriveStatus.RETRIED_THEN_SKIPPED
                             : BatchResult.DriveStatus.SKIPPED,
-                    e.getMessage());
+                    err);
         } finally {
             File dataDir = new File(drive.getAbsolutePath() + File.separator + App.DATADIRNAME);
             if (dataDir.exists()) {

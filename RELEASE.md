@@ -18,7 +18,7 @@ git checkout -b release/<version>
 
 ## Update pom to target release
 
-update `jdm-java/pom.xml` version and `` to reflect the release version
+update `pom.xml` version to reflect the release version
 
 ## Create release artifacts on GitHub
 
