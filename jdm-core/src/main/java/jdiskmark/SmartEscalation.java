@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -12,11 +13,11 @@ import java.util.logging.Logger;
  * Runs {@code smartctl} in a persistent elevated PowerShell agent on Windows,
  * prompting for UAC elevation only once per session.
  *
- * <p>On the first call a {@code -File} PowerShell script is written to
- * {@code %LOCALAPPDATA%\JDiskMark\smart-agent.ps1} and launched elevated via
- * {@code Start-Process -Verb RunAs}. Subsequent calls reuse the running agent
- * by dropping a {@code smart-req-<device>.txt} request file and polling for
- * the corresponding {@code smart-ipc-<device>.json} result file.
+ * <p>On the first call the static {@code smart-agent.ps1} installed alongside
+ * {@code smartctl.exe} (in {@code Program Files}, admin-write-only) is launched
+ * elevated via {@code Start-Process -Verb RunAs}. Subsequent calls reuse the
+ * running agent by dropping a {@code smart-req-<device>.txt} request file and
+ * polling for the corresponding {@code smart-ipc-<device>.json} result file.
  *
  * <p>The agent probes device paths in two passes:
  * <ol>
@@ -29,8 +30,12 @@ import java.util.logging.Logger;
  * drive identity, firmware, and serial number.
  *
  * <p>Both the elevated agent and the non-elevated main process share the same
- * {@code %LOCALAPPDATA%} path because they run under the same Windows user
- * account (just different privilege tokens).
+ * IPC directory because they run under the same Windows user account (just
+ * different privilege tokens).
+ *
+ * <p>The IPC directory is version-scoped: {@code ~\.jdm\<version>\smart-ipc}
+ * ({@link App#APP_CACHE_DIR_NAME} + {@code /smart-ipc}), so side-by-side
+ * installs of different versions do not interfere with each other.
  */
 public class SmartEscalation {
 
@@ -133,18 +138,30 @@ public class SmartEscalation {
             Path stopFile = ipcDir.resolve("smart-agent-stop.txt");
             Files.deleteIfExists(stopFile);
 
-            String ipcPs  = ipcDir.toString().replace("'", "''");
-            String sctlPs = smartctlPath.replace("'", "''");
-            String script = buildAgentScript(sctlPs, ipcPs);
+            Path agentScript = resolveAgentScript(smartctlPath);
+            if (agentScript == null) {
+                LOGGER.warning("SmartEscalation: smart-agent.ps1 not found alongside smartctl.exe — cannot elevate");
+                return false;
+            }
 
-            Path scriptFile = ipcDir.resolve("smart-agent.ps1");
-            Files.writeString(scriptFile, script, StandardCharsets.UTF_8);
-            String scriptPs = scriptFile.toString().replace("'", "''");
+            // Build the inner PS invocation and Base64-encode it (UTF-16LE is
+            // required by PowerShell -EncodedCommand). Encoding embeds all paths
+            // inside the Base64 blob so spaces and special chars in any path never
+            // reach Start-Process argument-list parsing.
+            String innerCmd = "& '"
+                    + agentScript.toString().replace("'", "''")
+                    + "' -SmartctlPath '"
+                    + smartctlPath.replace("'", "''")
+                    + "' -IpcDir '"
+                    + ipcDir.toString().replace("'", "''")
+                    + "'";
+            String b64 = Base64.getEncoder().encodeToString(
+                    innerCmd.getBytes(StandardCharsets.UTF_16LE));
 
             String outerCmd = "Start-Process powershell"
                     + " -Verb RunAs"
                     + " -WindowStyle Hidden"
-                    + " -ArgumentList '-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \\\"" + scriptPs + "\\\"'";
+                    + " -ArgumentList @('-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-EncodedCommand','" + b64 + "')";
 
             LOGGER.info("SmartEscalation: launching persistent elevated agent via UAC...");
             ProcessBuilder pb = new ProcessBuilder("powershell", "-NoProfile", "-Command", outerCmd);
@@ -187,72 +204,20 @@ public class SmartEscalation {
     }
 
     /**
-     * Builds the PowerShell agent script.
-     * Pass 1: /dev/pdN and pdN. Pass 2: Win32 path with plain, -d nvme, -d sat.
-     * Falls back to best error-JSON if all paths fail to open the device.
+     * Locates the static {@code smart-agent.ps1} installed alongside
+     * {@code smartctl.exe}. Returns {@code null} if not found (e.g. running
+     * from the IDE without a packaged install).
      */
-    private static String buildAgentScript(String smartctlPs, String ipcPs) {
-        return String.join("\r\n",
-            "$ErrorActionPreference = 'Continue'",
-            "$utf8NoBom = New-Object System.Text.UTF8Encoding($false)",
-            "$ipcDir = '" + ipcPs + "'",
-            "$smartctlPath = '" + smartctlPs + "'",
-            "",
-            "Remove-Item (Join-Path $ipcDir 'smart-agent-stop.txt') -Force -ErrorAction SilentlyContinue",
-            "[System.IO.File]::WriteAllText((Join-Path $ipcDir 'smart-agent-ready.txt'), 'ready', $utf8NoBom)",
-            "",
-            "while ($true) {",
-            "    if (Test-Path (Join-Path $ipcDir 'smart-agent-stop.txt')) { break }",
-            "    $reqs = Get-ChildItem (Join-Path $ipcDir 'smart-req-*.txt') -ErrorAction SilentlyContinue",
-            "    foreach ($req in $reqs) {",
-            "        $device = (Get-Content $req.FullName -Raw -ErrorAction SilentlyContinue).Trim()",
-            "        Remove-Item $req.FullName -Force -ErrorAction SilentlyContinue",
-            "        if (-not $device) { continue }",
-            "        $outFile     = Join-Path $ipcDir \"smart-ipc-$device.json\"",
-            "        $statFile    = Join-Path $ipcDir \"smart-ipc-$device.status\"",
-            "        $written     = $false",
-            "        $fallbackOut = $null",
-            "",
-            "        # Pass 1 - simple paths",
-            "        foreach ($d in @(\"/dev/$device\", $device)) {",
-            "            $out  = & $smartctlPath --json -a $d 2>&1",
-            "            $code = $LASTEXITCODE",
-            "            $text = ($out | ForEach-Object { $_.ToString() }) -join \"`n\"",
-            "            if (-not $text.TrimStart().StartsWith('{')) { continue }",
-            "            if (($code -band 2) -ne 0) { if ($null -eq $fallbackOut) { $fallbackOut = $out }; continue }",
-            "            [System.IO.File]::WriteAllText($outFile, $text, $utf8NoBom)",
-            "            $written = $true; break",
-            "        }",
-            "",
-            "        # Pass 2 - Win32 path with NVMe/SAT hints",
-            "        if (-not $written -and $device -match '^pd(\\d+)$') {",
-            "            $win32 = \"\\\\.\\PhysicalDrive$($Matches[1])\"",
-            "            foreach ($hint in @('', '-d nvme', '-d sat')) {",
-            "                $args2 = @('--json', '-a', $win32)",
-            "                if ($hint) { $args2 += $hint.Split(' ') }",
-            "                $out  = & $smartctlPath @args2 2>&1",
-            "                $code = $LASTEXITCODE",
-            "                $text = ($out | ForEach-Object { $_.ToString() }) -join \"`n\"",
-            "                if (-not $text.TrimStart().StartsWith('{')) { continue }",
-            "                if (($code -band 2) -ne 0) { if ($null -eq $fallbackOut) { $fallbackOut = $out }; continue }",
-            "                [System.IO.File]::WriteAllText($outFile, $text, $utf8NoBom)",
-            "                $written = $true; break",
-            "            }",
-            "        }",
-            "",
-            "        # Fallback - use first error-JSON so UI has drive identity",
-            "        if (-not $written -and ($null -ne $fallbackOut)) {",
-            "            $text = ($fallbackOut | ForEach-Object { $_.ToString() }) -join \"`n\"",
-            "            [System.IO.File]::WriteAllText($outFile, $text, $utf8NoBom); $written = $true",
-            "        }",
-            "        if (-not $written) {",
-            "            [System.IO.File]::WriteAllText($statFile, 'no-json: all candidates failed', $utf8NoBom)",
-            "        }",
-            "    }",
-            "    Start-Sleep -Milliseconds 100",
-            "}"
-        );
+    private static Path resolveAgentScript(String smartctlPath) {
+        try {
+            Path script = Path.of(smartctlPath).getParent().resolve("smart-agent.ps1");
+            if (Files.isReadable(script)) return script;
+        } catch (Exception e) {
+            LOGGER.warning("SmartEscalation: resolveAgentScript failed: " + e.getMessage());
+        }
+        return null;
     }
+
 
     /** Registers a JVM shutdown hook that writes the stop file to cleanly exit the agent. */
     private static void registerShutdownHook(Path ipcDir) {
@@ -270,11 +235,9 @@ public class SmartEscalation {
         }, "smart-agent-stopper"));
     }
 
-    /** Returns the IPC directory: {@code %LOCALAPPDATA%\JDiskMark}. */
+    /** Returns the version-scoped IPC directory: {@code ~/.jdm/<version>/smart-ipc}. */
     private static Path resolveIpcDir() {
-        String base = System.getenv("LOCALAPPDATA");
-        if (base == null) base = System.getProperty("java.io.tmpdir");
-        return Path.of(base, "JDiskMark");
+        return Path.of(App.APP_CACHE_DIR_NAME, "smart-ipc");
     }
 
     private SmartEscalation() {}

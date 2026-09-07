@@ -360,7 +360,7 @@ public class Smart {
         List<List<String>> candidates = new ArrayList<>();
         candidates.add(List.of("--json", "-a", "/dev/" + deviceName));
         candidates.add(List.of("--json", "-a", deviceName));
-        if (deviceName.startsWith("pd")) {
+        if (deviceName.matches("^pd\\d+$")) {
             String win32 = "\\\\.\\PhysicalDrive" + deviceName.substring(2);
             candidates.add(List.of("--json", "-a", win32));
             candidates.add(List.of("--json", "-a", win32, "-d", "nvme"));
@@ -424,7 +424,7 @@ public class Smart {
      *       {@code smartctl} directly via {@link #getSmartDirect}.</li>
      *   <li>Otherwise, delegates to {@link SmartEscalation#runElevated} which
      *       triggers a UAC prompt and runs an elevated helper, returning the
-     *       JSON via a temp file in {@code %LOCALAPPDATA%\JDiskMark\}.</li>
+     *       JSON via the version-scoped IPC directory ({@code ~/.jdm/<version>/smart-ipc/}).</li>
      * </ul>
      *
      * <p>On <b>Linux / macOS</b>, writes the command to the persistent privileged
