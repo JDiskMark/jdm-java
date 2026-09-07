@@ -120,11 +120,12 @@ public class BenchmarkRunner {
         String driveModel = Util.getDriveModel(configDir);
         String partitionId = Util.getPartitionId(configDir.toPath());
         DiskUsageInfo usageInfo = Util.getDiskUsage(configDir.getAbsolutePath());
+        String driveInterface = Util.getDriveInterface(configDir);
 
         // Initialize Benchmark
         
         Benchmark benchmark = new Benchmark(config);
-        mapEnvironment(benchmark, driveModel, partitionId, usageInfo);
+        mapEnvironment(benchmark, driveModel, partitionId, usageInfo, driveInterface);
         // capture the render mode chosen at the time this run starts
         benchmark.setRenderMode(App.rmOption);
 
@@ -380,7 +381,7 @@ public class BenchmarkRunner {
         return op;
     }
     
-    private void mapEnvironment(Benchmark b, String model, String partId, DiskUsageInfo u) {
+    private void mapEnvironment(Benchmark b, String model, String partId, DiskUsageInfo u, String driveIface) {
         b.systemId = (App.systemId != null) ? App.systemId : "";
 
         b.systemInfo.processorName = App.processorName;
@@ -395,6 +396,7 @@ public class BenchmarkRunner {
         b.driveInfo.percentUsed = u.percentUsed;
         b.driveInfo.usedGb = u.usedGb;
         b.driveInfo.totalGb = u.totalGb;
+        b.driveInfo.driveInterface = driveIface;
     }
 
     /**

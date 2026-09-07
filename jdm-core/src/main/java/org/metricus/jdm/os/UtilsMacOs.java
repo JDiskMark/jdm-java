@@ -134,6 +134,57 @@ public final class UtilsMacOs {
         return "Model unavailable for " + deviceId;
     }
 
+    /**
+     * Returns the storage bus interface for the given macOS device path
+     * by parsing the {@code Protocol} field from {@code diskutil info}.
+     *
+     * <p>Common values: {@code PCI-Express} (NVMe), {@code SATA},
+     * {@code USB}, {@code Apple Fabric}.
+     *
+     * @param devicePath the device path (e.g. {@code /dev/disk4s1})
+     * @return the protocol string, or null if unavailable
+     */
+    public static String getDriveInterfaceMacOs(String devicePath) {
+        if (devicePath == null || devicePath.isEmpty()) {
+            return null;
+        }
+        try {
+            ProcessBuilder pb = new ProcessBuilder("diskutil", "info", devicePath);
+            Map<String, String> env = pb.environment();
+            env.put("LC_ALL", "C");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+
+            String protocol = null;
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.contains("Protocol:")) {
+                        protocol = line.split("Protocol:")[1].trim();
+                        break;
+                    }
+                }
+            }
+
+            try {
+                process.waitFor();
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+            }
+
+            if (protocol != null) {
+                // Normalise common macOS protocol values
+                if (protocol.contains("PCI-Express") || protocol.contains("PCI")) {
+                    return "NVMe";
+                }
+                return protocol;
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Could not detect drive interface on macOS", e);
+        }
+        return null;
+    }
+
     // -----------------------------------------------------------------------
     // Cache flush / drop
     // -----------------------------------------------------------------------
