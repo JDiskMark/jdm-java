@@ -175,6 +175,15 @@ public class BatchPanel extends JPanel {
         profileSelectPanel.add(profileDeselectAll);
         profileColumn.add(profileSelectPanel);
 
+        profileColumn.add(Box.createVerticalStrut(8));
+        JButton startBtn = new JButton("Start Batch");
+        startBtn.putClientProperty("FlatLaf.style", org.metricus.jdm.ui.ButtonStyles.DEFAULT_START);
+        startBtn.setPreferredSize(new Dimension(200, 45));
+        startBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+        startBtn.setAlignmentX(0);
+        startBtn.addActionListener(e -> startBatch());
+        profileColumn.add(startBtn);
+
         selectionRow.add(driveColumn);
         selectionRow.add(profileColumn);
 
@@ -200,13 +209,6 @@ public class BatchPanel extends JPanel {
         centerPanel.add(infoLabel);
 
         panel.add(centerPanel, BorderLayout.CENTER);
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton startBtn = new JButton("Start Batch");
-        startBtn.putClientProperty("FlatLaf.style", org.metricus.jdm.ui.ButtonStyles.DEFAULT_START);
-        startBtn.addActionListener(e -> startBatch());
-        buttonPanel.add(startBtn);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
 
         return panel;
     }

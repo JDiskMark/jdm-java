@@ -42,6 +42,21 @@ public class BatchReportsPanel extends JPanel {
             }
         });
 
+        // Column widths: wider Drives, compact Runs/Duration
+        javax.swing.table.TableColumnModel cm = historyTable.getColumnModel();
+        cm.getColumn(0).setPreferredWidth(110); // Date/Time
+        cm.getColumn(1).setPreferredWidth(300); // Drives
+        cm.getColumn(2).setPreferredWidth(160); // Profiles
+        cm.getColumn(3).setPreferredWidth(30);  // Runs
+        cm.getColumn(4).setPreferredWidth(50);  // Duration
+
+        // Center-align Runs and Duration columns
+        javax.swing.table.DefaultTableCellRenderer centerRenderer =
+                new javax.swing.table.DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        cm.getColumn(3).setCellRenderer(centerRenderer);
+        cm.getColumn(4).setCellRenderer(centerRenderer);
+
         add(new JScrollPane(historyTable), BorderLayout.CENTER);
     }
 
