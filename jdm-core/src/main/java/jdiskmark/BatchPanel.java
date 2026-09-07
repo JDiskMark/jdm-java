@@ -178,11 +178,13 @@ public class BatchPanel extends JPanel {
         profileColumn.add(Box.createVerticalStrut(8));
         JButton startBtn = new JButton("Start Batch");
         startBtn.putClientProperty("FlatLaf.style", org.metricus.jdm.ui.ButtonStyles.DEFAULT_START);
-        startBtn.setPreferredSize(new Dimension(200, 45));
-        startBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
-        startBtn.setAlignmentX(0);
         startBtn.addActionListener(e -> startBatch());
-        profileColumn.add(startBtn);
+        // MigLayout "h 40!" matches BenchmarkControlPanel's start button exactly, including DPI scaling.
+        JPanel startBtnWrapper = new JPanel(new net.miginfocom.swing.MigLayout("insets 0, fillx", "[grow]", "[]"));
+        startBtnWrapper.setAlignmentX(0);
+        startBtnWrapper.add(startBtn, "growx, h 40!");
+        startBtnWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, startBtnWrapper.getPreferredSize().height));
+        profileColumn.add(startBtnWrapper);
 
         selectionRow.add(driveColumn);
         selectionRow.add(profileColumn);
