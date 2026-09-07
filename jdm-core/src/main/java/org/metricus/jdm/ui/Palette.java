@@ -147,6 +147,9 @@ public enum Palette {
 
         // 8. Volatility band colours (derived from trend line colours)
         Gui.updateBandColors();
+
+        // 9. Refresh the batch chart's bar colours to match the new palette
+        if (Gui.batchPanel != null) Gui.batchPanel.refreshChartTheme();
     }
 
     // -----------------------------------------------------------------------

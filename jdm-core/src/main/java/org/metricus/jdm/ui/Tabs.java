@@ -25,6 +25,9 @@ public final class Tabs {
     /** Left-side top pane: benchmark control + chart. */
     public static final String TOP_BENCHMARK = "Benchmark";
 
+    /** Left-side top pane: batch drive survey. */
+    public static final String TOP_BATCH     = "Batch";
+
     /** Left-side top pane: SMART attribute display (Linux / macOS only). */
     public static final String TOP_SMART     = "SMART";
 
@@ -52,6 +55,9 @@ public final class Tabs {
 
     /** Bottom pane: saved SMART snapshot reports (Linux / macOS only). */
     public static final String BOTTOM_SMART_REPORTS      = "SMART Reports";
+
+    /** Bottom pane: batch run history. */
+    public static final String BOTTOM_BATCH_REPORTS      = "Batch Reports";
 
     /** Bottom pane: community portal sharing settings. */
     public static final String BOTTOM_SHARING            = "Sharing";

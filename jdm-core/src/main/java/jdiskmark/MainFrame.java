@@ -169,6 +169,14 @@ public final class MainFrame extends javax.swing.JFrame {
         // Start on the Benchmark tab — it's the primary interaction surface.
         mainTabPane.setSelectedIndex(mainTabPane.getTabCount() - 1);
 
+        // #109 Batch tab — batch drive benchmark (always available)
+        Gui.batchPanel = new BatchPanel();
+        mainTabPane.addTab(Tabs.TOP_BATCH, Gui.batchPanel);
+
+        // #109 Batch Reports — bottom tab for batch history (after All Drives)
+        Gui.batchReportsPanel = new BatchReportsPanel();
+        tabbedPane.addTab(Tabs.BOTTOM_BATCH_REPORTS, Gui.batchReportsPanel);
+
         // SMART tab — only on packaging contexts where smartctl + privilege
         // escalation work (DEB, RPM-with-smartctl, macOS, Windows).
         // Hidden inside Flatpak until host-escape support is added.
@@ -189,11 +197,14 @@ public final class MainFrame extends javax.swing.JFrame {
         Gui.mainTabPane = mainTabPane;
         Gui.bottomTabPane = tabbedPane;
 
-        // Refresh SMART Reports when its bottom-pane tab is selected.
+        // Refresh SMART Reports / Batch Reports when their bottom-pane tab is selected.
         tabbedPane.addChangeListener(e -> {
             int sel = tabbedPane.getSelectedIndex();
             if (sel >= 0 && Tabs.BOTTOM_SMART_REPORTS.equals(tabbedPane.getTitleAt(sel))) {
                 if (Gui.smartReportsPanel != null) Gui.smartReportsPanel.refresh();
+            }
+            if (sel >= 0 && Tabs.BOTTOM_BATCH_REPORTS.equals(tabbedPane.getTitleAt(sel))) {
+                if (Gui.batchReportsPanel != null) Gui.batchReportsPanel.refresh();
             }
         });
 
