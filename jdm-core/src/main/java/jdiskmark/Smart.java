@@ -11,6 +11,7 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -356,40 +357,50 @@ public class Smart {
      * @return a populated {@link Smart} instance, or {@code null} on error
      */
     private static Smart getSmartDirect(String deviceName, String smartctlPath) {
+        List<List<String>> candidates = new ArrayList<>();
+        candidates.add(List.of("--json", "-a", "/dev/" + deviceName));
+        candidates.add(List.of("--json", "-a", deviceName));
+        if (deviceName.matches("^pd\\d+$")) {
+            String win32 = "\\\\.\\PhysicalDrive" + deviceName.substring(2);
+            candidates.add(List.of("--json", "-a", win32));
+            candidates.add(List.of("--json", "-a", win32, "-d", "nvme"));
+            candidates.add(List.of("--json", "-a", win32, "-d", "sat"));
+        }
+        Smart fallback = null;
         try {
-            for (String devArg : new String[]{"/dev/" + deviceName, deviceName}) {
-                ProcessBuilder pb = new ProcessBuilder(smartctlPath, "--json", "-a", devArg);
+            for (List<String> args : candidates) {
+                List<String> cmd = new ArrayList<>();
+                cmd.add(smartctlPath);
+                cmd.addAll(args);
+                ProcessBuilder pb = new ProcessBuilder(cmd);
                 pb.redirectErrorStream(true);
                 Process p = pb.start();
-
                 StringBuilder sb = new StringBuilder();
                 try (BufferedReader reader = new BufferedReader(
                         new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
                     String line;
-                    while ((line = reader.readLine()) != null) {
-                        sb.append(line).append('\n');
-                    }
+                    while ((line = reader.readLine()) != null) sb.append(line).append('\n');
                 }
                 if (!p.waitFor(15, TimeUnit.SECONDS)) {
                     p.destroyForcibly();
-                    LOGGER.warning("getSmartDirect: smartctl timed out for: " + devArg);
-                    App.err("Smart - smartctl timed out for: " + devArg);
+                    LOGGER.warning("getSmartDirect: smartctl timed out for: " + args);
                     continue;
                 }
                 String result = sb.toString().trim();
-                if (result.isEmpty()) {
-                    LOGGER.warning("getSmartDirect: empty response for: " + devArg);
-                    App.err("Smart - empty response for: " + devArg);
-                    continue;
-                }
-                if (!result.startsWith("{")) {
-                    LOGGER.warning("getSmartDirect: non-JSON response for " + devArg + ": " + result);
-                    App.err("Smart - non-JSON response for: " + devArg);
+                if (result.isEmpty() || !result.startsWith("{")) continue;
+                if ((p.exitValue() & 2) != 0) {
+                    LOGGER.info("getSmartDirect: device open failed (exit " + p.exitValue() + ") for: " + args);
+                    if (fallback == null) fallback = fromJson(result);
                     continue;
                 }
                 Smart smart = fromJson(result);
                 logSmart(smart);
                 return smart;
+            }
+            if (fallback != null) {
+                LOGGER.warning("getSmartDirect: all candidates failed; using error response for: " + deviceName);
+                logSmart(fallback);
+                return fallback;
             }
             LOGGER.severe("getSmartDirect: all attempts failed for: " + deviceName);
             App.err("Smart - all attempts failed for: " + deviceName);
@@ -399,7 +410,7 @@ public class Smart {
             App.err("Smart - interrupted for: " + deviceName);
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, "getSmartDirect failed for: " + deviceName, ex);
-            App.err("Smart - failed for: " + deviceName + " — " + ex.getMessage());
+            App.err("Smart - failed for: " + deviceName + " \u2014 " + ex.getMessage());
         }
         return null;
     }
@@ -413,7 +424,7 @@ public class Smart {
      *       {@code smartctl} directly via {@link #getSmartDirect}.</li>
      *   <li>Otherwise, delegates to {@link SmartEscalation#runElevated} which
      *       triggers a UAC prompt and runs an elevated helper, returning the
-     *       JSON via a temp file in {@code %LOCALAPPDATA%\JDiskMark\}.</li>
+     *       JSON via the version-scoped IPC directory ({@code ~/.jdm/<version>/smart-ipc/}).</li>
      * </ul>
      *
      * <p>On <b>Linux / macOS</b>, writes the command to the persistent privileged

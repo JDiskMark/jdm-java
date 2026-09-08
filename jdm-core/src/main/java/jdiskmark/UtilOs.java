@@ -205,6 +205,85 @@ public class UtilOs {
         return null;
     }
     
+    /**
+     * Get the storage bus interface for a Windows drive letter using
+     * PowerShell's Get-Partition / Get-Disk pipeline.
+     *
+     * <p>Returns the BusType string from {@code Get-Disk}, e.g.
+
+     * {@code NVMe}, {@code SATA}, {@code USB}, {@code RAID}, {@code SAS}.
+     *
+     * @param driveLetter single drive letter (e.g. "C")
+     * @return the bus type string, or null if unavailable
+     */
+    public static String getDriveInterfaceWindows(String driveLetter) {
+        driveLetter = driveLetter.toUpperCase();
+        try {
+            // Get-Partition maps a drive letter to a DiskNumber,
+            // then Get-Disk gives us the BusType.
+            String script = String.format(
+                    "Get-Partition -DriveLetter %s | Get-Disk | Select-Object -ExpandProperty BusType",
+                    driveLetter);
+            ProcessBuilder pb = new ProcessBuilder("powershell", "-NoProfile",
+                    "-ExecutionPolicy", "Bypass", "-Command", script);
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    if (!line.isEmpty()) {
+                        return line;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Could not detect drive interface on Windows", e);
+        }
+        return null;
+    }
+    
+    /**
+     * Get the storage transport for a Linux device using {@code lsblk --output TRAN}.
+     *
+     * <p>Returns values like {@code sata}, {@code nvme}, {@code usb}, or null.
+     *
+     * @param devicePath the device path (e.g. "/dev/sda", "/dev/nvme0n1")
+     * @return the transport string, or null if unavailable
+     */
+    public static String getDriveInterfaceLinux(String devicePath) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    "lsblk", devicePath, "--nodeps", "--noheadings", "--output", "TRAN");
+            Map<String, String> env = pb.environment();
+            env.put("LC_ALL", "C");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    if (!line.isEmpty()) {
+                        // Normalise common values
+                        switch (line.toLowerCase()) {
+                            case "nvme": return "NVMe";
+                            case "sata": return "SATA";
+                            case "usb":  return "USB";
+                            case "sas":  return "SAS";
+                            case "spi":  return "SPI";
+                            default:     return line;
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Could not detect drive interface on Linux", e);
+        }
+        return null;
+    }
+    
     public static DiskUsageInfo getCapacityWindows(String driveLetter) {
         File capacityPsFile = new File(CAPACITY_PS_FILENAME);
         if (!capacityPsFile.exists()) {
@@ -1315,4 +1394,4 @@ public class UtilOs {
         return null;
     }
 }
-
+

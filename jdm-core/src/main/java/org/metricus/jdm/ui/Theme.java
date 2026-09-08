@@ -7,6 +7,8 @@ import org.metricus.jdm.ui.theme.LightTheme;
 import org.metricus.jdm.ui.theme.OldGloryTheme;
 import org.metricus.jdm.ui.theme.HarvestTheme;
 import org.metricus.jdm.ui.theme.SakuraTheme;
+import org.metricus.jdm.ui.theme.TrickOrTreatTheme;
+import org.metricus.jdm.ui.theme.YuletideTheme;
 
 /**
  * Available window themes (look-and-feel configurations).
@@ -22,7 +24,9 @@ public enum Theme {
     DARCULA("Darcula", new DarculaTheme()),
     OLD_GLORY("Old Glory", new OldGloryTheme()),
     SAKURA("Sakura", new SakuraTheme()),
-    HARVEST("Harvest", new HarvestTheme());
+    HARVEST("Harvest", new HarvestTheme()),
+    TRICK_OR_TREAT("Trick or Treat", new TrickOrTreatTheme()),
+    YULETIDE("Yuletide", new YuletideTheme());
 
     private final String displayName;
     private final ThemeDefinition definition;

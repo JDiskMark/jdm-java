@@ -556,6 +556,12 @@
                                             <condition><not><isset property="smartctl.staged.ok"/></not></condition>
                                         </fail>
                                         <echo message="[smartctl] staged OK: ${project.build.directory}/smartctl/smartctl.exe"/>
+                                        <!-- Copy the static agent script alongside smartctl.exe.
+                                             jpackage bundles app/smartctl/ into Program Files (admin-write-only),
+                                             which is where resolveAgentScript() looks for it. -->
+                                        <copy file="${project.basedir}/src/main/resources/smartctl/smart-agent.ps1"
+                                              todir="${project.build.directory}/smartctl" overwrite="true"/>
+                                        <echo message="[smartctl] smart-agent.ps1 staged OK"/>
                                     </target>
                                 </configuration>
                             </execution>
