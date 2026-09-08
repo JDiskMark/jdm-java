@@ -14,6 +14,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - #213 usb support macos
 - #207 drive capacity check
 - #11 nvme smart err reporting
+- #59 persist smart elevated session windows
+- #109 batch mode
+- #218 system id - claim portal benchmarks
+- #215 holiday themes
 
 ## [0.8.0] — 2026-08-01
 
