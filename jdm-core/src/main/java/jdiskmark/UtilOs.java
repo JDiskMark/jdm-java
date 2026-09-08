@@ -381,7 +381,7 @@ public class UtilOs {
                     System.err.println("devName=" + line);
                 }
                 if (!line.trim().isEmpty()) {
-                    deviceNames.add(line);
+                    deviceNames.add(line.trim());
                 }
             }
         } catch (IOException e) {

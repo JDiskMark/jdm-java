@@ -136,7 +136,8 @@ public class Util {
             
             // handle whole-disk filesystem (no partition table) — pkname is empty
             if (deviceNames.isEmpty()) {
-                return UtilOs.getVendorModelLinux(partition);
+                String vendorModel = UtilOs.getVendorModelLinux(partition);
+                return vendorModel != null ? vendorModel : ERROR_DRIVE_INFO;
             }
             
             // handle single physical drive
