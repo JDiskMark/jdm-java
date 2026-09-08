@@ -415,21 +415,27 @@ public class UtilOs {
             ProcessBuilder pb = new ProcessBuilder("df", "-k", path.toString());
             Map<String, String> env = pb.environment();
             env.put("LC_ALL", "C"); // set language to english
-            pb.redirectErrorStream(true);
             Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
-            String curPartition;
+            String curPartition = null;
             while ((line = reader.readLine()) != null) {
                 if (App.verbose) {
                     System.out.println("curLine=" + line);
                 }
                 if (line.contains("/dev/")) {
                     curPartition = line.split(" ")[0];
-                    return curPartition;
+                    break;
                 }
             }
-        } catch (IOException e) {
+            int exitCode = process.waitFor();
+            if (exitCode == 0 && curPartition != null) {
+                return curPartition;
+            }
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             LOGGER.log(Level.SEVERE, null, e);
         }
         return null;
@@ -450,7 +456,6 @@ public class UtilOs {
             ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "pkname", partition);
             Map<String, String> env = pb.environment();
             env.put("LC_ALL", "C"); // set language to english
-            pb.redirectErrorStream(true);
             Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             // detect multiple lines and if so indicate it is an LVM
@@ -463,7 +468,14 @@ public class UtilOs {
                     deviceNames.add(line.trim());
                 }
             }
-        } catch (IOException e) {
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                deviceNames.clear();
+            }
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             LOGGER.log(Level.SEVERE, null, e);
         }
         return deviceNames;
