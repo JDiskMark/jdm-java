@@ -41,7 +41,7 @@
              format — no letters, no -SNAPSHOT. This is an MSI format restriction, not
              jpackage itself. Linux packages (DEB/RPM) can use the full project.version.
              Update this alongside project.version when cutting a release. -->
-        <msi.version>0.9.0</msi.version>
+        <msi.version>0.9.0-rc1</msi.version>
         <app.title>${app.name} ${project.version}</app.title>
         <release.dir>${pkg.name}-${msi.version}</release.dir>
 
