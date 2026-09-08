@@ -19,7 +19,7 @@
         <!-- CI-friendly version placeholder. Override with -Drevision=<value> at build time.
              Default produces the current release build used by NetBeans and plain mvn.
              CI workflows set this to a labelled version (e.g. 0.8.0-ci.d.47). -->
-        <revision>0.9.0-SNAPSHOT</revision>
+        <revision>0.9.0-rc1</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>25</maven.compiler.release>
         <exec.mainClass>jdiskmark.App</exec.mainClass>
@@ -41,7 +41,7 @@
              format — no letters, no -SNAPSHOT. This is an MSI format restriction, not
              jpackage itself. Linux packages (DEB/RPM) can use the full project.version.
              Update this alongside project.version when cutting a release. -->
-        <msi.version>0.9.0-rc1</msi.version>
+        <msi.version>0.9.0</msi.version>
         <app.title>${app.name} ${project.version}</app.title>
         <release.dir>${pkg.name}-${msi.version}</release.dir>
 
