@@ -209,7 +209,8 @@ public class UtilOs {
      * Get the storage bus interface for a Windows drive letter using
      * PowerShell's Get-Partition / Get-Disk pipeline.
      *
-     * <p>Returns the BusType string from {@code Get-Disk}, e.g.
+     * <p>Returns the BusType string from {@code Get-Disk}, e.g.
+
      * {@code NVMe}, {@code SATA}, {@code USB}, {@code RAID}, {@code SAS}.
      *
      * @param driveLetter single drive letter (e.g. "C")
@@ -414,21 +415,27 @@ public class UtilOs {
             ProcessBuilder pb = new ProcessBuilder("df", "-k", path.toString());
             Map<String, String> env = pb.environment();
             env.put("LC_ALL", "C"); // set language to english
-            pb.redirectErrorStream(true);
             Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String line;
-            String curPartition;
+            String curPartition = null;
             while ((line = reader.readLine()) != null) {
                 if (App.verbose) {
                     System.out.println("curLine=" + line);
                 }
                 if (line.contains("/dev/")) {
                     curPartition = line.split(" ")[0];
-                    return curPartition;
+                    break;
                 }
             }
-        } catch (IOException e) {
+            int exitCode = process.waitFor();
+            if (exitCode == 0 && curPartition != null) {
+                return curPartition;
+            }
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             LOGGER.log(Level.SEVERE, null, e);
         }
         return null;
@@ -449,7 +456,6 @@ public class UtilOs {
             ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "pkname", partition);
             Map<String, String> env = pb.environment();
             env.put("LC_ALL", "C"); // set language to english
-            pb.redirectErrorStream(true);
             Process process = pb.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             // detect multiple lines and if so indicate it is an LVM
@@ -459,10 +465,17 @@ public class UtilOs {
                     System.err.println("devName=" + line);
                 }
                 if (!line.trim().isEmpty()) {
-                    deviceNames.add(line);
+                    deviceNames.add(line.trim());
                 }
             }
-        } catch (IOException e) {
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                deviceNames.clear();
+            }
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             LOGGER.log(Level.SEVERE, null, e);
         }
         return deviceNames;
