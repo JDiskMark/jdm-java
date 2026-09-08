@@ -83,6 +83,8 @@ public final class Gui {
     public static SmartPanel smartPanel = null;
     public static DrivePanel drivePanel = null;
     public static SmartReportsPanel smartReportsPanel = null;
+    public static BatchPanel batchPanel = null;
+    public static BatchReportsPanel batchReportsPanel = null;
     public static javax.swing.JTabbedPane mainTabPane = null;
     /** The bottom tabbed pane (Benchmarks / Events / All Drives / SMART Reports / Sharing). */
     public static javax.swing.JTabbedPane bottomTabPane = null;
@@ -398,6 +400,7 @@ public final class Gui {
         }
         applyStartButtonStyle(t);
         applyIconToWindow(t);
+        if (batchPanel != null) batchPanel.refreshChartTheme();
     }
 
     /**

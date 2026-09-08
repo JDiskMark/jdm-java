@@ -266,6 +266,7 @@ public class App {
     static double wWindowSumSq = 0, rWindowSumSq = 0;
     // benchmark result containers
     public static BenchmarkWorker worker = null;
+    public static boolean batchRunning = false;
     public static Future<Benchmark> cliResult = null;
     // completed benchmarks and operations
     public static Benchmark benchmark; // last or loaded benchmark
@@ -970,6 +971,10 @@ public class App {
         // 1. check that there isn't already a worker in progress
         if (state == State.DISK_TEST_STATE) {
             msg("Test in progress, aborting...");
+            return;
+        }
+        if (batchRunning) {
+            msg("Batch in progress, aborting...");
             return;
         }
 

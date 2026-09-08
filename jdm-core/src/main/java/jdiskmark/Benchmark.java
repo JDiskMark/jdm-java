@@ -45,7 +45,9 @@ import java.util.UUID;
 @NamedQuery(name="Benchmark.findActive",
     query="SELECT b FROM Benchmark b WHERE b.archived = false"),
 @NamedQuery(name="Benchmark.findArchived",
-    query="SELECT b FROM Benchmark b WHERE b.archived = true")
+    query="SELECT b FROM Benchmark b WHERE b.archived = true"),
+@NamedQuery(name="Benchmark.findByBatchId",
+    query="SELECT b FROM Benchmark b WHERE b.batchId = :batchId ORDER BY b.startTime")
 })
 public class Benchmark implements Serializable {
     
@@ -193,6 +195,14 @@ public class Benchmark implements Serializable {
     public void setRenderMode(RenderFrequencyMode renderMode) {
         this.renderMode = renderMode;
     }
+
+    // #109 Batch mode — groups benchmarks from the same batch run
+    @Column
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @JsonIgnore
+    private UUID batchId;
+    public UUID getBatchId() { return batchId; }
+    public void setBatchId(UUID batchId) { this.batchId = batchId; }
 
     @Transient
     private Smart smartData;
@@ -392,5 +402,22 @@ public class Benchmark implements Serializable {
         
         em.getTransaction().commit();
         return deletedBenchmarksCount;
+    }
+
+    @JsonIgnore
+    static List<Benchmark> findByBatchId(UUID batchId) {
+        EntityManager em = EM.getEntityManager();
+        return em.createNamedQuery("Benchmark.findByBatchId", Benchmark.class)
+                .setParameter("batchId", batchId)
+                .getResultList();
+    }
+
+    @JsonIgnore
+    static List<UUID> findDistinctBatchIds() {
+        EntityManager em = EM.getEntityManager();
+        return em.createQuery(
+                "SELECT b.batchId FROM Benchmark b WHERE b.batchId IS NOT NULL GROUP BY b.batchId ORDER BY MIN(b.startTime) DESC",
+                UUID.class)
+                .getResultList();
     }
 }

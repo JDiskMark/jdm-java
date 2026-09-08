@@ -22,6 +22,7 @@ if expanded to SMART benchmark view:
 Top Panel Tabs
 - Drive - active configurable
 - Benchmark - active configurable
+- Batch - batch drive benchmark (setup → running → results comparison chart)
 - Benchmark Results - historical immutable
 - SMART - active configurable
 - SMART Results - historical immutable
@@ -30,6 +31,7 @@ Bottom Panel Tabs (common to all):
 - Benchmarks -- linked to benchmark results view
 - SMART Reports -- linked to SMART results view
 - All Drives -- a unified view of all drives and their status
+- Batch Reports -- batch history, selecting loads into Batch top tab
 - Events
 - Sharing -- controls to share benchmarks to community portal
 
