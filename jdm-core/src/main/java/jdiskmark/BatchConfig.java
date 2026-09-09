@@ -14,8 +14,13 @@ public record BatchConfig(
 
     public void applyProfileToApp(BenchmarkProfile profile, File driveLocation) {
         App.loadProfile(profile);
-        App.locationDir = driveLocation;
-        App.dataDir = new File(driveLocation.getAbsolutePath() + File.separator + App.DATADIRNAME);
+        File resolved = DriveChecker.resolveLocationForRoot(driveLocation);
+        if (resolved == null) {
+            throw new IllegalStateException(
+                    "No writable location found on " + driveLocation.getAbsolutePath());
+        }
+        App.locationDir = resolved;
+        App.dataDir = new File(resolved.getAbsolutePath() + File.separator + App.DATADIRNAME);
     }
 
     public int totalRuns() {

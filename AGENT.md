@@ -69,6 +69,7 @@ The `jdm-core/docs/` folder contains authoritative design documents:
 - **Keep design docs current.** When a code change touches an area covered by
   `jdm-core/docs/`, update the relevant doc in the same session — do not leave
   design documentation out of sync with the code.
+- Write robust, production-ready code that follows existing project conventions and remains easy to understand and maintain.
 
 ---
 

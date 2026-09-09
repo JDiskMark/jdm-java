@@ -117,14 +117,14 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
             }
             dataDir.mkdirs();
 
-            if (!DriveChecker.validateTargetDirectory(drive, false)) {
+            if (!DriveChecker.validateTargetDirectory(App.locationDir, false)) {
                 return new BatchResult.RunResult(drive, driveModel, profile, null,
                         isRetry ? BatchResult.DriveStatus.RETRIED_THEN_SKIPPED
                                 : BatchResult.DriveStatus.SKIPPED,
                         "Target directory validation failed");
             }
 
-            if (!DriveChecker.checkDiskSpace(drive)) {
+            if (!DriveChecker.checkDiskSpace(App.locationDir)) {
                 return new BatchResult.RunResult(drive, driveModel, profile, null,
                         isRetry ? BatchResult.DriveStatus.RETRIED_THEN_SKIPPED
                                 : BatchResult.DriveStatus.SKIPPED,
@@ -193,9 +193,8 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
                             : BatchResult.DriveStatus.SKIPPED,
                     err);
         } finally {
-            File dataDir = new File(drive.getAbsolutePath() + File.separator + App.DATADIRNAME);
-            if (dataDir.exists()) {
-                Util.deleteDirectory(dataDir);
+            if (App.dataDir != null && App.dataDir.exists()) {
+                Util.deleteDirectory(App.dataDir);
             }
         }
     }

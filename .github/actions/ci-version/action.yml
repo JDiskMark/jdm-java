@@ -45,8 +45,11 @@ runs:
         RAW=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
         BASE=${RAW%-SNAPSHOT}
 
-        # Read the dedicated msi.version property — always purely numeric
+        # Read the dedicated msi.version and rpm.version properties — these are
+        # maintained separately in the POM with format restrictions (numeric-only
+        # for MSI, no hyphens for RPM) and must not be derived from project.version.
         MSI_BASE=$(mvn help:evaluate -Dexpression=msi.version -q -DforceStdout)
+        RPM_BASE=$(mvn help:evaluate -Dexpression=rpm.version -q -DforceStdout)
 
         # Prefer the PR head branch; fall back to push/tag branch name
         BRANCH="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
@@ -63,7 +66,7 @@ runs:
           echo "install_version=${RAW}" >> "$GITHUB_OUTPUT"
           echo "base_version=${BASE}"   >> "$GITHUB_OUTPUT"
           echo "msi_version=${MSI_BASE}"    >> "$GITHUB_OUTPUT"
-          echo "rpm_version=${BASE}"    >> "$GITHUB_OUTPUT"
+          echo "rpm_version=${RPM_BASE}"    >> "$GITHUB_OUTPUT"
           echo "rpm_release=1"           >> "$GITHUB_OUTPUT"
           echo "CI label skipped (branch=${BRANCH}, disable=${DISABLE})"
           exit 0
@@ -96,7 +99,7 @@ runs:
         echo "install_version=${INSTALL}" >> "$GITHUB_OUTPUT"
         echo "base_version=${BASE}"       >> "$GITHUB_OUTPUT"
         echo "msi_version=${MSI_BASE}"        >> "$GITHUB_OUTPUT"
-        echo "rpm_version=${BASE}"        >> "$GITHUB_OUTPUT"
+        echo "rpm_version=${RPM_BASE}"        >> "$GITHUB_OUTPUT"
         echo "rpm_release=ci.${SLUG}.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
         echo "CI version:      ${DISPLAY}"
         echo "Install version: ${INSTALL}"

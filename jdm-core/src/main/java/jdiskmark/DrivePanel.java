@@ -423,18 +423,7 @@ public class DrivePanel extends JPanel {
     }
 
     private static File resolveLocationForRoot(File root) {
-        File home = new File(System.getProperty("user.home", ""));
-        if (home.exists()) {
-            java.nio.file.Path homeRoot = home.toPath().getRoot();
-            if (homeRoot != null && homeRoot.equals(root.toPath())) {
-                File candidate = new File(home, App.DATADIRNAME);
-                if (candidate.exists() ? candidate.canWrite() : home.canWrite()) {
-                    return home;
-                }
-            }
-        }
-        if (root.canRead() && root.canWrite()) return root;
-        return null;
+        return DriveChecker.resolveLocationForRoot(root);
     }
 
     /**

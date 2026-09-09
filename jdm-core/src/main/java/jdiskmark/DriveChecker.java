@@ -106,6 +106,30 @@ public class DriveChecker {
         return false;
     }
 
+    /**
+     * Resolves a drive root (mount point) to a user-writable location suitable
+     * for benchmark data.  On Linux the root filesystem ({@code /}) is not
+     * writable by normal users, so when {@code root} equals the root component
+     * of {@code user.home} (e.g., {@code /} or {@code C:\\}) we return the home
+     * directory instead.
+     * @param root the drive mount point
+     * @return a writable directory on that drive, or {@code null} if none found
+     */
+    public static File resolveLocationForRoot(File root) {
+        File home = new File(System.getProperty("user.home", ""));
+        if (home.exists()) {
+            java.nio.file.Path homeRoot = home.toPath().getRoot();
+            if (homeRoot != null && homeRoot.equals(root.toPath())) {
+                File candidate = new File(home, App.DATADIRNAME);
+                if (candidate.exists() ? candidate.canWrite() : home.canWrite()) {
+                    return home;
+                }
+            }
+        }
+        if (root.canRead() && root.canWrite()) return root;
+        return null;
+    }
+
     private static String formatBytes(long bytes) {
         if (bytes >= App.GIGABYTE) {
             return String.format("%.1f GB", bytes / (double) App.GIGABYTE);

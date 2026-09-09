@@ -399,6 +399,7 @@ public final class Gui {
             mainFrame.getGraphPaletteMenu().setAllItemsEnabled(!t.hasLinkedPalette());
         }
         applyStartButtonStyle(t);
+        applyCancelButtonStyle(t);
         applyIconToWindow(t);
         if (batchPanel != null) batchPanel.refreshChartTheme();
     }
@@ -415,6 +416,9 @@ public final class Gui {
         controlPanel.startButton.putClientProperty("FlatLaf.style", style);
         if (smartPanel != null) {
             smartPanel.runButton.putClientProperty("FlatLaf.style", style.replace("font: bold ", "font: "));
+        }
+        if (batchPanel != null) {
+            batchPanel.applyStartButtonStyle(style);
         }
     }
 
@@ -441,10 +445,14 @@ public final class Gui {
      * a theme-coherent "stop" colour; the default falls back to amber.
      */
     public static void applyCancelButtonStyle(Theme t) {
-        if (controlPanel == null) return;
         String style = t.definition().cancelButtonStyle();
         if (style == null) style = ButtonStyles.CANCEL;
-        controlPanel.startButton.putClientProperty("FlatLaf.style", style);
+        if (controlPanel != null && "Cancel".equals(controlPanel.startButton.getText())) {
+            controlPanel.startButton.putClientProperty("FlatLaf.style", style);
+        }
+        if (batchPanel != null) {
+            batchPanel.applyCancelButtonStyle(style);
+        }
     }
 
 
@@ -542,6 +550,7 @@ public final class Gui {
         // panel exists. Without this, the button always opens GitHub-green
         // because BenchmarkControlPanel seeds DEFAULT_START in its constructor.
         applyStartButtonStyle(theme);
+        applyCancelButtonStyle(theme);
 
         // On macOS, replace the default system-provided About dialog (which shows
         // the Java runtime info) with our own branded dialog.
