@@ -94,7 +94,7 @@ public final class TrickOrTreatTheme implements ThemeDefinition {
             "#D86413",
             "#A44606",
             "#F47B2088",
-            "#ffffff"
+            "#1a1a1a"
         );
     }
 
