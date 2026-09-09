@@ -274,7 +274,7 @@ IOPS: 28892857
 
 JDiskMark is developed with [NetBeans 25](https://netbeans.apache.org/front/main/download/) and [Java 25](https://www.oracle.com/java/technologies/downloads/).
 
-on ubuntu desktop jdk can be installed with:
+On Ubuntu Desktop, the JDK can be installed with:
 
 `sudo apt update && sudo apt install -y openjdk-25-jdk`
 
