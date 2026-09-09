@@ -109,9 +109,9 @@ public class DriveChecker {
     /**
      * Resolves a drive root (mount point) to a user-writable location suitable
      * for benchmark data.  On Linux the root filesystem ({@code /}) is not
-     * writable by normal users, so when the drive root matches the
-     * {@code user.home} filesystem root we return the home directory instead.
-     *
+     * writable by normal users, so when {@code root} equals the root component
+     * of {@code user.home} (e.g., {@code /} or {@code C:\\}) we return the home
+     * directory instead.
      * @param root the drive mount point
      * @return a writable directory on that drive, or {@code null} if none found
      */
