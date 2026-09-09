@@ -29,6 +29,7 @@ import javax.swing.JSpinner;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -49,6 +50,7 @@ import org.jfree.data.category.DefaultCategoryDataset;
 public class BatchPanel extends JPanel {
     private static final Logger LOG = Logger.getLogger(BatchPanel.class.getName());
     private static final DecimalFormat DF = new DecimalFormat("###.##");
+    private static final DecimalFormat DF2 = new DecimalFormat("###.00");
 
     private static final String CARD_SETUP = "setup";
     private static final String CARD_RUNNING = "running";
@@ -79,6 +81,8 @@ public class BatchPanel extends JPanel {
     private JPanel chartContainer;
     private JTable summaryTable;
     private JLabel durationLabel;
+    private JButton startBatchButton;
+    private JButton newBatchButton;
 
     // State — benchmarks from the currently displayed results (for double-click loading)
     private List<Benchmark> currentResultBenchmarks = new ArrayList<>();
@@ -176,13 +180,13 @@ public class BatchPanel extends JPanel {
         profileColumn.add(profileSelectPanel);
 
         profileColumn.add(Box.createVerticalStrut(8));
-        JButton startBtn = new JButton("Start Batch");
-        startBtn.putClientProperty("FlatLaf.style", org.metricus.jdm.ui.ButtonStyles.DEFAULT_START);
-        startBtn.addActionListener(e -> startBatch());
+        startBatchButton = new JButton("Start Batch");
+        startBatchButton.putClientProperty("FlatLaf.style", org.metricus.jdm.ui.ButtonStyles.DEFAULT_START);
+        startBatchButton.addActionListener(e -> startBatch());
         // MigLayout "h 40!" matches BenchmarkControlPanel's start button exactly, including DPI scaling.
         JPanel startBtnWrapper = new JPanel(new net.miginfocom.swing.MigLayout("insets 0, fillx", "[grow]", "[]"));
         startBtnWrapper.setAlignmentX(0);
-        startBtnWrapper.add(startBtn, "growx, h 40!");
+        startBtnWrapper.add(startBatchButton, "growx, h 40!");
         startBtnWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, startBtnWrapper.getPreferredSize().height));
         profileColumn.add(startBtnWrapper);
 
@@ -283,13 +287,7 @@ public class BatchPanel extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(8, 8));
         panel.setBorder(new EmptyBorder(12, 12, 12, 12));
 
-        JPanel headerPanel = new JPanel(new BorderLayout());
-        JLabel titleLabel = new JLabel("Batch Mode — Results");
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 16f));
-        headerPanel.add(titleLabel, BorderLayout.WEST);
-        durationLabel = new JLabel("");
-        headerPanel.add(durationLabel, BorderLayout.EAST);
-        panel.add(headerPanel, BorderLayout.NORTH);
+
 
         chartContainer = new JPanel(new BorderLayout());
         chartContainer.setPreferredSize(new Dimension(600, 280));
@@ -317,6 +315,10 @@ public class BatchPanel extends JPanel {
         cm.getColumn(3).setPreferredWidth(80);  // Read MB/s
         cm.getColumn(4).setPreferredWidth(70);  // Latency (ms)
         cm.getColumn(5).setPreferredWidth(80);  // Status
+        cm.getColumn(2).setCellRenderer(new RightTableCellRenderer());
+        cm.getColumn(3).setCellRenderer(new RightTableCellRenderer());
+        cm.getColumn(4).setCellRenderer(new RightTableCellRenderer());
+        cm.getColumn(5).setCellRenderer(new CenterTableCellRenderer());
         JScrollPane tableScroll = new JScrollPane(summaryTable);
         tableScroll.setPreferredSize(new Dimension(600, 120));
 
@@ -327,10 +329,13 @@ public class BatchPanel extends JPanel {
 
         panel.add(splitPane, BorderLayout.CENTER);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton newBatchBtn = new JButton("New Batch");
-        newBatchBtn.addActionListener(e -> resetToSetup());
-        buttonPanel.add(newBatchBtn);
+        JPanel buttonPanel = new JPanel(new BorderLayout());
+        durationLabel = new JLabel("");
+        buttonPanel.add(durationLabel, BorderLayout.WEST);
+        newBatchButton = new JButton("New Batch");
+        newBatchButton.putClientProperty("FlatLaf.style", org.metricus.jdm.ui.ButtonStyles.DEFAULT_START);
+        newBatchButton.addActionListener(e -> resetToSetup());
+        buttonPanel.add(newBatchButton, BorderLayout.EAST);
         panel.add(buttonPanel, BorderLayout.SOUTH);
 
         return panel;
@@ -398,10 +403,7 @@ public class BatchPanel extends JPanel {
             Duration dur = Duration.between(first, last);
             durationText = String.format("Duration: %dm %ds", dur.toMinutes(), dur.toSecondsPart());
         }
-        String profileNames = profiles.stream()
-                .map(p -> p != null ? p.getName() : "—")
-                .collect(Collectors.joining(", "));
-        durationLabel.setText("Profiles: " + profileNames + " | " + durationText);
+        durationLabel.setText(durationText);
 
         cardLayout.show(cardPanel, CARD_RESULTS);
     }
@@ -440,6 +442,11 @@ public class BatchPanel extends JPanel {
                 } catch (Exception ignored) {}
             }
         }
+    }
+
+    public void applyStartButtonStyle(String style) {
+        if (startBatchButton != null) startBatchButton.putClientProperty("FlatLaf.style", style);
+        if (newBatchButton != null) newBatchButton.putClientProperty("FlatLaf.style", style);
     }
 
     // ── Drive Population ────────────────────────────────────────────────────
@@ -666,12 +673,12 @@ public class BatchPanel extends JPanel {
         Duration dur = result.getTotalDuration();
         long mins = dur.toMinutes();
         long secs = dur.toSecondsPart();
-        String profileNames = String.join(", ", result.getProfiles().stream().map(BenchmarkProfile::getName).toList());
-        String durationText = String.format("Profiles: %s | Duration: %dm %ds", profileNames, mins, secs);
+        String durationText = String.format("Duration: %dm %ds", mins, secs);
         durationLabel.setText(durationText);
 
         cardLayout.show(cardPanel, CARD_RESULTS);
-        App.msg("Batch complete — " + durationText);
+        String profileNames = String.join(", ", result.getProfiles().stream().map(BenchmarkProfile::getName).toList());
+        App.msg("Batch complete — " + profileNames + " | " + durationText);
     }
 
     private void buildChart(List<BenchmarkProfile> profiles, List<BatchResult.RunResult> successful) {
@@ -760,12 +767,12 @@ public class BatchPanel extends JPanel {
                 for (BenchmarkOperation op : rr.benchmark().getOperations()) {
                     switch (op.ioMode) {
                         case WRITE -> {
-                            writeBw = DF.format(op.bwAvg);
-                            if (latency.equals("—")) latency = DF.format(op.accAvg);
+                            writeBw = DF2.format(op.bwAvg);
+                            if (latency.equals("—")) latency = DF2.format(op.accAvg);
                         }
                         case READ -> {
-                            readBw = DF.format(op.bwAvg);
-                            latency = DF.format(op.accAvg);
+                            readBw = DF2.format(op.bwAvg);
+                            latency = DF2.format(op.accAvg);
                         }
                     }
                 }

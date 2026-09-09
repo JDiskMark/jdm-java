@@ -416,6 +416,9 @@ public final class Gui {
         if (smartPanel != null) {
             smartPanel.runButton.putClientProperty("FlatLaf.style", style.replace("font: bold ", "font: "));
         }
+        if (batchPanel != null) {
+            batchPanel.applyStartButtonStyle(style);
+        }
     }
 
     /**
