@@ -193,9 +193,8 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
                             : BatchResult.DriveStatus.SKIPPED,
                     err);
         } finally {
-            File dataDir = new File(drive.getAbsolutePath() + File.separator + App.DATADIRNAME);
-            if (dataDir.exists()) {
-                Util.deleteDirectory(dataDir);
+            if (App.dataDir != null && App.dataDir.exists()) {
+                Util.deleteDirectory(App.dataDir);
             }
         }
     }

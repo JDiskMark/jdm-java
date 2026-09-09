@@ -448,6 +448,10 @@ public class BatchPanel extends JPanel {
         if (newBatchButton != null) newBatchButton.putClientProperty("FlatLaf.style", style);
     }
 
+    public void applyCancelButtonStyle(String style) {
+        if (cancelButton != null) cancelButton.putClientProperty("FlatLaf.style", style);
+    }
+
     // ── Drive Population ────────────────────────────────────────────────────
 
     private void populateDrives() {
@@ -491,6 +495,9 @@ public class BatchPanel extends JPanel {
                         driveFiles.add(entry.root());
                         driveLabels.add(entry.model());
                         driveListPanel.add(cb);
+                    }
+                    if (!driveCheckBoxes.isEmpty()) {
+                        driveCheckBoxes.getFirst().setSelected(true);
                     }
 
                     driveListPanel.revalidate();
