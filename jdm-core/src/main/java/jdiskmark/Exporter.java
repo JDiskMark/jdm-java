@@ -227,7 +227,9 @@ public class Exporter {
         }
 
         // 2. Generate default filename w timestamped sanitized model number
-        String sanitizedModel = benchmark.driveInfo.driveModel.trim()
+        String rawModel = benchmark.driveInfo.driveModel;
+        if (rawModel == null || rawModel.isBlank()) rawModel = "unknown";
+        String sanitizedModel = rawModel.trim()
                                 .replaceAll("\\s+", ".")
                                 .replaceAll("[^a-zA-Z0-9.]", "");
         int maxModelLength = 20;
