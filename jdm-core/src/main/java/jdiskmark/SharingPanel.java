@@ -26,6 +26,7 @@ public class SharingPanel extends JPanel {
     private final JCheckBox enableSmartCheckBox;
     private final JLabel    statusLabel;
     private final JLabel    smartStatusLabel;
+    private final javax.swing.JEditorPane sysIdValue;
 
     private final JRadioButton localRb;
     private final JRadioButton testRb;
@@ -85,6 +86,65 @@ public class SharingPanel extends JPanel {
         leftPanel.add(headerRow);
         leftPanel.add(benchRow);
         leftPanel.add(smartRow);
+
+        // Row 3 — System ID + copy button + hint
+        boolean hasSystemId = App.systemId != null && !App.systemId.isBlank();
+        String sysIdDisplay = hasSystemId ? App.systemId : "(unavailable)";
+        String sysIdHtml = "<html><body style='font-family:monospace;font-size:11px;margin:0;padding:0'>"
+                + (hasSystemId
+                        ? "<a href='#select-system-id' style='text-decoration:none'>" + sysIdDisplay + "</a>"
+                        : sysIdDisplay)
+                + "</body></html>";
+        sysIdValue = new javax.swing.JEditorPane("text/html", sysIdHtml);
+        sysIdValue.setEditable(false);
+        sysIdValue.setOpaque(false);
+        sysIdValue.setCursor(java.awt.Cursor.getDefaultCursor());
+        sysIdValue.setCaret(new javax.swing.text.DefaultCaret() {
+            @Override public void paint(java.awt.Graphics g) { }
+            @Override public boolean isVisible() { return false; }
+            @Override public boolean isSelectionVisible() { return true; }
+        });
+        sysIdValue.setPreferredSize(new Dimension(
+                sysIdValue.getPreferredSize().width,
+                sysIdValue.getPreferredSize().height));
+        if (hasSystemId) {
+            sysIdValue.addHyperlinkListener(e -> {
+                if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ENTERED) {
+                    sysIdValue.setToolTipText("Click to select System ID");
+                } else if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.EXITED) {
+                    sysIdValue.setToolTipText(null);
+                } else if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ACTIVATED) {
+                    javax.swing.text.Element el = e.getSourceElement();
+                    if (el != null) {
+                        sysIdValue.select(el.getStartOffset(), el.getEndOffset());
+                    }
+                }
+            });
+        }
+
+        JButton copyIdButton = new JButton("\u29C9");
+        copyIdButton.setFont(copyIdButton.getFont().deriveFont(Font.PLAIN, 11f));
+        copyIdButton.setToolTipText("Copy System ID to clipboard");
+        copyIdButton.setFocusPainted(false);
+        copyIdButton.setEnabled(hasSystemId);
+        copyIdButton.addActionListener(e -> {
+            var clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
+            clipboard.setContents(new java.awt.datatransfer.StringSelection(App.systemId), null);
+            Gui.showCopiedToast(copyIdButton);
+        });
+
+        JLabel claimHint = new JLabel("Log in on the portal to claim your benchmarks with this ID");
+        claimHint.setFont(claimHint.getFont().deriveFont(Font.ITALIC, 11f));
+        claimHint.setForeground(Color.GRAY);
+
+        JPanel sysIdRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
+        sysIdRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        sysIdRow.add(new JLabel("System ID:"));
+        sysIdRow.add(sysIdValue);
+        sysIdRow.add(copyIdButton);
+        sysIdRow.add(claimHint);
+        leftPanel.add(sysIdRow);
+
         leftPanel.add(Box.createVerticalGlue());
 
         // Hide SMART sharing controls when smartctl is not available (e.g. Flatpak)

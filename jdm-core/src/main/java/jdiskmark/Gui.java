@@ -604,8 +604,13 @@ public final class Gui {
         javax.swing.JEditorPane msgPane = new javax.swing.JEditorPane("text/html", html);
         msgPane.setEditable(false);
         msgPane.setOpaque(false);
+        msgPane.setCursor(java.awt.Cursor.getDefaultCursor());
+        msgPane.setCaret(new javax.swing.text.DefaultCaret() {
+            @Override public void paint(java.awt.Graphics g) { }
+            @Override public boolean isVisible() { return false; }
+            @Override public boolean isSelectionVisible() { return true; }
+        });
         msgPane.addHyperlinkListener(e -> {
-            // Tooltip on hover (Swing's HTML ignores the title attribute)
             if (e.getEventType() == javax.swing.event.HyperlinkEvent.EventType.ENTERED) {
                 if ("#copy-system-id".equals(e.getDescription())) {
                     msgPane.setToolTipText("Copy System ID to clipboard");
@@ -618,9 +623,8 @@ public final class Gui {
                 if ("#copy-system-id".equals(e.getDescription())) {
                     var clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
                     clipboard.setContents(new java.awt.datatransfer.StringSelection(App.systemId), null);
-                    App.msg("System ID copied to clipboard");
+                    showCopiedToast(msgPane);
                 } else if ("#select-system-id".equals(e.getDescription())) {
-                    // Select the systemId text so the user can see it highlighted
                     javax.swing.text.Element el = e.getSourceElement();
                     if (el != null) {
                         msgPane.select(el.getStartOffset(), el.getEndOffset());
@@ -638,6 +642,39 @@ public final class Gui {
         javax.swing.JOptionPane.showMessageDialog(
                 mainFrame, msgPane, "About " + App.APP_NAME,
                 javax.swing.JOptionPane.PLAIN_MESSAGE, icon);
+    }
+
+    /**
+     * Shows a brief "Copied!" toast near the given component, auto-dismissing
+     * after 1.5 seconds.
+     */
+    static void showCopiedToast(java.awt.Component relativeTo) {
+        java.awt.Window ancestor = javax.swing.SwingUtilities.getWindowAncestor(relativeTo);
+        javax.swing.JWindow toast = new javax.swing.JWindow(ancestor);
+        javax.swing.JLabel label = new javax.swing.JLabel(" \u2713 System ID copied to clipboard ",
+                javax.swing.SwingConstants.CENTER);
+        label.setOpaque(true);
+        label.setBackground(new Color(60, 60, 60));
+        label.setForeground(Color.WHITE);
+        label.setFont(label.getFont().deriveFont(Font.PLAIN, 11f));
+        label.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+                javax.swing.BorderFactory.createLineBorder(new Color(80, 80, 80)),
+                javax.swing.BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+        toast.add(label);
+        toast.pack();
+
+        try {
+            java.awt.Point loc = relativeTo.getLocationOnScreen();
+            toast.setLocation(loc.x + relativeTo.getWidth() / 2 - toast.getWidth() / 2,
+                    loc.y + relativeTo.getHeight() + 4);
+        } catch (java.awt.IllegalComponentStateException ex) {
+            toast.setLocationRelativeTo(ancestor);
+        }
+        toast.setVisible(true);
+
+        javax.swing.Timer timer = new javax.swing.Timer(1500, _ -> toast.dispose());
+        timer.setRepeats(false);
+        timer.start();
     }
     /**
      * #117 Shows the one-time first-run consent dialog for portal sharing.
