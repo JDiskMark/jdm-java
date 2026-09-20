@@ -288,11 +288,6 @@ public class BenchmarkRunner {
                         op.accAvg = sample.cumAccTimeMs;
                         op.add(sample);
 
-                        switch (mode) {
-                            case WRITE -> writeUnitsComplete.increment();
-                            case READ -> readUnitsComplete.increment();
-                        }
-
                         listener.onSampleComplete(sample);
                         throttledProgressUpdate(false);
                     }
