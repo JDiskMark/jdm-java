@@ -18,6 +18,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - #109 batch mode
 - #218 system id - claim portal benchmarks
 - #215 holiday themes
+- #226 iops inflation bug
 
 ## [0.8.0] — 2026-08-01
 
