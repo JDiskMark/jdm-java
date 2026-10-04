@@ -343,6 +343,16 @@ public class UtilOs {
     }
     
     /**
+     * Mount-point prefixes that belong to the Flatpak sandbox itself
+     * (runtime, app bundle, host passthrough, per-app data) rather than to
+     * user storage. Bind mounts under these paths share the host block device
+     * and would otherwise appear as duplicate drives (GH-229).
+     */
+    private static final List<String> FLATPAK_SANDBOX_PREFIXES = List.of(
+            "/usr", "/app", "/etc", "/run/host", "/run/flatpak", "/run/user",
+            "/proc", "/sys", "/dev", "/var", "/tmp");
+
+    /**
      * Returns mount points for real block-device-backed filesystems on Linux
      * by reading {@code /proc/mounts}. Virtual filesystems (procfs, sysfs,
      * tmpfs, etc.), snap loopback mounts, and boot partitions are excluded.
@@ -351,11 +361,15 @@ public class UtilOs {
      * since {@code listRoots()} only returns {@code /} on Linux and never
      * discovers additional mounted drives.
      *
-     * @return list of mount-point directories; always includes {@code /} if
-     *         it was discovered and never empty on a running Linux system
+     * <p>Inside a Flatpak sandbox {@code /} is a tmpfs and the runtime is
+     * bind-mounted from the host, so a sandbox-aware filter is applied
+     * instead; see {@link #filterFlatpakMounts(List)}.
+     *
+     * @return list of mount-point directories; never empty on a running
+     *         Linux system
      */
     static public List<File> getMountedDrivesLinux() {
-        List<File> mounts = new ArrayList<>();
+        List<String[]> entries = new ArrayList<>();
         try {
             List<String> lines = java.nio.file.Files.readAllLines(
                     java.nio.file.Path.of("/proc/mounts"));
@@ -364,10 +378,7 @@ public class UtilOs {
                 if (parts.length < 3) continue;
 
                 String device     = parts[0];
-                String mountPoint = parts[1].replace("\\040", " ")
-                        .replace("\\011", "\t")
-                        .replace("\\012", "\n")
-                        .replace("\\134", "\\");
+                String mountPoint = unescapeMountField(parts[1]);
 
                 // Only real block devices
                 if (!device.startsWith("/dev/")) continue;
@@ -379,21 +390,77 @@ public class UtilOs {
                 if (mountPoint.startsWith("/boot/") || mountPoint.equals("/boot")) continue;
 
                 File mountDir = new File(mountPoint);
+                // Single-file bind mounts (e.g. /etc/resolv.conf) are not drives
+                if (!mountDir.isDirectory()) continue;
                 if (mountDir.getTotalSpace() == 0) continue;
 
-                mounts.add(mountDir);
+                entries.add(new String[]{ device, mountPoint });
             }
         } catch (IOException e) {
             LOGGER.log(Level.WARNING, "Failed to read /proc/mounts", e);
         }
 
-        // Guarantee root is always present
-        File rootDir = new File("/");
+        return isFlatpak() ? filterFlatpakMounts(entries) : filterNativeMounts(entries);
+    }
+
+    /** Native Linux: every qualifying mount, with {@code /} guaranteed present. */
+    private static List<File> filterNativeMounts(List<String[]> entries) {
+        List<File> mounts = new ArrayList<>();
+        for (String[] e : entries) {
+            mounts.add(new File(e[1]));
+        }
         if (mounts.stream().noneMatch(f -> f.getAbsolutePath().equals("/"))) {
-            mounts.addFirst(rootDir);
+            mounts.addFirst(new File("/"));
+        }
+        return mounts;
+    }
+
+    /**
+     * Flatpak: drop the tmpfs root and sandbox bind mounts, then keep a single
+     * entry per block device (the shortest mount path, e.g. {@code /home/deck}
+     * rather than {@code /home/deck/.var/app/...}). Falls back to the user's
+     * home directory when nothing remains.
+     */
+    private static List<File> filterFlatpakMounts(List<String[]> entries) {
+        String home = System.getProperty("user.home", "/");
+        Map<String, String> byDevice = new java.util.LinkedHashMap<>();
+        for (String[] e : entries) {
+            String device = e[0];
+            String mountPoint = e[1];
+            if (mountPoint.equals("/")) continue;
+            // Home may itself sit under /var (Fedora Atomic: /var/home/<user>)
+            boolean underHome = isUnderAny(mountPoint, List.of(home));
+            if (!underHome && isUnderAny(mountPoint, FLATPAK_SANDBOX_PREFIXES)) continue;
+            byDevice.merge(device, mountPoint,
+                    (prev, cur) -> cur.length() < prev.length() ? cur : prev);
         }
 
+        List<File> mounts = new ArrayList<>();
+        for (String mountPoint : byDevice.values()) {
+            mounts.add(new File(mountPoint));
+        }
+        if (mounts.isEmpty()) {
+            File homeDir = new File(home);
+            mounts.add(homeDir.getTotalSpace() > 0 ? homeDir : new File("/"));
+        }
         return mounts;
+    }
+
+    private static boolean isUnderAny(String path, List<String> prefixes) {
+        for (String prefix : prefixes) {
+            if (path.equals(prefix) || path.startsWith(prefix + "/")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Decodes the octal escapes used by {@code /proc/mounts}. */
+    private static String unescapeMountField(String field) {
+        return field.replace("\\040", " ")
+                .replace("\\011", "\t")
+                .replace("\\012", "\n")
+                .replace("\\134", "\\");
     }
 
     /**
