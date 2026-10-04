@@ -199,7 +199,7 @@ public class BatchPanel extends JPanel {
         JPanel cooldownPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 4));
         cooldownPanel.setAlignmentX(0);
         cooldownPanel.add(new JLabel("Cooldown between drives: "));
-        cooldownSpinner = new JSpinner(new SpinnerNumberModel(30, 0, 300, 5));
+        cooldownSpinner = new JSpinner(new SpinnerNumberModel(10, 0, 300, 5));
         cooldownPanel.add(cooldownSpinner);
         cooldownPanel.add(new JLabel(" seconds"));
         centerPanel.add(cooldownPanel);
