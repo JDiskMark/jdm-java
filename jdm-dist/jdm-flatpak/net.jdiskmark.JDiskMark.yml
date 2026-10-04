@@ -12,6 +12,8 @@ finish-args:
   - --share=ipc
   - --socket=x11
   - --socket=wayland
+  # Outbound network for optional benchmark sharing to the jdiskmark.net portal
+  - --share=network
   # Access to all storage devices for disk benchmarking
   - --device=all
   # Read/write access to the home directory for selecting benchmark paths

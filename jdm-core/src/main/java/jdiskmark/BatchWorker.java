@@ -42,7 +42,8 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
 
             for (int d = 0; d < drives.size() && !isCancelled(); d++) {
                 File drive = drives.get(d);
-                String driveModel = Util.getDriveModel(drive);
+                File resolved = DriveChecker.resolveLocationForRoot(drive);
+                String driveModel = Util.getDriveModel(resolved != null ? resolved : drive);
                 if (driveModel == null || driveModel.isBlank()) driveModel = drive.getAbsolutePath();
 
                 // Smart cooldown: only wait if this drive hasn't cooled long enough
