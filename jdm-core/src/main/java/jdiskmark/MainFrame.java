@@ -208,6 +208,8 @@ public final class MainFrame extends javax.swing.JFrame {
             }
         });
 
+        mainTabPane.addChangeListener(e -> updateProgressPanelVisibility());
+
         // Rebuild the content pane: mainTabPane (top) and the bottom panel (tabbedPane +
         // progress bar) are separated by a draggable vertical JSplitPane divider.
         getContentPane().removeAll();
@@ -238,6 +240,7 @@ public final class MainFrame extends javax.swing.JFrame {
         });
 
         getContentPane().add(splitPane, BorderLayout.CENTER);
+        updateProgressPanelVisibility();
 
         // Ensure the frame is tall enough to show 5 rows in the bottom table.
         // pack() sizes to preferred; we nudge the height up slightly after packing.
@@ -1193,6 +1196,26 @@ public final class MainFrame extends javax.swing.JFrame {
                 resetBenchmarkItem.setEnabled(true);
                 exportMenu.setEnabled(App.benchmark != null);
             }
+        }
+        updateProgressPanelVisibility();
+    }
+
+    /**
+     * The Total Tx progress bar is shown on the Benchmark tab, or on any tab
+     * while a non batch benchmark is in progress; otherwise its space is given
+     * to the bottom tabbed pane.
+     */
+    private void updateProgressPanelVisibility() {
+        boolean busy = App.state == App.State.DISK_TEST_STATE;
+        boolean onBenchmarkTab = false;
+        if (Gui.mainTabPane != null) {
+            int sel = Gui.mainTabPane.getSelectedIndex();
+            onBenchmarkTab = sel >= 0 && Tabs.TOP_BENCHMARK.equals(Gui.mainTabPane.getTitleAt(sel));
+        }
+        boolean visible = busy || onBenchmarkTab;
+        if (progressPanel.isVisible() != visible) {
+            progressPanel.setVisible(visible);
+            if (progressPanel.getParent() != null) progressPanel.getParent().revalidate();
         }
     }
 }
