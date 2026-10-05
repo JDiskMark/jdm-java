@@ -1202,11 +1202,11 @@ public final class MainFrame extends javax.swing.JFrame {
 
     /**
      * The Total Tx progress bar is shown on the Benchmark tab, or on any tab
-     * while a benchmark or batch is in progress; otherwise its space is given
+     * while a non batch benchmark is in progress; otherwise its space is given
      * to the bottom tabbed pane.
      */
     private void updateProgressPanelVisibility() {
-        boolean busy = App.state == App.State.DISK_TEST_STATE || App.batchRunning;
+        boolean busy = App.state == App.State.DISK_TEST_STATE;
         boolean onBenchmarkTab = false;
         if (Gui.mainTabPane != null) {
             int sel = Gui.mainTabPane.getSelectedIndex();

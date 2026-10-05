@@ -5,10 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased] — v1.0.0
 
-### Planned
-- [#118](https://github.com/JDiskMark/jdm-java/issues/118) test interlock or OAuth upload
+### added
+- #232 dynamic hiding of benchmark progress bar
 
-## [0.9.0] - in development
+### Planned/Proposed
+- [#118](https://github.com/JDiskMark/jdm-java/issues/118) test interlock or OAuth upload
+- refactor package classes
+
+## [0.9.0]
 - #205 drive dropdown linux
 - #209 usb support linux
 - #213 usb support macos

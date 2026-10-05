@@ -6,7 +6,7 @@
 - the top-left section of the benchmark tab is called the settings controls
 - the top-right section of the benchmark is the chart
 - the bottom section is the historical list of runs and common status output
-- the Total Tx progress bar below the bottom tabs is visible only on the Benchmark tab or while a benchmark/batch is running; otherwise it is hidden and its space goes to the bottom tabs (`MainFrame.updateProgressPanelVisibility`)
+- the Total Tx progress bar below the bottom tabs is visible only on the Benchmark tab or while a non-batch benchmark is running; batch runs use their own progress view. Otherwise it is hidden and its space goes to the bottom tabs (`MainFrame.updateProgressPanelVisibility`)
 
 # Active design trades
 
