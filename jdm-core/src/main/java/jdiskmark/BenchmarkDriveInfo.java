@@ -26,6 +26,9 @@ public class BenchmarkDriveInfo {
     @Column
     String driveInterface = null;
     public String getDriveInterface() { return driveInterface; }
+    @Column
+    String driveInterfaceVersion = null;     // e.g. USB link version "3.0"
+    public String getDriveInterfaceVersion() { return driveInterfaceVersion; }
     
     public BenchmarkDriveInfo() {}
 }
