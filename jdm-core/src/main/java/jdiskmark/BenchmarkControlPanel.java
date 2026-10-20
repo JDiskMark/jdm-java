@@ -6,7 +6,6 @@ import java.awt.Font;
 import net.miginfocom.swing.MigLayout;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -54,9 +53,6 @@ public class BenchmarkControlPanel extends JPanel {
 
     public BenchmarkControlPanel() {
         initComponents();
-        
-        // TODO: review if needed???
-        configChangeDetection();
         
         // locks down the preferred size to its initialized sized
         setPreferredSize(getPreferredSize());
@@ -235,31 +231,12 @@ public class BenchmarkControlPanel extends JPanel {
         panel.add(readVal, "center, wmin 0, growx, wrap");
     }
     
-    /**
-     * Set profile to custom if a setting has been modified
-     */
-    private void configChangeDetection() {
-        ActionListener changeListener = e -> {
-            if (((JComboBox<?>)e.getSource()).getSelectedItem() == null) return;
-            App.profileModified = true;
-        };
-
-        // Attach to all combos
-        profileCombo.addActionListener(changeListener);
-        typeCombo.addActionListener(changeListener);
-        orderCombo.addActionListener(changeListener);
-        numSamplesCombo.addActionListener(changeListener);
-        numBlocksCombo.addActionListener(changeListener);
-        blockSizeCombo.addActionListener(changeListener);
-        numThreadsCombo.addActionListener(changeListener);
-    }
-    
     public void refreshSettings() {
 
         // TODO: disable profile change for now since we are doing loaded benchmark
         // settings changes which use the last run config instead and logic might
         // be confusing.
-        // if (App.profileModified) {
+        // if (App.isProfileModified()) {
         //     Color accent = UIManager.getColor("Component.accentColor");
         //     if (accent == null) {
         //         accent = (Gui.theme == Gui.Theme.LIGHT)

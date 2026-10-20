@@ -104,7 +104,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         String startedMsg = String.format(
                 "Benchmark started — %s | %s | %d samples × %d blocks × %d KB | %d thread(s) | drive: %s",
                 App.benchmarkType,
-                App.activeProfile + (App.profileModified ? "*" : ""),
+                App.activeProfile + (App.isProfileModified() ? "*" : ""),
                 App.numOfSamples,
                 App.numOfBlocks,
                 App.blockSizeKb,
