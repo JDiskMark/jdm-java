@@ -240,7 +240,6 @@ public class App {
     public static SectorAlignment sectorAlignment = SectorAlignment.ALIGN_4K;
     // benchmark configuration
     public static BenchmarkProfile activeProfile = BenchmarkProfile.QUICK_TEST;
-    public static boolean profileModified = false;
     public static BenchmarkType benchmarkType = BenchmarkType.READ_WRITE;
     public static BlockSequence blockSequence = BlockSequence.SEQUENTIAL;
     public static int numOfSamples = 200; // desired number of samples
@@ -554,7 +553,6 @@ public class App {
     public static void loadProfile(BenchmarkProfile profile) {
         try {
             activeProfile = profile;
-            profileModified = false;
 
             // TODO: later relocate into a BenchmarkConfiguration.java
             benchmarkType = profile.getBenchmarkType();
@@ -631,9 +629,6 @@ public class App {
                     new Object[] { value, previousActiveProfile.name() });
             activeProfile = previousActiveProfile;
         }
-
-        value = p.getProperty("profileModified", String.valueOf(profileModified));
-        profileModified = Boolean.parseBoolean(value);
 
         value = p.getProperty("benchmarkType", String.valueOf(benchmarkType));
         benchmarkType = BenchmarkType.valueOf(value.toUpperCase());
@@ -772,7 +767,8 @@ public class App {
             p.setProperty("uploadProtocol", Portal.uploadProtocol);
         }
         p.setProperty("activeProfile", activeProfile.name());
-        p.setProperty("profileModified", String.valueOf(profileModified));
+        // computed from live settings; drop the value persisted by older versions
+        p.remove("profileModified");
         p.setProperty("benchmarkType", benchmarkType.name());
         p.setProperty("multiFile", String.valueOf(multiFile));
         p.setProperty("smartEnable", String.valueOf(Smart.smartEnable));
@@ -817,7 +813,7 @@ public class App {
         BenchmarkConfig config = new BenchmarkConfig();
         config.appVersion = VERSION;
         config.profile = activeProfile;
-        config.profileModified = profileModified;
+        config.profileModified = isProfileModified();
         config.benchmarkType = benchmarkType;
         config.blockOrder = blockSequence;
         config.numBlocks = numOfBlocks;
@@ -834,6 +830,27 @@ public class App {
         config.multiFileEnabled = multiFile;
         config.testDir = dataDir.getAbsolutePath();
         return config;
+    }
+
+    /**
+     * Whether the live settings differ from the active profile's defaults.
+     * Computed on demand so programmatic UI updates can't leave it stale.
+     * GC options are not part of a profile and are not compared.
+     */
+    public static boolean isProfileModified() {
+        BenchmarkProfile p = activeProfile;
+        if (p == null) return true;
+        return benchmarkType != p.getBenchmarkType()
+            || blockSequence != p.getBlockSequence()
+            || numOfThreads != p.getNumThreads()
+            || numOfSamples != p.getNumSamples()
+            || numOfBlocks != p.getNumBlocks()
+            || blockSizeKb != p.getBlockSizeKb()
+            || ioEngine != p.getIoEngine()
+            || directEnable != p.isDirectEnable()
+            || writeSyncEnable != p.isWriteSyncEnable()
+            || sectorAlignment != p.getSectorAlignment()
+            || multiFile != p.isMultiFile();
     }
 
     public static boolean hasReadOperation() {

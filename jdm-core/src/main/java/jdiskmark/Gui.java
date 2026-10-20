@@ -1724,7 +1724,6 @@ public final class Gui {
         App.blockSequence = benchmark.config.blockOrder;
         App.numOfThreads = benchmark.config.numThreads;
         App.activeProfile = benchmark.config.profile;
-        App.profileModified = benchmark.config.profileModified;
         // IO engine / options settings (mirrors what the badges already display)
         if (benchmark.config.ioEngine != null) App.ioEngine = benchmark.config.ioEngine;
         if (benchmark.config.sectorAlignment != null) App.sectorAlignment = benchmark.config.sectorAlignment;
