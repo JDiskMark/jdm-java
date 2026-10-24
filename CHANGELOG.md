@@ -13,7 +13,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - refactor package classes
 - custom user profiles, save to profile database
 
-## [0.9.1] release candidate
+## [0.9.1-rc1] release candidate
 - #232 dynamic benchmark progress bar
 - #234 collect interface version
 - #236 fix profile modified flag
