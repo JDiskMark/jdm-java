@@ -11,6 +11,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Planned/Proposed
 - [#118](https://github.com/JDiskMark/jdm-java/issues/118) test interlock or OAuth upload
 - refactor package classes
+- custom user profiles, save to profile database
+
+## [0.9.1] release candidate
+- #232 dynamic benchmark progress bar
+- #234 collect interface version
+- #236 fix profile modified flag
 
 ## [0.9.0]
 - #205 drive dropdown linux
