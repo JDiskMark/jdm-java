@@ -2,6 +2,7 @@ package jdiskmark;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -68,7 +69,10 @@ public class Portal {
         ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
         String jsonBody;
         try {
-            jsonBody = mapper.writeValueAsString(benchmark);
+            ObjectNode body = mapper.valueToTree(benchmark);
+            body.put("startTimeString", benchmark.getStartTimeOffsetString());
+            body.put("timeZone", benchmark.getStartTimeZoneId());
+            jsonBody = mapper.writeValueAsString(body);
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(uploadUrl))
@@ -86,7 +90,7 @@ public class Portal {
                 App.err("Upload failed. Status: " + response.statusCode());
                 App.err("Server Response: " + response.body());
             }
-        } catch (IOException | InterruptedException ex) {
+        } catch (IOException | InterruptedException | IllegalArgumentException ex) {
             App.err("Error uploading to " + uploadUrl);
             App.err("Error message: " + ex.getMessage());
             Logger.getLogger(Portal.class.getName()).log(Level.SEVERE, ex.getMessage(), ex);

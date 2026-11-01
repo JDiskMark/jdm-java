@@ -29,7 +29,10 @@ import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -178,6 +181,9 @@ public class Benchmark implements Serializable {
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column
     LocalDateTime endTime = null;
+    // exact offset/zone at start; LocalDateTime is ambiguous in the DST fall-back hour
+    @Transient
+    private ZonedDateTime startZoned;
     
     @OneToMany(mappedBy = "benchmark", cascade = CascadeType.ALL, orphanRemoval = true)
     List<BenchmarkOperation> operations = new ArrayList<>();
@@ -268,7 +274,8 @@ public class Benchmark implements Serializable {
     }
     
     public void recordStartTime() {
-        startTime = LocalDateTime.now();
+        startZoned = ZonedDateTime.now();
+        startTime = startZoned.toLocalDateTime();
     }
     
     public void recordEndTime() {
@@ -297,6 +304,24 @@ public class Benchmark implements Serializable {
        
     public String getStartTimeString() {
         return startTime.format(DATE_FORMAT);
+    }
+
+    // ISO 8601 with UTC offset, e.g. 2026-10-31T19:32:24-07:00, so the portal
+    // can store the exact instant instead of guessing the time zone
+    @JsonIgnore
+    public String getStartTimeOffsetString() {
+        ZonedDateTime zoned = startZoned != null
+                ? startZoned
+                : startTime.atZone(ZoneId.systemDefault());
+        return zoned.truncatedTo(ChronoUnit.MILLIS)
+                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    }
+
+    @JsonIgnore
+    public String getStartTimeZoneId() {
+        return startZoned != null
+                ? startZoned.getZone().getId()
+                : ZoneId.systemDefault().getId();
     }
     
     public String getDuration() {
