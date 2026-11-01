@@ -29,7 +29,9 @@ import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -297,6 +299,15 @@ public class Benchmark implements Serializable {
        
     public String getStartTimeString() {
         return startTime.format(DATE_FORMAT);
+    }
+
+    // ISO 8601 with UTC offset, e.g. 2026-10-31T19:32:24-07:00, so the portal
+    // can store the exact instant instead of guessing the time zone
+    @JsonIgnore
+    public String getStartTimeOffsetString() {
+        return startTime.truncatedTo(ChronoUnit.SECONDS)
+                .atZone(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
     }
     
     public String getDuration() {
