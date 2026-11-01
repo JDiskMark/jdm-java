@@ -10,7 +10,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.ZoneId;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -72,7 +71,7 @@ public class Portal {
         try {
             ObjectNode body = mapper.valueToTree(benchmark);
             body.put("startTimeString", benchmark.getStartTimeOffsetString());
-            body.put("timeZone", ZoneId.systemDefault().getId());
+            body.put("timeZone", benchmark.getStartTimeZoneId());
             jsonBody = mapper.writeValueAsString(body);
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()

@@ -30,6 +30,7 @@ import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -180,6 +181,9 @@ public class Benchmark implements Serializable {
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column
     LocalDateTime endTime = null;
+    // exact offset/zone at start; LocalDateTime is ambiguous in the DST fall-back hour
+    @Transient
+    private ZonedDateTime startZoned;
     
     @OneToMany(mappedBy = "benchmark", cascade = CascadeType.ALL, orphanRemoval = true)
     List<BenchmarkOperation> operations = new ArrayList<>();
@@ -270,7 +274,8 @@ public class Benchmark implements Serializable {
     }
     
     public void recordStartTime() {
-        startTime = LocalDateTime.now();
+        startZoned = ZonedDateTime.now();
+        startTime = startZoned.toLocalDateTime();
     }
     
     public void recordEndTime() {
@@ -305,9 +310,18 @@ public class Benchmark implements Serializable {
     // can store the exact instant instead of guessing the time zone
     @JsonIgnore
     public String getStartTimeOffsetString() {
-        return startTime.truncatedTo(ChronoUnit.SECONDS)
-                .atZone(ZoneId.systemDefault())
+        ZonedDateTime zoned = startZoned != null
+                ? startZoned
+                : startTime.atZone(ZoneId.systemDefault());
+        return zoned.truncatedTo(ChronoUnit.MILLIS)
                 .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    }
+
+    @JsonIgnore
+    public String getStartTimeZoneId() {
+        return startZoned != null
+                ? startZoned.getZone().getId()
+                : ZoneId.systemDefault().getId();
     }
     
     public String getDuration() {
