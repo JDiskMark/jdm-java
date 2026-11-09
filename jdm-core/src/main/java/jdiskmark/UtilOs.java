@@ -568,23 +568,32 @@ public class UtilOs {
             pb.environment().put("LC_ALL", "C");
             pb.redirectError(ProcessBuilder.Redirect.DISCARD);
             Process process = pb.start();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    String[] cols = line.trim().split("\\s+");
-                    if (cols.length >= 2 && "disk".equals(cols[1]) && !cols[0].isEmpty()) {
-                        disks.add(cols[0]);
-                    }
+            java.util.concurrent.CompletableFuture<List<String>> output =
+                    java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+                try (BufferedReader reader = process.inputReader()) {
+                    return reader.lines().toList();
+                } catch (IOException e) {
+                    throw new java.io.UncheckedIOException(e);
                 }
-            }
+            });
             if (!process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS)) {
                 process.destroyForcibly();
-                disks.clear();
-            } else if (process.exitValue() != 0) {
-                disks.clear();
+                output.cancel(true);
+                LOGGER.log(Level.WARNING, "lsblk --inverse timed out for {0}", device);
+                return new ArrayList<>();
             }
-        } catch (IOException | InterruptedException e) {
+            if (process.exitValue() != 0) {
+                return new ArrayList<>();
+            }
+            for (String line : output.get(1, java.util.concurrent.TimeUnit.SECONDS)) {
+                String[] cols = line.trim().split("\\s+");
+                if (cols.length >= 2 && "disk".equals(cols[1]) && !cols[0].isEmpty()) {
+                    disks.add(cols[0]);
+                }
+            }
+        } catch (IOException | InterruptedException
+                | java.util.concurrent.ExecutionException
+                | java.util.concurrent.TimeoutException e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
