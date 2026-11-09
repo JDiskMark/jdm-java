@@ -48,7 +48,7 @@ Theme enum
 | `progressBarForeground()` | No | Direct `setForeground()` on the progress bar |
 | `badgeDefaultBg()` | **Yes** | Badge background (non-stale state) |
 | `badgeDefaultFg()` | **Yes** | Badge foreground (non-stale, fallback) |
-| `badgeStaleBg()` | **Yes** | Badge background when setting differs from current config |
+| `badgeStaleBg()` | **Yes** | Badge background when setting differs from current config; also the stale row labels, "modified" chart subtitle, and chart title when the selected drive differs from the plotted run |
 | `badgeStaleFg()` | No | Badge foreground when stale (default: `Color.WHITE`) |
 | `badgeBorderColor()` | No | Badge border outline (null = no custom border) |
 | `cycleBadgeColors()` | No | If `true`, non-stale badges alternate fg between even/odd indices (default: `false`) |

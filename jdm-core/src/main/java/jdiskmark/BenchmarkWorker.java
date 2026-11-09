@@ -178,7 +178,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         }
         
         // update gui title
-        Gui.chart.getTitle().setText(benchmark.getDriveInfoDisplay());
+        Gui.setDisplayedBenchmarkTitle(benchmark);
         Gui.chart.getTitle().setVisible(true);
 
         // store local app state

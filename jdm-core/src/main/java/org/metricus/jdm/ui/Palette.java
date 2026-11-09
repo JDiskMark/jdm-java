@@ -123,7 +123,7 @@ public enum Palette {
         // 7. Text paint (axes, title, legend items)
         Color tp = def.textPaint();
         if (tp != null) {
-            Gui.chart.getTitle().setPaint(tp);
+            Gui.setChartTitleBasePaint(tp);
             if (Gui.bwAxis != null) {
                 Gui.bwAxis.setLabelPaint(tp);
                 Gui.bwAxis.setTickLabelPaint(tp);
