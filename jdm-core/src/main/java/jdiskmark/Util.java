@@ -197,7 +197,10 @@ public class Util {
             if (App.isLinux()) {
                 String partition = UtilOs.getPartitionFromFilePathLinux(dataDirPath);
                 if (partition != null) {
-                    List<String> deviceNames = UtilOs.getDeviceNamesFromPartitionLinux(partition);
+                    List<String> deviceNames = UtilOs.getBaseDisksLinux(partition);
+                    if (deviceNames.isEmpty()) {
+                        deviceNames = UtilOs.getDeviceNamesFromPartitionLinux(partition);
+                    }
                     if (deviceNames.size() > 1) {
                         StringBuilder sb = new StringBuilder();
                         for (String dName : deviceNames) {

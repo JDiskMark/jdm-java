@@ -11,8 +11,10 @@ import java.io.RandomAccessFile;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -546,6 +548,63 @@ public class UtilOs {
             LOGGER.log(Level.SEVERE, null, e);
         }
         return deviceNames;
+    }
+
+    /**
+     * Resolves a block device to the whole disk(s) beneath it, walking down
+     * through partition, dm-crypt (LUKS), LVM and md RAID layers. Unlike
+     * {@code lsblk -no pkname}, which stops one layer down (e.g. at the LUKS
+     * partition), this always reaches devices of TYPE {@code disk}.
+     *
+     * @param device device path, e.g. {@code /dev/mapper/vg-root}
+     * @return kernel names such as {@code sda} or {@code nvme0n1}; empty on failure
+     */
+    static List<String> getBaseDisksLinux(String device) {
+        Set<String> disks = new LinkedHashSet<>();
+        if (device == null || device.isBlank()) return new ArrayList<>();
+        Process process = null;
+        try {
+            ProcessBuilder pb = new ProcessBuilder("lsblk", "--inverse", "--noheadings",
+                    "--raw", "--output", "KNAME,TYPE", device);
+            pb.environment().put("LC_ALL", "C");
+            pb.redirectError(ProcessBuilder.Redirect.DISCARD);
+            Process p = pb.start();
+            process = p;
+            java.util.concurrent.CompletableFuture<List<String>> output =
+                    java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+                try (BufferedReader reader = p.inputReader()) {
+                    return reader.lines().toList();
+                } catch (IOException e) {
+                    throw new java.io.UncheckedIOException(e);
+                }
+            });
+            if (!p.waitFor(10, java.util.concurrent.TimeUnit.SECONDS)) {
+                LOGGER.log(Level.WARNING, "lsblk --inverse timed out for {0}", device);
+                return new ArrayList<>();
+            }
+            if (p.exitValue() != 0) {
+                return new ArrayList<>();
+            }
+            for (String line : output.get(1, java.util.concurrent.TimeUnit.SECONDS)) {
+                String[] cols = line.trim().split("\\s+");
+                if (cols.length >= 2 && "disk".equals(cols[1]) && !cols[0].isEmpty()) {
+                    disks.add(cols[0]);
+                }
+            }
+        } catch (IOException | InterruptedException
+                | java.util.concurrent.ExecutionException
+                | java.util.concurrent.TimeoutException e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            LOGGER.log(Level.WARNING, "lsblk --inverse failed for " + device, e);
+            disks.clear();
+        } finally {
+            if (process != null && process.isAlive()) {
+                process.destroyForcibly();
+            }
+        }
+        return new ArrayList<>(disks);
     }
     
     /**
@@ -1322,6 +1381,10 @@ public class UtilOs {
     static String getBusTypeLinux(Path path) {
         String partition = getPartitionFromFilePathLinux(path);
         if (partition == null || partition.isBlank()) return null;
+        for (String disk : getBaseDisksLinux(partition)) {
+            String diskTran = lsblkTran("/dev/" + disk);
+            if (diskTran != null) return diskTran;
+        }
         // TRAN is only reported on the parent disk device, not on partitions.
         // Try the partition first; if empty, resolve the parent device and retry.
         String tran = lsblkTran(partition);
@@ -1371,38 +1434,59 @@ public class UtilOs {
         String partition = getPartitionFromFilePathLinux(path);
         if (partition == null || partition.isBlank()) return null;
 
-        List<String> parents = getDeviceNamesFromPartitionLinux(partition);
-        String devName = parents.isEmpty()
+        List<String> disks = getBaseDisksLinux(partition);
+        if (disks.isEmpty()) {
+            disks = getDeviceNamesFromPartitionLinux(partition);
+        }
+        String devName = disks.isEmpty()
                 ? partition.replace("/dev/", "")
-                : parents.getFirst().trim();
+                : disks.getFirst().trim();
+        if (devName.isEmpty() || devName.contains("/")) return null;
 
         try {
             java.nio.file.Path sysPath = java.nio.file.Path.of("/sys/block", devName);
             if (!java.nio.file.Files.exists(sysPath)) return null;
             java.nio.file.Path realPath = sysPath.toRealPath();
 
+            // The nearest ancestor with idVendor is the USB device itself; its
+            // speed file holds the negotiated link rate in Mbps.
             java.nio.file.Path current = realPath;
             while (current != null && current.getNameCount() > 0) {
                 java.nio.file.Path speedFile = current.resolve("speed");
-                if (java.nio.file.Files.isRegularFile(speedFile)) {
+                if (java.nio.file.Files.isRegularFile(speedFile)
+                        && java.nio.file.Files.isRegularFile(current.resolve("idVendor"))) {
                     String speed = java.nio.file.Files.readString(speedFile).trim();
-                    return mapUsbSpeed(speed);
+                    return mapUsbSpeed(speed, readUsbLanes(current));
                 }
                 current = current.getParent();
             }
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
             LOGGER.log(Level.WARNING, "USB version detection failed for " + devName, e);
         }
         return null;
     }
 
-    private static String mapUsbSpeed(String speedMbps) {
-        return switch (speedMbps) {
+    /** Reads {@code rx_lanes} (kernel 4.18+); defaults to 1 when absent. */
+    private static int readUsbLanes(java.nio.file.Path usbDevice) {
+        try {
+            java.nio.file.Path lanes = usbDevice.resolve("rx_lanes");
+            if (java.nio.file.Files.isRegularFile(lanes)) {
+                return Integer.parseInt(java.nio.file.Files.readString(lanes).trim());
+            }
+        } catch (IOException | NumberFormatException e) {
+            LOGGER.log(Level.FINE, "rx_lanes unreadable for " + usbDevice, e);
+        }
+        return 1;
+    }
+
+    static String mapUsbSpeed(String speedMbps, int lanes) {
+        if (speedMbps == null) return null;
+        return switch (speedMbps.trim()) {
             case "1.5"   -> "1.0";
             case "12"    -> "1.1";
             case "480"   -> "2.0";
             case "5000"  -> "3.0";
-            case "10000" -> "3.2 Gen 2";
+            case "10000" -> lanes == 2 ? "3.2 Gen 1x2" : "3.2 Gen 2";
             case "20000" -> "3.2 Gen 2x2";
             default      -> null;
         };
