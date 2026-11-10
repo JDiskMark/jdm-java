@@ -562,27 +562,27 @@ public class UtilOs {
     static List<String> getBaseDisksLinux(String device) {
         Set<String> disks = new LinkedHashSet<>();
         if (device == null || device.isBlank()) return new ArrayList<>();
+        Process process = null;
         try {
             ProcessBuilder pb = new ProcessBuilder("lsblk", "--inverse", "--noheadings",
                     "--raw", "--output", "KNAME,TYPE", device);
             pb.environment().put("LC_ALL", "C");
             pb.redirectError(ProcessBuilder.Redirect.DISCARD);
-            Process process = pb.start();
+            Process p = pb.start();
+            process = p;
             java.util.concurrent.CompletableFuture<List<String>> output =
                     java.util.concurrent.CompletableFuture.supplyAsync(() -> {
-                try (BufferedReader reader = process.inputReader()) {
+                try (BufferedReader reader = p.inputReader()) {
                     return reader.lines().toList();
                 } catch (IOException e) {
                     throw new java.io.UncheckedIOException(e);
                 }
             });
-            if (!process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS)) {
-                process.destroyForcibly();
-                output.cancel(true);
+            if (!p.waitFor(10, java.util.concurrent.TimeUnit.SECONDS)) {
                 LOGGER.log(Level.WARNING, "lsblk --inverse timed out for {0}", device);
                 return new ArrayList<>();
             }
-            if (process.exitValue() != 0) {
+            if (p.exitValue() != 0) {
                 return new ArrayList<>();
             }
             for (String line : output.get(1, java.util.concurrent.TimeUnit.SECONDS)) {
@@ -599,6 +599,10 @@ public class UtilOs {
             }
             LOGGER.log(Level.WARNING, "lsblk --inverse failed for " + device, e);
             disks.clear();
+        } finally {
+            if (process != null && process.isAlive()) {
+                process.destroyForcibly();
+            }
         }
         return new ArrayList<>(disks);
     }
