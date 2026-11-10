@@ -1493,28 +1493,138 @@ public class UtilOs {
     }
 
     /**
-     * Returns the Linux distribution name by reading {@code PRETTY_NAME}
-     * from {@code /etc/os-release}. Returns {@code null} if the file is
-     * missing or the field is absent.
+     * Returns the detailed OS release label stored as {@code osLabel}, e.g.
+     * {@code "Ubuntu 24.04.1 LTS"}, {@code "macOS 15.1"} or
+     * {@code "Windows 11 23H2 (build 26100)"}. Falls back to {@code osName}.
+     *
+     * @param osName the value of {@code System.getProperty("os.name")}
+     * @return the OS label, never {@code null} when {@code osName} is non-null
+     */
+    static String getOsLabel(String osName) {
+        String label = null;
+        if (isLinux(osName)) {
+            label = getLinuxDistroName();
+        } else if (isMacOs(osName)) {
+            label = getMacOsLabel();
+        } else if (isWindows(osName)) {
+            label = getWindowsLabel(osName);
+        }
+        return label != null ? label : osName;
+    }
+
+    /**
+     * Formats an OS for display. Linux shows the distro in parentheses
+     * (e.g. {@code "Linux (Ubuntu 24.04.1 LTS)"}); other platforms show the
+     * label alone since it already names the OS.
+     */
+    static String formatOsDisplay(String os, String osLabel) {
+        if (osLabel == null || osLabel.isBlank() || osLabel.equals(os)) return os;
+        if (os == null) return osLabel;
+        return isLinux(os) ? os + " (" + osLabel + ")" : osLabel;
+    }
+
+    /**
+     * Returns the Linux distribution name from {@code PRETTY_NAME} in
+     * os-release. {@code /run/host/os-release} is checked first so Flatpak
+     * reports the host distro instead of the sandbox runtime.
      */
     static String getLinuxDistroName() {
-        try {
-            java.nio.file.Path osRelease = java.nio.file.Path.of("/etc/os-release");
-            if (!java.nio.file.Files.isReadable(osRelease)) return null;
-            for (String line : java.nio.file.Files.readAllLines(osRelease)) {
-                if (line.startsWith("PRETTY_NAME=")) {
-                    String value = line.substring("PRETTY_NAME=".length());
-                    if (value.length() >= 2
-                            && value.startsWith("\"") && value.endsWith("\"")) {
-                        value = value.substring(1, value.length() - 1);
+        for (String file : List.of("/run/host/os-release", "/etc/os-release", "/usr/lib/os-release")) {
+            Path osRelease = Path.of(file);
+            if (!java.nio.file.Files.isReadable(osRelease)) continue;
+            try {
+                for (String line : java.nio.file.Files.readAllLines(osRelease)) {
+                    if (line.startsWith("PRETTY_NAME=")) {
+                        String value = line.substring("PRETTY_NAME=".length()).trim();
+                        if (value.length() >= 2
+                                && (value.startsWith("\"") || value.startsWith("'"))
+                                && value.endsWith(value.substring(0, 1))) {
+                            value = value.substring(1, value.length() - 1);
+                        }
+                        if (!value.isBlank()) return value;
                     }
-                    return value.isBlank() ? null : value;
                 }
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Failed to read " + file, e);
             }
-        } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Failed to read /etc/os-release", e);
         }
         return null;
+    }
+
+    /** Returns e.g. {@code "macOS 15.1"} via {@code sw_vers}, or {@code null}. */
+    static String getMacOsLabel() {
+        String name = runForFirstLine("sw_vers", "-productName");
+        String version = runForFirstLine("sw_vers", "-productVersion");
+        if (version == null) version = System.getProperty("os.version");
+        if (version == null || version.isBlank()) return null;
+        return (name != null ? name : "macOS") + " " + version;
+    }
+
+    /**
+     * Returns e.g. {@code "Windows 11 23H2 (build 26100)"} using the
+     * registry, or {@code null} if no release details are available.
+     * The registry {@code ProductName} is not used because it still reports
+     * "Windows 10" on Windows 11.
+     */
+    static String getWindowsLabel(String osName) {
+        String key = "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion";
+        String release = readWindowsRegistryValue(key, "DisplayVersion");
+        if (release == null) release = readWindowsRegistryValue(key, "ReleaseId");
+        String build = readWindowsRegistryValue(key, "CurrentBuild");
+        if (release == null && build == null) return null;
+        StringBuilder sb = new StringBuilder(osName);
+        if (release != null) sb.append(' ').append(release);
+        if (build != null) sb.append(" (build ").append(build).append(')');
+        return sb.toString();
+    }
+
+    private static String readWindowsRegistryValue(String key, String name) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("reg", "query", key, "/v", name);
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            String value = null;
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String trimmed = line.trim();
+                    if (trimmed.startsWith(name) && trimmed.contains("REG_")) {
+                        String[] parts = trimmed.split("\\s+", 3);
+                        if (parts.length == 3 && !parts[2].isBlank()) {
+                            value = parts[2].trim();
+                        }
+                    }
+                }
+            }
+            process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+            return value;
+        } catch (IOException | InterruptedException e) {
+            LOGGER.log(Level.WARNING, "reg query failed for " + name, e);
+            return null;
+        }
+    }
+
+    private static String runForFirstLine(String... command) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(command);
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            String first;
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                first = reader.readLine();
+            }
+            boolean done = process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+            if (!done) process.destroy();
+            if (!done || process.exitValue() != 0 || first == null || first.isBlank()) {
+                return null;
+            }
+            return first.trim();
+        } catch (IOException | InterruptedException e) {
+            LOGGER.log(Level.WARNING, "Command failed: " + String.join(" ", command), e);
+            return null;
+        }
     }
 
     /**

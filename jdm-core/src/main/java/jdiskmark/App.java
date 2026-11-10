@@ -385,8 +385,7 @@ public class App {
         arch = System.getProperty("os.arch");
         processorName = Util.getProcessorName();
         jdk = Util.getJvmInfo();
-        osLabel = isLinux() ? UtilOs.getLinuxDistroName() : null;
-        if (osLabel == null) osLabel = os;
+        osLabel = UtilOs.getOsLabel(os);
 
         checkPermission();
         if (!APP_CACHE_DIR.exists()) {
