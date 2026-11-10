@@ -112,22 +112,47 @@ public final class Gui {
     /** Chart subtitle shown when current settings diverge from the displayed benchmark. */
     private static TextTitle modifiedSubtitle = null;
 
+    // --- Drive-change tracking (EDT only) ---
+    /** Chart title of the plotted benchmark; null when nothing is plotted. */
+    private static String displayedTitle = null;
+    /** True when the selected drive differs from the plotted benchmark's drive. */
+    private static boolean driveChanged = false;
+    /** Last settings-stale value given to the subtitle, reused on drive-only refreshes. */
+    private static boolean settingsStale = false;
+    /** Theme/palette title paint, restored when the drive is no longer changed. */
+    private static java.awt.Paint titleBasePaint = null;
+
+    private static void runOnEdt(Runnable r) {
+        if (javax.swing.SwingUtilities.isEventDispatchThread()) r.run();
+        else javax.swing.SwingUtilities.invokeLater(r);
+    }
+
     /**
-     * Shows or hides the "⚠ Settings modified" subtitle on the chart. Safe to 
-     * call from any thread.
-     * @param visible
+     * Shows or hides the "⚠ Settings modified" subtitle on the chart. A changed
+     * drive also keeps the subtitle visible, with wording that reflects which
+     * of the two differ. Safe to call from any thread.
+     * @param visible true when any run setting differs from the displayed benchmark
      */
     public static void setChartModifiedIndicator(boolean visible) {
         if (chart == null) return;
         Runnable r = () -> {
-            if (visible) {
+            settingsStale = visible;
+            String text = null;
+            if (visible && driveChanged) {
+                text = "⚠  Drive and settings modified — results shown reflect prior run";
+            } else if (driveChanged) {
+                text = "⚠  Drive changed — results shown are from the previous drive";
+            } else if (visible) {
+                text = "⚠  Settings modified — results shown reflect prior configuration";
+            }
+            if (text != null) {
                 if (modifiedSubtitle == null) {
-                    modifiedSubtitle = new TextTitle(
-                            "⚠  Settings modified — results shown reflect prior configuration",
-                            new Font("SansSerif", Font.BOLD, 11));
+                    modifiedSubtitle = new TextTitle(text, new Font("SansSerif", Font.BOLD, 11));
                     modifiedSubtitle.setPosition(RectangleEdge.BOTTOM);
                     modifiedSubtitle.setHorizontalAlignment(HorizontalAlignment.CENTER);
                     modifiedSubtitle.setPadding(new RectangleInsets(0, 0, 4, 0));
+                } else {
+                    modifiedSubtitle.setText(text);
                 }
                 // Refresh paint from themed accent — may have changed since creation
                 modifiedSubtitle.setPaint(BADGE_STALE_BG);
@@ -141,8 +166,61 @@ public final class Gui {
                 }
             }
         };
-        if (javax.swing.SwingUtilities.isEventDispatchThread()) r.run();
-        else javax.swing.SwingUtilities.invokeLater(r);
+        runOnEdt(r);
+    }
+
+    /**
+     * Sets the theme/palette paint for the chart title. The stale accent
+     * overrides it while the selected drive differs from the plotted run.
+     * @param paint title paint for the current theme or palette
+     */
+    public static void setChartTitleBasePaint(java.awt.Paint paint) {
+        titleBasePaint = paint;
+        applyTitlePaint();
+    }
+
+    private static void applyTitlePaint() {
+        if (chart == null) return;
+        java.awt.Paint base = (titleBasePaint != null) ? titleBasePaint : foregroundColor;
+        chart.getTitle().setPaint(driveChanged ? BADGE_STALE_BG : base);
+    }
+
+    private static void setDriveChanged(boolean changed) {
+        driveChanged = changed;
+        applyTitlePaint();
+    }
+
+    /** Drive portion of a chart title ("model - partition"), excluding usage. */
+    private static String driveIdentity(String title) {
+        if (title == null) return "";
+        int i = title.lastIndexOf(": ");
+        return (i > 0) ? title.substring(0, i) : title;
+    }
+
+    /**
+     * Shows the plotted benchmark's drive in the chart title and caches it as
+     * the baseline for drive-change detection. Safe to call from any thread.
+     * A loaded result is the new baseline, so the plot, title and settings all
+     * match it; a drive change is only flagged when the selection changes after.
+     * @param benchmark the benchmark now plotted
+     */
+    static void setDisplayedBenchmarkTitle(Benchmark benchmark) {
+        if (chart == null || benchmark == null) return;
+        runOnEdt(() -> {
+            displayedTitle = benchmark.getDriveInfoDisplay();
+            chart.getTitle().setText(displayedTitle);
+            setDriveChanged(false);
+        });
+    }
+
+    /**
+     * Logs a user-initiated load. Not called on chart redraws.
+     * @param benchmark the benchmark loaded
+     */
+    static void logBenchmarkLoaded(Benchmark benchmark) {
+        if (benchmark == null || benchmark.startTime == null) return;
+        App.msg("Loaded " + benchmark.getDriveInfo().driveModel
+                + " benchmark from " + benchmark.getStartTimeString());
     }
     
     public static void updateProgress() {
@@ -156,6 +234,8 @@ public final class Gui {
      */
     public static void clearAllStaleHighlights() {
         clearBadgeHighlights();
+        // queued before the subtitle update so it sees the cleared drive state
+        runOnEdt(() -> setDriveChanged(false));
         setChartModifiedIndicator(false);
         if (controlPanel != null) controlPanel.clearRowHighlights();
     }
@@ -182,6 +262,7 @@ public final class Gui {
         BADGE_DEFAULT_FG = def.badgeDefaultFg();
         BADGE_STALE_BG   = def.badgeStaleBg();
         BADGE_STALE_FG   = def.badgeStaleFg();
+        applyTitlePaint();
 
         if (chartBadgeList != null) {
             javax.swing.border.Border sharedBorder = null;
@@ -749,7 +830,7 @@ public final class Gui {
         foregroundColor = UIManager.getColor("Label.foreground");
         if (foregroundColor == null) foregroundColor = Color.LIGHT_GRAY;
         
-        chart.getTitle().setPaint(foregroundColor);
+        setChartTitleBasePaint(foregroundColor);
         Color bgColor = UIManager.getColor("Panel.background");
         chart.setBackgroundPaint(bgColor);
         
@@ -1266,6 +1347,14 @@ public final class Gui {
         progressBar.setValue(0);
         controlPanel.refreshReadMetrics();
         controlPanel.refreshWriteMetrics();
+        // empty chart — nothing left to be stale against
+        runOnEdt(() -> {
+            displayedTitle = null;
+            if (driveChanged) {
+                setDriveChanged(false);
+                setChartModifiedIndicator(settingsStale);
+            }
+        });
     }
 
     public static void lockSampleAxis(int numSamples) {
@@ -1377,7 +1466,13 @@ public final class Gui {
     private static final Logger SMART_LOG = Logger.getLogger(Gui.class.getName());
 
     static public void updateDiskInfo() {
-        chart.getTitle().setText(App.getDriveInfo());
+        String currentTitle = App.getDriveInfo();
+        boolean changed = displayedTitle != null
+                && !driveIdentity(displayedTitle).equals(driveIdentity(currentTitle));
+        // back on the plotted run's drive: restore its title so usage matches the data
+        chart.getTitle().setText((displayedTitle != null && !changed) ? displayedTitle : currentTitle);
+        setDriveChanged(changed);
+        setChartModifiedIndicator(settingsStale);
         if (drivePanel != null) {
             drivePanel.refresh();
         }
@@ -1712,7 +1807,7 @@ public final class Gui {
     
     static public void loadBenchmark(Benchmark benchmark) {
         resetBenchmarkData();
-        chart.getTitle().setText(benchmark.getDriveInfoDisplay());
+        setDisplayedBenchmarkTitle(benchmark);
 
         updateLegendAndAxis(benchmark);
         
@@ -1780,7 +1875,7 @@ public final class Gui {
         Benchmark benchmark = operation.getBenchmark();
         resetBenchmarkData();
         updateLegendAndAxis(operation);
-        chart.getTitle().setText(benchmark.getDriveInfoDisplay());
+        setDisplayedBenchmarkTitle(benchmark);
         ArrayList<Sample> samples = operation.getSamples();
         for (Sample s : samples) {
             switch (operation.ioMode) {

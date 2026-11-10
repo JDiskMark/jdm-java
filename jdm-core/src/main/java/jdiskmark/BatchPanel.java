@@ -347,6 +347,7 @@ public class BatchPanel extends JPanel {
         if (benchmark == null) return;
 
         Gui.loadBenchmark(benchmark);
+        Gui.logBenchmarkLoaded(benchmark);
         Gui.selectMainTab(org.metricus.jdm.ui.Tabs.TOP_BENCHMARK);
     }
 
