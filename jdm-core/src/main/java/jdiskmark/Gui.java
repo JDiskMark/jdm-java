@@ -200,6 +200,8 @@ public final class Gui {
     /**
      * Shows the plotted benchmark's drive in the chart title and caches it as
      * the baseline for drive-change detection. Safe to call from any thread.
+     * A loaded result is the new baseline, so the plot, title and settings all
+     * match it; a drive change is only flagged when the selection changes after.
      * @param benchmark the benchmark now plotted
      */
     static void setDisplayedBenchmarkTitle(Benchmark benchmark) {
@@ -209,6 +211,16 @@ public final class Gui {
             chart.getTitle().setText(displayedTitle);
             setDriveChanged(false);
         });
+    }
+
+    /**
+     * Logs a user-initiated load. Not called on chart redraws.
+     * @param benchmark the benchmark loaded
+     */
+    static void logBenchmarkLoaded(Benchmark benchmark) {
+        if (benchmark == null || benchmark.startTime == null) return;
+        App.msg("Loaded " + benchmark.getDriveInfo().driveModel
+                + " benchmark from " + benchmark.getStartTimeString());
     }
     
     public static void updateProgress() {
