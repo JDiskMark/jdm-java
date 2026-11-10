@@ -664,7 +664,7 @@ public final class Gui {
         String html = "<html><body style='font-family:sans-serif;font-size:11px'>"
                 + "<b>" + App.APP_NAME + " " + App.VERSION + "</b><br>"
                 + "JVM: " + App.jdk + "<br>"
-                + "OS:&nbsp; " + App.osLabel + "<br>"
+                + "OS:&nbsp; " + UtilOs.formatOsDisplay(App.os, App.osLabel) + "<br>"
                 + "System ID: "
                 + (hasSystemId
                         ? "<a href='#select-system-id' style='text-decoration:none'><code>" + systemIdDisplay + "</code></a>"
