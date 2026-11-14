@@ -64,7 +64,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         public boolean isCancelled() { return BenchmarkWorker.this.isCancelled(); }
 
         @Override
-        public void attemptCacheDrop() { Gui.dropCache(); }
+        public boolean attemptCacheDrop() { return Gui.dropCache(); }
 
         @Override
         public void onOperationComplete() {

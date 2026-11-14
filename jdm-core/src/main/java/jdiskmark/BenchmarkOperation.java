@@ -6,6 +6,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -36,6 +38,9 @@ import jdiskmark.Benchmark.IOMode;
     query="SELECT o FROM BenchmarkOperation o")
 })
 public class BenchmarkOperation implements Serializable {
+    
+    public enum Status { COMPLETED, FAILED }
+    public enum FailReason { CACHE_NOT_CLEARED }
     
     static final DecimalFormat DF = new DecimalFormat("###.##");
     static final DecimalFormat DFT = new DecimalFormat("###");
@@ -115,6 +120,20 @@ public class BenchmarkOperation implements Serializable {
     ArrayList<Integer> gcRetriedSamples = new ArrayList<>();
     public List<Integer> getGcRetriedSamples() { return gcRetriedSamples; }
     
+    // null on rows saved before status tracking; treated as COMPLETED
+    @Enumerated(EnumType.STRING)
+    @Column
+    Status status;
+    public Status getStatus() { return status == null ? Status.COMPLETED : status; }
+    public void setStatus(Status status) { this.status = status; }
+    @Enumerated(EnumType.STRING)
+    @Column
+    FailReason failReason;
+    public FailReason getFailReason() { return failReason; }
+    public void setFailReason(FailReason failReason) { this.failReason = failReason; }
+    @JsonIgnore
+    public boolean isFailed() { return status == Status.FAILED; }
+    
     @Override
     public String toString() {
         return "BenchmarkOp(" + ioMode + "," + blockOrder + "): " + numSamples + " bw avg: " + bwAvg;
@@ -182,6 +201,7 @@ public class BenchmarkOperation implements Serializable {
     }
     @JsonIgnore
     public String getBwAvgDisplay() {
+        if (isFailed()) return "Failed";
         return bwAvg == -1 ? "- -" : DF.format(bwAvg);
     }
     

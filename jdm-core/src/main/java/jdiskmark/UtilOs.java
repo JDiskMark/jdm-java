@@ -15,6 +15,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -792,11 +796,13 @@ public class UtilOs {
     
     /**
      * GH-2 Drop the write cache, used to prevent invalid read measurement
+     * @return true if the cache was dropped
      */
-    static public void dropWriteCacheLinux() {
+    static public boolean dropWriteCacheLinux() {
 
         String[] command = {"/bin/sh", "-c", "echo 1 > /proc/sys/vm/drop_caches"};
         System.out.println("running: " + Arrays.toString(command));
+        boolean success = false;
 
         try {
             ProcessBuilder builder = new ProcessBuilder(command);
@@ -829,6 +835,7 @@ public class UtilOs {
                         LOGGER.log(Level.WARNING, errMsg);
                         App.err(errMsg);
                     }
+                    success = exitValue == 0;
                     System.out.println("EXIT VALUE: " + exitValue);
                     finished = true;
                 } catch (InterruptedException e) {
@@ -843,6 +850,109 @@ public class UtilOs {
             LOGGER.log(Level.SEVERE, "Error executing command", e);
             App.err("drop_caches command failed: " + e.getMessage());
         }
+        return success;
+    }
+
+    /** Outcome of an elevated disk cache drop attempt. */
+    public enum CacheDropResult {
+        /** Cache was dropped. */
+        CLEARED,
+        /** Escalation was cancelled, refused, or the command failed. */
+        DENIED,
+        /** No password prompt is possible in this environment (e.g. Flatpak). */
+        UNAVAILABLE
+    }
+
+    private static final String DROP_SENTINEL = "---DROP_DONE:";
+    // allows time for the user to enter their password
+    private static final long DROP_TIMEOUT_SECONDS = 120;
+
+    /**
+     * Flushes and drops the OS disk cache on Linux or macOS through the
+     * privileged shell shared with SMART ({@code pkexec bash} on Linux,
+     * {@code osascript} + {@code sudo -S bash} on macOS). The user is
+     * prompted for their password only if the shell is not already running.
+     *
+     * @return the outcome of the attempt
+     */
+    public static CacheDropResult dropCacheElevated() {
+        String command;
+        if (App.isLinux()) {
+            if (isFlatpak() || !isOnPath("pkexec")) {
+                return CacheDropResult.UNAVAILABLE;
+            }
+            command = "sync; echo 1 > /proc/sys/vm/drop_caches";
+        } else if (App.isMacOs()) {
+            command = "sync; purge";
+        } else {
+            return CacheDropResult.UNAVAILABLE;
+        }
+
+        try {
+            if (Smart.process == null || !Smart.process.isAlive()) {
+                App.msg("Requesting administrator privileges to clear the disk cache...");
+                Smart.startPrivilegedShell();
+                Smart.startHeartbeat();
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Privilege escalation for cache drop failed", e);
+            return CacheDropResult.DENIED;
+        }
+
+        synchronized (Smart.pLock) {
+            Process shell = Smart.process;
+            if (shell == null || Smart.shellWriter == null || Smart.shellReader == null) {
+                return CacheDropResult.DENIED;
+            }
+            CompletableFuture<Integer> exitCode = new CompletableFuture<>();
+            Thread reader = Thread.startVirtualThread(() -> {
+                try {
+                    String line;
+                    while ((line = Smart.shellReader.readLine()) != null) {
+                        if (line.startsWith(DROP_SENTINEL)) {
+                            String code = line.substring(DROP_SENTINEL.length()).replace("---", "").trim();
+                            exitCode.complete(Integer.parseInt(code));
+                            return;
+                        }
+                    }
+                    exitCode.complete(-1); // shell exited, escalation refused
+                } catch (IOException | NumberFormatException e) {
+                    exitCode.completeExceptionally(e);
+                }
+            });
+            try {
+                Smart.shellWriter.write(command + "; echo \"" + DROP_SENTINEL + "$?---\"\n");
+                Smart.shellWriter.flush();
+                int code = exitCode.get(DROP_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                if (code == 0) {
+                    App.msg("Disk cache cleared");
+                    return CacheDropResult.CLEARED;
+                }
+                LOGGER.log(Level.WARNING, "Elevated cache drop failed, exit={0}", code);
+                return CacheDropResult.DENIED;
+            } catch (TimeoutException e) {
+                LOGGER.warning("Elevated cache drop timed out, stopping privileged shell");
+                shell.destroyForcibly();
+                reader.interrupt();
+                return CacheDropResult.DENIED;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                shell.destroyForcibly();
+                return CacheDropResult.DENIED;
+            } catch (IOException | ExecutionException e) {
+                LOGGER.log(Level.WARNING, "Elevated cache drop failed", e);
+                return CacheDropResult.DENIED;
+            }
+        }
+    }
+
+    private static boolean isOnPath(String executable) {
+        String path = System.getenv("PATH");
+        if (path == null) return false;
+        for (String dir : path.split(File.pathSeparator)) {
+            if (new File(dir, executable).canExecute()) return true;
+        }
+        return false;
     }
     
     

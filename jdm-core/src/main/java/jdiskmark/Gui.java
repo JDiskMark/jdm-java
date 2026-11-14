@@ -1712,43 +1712,54 @@ public final class Gui {
     
     /**
      * GH-2 need solution for dropping catch
+     * @return false if the cache could not be cleared
      */
-    static public void dropCache() {
+    static public boolean dropCache() {
         if (App.isLinux()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
                 UtilOs.flushDataToDriveLinux();
-                UtilOs.dropWriteCacheLinux();
-            } else {
-                /* Revised the drop_caches command so it works. - JSL 2024-01-16 */
-                String message = """
-                        Run JDiskMark with sudo to automatically clear the disk cache.
-                        
-                        For a valid READ benchmark please clear the disk cache now 
-                        by using: \"sudo sh -c \'sync; echo 1 > /proc/sys/vm/drop_caches\'\".
-                        
-                        Press OK to continue when disk cache has been dropped.""";
-                JOptionPane.showMessageDialog(mainFrame, 
-                        message, "Clear Disk Cache Now",
-                        JOptionPane.PLAIN_MESSAGE);
+                return UtilOs.dropWriteCacheLinux();
+            }
+            switch (UtilOs.dropCacheElevated()) {
+                case CLEARED -> { return true; }
+                case DENIED -> { return false; }
+                case UNAVAILABLE -> {
+                    /* Revised the drop_caches command so it works. - JSL 2024-01-16 */
+                    String message = """
+                            Run JDiskMark with sudo to automatically clear the disk cache.
+                            
+                            For a valid READ benchmark please clear the disk cache now 
+                            by using: \"sudo sh -c \'sync; echo 1 > /proc/sys/vm/drop_caches\'\".
+                            
+                            Press OK to continue when disk cache has been dropped.""";
+                    JOptionPane.showMessageDialog(mainFrame, 
+                            message, "Clear Disk Cache Now",
+                            JOptionPane.PLAIN_MESSAGE);
+                }
             }
         } else if (App.isMacOs()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
                 UtilsMacOs.flushDataToDrive();
-                UtilsMacOs.dropWriteCache();
-            } else {
-                String message = """
-                        For valid READ benchmarks please clear the disk cache.
+                return UtilsMacOs.dropWriteCache();
+            }
+            switch (UtilOs.dropCacheElevated()) {
+                case CLEARED -> { return true; }
+                case DENIED -> { return false; }
+                case UNAVAILABLE -> {
+                    String message = """
+                            For valid READ benchmarks please clear the disk cache.
 
-                        Removable drives can be disconnected and reconnected.
+                            Removable drives can be disconnected and reconnected.
 
-                        sudo purge
+                            sudo purge
 
-                        Press OK to continue when disk cache has been cleared.""";
-                JOptionPane.showMessageDialog(mainFrame, 
-                        message, "Clear Disk Cache Now",
-                        JOptionPane.PLAIN_MESSAGE);
+                            Press OK to continue when disk cache has been cleared.""";
+                    JOptionPane.showMessageDialog(mainFrame, 
+                            message, "Clear Disk Cache Now",
+                            JOptionPane.PLAIN_MESSAGE);
+                }
             }
         } else if (App.isWindows()) {
             File emptyStandbyListExe = new File(".\\" + App.ESBL_EXE);
@@ -1803,6 +1814,7 @@ public final class Gui {
                     message, "Clear Disk Cache Now",
                     JOptionPane.PLAIN_MESSAGE);
         }
+        return true;
     }
     
     static public void loadBenchmark(Benchmark benchmark) {

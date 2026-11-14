@@ -217,8 +217,8 @@ public class Sample {
             initialFc = FileChannel.open(testFile.toPath(), options);
         } catch (UnsupportedOperationException | IOException e) {
             // If direct I/O was requested, try falling back to buffered I/O
-            if (App.directEnable && options.contains(ExtendedOpenOption.DIRECT)) {
-                App.err("Direct I/O open failed or unsupported: " + e.getMessage() + ". Falling back to buffered I/O.");
+            if (options.contains(ExtendedOpenOption.DIRECT)) {
+                bRunner.disableDirectIo("Direct I/O open failed or unsupported: " + e.getMessage());
                 options.remove(ExtendedOpenOption.DIRECT);
                 try {
                     initialFc = FileChannel.open(testFile.toPath(), options);
@@ -256,9 +256,8 @@ public class Sample {
                 }
                 break retry;
             } catch (IOException e) {
-                if (!directRetried && App.directEnable) {
-                    App.err("Direct I/O write failed: " + e.getMessage()
-                            + ". Retrying with buffered I/O.");
+                if (!directRetried && options.contains(ExtendedOpenOption.DIRECT)) {
+                    bRunner.disableDirectIo("Direct I/O write failed: " + e.getMessage());
                     directRetried = true;
                     continue retry;
                 }
@@ -330,8 +329,8 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
             initialFc = FileChannel.open(testFile.toPath(), options);
         } catch (UnsupportedOperationException | IOException e) {
             // If direct I/O was requested, try falling back to buffered I/O
-            if (App.directEnable && options.contains(ExtendedOpenOption.DIRECT)) {
-                App.err("Direct I/O open failed or unsupported: " + e.getMessage() + ". Falling back to buffered I/O.");
+            if (options.contains(ExtendedOpenOption.DIRECT)) {
+                bRunner.disableDirectIo("Direct I/O open failed or unsupported: " + e.getMessage());
                 options.remove(ExtendedOpenOption.DIRECT);
                 try {
                     initialFc = FileChannel.open(testFile.toPath(), options);
@@ -367,9 +366,8 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
                 }
                 break retry;
             } catch (IOException e) {
-                if (!directRetried && App.directEnable) {
-                    App.err("Direct I/O read failed: " + e.getMessage()
-                            + ". Retrying with buffered I/O.");
+                if (!directRetried && options.contains(ExtendedOpenOption.DIRECT)) {
+                    bRunner.disableDirectIo("Direct I/O read failed: " + e.getMessage());
                     directRetried = true;
                     continue retry;
                 }

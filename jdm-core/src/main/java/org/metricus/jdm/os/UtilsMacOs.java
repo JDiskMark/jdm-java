@@ -194,10 +194,14 @@ public final class UtilsMacOs {
         UtilOs.flushDataToDriveLinux();
     }
 
-    /** Drops the OS write cache via {@code purge}. */
-    public static void dropWriteCache() {
+    /**
+     * Drops the OS write cache via {@code purge}.
+     * @return true if purge exited successfully
+     */
+    public static boolean dropWriteCache() {
         String[] command = {"purge"};
         System.out.println("running: " + java.util.Arrays.toString(command));
+        boolean success = false;
 
         try {
             ProcessBuilder builder = new ProcessBuilder(command);
@@ -223,10 +227,12 @@ public final class UtilsMacOs {
             }
 
             System.out.println("EXIT VALUE: " + exitValue);
+            success = exitValue == 0;
 
         } catch (IOException | InterruptedException e) {
             LOGGER.log(Level.SEVERE, "Error executing command", e);
         }
+        return success;
     }
 
     // -----------------------------------------------------------------------

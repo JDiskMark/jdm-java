@@ -150,8 +150,8 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
                 }
 
                 @Override
-                public void attemptCacheDrop() {
-                    Gui.dropCache();
+                public boolean attemptCacheDrop() {
+                    return Gui.dropCache();
                 }
             };
 

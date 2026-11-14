@@ -10,12 +10,18 @@ import java.time.LocalDateTime;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemoryLayout;
+import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
+import com.sun.nio.file.ExtendedOpenOption;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import jdiskmark.App.IoEngine;
@@ -30,7 +36,12 @@ public class BenchmarkRunner {
         void onSampleComplete(Sample sample);
         void onProgressUpdate(long completed, long total);
         boolean isCancelled();
-        void attemptCacheDrop();
+        /**
+         * Clears the OS disk cache before a READ operation.
+         * @return false if the cache could not be cleared and READ results
+         *         would measure memory instead of the drive
+         */
+        boolean attemptCacheDrop();
 
         /**
          * Called after each operation (write or read) completes.
@@ -60,6 +71,7 @@ public class BenchmarkRunner {
     long blockSize;
     long effectiveAlignment;
     byte[] blockArr; // for legacy jdk io
+    final AtomicBoolean directDisabled = new AtomicBoolean(false);
 
     public static int[][] divideIntoRanges(int startIndex, int endIndex, int numThreads) {
         if (numThreads <= 0 || endIndex < startIndex) {
@@ -203,20 +215,38 @@ public class BenchmarkRunner {
         // cache reset if
         // 1. not cancelled
         // 2. read operation
-        // 3. direct I/O not enabled (direct I/O bypasses cache on all platforms)
-        if (!listener.isCancelled() && config.hasReadOperation() &&
-                !config.getDirectIoEnabled()) {
-            listener.attemptCacheDrop();
+        // 3. direct I/O not in effect (direct I/O bypasses cache on all platforms)
+        boolean readAllowed = true;
+        if (!listener.isCancelled() && config.hasReadOperation()) {
+            if (Boolean.TRUE.equals(config.getDirectIoEnabled())) {
+                if (config.ioEngine == IoEngine.LEGACY) {
+                    disableDirectIo("Direct I/O is not supported by the legacy IO engine");
+                } else if (!probeDirectRead(tRanges)) {
+                    disableDirectIo("Direct I/O read probe failed");
+                }
+            }
+            if (!Boolean.TRUE.equals(config.getDirectIoEnabled())) {
+                readAllowed = listener.attemptCacheDrop();
+            }
         }
         
         // If we are doing both, clear the heap between them
-        if (config.gcHintsEnabled && !listener.isCancelled() && 
+        if (readAllowed && config.gcHintsEnabled && !listener.isCancelled() && 
                 config.hasWriteOperation() && config.hasReadOperation()) {
             GcDetector.triggerAndWait();
         }
         
         if (config.hasReadOperation() && !listener.isCancelled()) {
-            runOperation(benchmark, IOMode.READ, tRanges);
+            if (readAllowed) {
+                runOperation(benchmark, IOMode.READ, tRanges);
+            } else {
+                recordFailedOp(benchmark, IOMode.READ,
+                        BenchmarkOperation.FailReason.CACHE_NOT_CLEARED);
+                String msg = "READ skipped: disk cache could not be cleared, "
+                        + "read results would measure memory instead of the drive";
+                logger.warning(msg);
+                App.err(msg);
+            }
             listener.onOperationComplete();
         }
 
@@ -225,6 +255,51 @@ public class BenchmarkRunner {
         if (config.gcHintsEnabled) { System.gc(); } // clear heap no wait
         
         return benchmark;
+    }
+
+    /**
+     * Turns Direct I/O off for the rest of this run and for subsequent runs
+     * when it is found not to work. Safe to call from multiple threads; only
+     * the first call logs and updates state.
+     */
+    void disableDirectIo(String reason) {
+        if (!directDisabled.compareAndSet(false, true)) return;
+        config.setDirectIoEnabled(false);
+        App.directEnable = false;
+        Gui.refreshChartBadges();
+        String msg = reason + ". Direct I/O disabled, using buffered I/O.";
+        logger.warning(msg);
+        App.err(msg);
+    }
+
+    /**
+     * Reads one block of the first test file with O_DIRECT to confirm the
+     * page cache is really bypassed before trusting Direct I/O for READ.
+     */
+    private boolean probeDirectRead(int[][] ranges) {
+        if (ranges.length == 0) return false;
+        File probeFile = new Sample(Sample.Type.READ, ranges[0][0]).getTestFile(this);
+        try (FileChannel fc = FileChannel.open(probeFile.toPath(),
+                    StandardOpenOption.READ, ExtendedOpenOption.DIRECT);
+             Arena arena = Arena.ofConfined()) {
+            MemorySegment segment = arena.allocate(blockSize, effectiveAlignment);
+            fc.read(segment.asByteBuffer(), 0);
+            return true;
+        } catch (Exception e) {
+            logger.log(Level.INFO, "Direct I/O probe failed: {0}", e.toString());
+            return false;
+        }
+    }
+
+    private void recordFailedOp(Benchmark b, IOMode mode, BenchmarkOperation.FailReason reason) {
+        BenchmarkOperation op = createOp(b, mode);
+        op.setStatus(BenchmarkOperation.Status.FAILED);
+        op.setFailReason(reason);
+        op.bwAvg = -1;
+        op.bwMax = -1;
+        op.bwMin = -1;
+        op.accAvg = -1;
+        op.endTime = LocalDateTime.now();
     }
 
     private void runOperation(Benchmark b, IOMode mode, int[][] ranges) throws Exception {
@@ -372,6 +447,7 @@ public class BenchmarkRunner {
         op.blockSize = config.blockSize;
         op.txSize = config.txSize;
         op.numThreads = config.numThreads;
+        op.setStatus(BenchmarkOperation.Status.COMPLETED);
         if (mode == IOMode.WRITE) {
             op.setWriteSyncEnabled(config.writeSyncEnabled);
         }

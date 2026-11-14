@@ -559,6 +559,34 @@ Consequences of the Java NIO restriction:
   be aligned to the cluster size. `Arena.allocate(size, alignment)` with the
   cluster size as alignment satisfies this.
 
+#### Runtime Fallback and Disk Cache Drop
+
+Direct IO is only trusted for READ if it is actually in effect. Before the READ
+phase `BenchmarkRunner` turns Direct IO off when any sample fell back to
+buffered IO, the legacy engine is selected, or a one-block `O_DIRECT` probe
+read of the first test file fails. `BenchmarkRunner.disableDirectIo()` clears
+`config.directIoEnabled` and `App.directEnable`, refreshes the `Direct IO`
+badge, and logs an event once per run.
+
+Without Direct IO the page cache must be cleared before READ, otherwise the
+read measures memory. When not running as root, `UtilOs.dropCacheElevated()`
+runs the command through the privileged shell shared with SMART, so the user
+is prompted at most once per session:
+
+| OS | Command | Escalation |
+|---|---|---|
+| Linux | `sync; echo 1 > /proc/sys/vm/drop_caches` | `pkexec bash` |
+| macOS | `sync; purge` | `osascript` dialog + `sudo -S bash` |
+
+When no password prompt is possible (Flatpak, `pkexec` not installed) the
+manual "run sudo, then press OK" prompt is shown instead. If the user cancels
+or authentication fails, READ is skipped and recorded as a
+`BenchmarkOperation` with `status = FAILED`, `failReason = CACHE_NOT_CLEARED`,
+no samples, and `-1` metrics. Failed operations are included in exports and
+portal uploads; consumers should exclude them from aggregates. Windows still
+uses `EmptyStandbyList.exe` when running as admin and the manual prompt
+otherwise.
+
 #### Future Improvement
 
 Bypassing Java's NIO restriction via the Foreign Function & Memory API (FFI) to call `open()` with `O_DIRECT` at the syscall level would allow Direct IO with the device's true 512-byte sector alignment, matching `dd` behaviour.
