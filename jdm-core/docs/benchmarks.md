@@ -559,68 +559,9 @@ Consequences of the Java NIO restriction:
   be aligned to the cluster size. `Arena.allocate(size, alignment)` with the
   cluster size as alignment satisfies this.
 
-#### Runtime Fallback and Disk Cache Drop
-
-Direct IO is only trusted for READ if it is actually in effect. Before the READ
-phase `BenchmarkRunner` turns Direct IO off when any sample fell back to
-buffered IO, the legacy engine is selected, or a one-block `O_DIRECT` probe
-read of the first test file fails. `BenchmarkRunner.disableDirectIo()` clears
-`config.directIoEnabled` and `App.directEnable`, refreshes the `Direct IO`
-badge, and logs an event once per run.
-
-Without Direct IO the page cache must be cleared before READ, otherwise the
-read measures memory. When not running as root, `UtilOs.dropCacheElevated()`
-runs the command through the privileged shell shared with SMART, so the user
-is prompted at most once per session:
-
-| OS | Command | Escalation |
-|---|---|---|
-| Linux | `sync; echo 1 > /proc/sys/vm/drop_caches` | `pkexec bash` |
-| macOS | `sync; purge` | `osascript` dialog + `sudo -S bash` |
-
-When no password prompt is possible (Flatpak, `pkexec` not installed) the
-manual "run sudo, then press OK" prompt is shown instead. If the user cancels
-or authentication fails, READ is skipped and recorded as a
-`BenchmarkOperation` with `status = FAILED`, `failReason = CACHE_NOT_CLEARED`,
-no samples, and `-1` metrics. Failed operations are included in exports and
-portal uploads; consumers should exclude them from aggregates. Windows still
-uses `EmptyStandbyList.exe` when running as admin and the manual prompt
-otherwise.
-
-Without Direct IO, a single reused test file (Multi-File off) holds only one
-sample's worth of data, so after the first READ sample every read is served
-from the page cache. When the runner itself turns Direct IO off during a run
-(legacy engine, failed probe, or open/write fallback),
-`BenchmarkRunner.enableMultiFile()` turns Multi-File on for that run if it has a
-READ phase, logs an event, and updates the badge and menu. If single-file data
-was already written, the per-sample files are generated before the cache drop.
-Multi-File is left on afterwards, but the user can turn it off again: on later
-runs, where Direct IO is already off by the user's setting, the Multi-File choice
-is respected and a warning is logged that READ samples after the first may be
-served from the page cache.
-
-Badges for settings the runner changes automatically (Direct IO off, Multi-File
-on) are shown in the theme's `badgeAutoBg()` colour (deep teal by default) with
-the reason as a tooltip, while that run is displayed. The amber stale highlight
-takes priority if the user later changes the setting.
-
-Without Direct IO, writes complete into the page cache and the kernel writes
-them back later, so write samples run at memory speed until `vm.dirty_ratio`
-is reached. When Direct IO and Write Sync are both off,
-`BenchmarkRunner.flushWriteSamples()` ends each write sample with a flush
-(`FileChannel.force(false)`, or `FileDescriptor.sync()` on the legacy engine)
-inside the timed section, so each sample includes its data reaching the drive.
-This needs no elevation and is logged once per run. Write Sync (`DSYNC`)
-instead waits on every block and reads lower than the drive's sustained rate.
-
-#### Write Data
-
-Each run fills one block with random bytes (`BenchmarkRunner.blockArr`) and
-writes it for every block, in both engines. Compressing filesystems (btrfs
-`compress=`, ZFS, NTFS compression) cannot shrink random data, so results
-reflect the drive rather than the compression ratio. Zero-filled or patterned
-blocks compress almost to nothing and produce reads above the interface
-limit even with the cache cleared.
+When Direct IO is unavailable or off, see
+[§5 Buffered IO Accuracy](#5-buffered-io-accuracy-direct-io-off) for the
+runtime fallback, disk cache drop, and related safeguards.
 
 #### Future Improvement
 
@@ -641,3 +582,83 @@ USB drives report VENDOR and MODEL as separate `lsblk` columns (e.g. VENDOR=`Lex
 ### 4.5 Write Performance Characteristics
 
 With Direct IO enabled and per-sample file creation (the default benchmark pattern), write throughput on vfat is significantly lower than raw device capability. Each new file requires synchronous FAT table metadata updates that bypass the OS write cache. Verified with `dd oflag=direct` writing to a single file at 47 MB/s versus the benchmark pattern at ~0.5 MB/s.
+
+---
+
+## 5. Buffered IO Accuracy (Direct IO Off)
+
+Without Direct IO, reads and writes pass through the OS page cache and can measure memory instead of the drive. This section describes how a run detects that state and keeps results representative of the drive. All safeguards live in `BenchmarkRunner` and `Sample` and apply on every platform; only the cache drop and its privilege escalation are OS-specific.
+
+### 5.1 Direct IO Detection and Fallback
+
+Direct IO is only trusted if it is actually in effect. `BenchmarkRunner` turns it off for the run when:
+
+- the legacy IO engine is selected (checked before WRITE),
+- a sample fails to open or write with `ExtendedOpenOption.DIRECT` and falls back to buffered IO, or
+- a one-block `O_DIRECT` probe read of the first test file fails (checked before READ).
+
+`BenchmarkRunner.disableDirectIo()` runs once per run: it clears
+`config.directIoEnabled` and `App.directEnable`, updates the badge and the Options menu, and logs an event. Direct IO stays off for later runs until the user turns it back on.
+
+### 5.2 Disk Cache Drop Before READ
+
+When Direct IO is off the page cache is cleared once before READ. Not running as root, `UtilOs.dropCacheElevated()` runs the command in the privileged shell shared with SMART, so the password is requested at most once per session:
+
+| OS | Command | Escalation | Dialog text |
+|---|---|---|---|
+| Linux | `sync; echo 1 > /proc/sys/vm/drop_caches` | `pkexec bash` (polkit) | polkit agent default |
+| macOS | `sync; purge` | `osascript` dialog + `sudo -S bash` | "…administrator privileges to clear the disk cache." |
+| Windows | `EmptyStandbyList.exe` (admin only) | none | manual prompt when not admin |
+
+Outcomes:
+
+| Result | Cause | Behaviour |
+|---|---|---|
+| `CLEARED` | command exit 0 | READ runs |
+| `UNAVAILABLE` | Flatpak, `pkexec` not on `PATH`, or `pkexec` exit 127 (no polkit agent, or authorization not obtained) | manual "run sudo, then press OK" prompt, then READ runs |
+| `DENIED` | dialog cancelled (`pkexec` exit 126, macOS Cancel), command failure, 120 s timeout | READ skipped and recorded as failed (§5.3) |
+
+`pkexec`/polkit is not bundled or declared as a package dependency; it is assumed present on desktop Linux. The DEB and RPM install a polkit policy for SMART only. Systems without it fall back to the manual prompt.
+
+### 5.3 Failed READ Operation
+
+A skipped READ is recorded as a `BenchmarkOperation` with `status = FAILED`,
+`failReason = CACHE_NOT_CLEARED`, no samples, and `-1` metrics, and an event is logged. Failed operations are included in exports and portal uploads; consumers should exclude them from aggregates. Operations without a stored status are treated as `COMPLETED`.
+
+### 5.4 Multi-File
+
+With Multi-File off, every sample reuses one test file holding a single
+sample's data (e.g. 32 MB), so after the first READ sample every read is served from the page cache even though the cache was cleared before READ.
+
+- When the runner itself disables Direct IO (§5.1) in a run with a READ phase,
+  `BenchmarkRunner.enableMultiFile()` turns Multi-File on, re-checks free disk space, logs an event, and updates the badge and menu. If single-file data was already written, per-sample files are generated before the cache drop.
+- Multi-File is left on afterwards but the user may turn it off. When Direct IO is off by the user's own setting, the Multi-File choice is respected and a warning is logged that READ samples after the first may come from the cache.
+
+### 5.5 Write Flush per Sample
+
+Buffered writes complete into the page cache and are written back later, so write samples run at memory speed until `vm.dirty_ratio` is reached. When Direct IO and Write Sync are both off, `BenchmarkRunner.flushWriteSamples()` ends each write sample with `FileChannel.force(false)` (legacy engine: `FileDescriptor.sync()`) inside the timed section, so each sample includes its data reaching the drive. No elevation is needed; it is logged once per run.
+
+The flush must be timed: untimed, the sample measures only the copy into
+memory and the drive's work happens between samples. Write Sync (`DSYNC`) waits on every block instead and reads below the drive's sustained rate. A cache drop before WRITE is not needed; it only affects reads.
+
+### 5.6 Incompressible Write Data
+
+Each run fills one block with random bytes (`BenchmarkRunner.blockArr`) that both engines write for every block. Compressing filesystems (btrfs
+`compress=`, ZFS lz4, NTFS compression) cannot shrink it, so results reflect the drive rather than the compression ratio. On btrfs it also keeps extents uncompressed so `O_DIRECT` is honoured.
+
+### 5.7 Badge Indication
+
+Badges for settings the runner changed automatically (Direct IO off,
+Multi-File on) use the theme's `badgeAutoBg()` colour (deep teal by default, see `theme.md`) with the reason as a tooltip while that run is displayed. The amber stale highlight takes priority if the user changes the setting.
+
+### 5.8 Platform Notes and Known Limitations
+
+| Platform | Note |
+|---|---|
+| Linux ext4/xfs, Windows NTFS, macOS APFS | Direct IO normally works; only random data and the probe apply |
+| Linux btrfs | Benefits from random data; verified on Fedora 44 (`compress=zstd:1`) |
+| Linux without polkit agent | Manual prompt fallback via `pkexec` exit 127 |
+| Flatpak | Manual prompt; no escalation from the sandbox |
+| macOS | Direct IO uses `F_NOCACHE` (a hint); `fsync` does not flush the drive cache (`F_FULLFSYNC` would), so flushed writes may read slightly high |
+| Windows | `FlushFileBuffers` also flushes the drive cache; may read low on drives without power-loss protection. Elevated cache drop is not automated yet |
+| OpenZFS < 2.3 | Accepts `O_DIRECT` but serves reads from the ARC; the probe passes and reads may still be inflated |

@@ -866,6 +866,8 @@ public class UtilOs {
     private static final String DROP_SENTINEL = "---DROP_DONE:";
     // allows time for the user to enter their password
     private static final long DROP_TIMEOUT_SECONDS = 120;
+    // pkexec: 127 = not authorized or no authentication agent, 126 = dialog dismissed
+    private static final int PKEXEC_NOT_AUTHORIZED = 127;
 
     /**
      * Flushes and drops the OS disk cache on Linux or macOS through the
@@ -891,7 +893,7 @@ public class UtilOs {
         try {
             if (Smart.process == null || !Smart.process.isAlive()) {
                 App.msg("Requesting administrator privileges to clear the disk cache...");
-                Smart.startPrivilegedShell();
+                Smart.startPrivilegedShell("clear the disk cache");
                 Smart.startHeartbeat();
             }
         } catch (IOException e) {
@@ -929,7 +931,7 @@ public class UtilOs {
                     return CacheDropResult.CLEARED;
                 }
                 LOGGER.log(Level.WARNING, "Elevated cache drop failed, exit={0}", code);
-                return CacheDropResult.DENIED;
+                return code == -1 ? shellExitResult(shell) : CacheDropResult.DENIED;
             } catch (TimeoutException e) {
                 LOGGER.warning("Elevated cache drop timed out, stopping privileged shell");
                 shell.destroyForcibly();
@@ -941,9 +943,27 @@ public class UtilOs {
                 return CacheDropResult.DENIED;
             } catch (IOException | ExecutionException e) {
                 LOGGER.log(Level.WARNING, "Elevated cache drop failed", e);
-                return CacheDropResult.DENIED;
+                return shellExitResult(shell);
             }
         }
+    }
+
+    /**
+     * Classifies a privileged shell that exited before running the command.
+     * pkexec exits 127 when no polkit agent can prompt or authorization was not
+     * obtained; that falls back to the manual prompt instead of failing READ.
+     */
+    private static CacheDropResult shellExitResult(Process shell) {
+        try {
+            if (App.isLinux() && shell.waitFor(2, TimeUnit.SECONDS)
+                    && shell.exitValue() == PKEXEC_NOT_AUTHORIZED) {
+                LOGGER.warning("pkexec could not authorize (no polkit agent?), using manual prompt");
+                return CacheDropResult.UNAVAILABLE;
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return CacheDropResult.DENIED;
     }
 
     private static boolean isOnPath(String executable) {

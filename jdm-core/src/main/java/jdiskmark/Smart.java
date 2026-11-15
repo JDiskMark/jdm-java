@@ -234,6 +234,15 @@ public class Smart {
      * @throws IOException if the process cannot be started
      */
     public static void startPrivilegedShell() throws IOException {
+        startPrivilegedShell("read SMART data");
+    }
+
+    /**
+     * @param purpose completes the macOS dialog text "JDiskMark needs
+     *        administrator privileges to ...", e.g. "clear the disk cache"
+     * @see #startPrivilegedShell()
+     */
+    public static void startPrivilegedShell(String purpose) throws IOException {
         if (App.isWindows()) {
             return;
         }
@@ -248,7 +257,7 @@ public class Smart {
                 // macOS: prompt for password using native macOS authorization dialog
                 ProcessBuilder dialogPb = new ProcessBuilder("osascript", "-e",
                         "return text returned of (display dialog "
-                        + "\"JDiskMark needs administrator privileges to read SMART data.\" "
+                        + "\"JDiskMark needs administrator privileges to " + purpose + ".\" "
                         + "default answer \"\" with hidden answer "
                         + "with title \"JDiskMark\" "
                         + "buttons {\"Cancel\", \"OK\"} default button \"OK\")");
