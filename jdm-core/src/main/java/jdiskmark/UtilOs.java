@@ -1643,14 +1643,15 @@ public class UtilOs {
     }
 
     /**
-     * Formats an OS for display. Linux shows the distro in parentheses
-     * (e.g. {@code "Linux (Ubuntu 24.04.1 LTS)"}); other platforms show the
-     * label alone since it already names the OS.
+     * Formats an OS for display. Linux shows the distro after a middle dot
+     * (e.g. {@code "Linux · Fedora Linux 44 (Workstation Edition)"}) so distro
+     * names with parentheses do not nest; other platforms show the label alone
+     * since it already names the OS.
      */
     static String formatOsDisplay(String os, String osLabel) {
         if (osLabel == null || osLabel.isBlank() || osLabel.equals(os)) return os;
         if (os == null) return osLabel;
-        return isLinux(os) ? os + " (" + osLabel + ")" : osLabel;
+        return isLinux(os) ? os + " \u00B7 " + osLabel : osLabel;
     }
 
     /**
