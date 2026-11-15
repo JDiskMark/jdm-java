@@ -625,14 +625,16 @@ Outcomes:
 A skipped READ is recorded as a `BenchmarkOperation` with `status = FAILED`,
 `failReason = CACHE_NOT_CLEARED`, no samples, and `-1` metrics, and an event is logged. Failed operations are included in exports and portal uploads; consumers should exclude them from aggregates. Operations without a stored status are treated as `COMPLETED`.
 
-### 5.4 Multi-File
+### 5.4 Test File Layout
 
-With Multi-File off, every sample reuses one test file holding a single
-sample's data (e.g. 32 MB), so after the first READ sample every read is served from the page cache even though the cache was cleared before READ.
+Every sample reads and writes its own data so READ samples are never served from data cached by an earlier sample:
 
-- When the runner itself disables Direct IO (§5.1) in a run with a READ phase,
-  `BenchmarkRunner.enableMultiFile()` turns Multi-File on, re-checks free disk space, logs an event, and updates the badge and menu. If single-file data was already written, per-sample files are generated before the cache drop.
-- Multi-File is left on afterwards but the user may turn it off. When Direct IO is off by the user's own setting, the Multi-File choice is respected and a warning is logged that READ samples after the first may come from the cache.
+- **Multi-File on:** one file per sample (`testdata<N>.jdm`).
+- **Multi-File off:** one file (`testdata.jdm`) holding a region per sample, the aggregate of the multi-file data. Sample *N* uses offset `(N − firstSample) × numBlocks × blockSize` (`Sample.regionOffset()`); random block order stays within that region. Read preparation does not truncate the shared file because threads fill different regions concurrently.
+
+Both modes need `numSamples × numBlocks × blockSize` of free space (`DriveChecker.checkDiskSpace`). Multi-File is never changed automatically.
+
+> Before this change single-file mode reused one sample-sized region for every sample (since the initial version). That was harmless with Direct IO, but without it READ samples after the first were served from the page cache.
 
 ### 5.5 Write Flush per Sample
 
@@ -648,8 +650,7 @@ Each run fills one block with random bytes (`BenchmarkRunner.blockArr`) that bot
 
 ### 5.7 Badge Indication
 
-Badges for settings the runner changed automatically (Direct IO off,
-Multi-File on) use the theme's `badgeAutoBg()` colour (deep teal by default, see `theme.md`) with the reason as a tooltip while that run is displayed. The amber stale highlight takes priority if the user changes the setting.
+Badges for settings the runner changed automatically (currently Direct IO off) use the theme's `badgeAutoBg()` colour (deep teal by default, see `theme.md`) with the reason as a tooltip while that run is displayed. The amber stale highlight takes priority if the user changes the setting.
 
 ### 5.8 Platform Notes and Known Limitations
 

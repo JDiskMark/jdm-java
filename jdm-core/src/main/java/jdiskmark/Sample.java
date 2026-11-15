@@ -136,9 +136,16 @@ public class Sample {
         return new File(bRunner.config.testDir + File.separator + "testdata.jdm");
     }
     
+    /** Start of this sample's region; in single-file mode each sample has its own region. */
+    long regionOffset(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
+        if (App.multiFile) return 0;
+        return (long) (sampleNum - bRunner.firstSample) * numOfBlocks * blockSize;
+    }
+    
     // pre jdk 25 io api
     public void measureWriteLegacy(long blockSize, int numOfBlocks, byte[] blockArr, BenchmarkRunner bRunner) {
         File testFile = getTestFile(bRunner);
+        long base = regionOffset(blockSize, numOfBlocks, bRunner);
         long startTime = System.nanoTime();
         long totalBytesWrittenInSample = 0;
         String mode = (App.writeSyncEnable) ? "rwd" : "rw";
@@ -147,9 +154,9 @@ public class Sample {
                 for (int b = 0; b < numOfBlocks; b++) {
                     if (App.blockSequence == Benchmark.BlockSequence.RANDOM) {
                         int rLoc = Util.randInt(0, numOfBlocks - 1);
-                        rAccFile.seek(rLoc * blockSize);
+                        rAccFile.seek(base + rLoc * blockSize);
                     } else {
-                        rAccFile.seek(b * blockSize);
+                        rAccFile.seek(base + b * blockSize);
                     }
                     rAccFile.write(blockArr, 0, (int)blockSize);
                     totalBytesWrittenInSample += blockSize;
@@ -171,6 +178,7 @@ public class Sample {
     // pre jdk 25 io api
     public void measureReadLegacy(long blockSize, int numOfBlocks, byte[] blockArr, BenchmarkRunner bRunner) {
         File testFile = getTestFile(bRunner);
+        long base = regionOffset(blockSize, numOfBlocks, bRunner);
         long startTime = System.nanoTime();
         long totalBytesReadInMark = 0;
         try {
@@ -178,9 +186,9 @@ public class Sample {
                 for (int b = 0; b < numOfBlocks; b++) {
                     if (App.blockSequence == Benchmark.BlockSequence.RANDOM) {
                         int rLoc = Util.randInt(0, numOfBlocks - 1);
-                        rAccFile.seek(rLoc * blockSize);
+                        rAccFile.seek(base + rLoc * blockSize);
                     } else {
-                        rAccFile.seek(b * blockSize);
+                        rAccFile.seek(base + b * blockSize);
                     }
                     rAccFile.readFully(blockArr, 0, (int)blockSize);
                     totalBytesReadInMark += blockSize;
@@ -202,6 +210,7 @@ public class Sample {
         long totalBytesWritten = 0;
         long byteAlignment = bRunner.effectiveAlignment;
         File testFile = getTestFile(bRunner);
+        long base = regionOffset(blockSize, numOfBlocks, bRunner);
         long startTime = System.nanoTime();
         
         Set<OpenOption> options = new HashSet<>();
@@ -250,7 +259,7 @@ public class Sample {
                     if (bRunner.listener.isCancelled()) break;
                     long blockIndex = (bRunner.config.blockOrder == RANDOM) ?
                             Util.randInt(0, numOfBlocks - 1) : b;
-                    long byteOffset = blockIndex * blockSize;
+                    long byteOffset = base + blockIndex * blockSize;
 
                     int written = fc.write(segment.asByteBuffer(), byteOffset);
                     totalBytesWritten += written;
@@ -278,10 +287,14 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
     long byteAlignment = bRunner.effectiveAlignment;
     
     File testFile = getTestFile(bRunner);
+    long base = regionOffset(blockSize, numOfBlocks, bRunner);
     Set<OpenOption> options = new HashSet<>();
     options.add(StandardOpenOption.WRITE);
     options.add(StandardOpenOption.CREATE);
-    options.add(StandardOpenOption.TRUNCATE_EXISTING);
+    if (App.multiFile) {
+        // not the single file: its regions are written by several samples and threads
+        options.add(StandardOpenOption.TRUNCATE_EXISTING);
+    }
 
     // Use a single try-with-resources and let the Exception bubble up
     // to the BenchmarkRunner's try-catch block.
@@ -295,7 +308,7 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
         for (int b = 0; b < numOfBlocks; b++) {
             if (bRunner.listener.isCancelled()) break;
             
-            long byteOffset = (long) b * blockSize;
+            long byteOffset = base + (long) b * blockSize;
             int written = fc.write(segment.asByteBuffer(), byteOffset);
             totalBytesWritten += written;
             // For read-only benchmarks, we reuse the "write" progress counters to
@@ -319,6 +332,7 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
     public void measureRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
         long totalBytesRead = 0;
         File testFile = getTestFile(bRunner);
+        long base = regionOffset(blockSize, numOfBlocks, bRunner);
         long startTime = System.nanoTime();
         long byteAlignment = bRunner.effectiveAlignment;
         
@@ -363,7 +377,7 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
                 for (int b = 0; b < numOfBlocks; b++) {
                     if (bRunner.listener.isCancelled()) break;
                     long blockIndex = (bRunner.config.blockOrder == RANDOM) ? Util.randInt(0, (int)(numOfBlocks - 1)) : b;
-                    long byteOffset = blockIndex * blockSize;
+                    long byteOffset = base + blockIndex * blockSize;
                     int read = fc.read(segment.asByteBuffer(), byteOffset);
                     totalBytesRead += read;
                     bRunner.updateReadProgress();

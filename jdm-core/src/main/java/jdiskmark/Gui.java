@@ -117,8 +117,6 @@ public final class Gui {
     private static Benchmark autoRun = null;
     private static String directIoAutoReason = null;
     private static boolean directIoAutoValue;
-    private static String multiFileAutoReason = null;
-    private static boolean multiFileAutoValue;
 
     /** Chart subtitle shown when current settings diverge from the displayed benchmark. */
     private static TextTitle modifiedSubtitle = null;
@@ -1232,20 +1230,12 @@ public final class Gui {
     public static void resetAutoAdjusted(Benchmark run) {
         autoRun = run;
         directIoAutoReason = null;
-        multiFileAutoReason = null;
     }
 
     /** Marks the Direct IO badge as changed automatically, with the reason as tooltip. */
     public static void markDirectIoAuto(String reason) {
         directIoAutoValue = App.directEnable;
         directIoAutoReason = reason;
-        refreshChartBadges();
-    }
-
-    /** Marks the Multi-File badge as changed automatically, with the reason as tooltip. */
-    public static void markMultiFileAuto(String reason) {
-        multiFileAutoValue = App.multiFile;
-        multiFileAutoReason = reason;
         refreshChartBadges();
     }
 
@@ -1265,11 +1255,9 @@ public final class Gui {
     private static void applyBadgeHighlights() {
         if (directIoLabel == null) return; // badges not created yet
         String directAuto = activeAutoReason(directIoAutoReason, directIoAutoValue, App.directEnable);
-        String multiAuto  = activeAutoReason(multiFileAutoReason, multiFileAutoValue, App.multiFile);
         BenchmarkConfig lr = (App.benchmark != null) ? App.benchmark.config : null;
         if (lr == null) { // no completed run to compare; only auto marks apply
             setBadgeStaleReturn(directIoLabel, false, directAuto);
-            setBadgeStaleReturn(multiFileLabel, false, multiAuto);
             return;
         }
         boolean anyStale = false;
@@ -1277,7 +1265,7 @@ public final class Gui {
         anyStale |= setBadgeStaleReturn(writeSyncLabel,  App.writeSyncEnable != Boolean.TRUE.equals(lr.writeSyncEnabled));
         anyStale |= setBadgeStaleReturn(sectorLabel,     App.sectorAlignment != lr.sectorAlignment);
         anyStale |= setBadgeStaleReturn(ioEngineLabel,   App.ioEngine        != lr.ioEngine);
-        anyStale |= setBadgeStaleReturn(multiFileLabel,  App.multiFile       != Boolean.TRUE.equals(lr.multiFileEnabled), multiAuto);
+        anyStale |= setBadgeStaleReturn(multiFileLabel,  App.multiFile       != Boolean.TRUE.equals(lr.multiFileEnabled));
         anyStale |= setBadgeStaleReturn(renderModeLabel, App.rmOption        != App.benchmark.getRenderMode());
         setChartModifiedIndicator(anyStale);
         // sync control-panel row highlights too
