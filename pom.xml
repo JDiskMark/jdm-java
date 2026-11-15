@@ -61,7 +61,7 @@
         <app.icon.linux>jdm-turtle-logo-256x256.png</app.icon.linux>
 
         <!-- RPM version must not contain hyphens -->
-        <rpm.version>0.9.0-SNAPSHOT</rpm.version>
+        <rpm.version>0.9.0</rpm.version>
         <!-- RPM release field: CI overrides with pre-release label (e.g. ci.d.47) -->
         <rpm.release>1</rpm.release>
 
