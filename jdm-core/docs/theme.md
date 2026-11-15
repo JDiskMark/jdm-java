@@ -50,7 +50,7 @@ Theme enum
 | `badgeDefaultFg()` | **Yes** | Badge foreground (non-stale, fallback) |
 | `badgeStaleBg()` | **Yes** | Badge background when setting differs from current config; also the stale row labels, "modified" chart subtitle, and chart title when the selected drive differs from the plotted run |
 | `badgeStaleFg()` | No | Badge foreground when stale (default: `Color.WHITE`) |
-| `badgeAutoBg()` | No | Badge background when the runner changed the setting automatically, e.g. Direct IO off (default: `#0E7C9A` deep teal). Stale takes priority. Tooltip shows the reason |
+| `badgeAutoBg()` | No | Badge background when the runner changed the setting automatically, e.g. Direct IO off (default: `#0E7C9A` deep teal). Stale takes priority. Tooltip shows the reason. Also the colour of the cache drop chart notice |
 | `badgeAutoFg()` | No | Badge foreground when auto-adjusted (default: `Color.WHITE`) |
 | `badgeBorderColor()` | No | Badge border outline (null = no custom border) |
 | `cycleBadgeColors()` | No | If `true`, non-stale badges alternate fg between even/odd indices (default: `false`) |

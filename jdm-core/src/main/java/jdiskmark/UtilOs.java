@@ -893,7 +893,7 @@ public class UtilOs {
         try {
             if (Smart.process == null || !Smart.process.isAlive()) {
                 App.msg("Requesting administrator privileges to clear the disk cache...");
-                Smart.startPrivilegedShell("clear the disk cache");
+                Smart.startPrivilegedShell("clear the disk cache using the \u201Csudo purge\u201D command");
                 Smart.startHeartbeat();
             }
         } catch (IOException e) {

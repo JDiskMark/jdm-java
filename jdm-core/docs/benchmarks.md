@@ -604,7 +604,7 @@ When Direct IO is off the page cache is cleared once before READ. Not running as
 | OS | Command | Escalation | Dialog text |
 |---|---|---|---|
 | Linux | `sync; echo 1 > /proc/sys/vm/drop_caches` | `pkexec bash` (polkit) | polkit agent default |
-| macOS | `sync; purge` | `osascript` dialog + `sudo -S bash` | "…administrator privileges to clear the disk cache." |
+| macOS | `sync; purge` | `osascript` dialog + `sudo -S bash` | "Administrator login is required to clear the disk cache using the “sudo purge” command." |
 | Windows | `EmptyStandbyList.exe` (admin only) | none | manual prompt when not admin |
 
 Outcomes:
@@ -645,9 +645,19 @@ memory and the drive's work happens between samples. Write Sync (`DSYNC`) waits 
 Each run fills one block with random bytes (`BenchmarkRunner.blockArr`) that both engines write for every block. Compressing filesystems (btrfs
 `compress=`, ZFS lz4, NTFS compression) cannot shrink it, so results reflect the drive rather than the compression ratio. On btrfs it also keeps extents uncompressed so `O_DIRECT` is honoured.
 
-### 4.7 Badge Indication
+### 4.7 Badge and Chart Indication
 
 Badges for settings the runner changed automatically (currently Direct IO off) use the theme's `badgeAutoBg()` colour (deep teal by default, see `theme.md`) with the reason as a tooltip while that run is displayed. The amber stale highlight takes priority if the user changes the setting.
+
+A teal bottom chart subtitle (`Gui.refreshCacheDropNotice()`) warns before a run that clearing the cache will need admin rights. It is shown when Direct IO is off and the type includes READ, and hidden when running as root/admin or once the privileged shell is authenticated this session:
+
+| Platform | Notice |
+|---|---|
+| Linux, macOS | "Direct IO off — administrator login required to clear the disk cache before READ" |
+| Windows (not admin) | "Direct IO off — run as administrator to clear the disk cache automatically before READ" |
+| Flatpak | "Direct IO off — the disk cache must be cleared manually before READ" |
+
+It refreshes with the badges (Direct IO toggle, run start/end, theme), on settings changes, and after the cache-drop login.
 
 ### 4.8 Platform Notes and Known Limitations
 

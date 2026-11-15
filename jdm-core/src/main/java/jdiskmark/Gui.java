@@ -120,6 +120,8 @@ public final class Gui {
 
     /** Chart subtitle shown when current settings diverge from the displayed benchmark. */
     private static TextTitle modifiedSubtitle = null;
+    /** Chart subtitle shown when a READ will need admin rights to clear the disk cache. */
+    private static TextTitle cacheDropSubtitle = null;
 
     // --- Drive-change tracking (EDT only) ---
     /** Chart title of the plotted benchmark; null when nothing is plotted. */
@@ -176,6 +178,47 @@ public final class Gui {
             }
         };
         runOnEdt(r);
+    }
+
+    /**
+     * Returns the cache drop notice for the current settings, or null when
+     * Direct IO is on, there is no READ, the app runs as root/admin, or the
+     * privileged shell is already authenticated.
+     */
+    private static String cacheDropNoticeText() {
+        if (App.directEnable || !App.hasReadOperation() || App.isRoot || App.isAdmin) return null;
+        if (Smart.process != null && Smart.process.isAlive()) return null;
+        if (App.isWindows()) {
+            return "Direct IO off — run as administrator to clear the disk cache automatically before READ";
+        }
+        if (UtilOs.isFlatpak()) {
+            return "Direct IO off — the disk cache must be cleared manually before READ";
+        }
+        return "Direct IO off — administrator login required to clear the disk cache before READ";
+    }
+
+    /** Shows or hides the cache drop notice subtitle. Safe to call from any thread. */
+    public static void refreshCacheDropNotice() {
+        if (chart == null) return;
+        runOnEdt(() -> {
+            String text = cacheDropNoticeText();
+            if (text == null) {
+                if (cacheDropSubtitle != null) chart.removeSubtitle(cacheDropSubtitle);
+                return;
+            }
+            if (cacheDropSubtitle == null) {
+                cacheDropSubtitle = new TextTitle(text, new Font("SansSerif", Font.BOLD, 11));
+                cacheDropSubtitle.setPosition(RectangleEdge.BOTTOM);
+                cacheDropSubtitle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+                cacheDropSubtitle.setPadding(new RectangleInsets(0, 0, 4, 0));
+            } else {
+                cacheDropSubtitle.setText(text);
+            }
+            cacheDropSubtitle.setPaint(BADGE_AUTO_BG);
+            if (!chart.getSubtitles().contains(cacheDropSubtitle)) {
+                chart.addSubtitle(cacheDropSubtitle);
+            }
+        });
     }
 
     /**
@@ -1254,6 +1297,7 @@ public final class Gui {
      */
     private static void applyBadgeHighlights() {
         if (directIoLabel == null) return; // badges not created yet
+        refreshCacheDropNotice();
         String directAuto = activeAutoReason(directIoAutoReason, directIoAutoValue, App.directEnable);
         BenchmarkConfig lr = (App.benchmark != null) ? App.benchmark.config : null;
         if (lr == null) { // no completed run to compare; only auto marks apply
@@ -1772,7 +1816,9 @@ public final class Gui {
                 UtilOs.flushDataToDriveLinux();
                 return UtilOs.dropWriteCacheLinux();
             }
-            switch (UtilOs.dropCacheElevated()) {
+            UtilOs.CacheDropResult linuxResult = UtilOs.dropCacheElevated();
+            refreshCacheDropNotice();
+            switch (linuxResult) {
                 case CLEARED -> { return true; }
                 case DENIED -> { return false; }
                 case UNAVAILABLE -> {
@@ -1795,7 +1841,9 @@ public final class Gui {
                 UtilsMacOs.flushDataToDrive();
                 return UtilsMacOs.dropWriteCache();
             }
-            switch (UtilOs.dropCacheElevated()) {
+            UtilOs.CacheDropResult macResult = UtilOs.dropCacheElevated();
+            refreshCacheDropNotice();
+            switch (macResult) {
                 case CLEARED -> { return true; }
                 case DENIED -> { return false; }
                 case UNAVAILABLE -> {
