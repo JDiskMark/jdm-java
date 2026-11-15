@@ -22,7 +22,7 @@
              Keep the -SNAPSHOT suffix on dev/feature branches: local builds then get an
              auto pre-release label (e.g. 0.9.1-a.f.cleanup). A plain or labelled version
              (0.9.1, 0.9.1-rc4) is used as-is. -->
-        <revision>0.9.1-SNAPSHOT</revision>
+        <revision>0.9.1</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>25</maven.compiler.release>
         <exec.mainClass>jdiskmark.App</exec.mainClass>
