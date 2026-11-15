@@ -413,6 +413,11 @@ public final class MainFrame extends javax.swing.JFrame {
         exportMenu.setEnabled(App.benchmark != null);
         Gui.refreshChartBadges();
     }
+
+    void syncIoOptionMenus() {
+        directIoCbMenuItem.setSelected(App.directEnable);
+        multiFileCheckBoxMenuItem.setSelected(App.multiFile);
+    }
     
     /**
      * This method is called from within the constructor to initialize the form.

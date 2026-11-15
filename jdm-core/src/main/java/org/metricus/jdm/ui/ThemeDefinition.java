@@ -26,6 +26,10 @@ public interface ThemeDefinition {
     Color badgeStaleBg();
     default Color badgeStaleFg() { return Color.WHITE; }
 
+    /** Badge background when JDiskMark changed the setting automatically (default deep teal). */
+    default Color badgeAutoBg() { return new Color(0x0E, 0x7C, 0x9A); }
+    default Color badgeAutoFg() { return Color.WHITE; }
+
     default Color badgeBorderColor() { return null; }
 
     /**

@@ -18,8 +18,11 @@
     <properties>
         <!-- CI-friendly version placeholder. Override with -Drevision=<value> at build time.
              Default produces the current release build used by NetBeans and plain mvn.
-             CI workflows set this to a labelled version (e.g. 0.8.0-ci.d.47). -->
-        <revision>0.9.1</revision>
+             CI workflows set this to a labelled version (e.g. 0.8.0-ci.d.47).
+             Keep the -SNAPSHOT suffix on dev/feature branches: local builds then get an
+             auto pre-release label (e.g. 0.9.1-a.f.cleanup). A plain or labelled version
+             (0.9.1, 0.9.1-rc4) is used as-is. -->
+        <revision>0.9.1-SNAPSHOT</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>25</maven.compiler.release>
         <exec.mainClass>jdiskmark.App</exec.mainClass>
@@ -58,7 +61,7 @@
         <app.icon.linux>jdm-turtle-logo-256x256.png</app.icon.linux>
 
         <!-- RPM version must not contain hyphens -->
-        <rpm.version>0.9.0</rpm.version>
+        <rpm.version>0.9.0-SNAPSHOT</rpm.version>
         <!-- RPM release field: CI overrides with pre-release label (e.g. ci.d.47) -->
         <rpm.release>1</rpm.release>
 

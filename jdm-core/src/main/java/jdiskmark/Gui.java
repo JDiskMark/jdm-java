@@ -109,6 +109,17 @@ public final class Gui {
     /** Foreground to use when a badge is stale (set together with BADGE_STALE_BG). */
     static Color BADGE_STALE_FG   = Color.WHITE;
 
+    // --- Auto-adjusted badge tracking ---
+    /** Teal used when the runner changed a setting automatically during a run. */
+    static Color BADGE_AUTO_BG = new Color(0x0E, 0x7C, 0x9A);
+    static Color BADGE_AUTO_FG = Color.WHITE;
+    /** Run whose settings were auto-adjusted; highlights only apply while it is shown. */
+    private static Benchmark autoRun = null;
+    private static String directIoAutoReason = null;
+    private static boolean directIoAutoValue;
+    private static String multiFileAutoReason = null;
+    private static boolean multiFileAutoValue;
+
     /** Chart subtitle shown when current settings diverge from the displayed benchmark. */
     private static TextTitle modifiedSubtitle = null;
 
@@ -247,6 +258,7 @@ public final class Gui {
         for (int i = 0; i < chartBadgeList.size(); i++) {
             javax.swing.JLabel b = chartBadgeList.get(i);
             b.setBackground(BADGE_DEFAULT_BG);
+            b.setToolTipText(null);
             if (def.cycleBadgeColors()) {
                 b.setForeground(i % 2 == 0 ? def.badgeEvenFg() : def.badgeOddFg());
             } else {
@@ -262,6 +274,8 @@ public final class Gui {
         BADGE_DEFAULT_FG = def.badgeDefaultFg();
         BADGE_STALE_BG   = def.badgeStaleBg();
         BADGE_STALE_FG   = def.badgeStaleFg();
+        BADGE_AUTO_BG    = def.badgeAutoBg();
+        BADGE_AUTO_FG    = def.badgeAutoFg();
         applyTitlePaint();
 
         if (chartBadgeList != null) {
@@ -1208,21 +1222,62 @@ public final class Gui {
         }
     }
 
+    /** Syncs the Direct IO and Multi-File menu items after a runtime change. */
+    public static void syncIoOptionMenus() {
+        if (mainFrame == null) return;
+        javax.swing.SwingUtilities.invokeLater(mainFrame::syncIoOptionMenus);
+    }
+
+    /** Starts auto-adjust tracking for a new run, clearing the previous run's marks. */
+    public static void resetAutoAdjusted(Benchmark run) {
+        autoRun = run;
+        directIoAutoReason = null;
+        multiFileAutoReason = null;
+    }
+
+    /** Marks the Direct IO badge as changed automatically, with the reason as tooltip. */
+    public static void markDirectIoAuto(String reason) {
+        directIoAutoValue = App.directEnable;
+        directIoAutoReason = reason;
+        refreshChartBadges();
+    }
+
+    /** Marks the Multi-File badge as changed automatically, with the reason as tooltip. */
+    public static void markMultiFileAuto(String reason) {
+        multiFileAutoValue = App.multiFile;
+        multiFileAutoReason = reason;
+        refreshChartBadges();
+    }
+
+    /** Returns the auto reason if it applies to the shown run and the value is unchanged. */
+    private static String activeAutoReason(String reason, boolean autoValue, boolean current) {
+        boolean shownRun = App.benchmark == null || App.benchmark == autoRun;
+        return (reason != null && shownRun && autoValue == current) ? reason : null;
+    }
+
     /**
      * Compares each badge field against App.benchmark.config (the last completed run)
      * and sets amber background on any badge whose current value differs.
+     * Badges changed automatically by the runner are shown teal unless stale.
      * Also drives the chart subtitle and control-panel row highlights.
      * Must be called on the EDT.
      */
     private static void applyBadgeHighlights() {
+        if (directIoLabel == null) return; // badges not created yet
+        String directAuto = activeAutoReason(directIoAutoReason, directIoAutoValue, App.directEnable);
+        String multiAuto  = activeAutoReason(multiFileAutoReason, multiFileAutoValue, App.multiFile);
         BenchmarkConfig lr = (App.benchmark != null) ? App.benchmark.config : null;
-        if (lr == null) return; // no run yet — nothing to compare
+        if (lr == null) { // no completed run to compare; only auto marks apply
+            setBadgeStaleReturn(directIoLabel, false, directAuto);
+            setBadgeStaleReturn(multiFileLabel, false, multiAuto);
+            return;
+        }
         boolean anyStale = false;
-        anyStale |= setBadgeStaleReturn(directIoLabel,   App.directEnable    != Boolean.TRUE.equals(lr.directIoEnabled));
+        anyStale |= setBadgeStaleReturn(directIoLabel,   App.directEnable    != Boolean.TRUE.equals(lr.directIoEnabled), directAuto);
         anyStale |= setBadgeStaleReturn(writeSyncLabel,  App.writeSyncEnable != Boolean.TRUE.equals(lr.writeSyncEnabled));
         anyStale |= setBadgeStaleReturn(sectorLabel,     App.sectorAlignment != lr.sectorAlignment);
         anyStale |= setBadgeStaleReturn(ioEngineLabel,   App.ioEngine        != lr.ioEngine);
-        anyStale |= setBadgeStaleReturn(multiFileLabel,  App.multiFile       != Boolean.TRUE.equals(lr.multiFileEnabled));
+        anyStale |= setBadgeStaleReturn(multiFileLabel,  App.multiFile       != Boolean.TRUE.equals(lr.multiFileEnabled), multiAuto);
         anyStale |= setBadgeStaleReturn(renderModeLabel, App.rmOption        != App.benchmark.getRenderMode());
         setChartModifiedIndicator(anyStale);
         // sync control-panel row highlights too
@@ -1230,9 +1285,17 @@ public final class Gui {
     }
 
     private static boolean setBadgeStaleReturn(javax.swing.JLabel badge, boolean stale) {
-        badge.setBackground(stale ? BADGE_STALE_BG : BADGE_DEFAULT_BG);
+        return setBadgeStaleReturn(badge, stale, null);
+    }
+
+    private static boolean setBadgeStaleReturn(javax.swing.JLabel badge, boolean stale, String autoReason) {
+        boolean auto = !stale && autoReason != null;
+        badge.setBackground(stale ? BADGE_STALE_BG : auto ? BADGE_AUTO_BG : BADGE_DEFAULT_BG);
+        badge.setToolTipText(auto ? autoReason : null);
         if (stale) {
             badge.setForeground(BADGE_STALE_FG);
+        } else if (auto) {
+            badge.setForeground(BADGE_AUTO_FG);
         } else {
             ThemeDefinition def = theme.definition();
             if (def.cycleBadgeColors() && chartBadgeList != null) {
@@ -1850,6 +1913,7 @@ public final class Gui {
         refreshChartBadges(benchmark.config.directIoEnabled, benchmark.config.writeSyncEnabled,
                            benchmark.config.sectorAlignment, benchmark.getRenderMode(),
                            benchmark.config.ioEngine, benchmark.config.multiFileEnabled);
+        runOnEdt(Gui::applyBadgeHighlights);
         
         // operation data
         for (BenchmarkOperation operation : benchmark.operations) {
@@ -1920,6 +1984,7 @@ public final class Gui {
         refreshChartBadges(benchmark.config.directIoEnabled, benchmark.config.writeSyncEnabled,
                            benchmark.config.sectorAlignment, benchmark.getRenderMode(),
                            benchmark.config.ioEngine, benchmark.config.multiFileEnabled);
+        runOnEdt(Gui::applyBadgeHighlights);
         switch (operation.ioMode) {
             case READ -> {
                 App.rAvg = operation.bwAvg;

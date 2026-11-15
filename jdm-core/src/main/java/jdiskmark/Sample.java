@@ -155,6 +155,7 @@ public class Sample {
                     totalBytesWrittenInSample += blockSize;
                     bRunner.updateWriteProgress();
                 }
+                if (bRunner.flushWriteSamples()) rAccFile.getFD().sync();
             }
         } catch (IOException ex) {
             Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
@@ -243,6 +244,7 @@ public class Sample {
             if (retryFc == null) break;
             try (FileChannel fc = retryFc; Arena arena = Arena.ofConfined()) {
                 MemorySegment segment = arena.allocate(blockSize, byteAlignment);
+                MemorySegment.copy(MemorySegment.ofArray(bRunner.blockArr), 0, segment, 0, blockSize);
                 totalBytesWritten = 0;
                 for (int b = 0; b < numOfBlocks; b++) {
                     if (bRunner.listener.isCancelled()) break;
@@ -254,6 +256,7 @@ public class Sample {
                     totalBytesWritten += written;
                     bRunner.updateWriteProgress();
                 }
+                if (bRunner.flushWriteSamples()) fc.force(false);
                 break retry;
             } catch (IOException e) {
                 if (!directRetried && options.contains(ExtendedOpenOption.DIRECT)) {
@@ -286,6 +289,7 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
          Arena arena = Arena.ofConfined()) {
         
         MemorySegment segment = arena.allocate(blockSize, byteAlignment);
+        MemorySegment.copy(MemorySegment.ofArray(bRunner.blockArr), 0, segment, 0, blockSize);
         long totalBytesWritten = 0;
         
         for (int b = 0; b < numOfBlocks; b++) {

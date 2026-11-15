@@ -587,6 +587,41 @@ portal uploads; consumers should exclude them from aggregates. Windows still
 uses `EmptyStandbyList.exe` when running as admin and the manual prompt
 otherwise.
 
+Without Direct IO, a single reused test file (Multi-File off) holds only one
+sample's worth of data, so after the first READ sample every read is served
+from the page cache. When the runner itself turns Direct IO off during a run
+(legacy engine, failed probe, or open/write fallback),
+`BenchmarkRunner.enableMultiFile()` turns Multi-File on for that run if it has a
+READ phase, logs an event, and updates the badge and menu. If single-file data
+was already written, the per-sample files are generated before the cache drop.
+Multi-File is left on afterwards, but the user can turn it off again: on later
+runs, where Direct IO is already off by the user's setting, the Multi-File choice
+is respected and a warning is logged that READ samples after the first may be
+served from the page cache.
+
+Badges for settings the runner changes automatically (Direct IO off, Multi-File
+on) are shown in the theme's `badgeAutoBg()` colour (deep teal by default) with
+the reason as a tooltip, while that run is displayed. The amber stale highlight
+takes priority if the user later changes the setting.
+
+Without Direct IO, writes complete into the page cache and the kernel writes
+them back later, so write samples run at memory speed until `vm.dirty_ratio`
+is reached. When Direct IO and Write Sync are both off,
+`BenchmarkRunner.flushWriteSamples()` ends each write sample with a flush
+(`FileChannel.force(false)`, or `FileDescriptor.sync()` on the legacy engine)
+inside the timed section, so each sample includes its data reaching the drive.
+This needs no elevation and is logged once per run. Write Sync (`DSYNC`)
+instead waits on every block and reads lower than the drive's sustained rate.
+
+#### Write Data
+
+Each run fills one block with random bytes (`BenchmarkRunner.blockArr`) and
+writes it for every block, in both engines. Compressing filesystems (btrfs
+`compress=`, ZFS, NTFS compression) cannot shrink random data, so results
+reflect the drive rather than the compression ratio. Zero-filled or patterned
+blocks compress almost to nothing and produce reads above the interface
+limit even with the cache cleared.
+
 #### Future Improvement
 
 Bypassing Java's NIO restriction via the Foreign Function & Memory API (FFI) to call `open()` with `O_DIRECT` at the syscall level would allow Direct IO with the device's true 512-byte sector alignment, matching `dd` behaviour.

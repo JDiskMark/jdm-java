@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -70,8 +71,9 @@ public class BenchmarkRunner {
     long unitsTotal;
     long blockSize;
     long effectiveAlignment;
-    byte[] blockArr; // for legacy jdk io
+    byte[] blockArr; // random write pattern, also the legacy io buffer
     final AtomicBoolean directDisabled = new AtomicBoolean(false);
+    final AtomicBoolean flushNoted = new AtomicBoolean(false);
 
     public static int[][] divideIntoRanges(int startIndex, int endIndex, int numThreads) {
         if (numThreads <= 0 || endIndex < startIndex) {
@@ -121,12 +123,9 @@ public class BenchmarkRunner {
         blockSize = config.blockSize;
         effectiveAlignment = resolveAlignment(config);
         
-        if (config.ioEngine == IoEngine.LEGACY) {
-            blockArr = new byte[(int)blockSize];
-            for (int b = 0; b < blockArr.length; b++) {
-                if (b % 2 == 0) blockArr[b] = (byte) 0xFF;
-            }
-        }
+        // incompressible data so compressing filesystems (btrfs, zfs, ntfs) do not inflate results
+        blockArr = new byte[(int)blockSize];
+        ThreadLocalRandom.current().nextBytes(blockArr);
 
         File configDir = new File(config.testDir);
         String driveModel = Util.getDriveModel(configDir);
@@ -143,6 +142,7 @@ public class BenchmarkRunner {
         mapEnvironment(benchmark, driveModel, partitionId, usageInfo, driveInterface, driveInterfaceVersion);
         // capture the render mode chosen at the time this run starts
         benchmark.setRenderMode(App.rmOption);
+        Gui.resetAutoAdjusted(benchmark);
 
         int startingSample = App.nextSampleNumber;
         int endingSample = App.nextSampleNumber + config.numSamples;
@@ -201,6 +201,15 @@ public class BenchmarkRunner {
         
         benchmark.recordStartTime();
         
+        if (config.ioEngine == IoEngine.LEGACY && Boolean.TRUE.equals(config.getDirectIoEnabled())) {
+            disableDirectIo("Direct I/O is not supported by the legacy IO engine");
+        }
+        if (directDisabled.get()) {
+            enableMultiFile();
+        } else {
+            warnSingleFileWithoutDirect();
+        }
+        
         // Execution Loops
         if (config.hasWriteOperation()) {
             runOperation(benchmark, IOMode.WRITE, tRanges);
@@ -218,14 +227,15 @@ public class BenchmarkRunner {
         // 3. direct I/O not in effect (direct I/O bypasses cache on all platforms)
         boolean readAllowed = true;
         if (!listener.isCancelled() && config.hasReadOperation()) {
-            if (Boolean.TRUE.equals(config.getDirectIoEnabled())) {
-                if (config.ioEngine == IoEngine.LEGACY) {
-                    disableDirectIo("Direct I/O is not supported by the legacy IO engine");
-                } else if (!probeDirectRead(tRanges)) {
-                    disableDirectIo("Direct I/O read probe failed");
-                }
+            if (Boolean.TRUE.equals(config.getDirectIoEnabled()) && !probeDirectRead(tRanges)) {
+                disableDirectIo("Direct I/O read probe failed");
             }
             if (!Boolean.TRUE.equals(config.getDirectIoEnabled())) {
+                // Direct I/O failed after single-file data was written; regenerate per sample
+                if (directDisabled.get() && enableMultiFile()) {
+                    unitsTotal += (long) config.numBlocks * config.numSamples;
+                    runReadPreparation(tRanges);
+                }
                 readAllowed = listener.attemptCacheDrop();
             }
         }
@@ -266,10 +276,68 @@ public class BenchmarkRunner {
         if (!directDisabled.compareAndSet(false, true)) return;
         config.setDirectIoEnabled(false);
         App.directEnable = false;
-        Gui.refreshChartBadges();
         String msg = reason + ". Direct I/O disabled, using buffered I/O.";
+        Gui.markDirectIoAuto(msg);
+        Gui.syncIoOptionMenus();
         logger.warning(msg);
         App.err(msg);
+    }
+
+    /**
+     * Without Direct I/O or Write Sync, writes land in the page cache and are
+     * written back later, so each write sample ends with a flush (timed) to
+     * measure the drive instead of memory.
+     */
+    boolean flushWriteSamples() {
+        boolean flush = !Boolean.TRUE.equals(config.getDirectIoEnabled())
+                && !Boolean.TRUE.equals(config.writeSyncEnabled);
+        if (flush && flushNoted.compareAndSet(false, true)) {
+            String msg = "Direct I/O and Write Sync are off. Each write sample is flushed to the drive.";
+            logger.info(msg);
+            App.msg(msg);
+        }
+        return flush;
+    }
+
+    /**
+     * Warns when the user chose Direct I/O off with Multi-File off; the choice
+     * is respected but READ samples after the first may come from the page cache.
+     */
+    private void warnSingleFileWithoutDirect() {
+        if (config.hasReadOperation()
+                && !Boolean.TRUE.equals(config.getDirectIoEnabled())
+                && !Boolean.TRUE.equals(config.getMultiFileEnabled())) {
+            String msg = "Direct I/O and Multi-File are off. READ samples after the first "
+                    + "may be served from the page cache.";
+            logger.warning(msg);
+            App.err(msg);
+        }
+    }
+
+    /**
+     * Without Direct I/O a single reused test file is served from the page
+     * cache after the first READ sample, so each sample needs its own file.
+     * Only called when this run disabled Direct I/O itself, so a user's own
+     * Multi-File choice is never overridden. Multi-File is left on afterwards.
+     * @return true if Multi-File was switched on
+     */
+    private boolean enableMultiFile() throws Exception {
+        if (!config.hasReadOperation()
+                || Boolean.TRUE.equals(config.getDirectIoEnabled())
+                || Boolean.TRUE.equals(config.getMultiFileEnabled())) {
+            return false;
+        }
+        config.setMultiFileEnabled(true);
+        App.multiFile = true;
+        String msg = "Direct I/O is off. Multi-File enabled so READ samples are not served from the page cache.";
+        Gui.markMultiFileAuto(msg);
+        Gui.syncIoOptionMenus();
+        logger.info(msg);
+        App.msg(msg);
+        if (!DriveChecker.checkDiskSpace(new File(config.testDir))) {
+            throw new Exception("Not enough disk space for Multi-File data");
+        }
+        return true;
     }
 
     /**
