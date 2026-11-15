@@ -276,6 +276,7 @@ public class BenchmarkControlPanel extends JPanel {
      * row label bold-amber if its value has changed since the last run.
      */
     public void showSettingsDrift() {
+        Gui.refreshCacheDropNotice();
         BenchmarkConfig lr = (App.benchmark != null) ? App.benchmark.config : null;
         if (lr == null) return; // no run yet
         Color amber     = Gui.BADGE_STALE_BG;

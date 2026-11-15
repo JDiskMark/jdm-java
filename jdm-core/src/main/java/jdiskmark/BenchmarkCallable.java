@@ -55,9 +55,9 @@ public class BenchmarkCallable implements Callable<Benchmark> {
         }
 
         @Override
-        public void attemptCacheDrop() {
+        public boolean attemptCacheDrop() {
             System.out.println("\nDropping OS caches...");
-            Cli.dropCache();
+            return Cli.dropCache();
         }
     };
 

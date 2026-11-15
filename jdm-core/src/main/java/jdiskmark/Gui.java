@@ -109,8 +109,19 @@ public final class Gui {
     /** Foreground to use when a badge is stale (set together with BADGE_STALE_BG). */
     static Color BADGE_STALE_FG   = Color.WHITE;
 
+    // --- Auto-adjusted badge tracking ---
+    /** Teal used when the runner changed a setting automatically during a run. */
+    static Color BADGE_AUTO_BG = new Color(0x0E, 0x7C, 0x9A);
+    static Color BADGE_AUTO_FG = Color.WHITE;
+    /** Run whose settings were auto-adjusted; highlights only apply while it is shown. */
+    private static Benchmark autoRun = null;
+    private static String directIoAutoReason = null;
+    private static boolean directIoAutoValue;
+
     /** Chart subtitle shown when current settings diverge from the displayed benchmark. */
     private static TextTitle modifiedSubtitle = null;
+    /** Chart subtitle shown when a READ will need admin rights to clear the disk cache. */
+    private static TextTitle cacheDropSubtitle = null;
 
     // --- Drive-change tracking (EDT only) ---
     /** Chart title of the plotted benchmark; null when nothing is plotted. */
@@ -167,6 +178,47 @@ public final class Gui {
             }
         };
         runOnEdt(r);
+    }
+
+    /**
+     * Returns the cache drop notice for the current settings, or null when
+     * Direct IO is on, there is no READ, the app runs as root/admin, or the
+     * privileged shell is already authenticated.
+     */
+    private static String cacheDropNoticeText() {
+        if (App.directEnable || !App.hasReadOperation() || App.isRoot || App.isAdmin) return null;
+        if (Smart.process != null && Smart.process.isAlive()) return null;
+        if (App.isWindows()) {
+            return "Direct IO off — run as administrator to clear the disk cache automatically before READ";
+        }
+        if (UtilOs.isFlatpak()) {
+            return "Direct IO off — the disk cache must be cleared manually before READ";
+        }
+        return "Direct IO off — administrator login required to clear the disk cache before READ";
+    }
+
+    /** Shows or hides the cache drop notice subtitle. Safe to call from any thread. */
+    public static void refreshCacheDropNotice() {
+        if (chart == null) return;
+        runOnEdt(() -> {
+            String text = cacheDropNoticeText();
+            if (text == null) {
+                if (cacheDropSubtitle != null) chart.removeSubtitle(cacheDropSubtitle);
+                return;
+            }
+            if (cacheDropSubtitle == null) {
+                cacheDropSubtitle = new TextTitle(text, new Font("SansSerif", Font.BOLD, 11));
+                cacheDropSubtitle.setPosition(RectangleEdge.BOTTOM);
+                cacheDropSubtitle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+                cacheDropSubtitle.setPadding(new RectangleInsets(0, 0, 4, 0));
+            } else {
+                cacheDropSubtitle.setText(text);
+            }
+            cacheDropSubtitle.setPaint(BADGE_AUTO_BG);
+            if (!chart.getSubtitles().contains(cacheDropSubtitle)) {
+                chart.addSubtitle(cacheDropSubtitle);
+            }
+        });
     }
 
     /**
@@ -247,6 +299,7 @@ public final class Gui {
         for (int i = 0; i < chartBadgeList.size(); i++) {
             javax.swing.JLabel b = chartBadgeList.get(i);
             b.setBackground(BADGE_DEFAULT_BG);
+            b.setToolTipText(null);
             if (def.cycleBadgeColors()) {
                 b.setForeground(i % 2 == 0 ? def.badgeEvenFg() : def.badgeOddFg());
             } else {
@@ -262,6 +315,8 @@ public final class Gui {
         BADGE_DEFAULT_FG = def.badgeDefaultFg();
         BADGE_STALE_BG   = def.badgeStaleBg();
         BADGE_STALE_FG   = def.badgeStaleFg();
+        BADGE_AUTO_BG    = def.badgeAutoBg();
+        BADGE_AUTO_FG    = def.badgeAutoFg();
         applyTitlePaint();
 
         if (chartBadgeList != null) {
@@ -1208,17 +1263,49 @@ public final class Gui {
         }
     }
 
+    /** Syncs the Direct IO and Multi-File menu items after a runtime change. */
+    public static void syncIoOptionMenus() {
+        if (mainFrame == null) return;
+        javax.swing.SwingUtilities.invokeLater(mainFrame::syncIoOptionMenus);
+    }
+
+    /** Starts auto-adjust tracking for a new run, clearing the previous run's marks. */
+    public static void resetAutoAdjusted(Benchmark run) {
+        autoRun = run;
+        directIoAutoReason = null;
+    }
+
+    /** Marks the Direct IO badge as changed automatically, with the reason as tooltip. */
+    public static void markDirectIoAuto(String reason) {
+        directIoAutoValue = App.directEnable;
+        directIoAutoReason = reason;
+        refreshChartBadges();
+    }
+
+    /** Returns the auto reason if it applies to the shown run and the value is unchanged. */
+    private static String activeAutoReason(String reason, boolean autoValue, boolean current) {
+        boolean shownRun = App.benchmark == null || App.benchmark == autoRun;
+        return (reason != null && shownRun && autoValue == current) ? reason : null;
+    }
+
     /**
      * Compares each badge field against App.benchmark.config (the last completed run)
      * and sets amber background on any badge whose current value differs.
+     * Badges changed automatically by the runner are shown teal unless stale.
      * Also drives the chart subtitle and control-panel row highlights.
      * Must be called on the EDT.
      */
     private static void applyBadgeHighlights() {
+        if (directIoLabel == null) return; // badges not created yet
+        refreshCacheDropNotice();
+        String directAuto = activeAutoReason(directIoAutoReason, directIoAutoValue, App.directEnable);
         BenchmarkConfig lr = (App.benchmark != null) ? App.benchmark.config : null;
-        if (lr == null) return; // no run yet — nothing to compare
+        if (lr == null) { // no completed run to compare; only auto marks apply
+            setBadgeStaleReturn(directIoLabel, false, directAuto);
+            return;
+        }
         boolean anyStale = false;
-        anyStale |= setBadgeStaleReturn(directIoLabel,   App.directEnable    != Boolean.TRUE.equals(lr.directIoEnabled));
+        anyStale |= setBadgeStaleReturn(directIoLabel,   App.directEnable    != Boolean.TRUE.equals(lr.directIoEnabled), directAuto);
         anyStale |= setBadgeStaleReturn(writeSyncLabel,  App.writeSyncEnable != Boolean.TRUE.equals(lr.writeSyncEnabled));
         anyStale |= setBadgeStaleReturn(sectorLabel,     App.sectorAlignment != lr.sectorAlignment);
         anyStale |= setBadgeStaleReturn(ioEngineLabel,   App.ioEngine        != lr.ioEngine);
@@ -1230,9 +1317,17 @@ public final class Gui {
     }
 
     private static boolean setBadgeStaleReturn(javax.swing.JLabel badge, boolean stale) {
-        badge.setBackground(stale ? BADGE_STALE_BG : BADGE_DEFAULT_BG);
+        return setBadgeStaleReturn(badge, stale, null);
+    }
+
+    private static boolean setBadgeStaleReturn(javax.swing.JLabel badge, boolean stale, String autoReason) {
+        boolean auto = !stale && autoReason != null;
+        badge.setBackground(stale ? BADGE_STALE_BG : auto ? BADGE_AUTO_BG : BADGE_DEFAULT_BG);
+        badge.setToolTipText(auto ? autoReason : null);
         if (stale) {
             badge.setForeground(BADGE_STALE_FG);
+        } else if (auto) {
+            badge.setForeground(BADGE_AUTO_FG);
         } else {
             ThemeDefinition def = theme.definition();
             if (def.cycleBadgeColors() && chartBadgeList != null) {
@@ -1712,43 +1807,58 @@ public final class Gui {
     
     /**
      * GH-2 need solution for dropping catch
+     * @return false if the cache could not be cleared
      */
-    static public void dropCache() {
+    static public boolean dropCache() {
         if (App.isLinux()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
                 UtilOs.flushDataToDriveLinux();
-                UtilOs.dropWriteCacheLinux();
-            } else {
-                /* Revised the drop_caches command so it works. - JSL 2024-01-16 */
-                String message = """
-                        Run JDiskMark with sudo to automatically clear the disk cache.
-                        
-                        For a valid READ benchmark please clear the disk cache now 
-                        by using: \"sudo sh -c \'sync; echo 1 > /proc/sys/vm/drop_caches\'\".
-                        
-                        Press OK to continue when disk cache has been dropped.""";
-                JOptionPane.showMessageDialog(mainFrame, 
-                        message, "Clear Disk Cache Now",
-                        JOptionPane.PLAIN_MESSAGE);
+                return UtilOs.dropWriteCacheLinux();
+            }
+            UtilOs.CacheDropResult linuxResult = UtilOs.dropCacheElevated();
+            refreshCacheDropNotice();
+            switch (linuxResult) {
+                case CLEARED -> { return true; }
+                case DENIED -> { return false; }
+                case UNAVAILABLE -> {
+                    /* Revised the drop_caches command so it works. - JSL 2024-01-16 */
+                    String message = """
+                            Run JDiskMark with sudo to automatically clear the disk cache.
+                            
+                            For a valid READ benchmark please clear the disk cache now 
+                            by using: \"sudo sh -c \'sync; echo 1 > /proc/sys/vm/drop_caches\'\".
+                            
+                            Press OK to continue when disk cache has been dropped.""";
+                    JOptionPane.showMessageDialog(mainFrame, 
+                            message, "Clear Disk Cache Now",
+                            JOptionPane.PLAIN_MESSAGE);
+                }
             }
         } else if (App.isMacOs()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
                 UtilsMacOs.flushDataToDrive();
-                UtilsMacOs.dropWriteCache();
-            } else {
-                String message = """
-                        For valid READ benchmarks please clear the disk cache.
+                return UtilsMacOs.dropWriteCache();
+            }
+            UtilOs.CacheDropResult macResult = UtilOs.dropCacheElevated();
+            refreshCacheDropNotice();
+            switch (macResult) {
+                case CLEARED -> { return true; }
+                case DENIED -> { return false; }
+                case UNAVAILABLE -> {
+                    String message = """
+                            For valid READ benchmarks please clear the disk cache.
 
-                        Removable drives can be disconnected and reconnected.
+                            Removable drives can be disconnected and reconnected.
 
-                        sudo purge
+                            sudo purge
 
-                        Press OK to continue when disk cache has been cleared.""";
-                JOptionPane.showMessageDialog(mainFrame, 
-                        message, "Clear Disk Cache Now",
-                        JOptionPane.PLAIN_MESSAGE);
+                            Press OK to continue when disk cache has been cleared.""";
+                    JOptionPane.showMessageDialog(mainFrame, 
+                            message, "Clear Disk Cache Now",
+                            JOptionPane.PLAIN_MESSAGE);
+                }
             }
         } else if (App.isWindows()) {
             File emptyStandbyListExe = new File(".\\" + App.ESBL_EXE);
@@ -1803,6 +1913,7 @@ public final class Gui {
                     message, "Clear Disk Cache Now",
                     JOptionPane.PLAIN_MESSAGE);
         }
+        return true;
     }
     
     static public void loadBenchmark(Benchmark benchmark) {
@@ -1838,6 +1949,7 @@ public final class Gui {
         refreshChartBadges(benchmark.config.directIoEnabled, benchmark.config.writeSyncEnabled,
                            benchmark.config.sectorAlignment, benchmark.getRenderMode(),
                            benchmark.config.ioEngine, benchmark.config.multiFileEnabled);
+        runOnEdt(Gui::applyBadgeHighlights);
         
         // operation data
         for (BenchmarkOperation operation : benchmark.operations) {
@@ -1908,6 +2020,7 @@ public final class Gui {
         refreshChartBadges(benchmark.config.directIoEnabled, benchmark.config.writeSyncEnabled,
                            benchmark.config.sectorAlignment, benchmark.getRenderMode(),
                            benchmark.config.ioEngine, benchmark.config.multiFileEnabled);
+        runOnEdt(Gui::applyBadgeHighlights);
         switch (operation.ioMode) {
             case READ -> {
                 App.rAvg = operation.bwAvg;

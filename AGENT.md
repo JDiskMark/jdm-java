@@ -38,6 +38,7 @@ The `jdm-core/docs/` folder contains authoritative design documents:
 |---|---|
 | [`design.md`](jdm-core/docs/design.md) | GUI layout decisions, active design trades, package organisation |
 | [`theme.md`](jdm-core/docs/theme.md) | Theme and palette architecture, unlinked palette constraints, per-theme colour reference |
+| [`database.md`](jdm-core/docs/database.md) | Derby/JPA storage, tables and lob formats, schema evolution rules, relation to JSON export and portal upload |
 
 - **Read before coding.** Before making any change to theming, chart palettes,
   LAF configuration, or UI layout, read the relevant doc(s) in `jdm-core/docs/`.

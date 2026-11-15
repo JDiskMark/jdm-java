@@ -74,9 +74,8 @@ public class DriveChecker {
      * @return {@code true} if there is enough space, {@code false} otherwise
      */
     public static boolean checkDiskSpace(File locationDir) {
-        long requiredBytes = App.multiFile
-                ? (long) App.blockSizeKb * App.numOfBlocks * App.numOfSamples * App.KILOBYTE
-                : (long) App.blockSizeKb * App.numOfBlocks * App.KILOBYTE;
+        // single-file holds one region per sample, so both modes need the full size
+        long requiredBytes = (long) App.blockSizeKb * App.numOfBlocks * App.numOfSamples * App.KILOBYTE;
 
         long margin = Math.max((long) (requiredBytes * (SPACE_MARGIN - 1.0)),
                                MIN_MARGIN_BYTES);

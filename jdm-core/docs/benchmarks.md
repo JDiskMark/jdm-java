@@ -467,11 +467,9 @@ identical. The main source of remaining variance is JVM overhead on the
 completion handler path and the small-block allocation cost of `MemorySegment`
 vs. CDM's pre-pinned buffer pool.
 
----
+### 2.11 Summary of Proposed Changes
 
-## 3. Summary of Proposed Changes
-
-### Data model
+#### Data model
 
 - **Add** `queueDepth` (int, default 1) to `BenchmarkOperation` and `BenchmarkConfig`.
 - **Add** `directIoEnabled` (Boolean) to `BenchmarkOperation` for per-operation
@@ -484,13 +482,13 @@ vs. CDM's pre-pinned buffer pool.
 - **Add** `CdmRow` record for CDM row definitions.
 - All new columns default to safe values; existing Derby databases auto-migrate.
 
-### Execution
+#### Execution
 
 - `BenchmarkRunner` gains `executeCdm(List<CdmRow>)` for multi-row execution.
 - For QD>1, a new I/O path using `AsynchronousFileChannel` is added to `Sample`.
 - QD=1 continues to use the existing synchronous `FileChannel` path (no change).
 
-### Profiles
+#### Profiles
 
 - **`CDM_DEFAULT`** — 4 rows (SEQ1M Q8T1, SEQ1M Q1T1, RND4K Q32T1, RND4K Q1T1)
   producing 8 operations per run. All tests use T=1 with queue depth as the
@@ -500,27 +498,26 @@ vs. CDM's pre-pinned buffer pool.
 - Add `ProfileCategory` (`JDM_BUILT_IN` / `CDM_COMPATIBLE`) for GUI grouping.
 - Existing 8 JDM profiles are unchanged.
 
-### UI
+#### UI
 
 - New **"CDM Results"** sub-tab in the Benchmark tab area for the grid display.
 - Selecting a CDM benchmark from history opens the CDM Results tab.
 - Selecting a JDM built-in benchmark from history opens the Chart tab (unchanged).
 - CDM grid cells are clickable → drill into per-sample chart on Chart tab.
 
-### CLI
+#### CLI
 
 - `--cdm` flag runs CDM Default (4 rows, 8 operations) and prints the grid.
 - `--cdm-extended` flag runs CDM Extended (5 rows, 10 operations).
 
-### Queue Depth
+#### Queue Depth
 
 - Emulated via `AsynchronousFileChannel` (standard JDK, no native code).
 - IOCP on Windows, thread pool on Linux — same kernel paths as CDM.
 - Expected accuracy within 5–10% of CDM on NVMe drives.
 
----
 
-## Related Source Files
+### 2.12 Related Source Files
 
 - `jdm-core/src/main/java/jdiskmark/BenchmarkProfile.java` — CDM profile entries + `CdmRow`
 - `jdm-core/src/main/java/jdiskmark/BenchmarkOperation.java` — new columns
@@ -533,13 +530,13 @@ vs. CDM's pre-pinned buffer pool.
 
 ---
 
-## 4. USB Drive Benchmarking (Linux / Ubuntu)
+## 3. USB Drive Benchmarking (Linux / Ubuntu)
 
 USB flash drives present several constraints not encountered with NVMe or SATA
 drives. The following findings were verified on Ubuntu with a Lexar USB 3.0
 flash drive formatted as vfat (FAT32).
 
-### 4.1 Direct IO Constraints
+### 3.1 Direct IO Constraints
 
 Java's `ExtendedOpenOption.DIRECT` enforces alignment and I/O size requirements
 based on `FileStore.getBlockSize()`. On vfat, this returns the **filesystem
@@ -559,22 +556,117 @@ Consequences of the Java NIO restriction:
   be aligned to the cluster size. `Arena.allocate(size, alignment)` with the
   cluster size as alignment satisfies this.
 
+When Direct IO is unavailable or off, see
+[§4 Buffered IO Accuracy](#4-buffered-io-accuracy-direct-io-off) for the
+runtime fallback, disk cache drop, and related safeguards.
+
 #### Future Improvement
 
 Bypassing Java's NIO restriction via the Foreign Function & Memory API (FFI) to call `open()` with `O_DIRECT` at the syscall level would allow Direct IO with the device's true 512-byte sector alignment, matching `dd` behaviour.
 
-### 4.2 Sector Alignment Auto-Adjustment
+### 3.2 Sector Alignment Auto-Adjustment
 
 When Direct IO is enabled and the filesystem cluster size exceeds the user-selected sector alignment, `BenchmarkRunner.resolveAlignment()` adjusts the effective alignment upward and updates the GUI badge to reflect the value actually used during the run.
 
-### 4.3 SMART Diagnostics
+### 3.3 SMART Diagnostics
 
 USB flash drives do not support SMART. `smartctl` reports `"Unknown USB bridge"` and cannot query device health data. The application detects the USB bus type via `lsblk TRAN` and shows a message instead of launching the privileged `smartctl` shell.
 
-### 4.4 Drive Model Detection
+### 3.4 Drive Model Detection
 
 USB drives report VENDOR and MODEL as separate `lsblk` columns (e.g. VENDOR=`Lexar`, MODEL=`USB Flash Drive`), unlike NVMe drives where MODEL includes the manufacturer. `getVendorModelLinux()` combines both columns for display, while `getDeviceModelLinux()` returns MODEL only.
 
-### 4.5 Write Performance Characteristics
+### 3.5 Write Performance Characteristics
 
 With Direct IO enabled and per-sample file creation (the default benchmark pattern), write throughput on vfat is significantly lower than raw device capability. Each new file requires synchronous FAT table metadata updates that bypass the OS write cache. Verified with `dd oflag=direct` writing to a single file at 47 MB/s versus the benchmark pattern at ~0.5 MB/s.
+
+---
+
+## 4. Buffered IO Accuracy (Direct IO Off)
+
+Without Direct IO, reads and writes pass through the OS page cache and can measure memory instead of the drive. This section describes how a run detects that state and keeps results representative of the drive. All safeguards live in `BenchmarkRunner` and `Sample` and apply on every platform; only the cache drop and its privilege escalation are OS-specific.
+
+### 4.1 Direct IO Detection and Fallback
+
+Direct IO is only trusted if it is actually in effect. `BenchmarkRunner` turns it off for the run when:
+
+- the legacy IO engine is selected (checked before WRITE),
+- a sample fails to open or write with `ExtendedOpenOption.DIRECT` and falls back to buffered IO, or
+- a one-block `O_DIRECT` probe read of the first test file fails (checked before READ).
+
+`BenchmarkRunner.disableDirectIo()` runs once per run: it clears
+`config.directIoEnabled` and `App.directEnable`, updates the badge and the Options menu, and logs an event. Direct IO stays off for later runs until the user turns it back on.
+
+### 4.2 Disk Cache Drop Before READ
+
+When Direct IO is off the page cache is cleared once before READ. Not running as root, `UtilOs.dropCacheElevated()` runs the command in the privileged shell shared with SMART, so the password is requested at most once per session:
+
+| OS | Command | Escalation | Dialog text |
+|---|---|---|---|
+| Linux | `sync; echo 1 > /proc/sys/vm/drop_caches` | `pkexec bash` (polkit) | polkit agent default |
+| macOS | `sync; purge` | `osascript` dialog + `sudo -S bash` | "Administrator login is required to clear the disk cache using the “sudo purge” command." |
+| Windows | `EmptyStandbyList.exe` (admin only) | none | manual prompt when not admin |
+
+Outcomes:
+
+| Result | Cause | Behaviour |
+|---|---|---|
+| `CLEARED` | command exit 0 | READ runs |
+| `UNAVAILABLE` | Flatpak, `pkexec` not on `PATH`, or `pkexec` exit 127 (no polkit agent, or authorization not obtained) | manual "run sudo, then press OK" prompt, then READ runs |
+| `DENIED` | dialog cancelled (`pkexec` exit 126, macOS Cancel), command failure, 120 s timeout | READ skipped and recorded as failed (§4.3) |
+
+`pkexec`/polkit is not bundled or declared as a package dependency; it is assumed present on desktop Linux. The DEB and RPM install a polkit policy for SMART only. Systems without it fall back to the manual prompt.
+
+### 4.3 Failed READ Operation
+
+A skipped READ is recorded as a `BenchmarkOperation` with `status = FAILED`,
+`failReason = CACHE_NOT_CLEARED`, no samples, and `-1` metrics, and an event is logged. Failed operations are included in exports and portal uploads; consumers should exclude them from aggregates. Operations without a stored status are treated as `COMPLETED`.
+
+### 4.4 Test File Layout
+
+Every sample reads and writes its own data so READ samples are never served from data cached by an earlier sample:
+
+- **Multi-File on:** one file per sample (`testdata<N>.jdm`).
+- **Multi-File off:** one file (`testdata.jdm`) holding a region per sample, the aggregate of the multi-file data. Sample *N* uses offset `(N − firstSample) × numBlocks × blockSize` (`Sample.regionOffset()`); random block order stays within that region. Read preparation does not truncate the shared file because threads fill different regions concurrently.
+
+Both modes need `numSamples × numBlocks × blockSize` of free space (`DriveChecker.checkDiskSpace`). Multi-File is never changed automatically.
+
+> Before this change single-file mode reused one sample-sized region for every sample (since the initial version). That was harmless with Direct IO, but without it READ samples after the first were served from the page cache.
+
+### 4.5 Write Flush per Sample
+
+Buffered writes complete into the page cache and are written back later, so write samples run at memory speed until `vm.dirty_ratio` is reached. When Direct IO and Write Sync are both off, `BenchmarkRunner.flushWriteSamples()` ends each write sample with `FileChannel.force(false)` (legacy engine: `FileDescriptor.sync()`) inside the timed section, so each sample includes its data reaching the drive. No elevation is needed; it is logged once per run.
+
+The flush must be timed: untimed, the sample measures only the copy into
+memory and the drive's work happens between samples. Write Sync (`DSYNC`) waits on every block instead and reads below the drive's sustained rate. A cache drop before WRITE is not needed; it only affects reads.
+
+### 4.6 Incompressible Write Data
+
+Each run fills one block with random bytes (`BenchmarkRunner.blockArr`) that both engines write for every block. Compressing filesystems (btrfs
+`compress=`, ZFS lz4, NTFS compression) cannot shrink it, so results reflect the drive rather than the compression ratio. On btrfs it also keeps extents uncompressed so `O_DIRECT` is honoured.
+
+### 4.7 Badge and Chart Indication
+
+Badges for settings the runner changed automatically (currently Direct IO off) use the theme's `badgeAutoBg()` colour (deep teal by default, see `theme.md`) with the reason as a tooltip while that run is displayed. The amber stale highlight takes priority if the user changes the setting.
+
+A teal bottom chart subtitle (`Gui.refreshCacheDropNotice()`) warns before a run that clearing the cache will need admin rights. It is shown when Direct IO is off and the type includes READ, and hidden when running as root/admin or once the privileged shell is authenticated this session:
+
+| Platform | Notice |
+|---|---|
+| Linux, macOS | "Direct IO off — administrator login required to clear the disk cache before READ" |
+| Windows (not admin) | "Direct IO off — run as administrator to clear the disk cache automatically before READ" |
+| Flatpak | "Direct IO off — the disk cache must be cleared manually before READ" |
+
+It refreshes with the badges (Direct IO toggle, run start/end, theme), on settings changes, and after the cache-drop login.
+
+### 4.8 Platform Notes and Known Limitations
+
+| Platform | Note |
+|---|---|
+| Linux ext4/xfs, Windows NTFS, macOS APFS | Direct IO normally works; only random data and the probe apply |
+| Linux btrfs | Benefits from random data; verified on Fedora 44 (`compress=zstd:1`) |
+| Linux without polkit agent | Manual prompt fallback via `pkexec` exit 127 |
+| Flatpak | Manual prompt; no escalation from the sandbox |
+| macOS | Direct IO uses `F_NOCACHE` (a hint); `fsync` does not flush the drive cache (`F_FULLFSYNC` would), so flushed writes may read slightly high |
+| Windows | `FlushFileBuffers` also flushes the drive cache; may read low on drives without power-loss protection. Elevated cache drop is not automated yet |
+| OpenZFS < 2.3 | Accepts `O_DIRECT` but serves reads from the ARC; the probe passes and reads may still be inflated |

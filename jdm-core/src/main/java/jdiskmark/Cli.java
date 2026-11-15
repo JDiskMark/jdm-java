@@ -12,49 +12,62 @@ import picocli.CommandLine.Command;
             RunBenchmarkCommand.class
         })
 public class Cli {
-    static public void dropCache() {
+    /**
+     * @return false if the cache could not be cleared
+     */
+    static public boolean dropCache() {
         if (App.isLinux()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
                 UtilOs.flushDataToDriveLinux();
-                UtilOs.dropWriteCacheLinux();
-            } else {
-                /* Revised the drop_caches command so it works. - JSL 2024-01-16 */
-                String message = """
-                        \nRun JDiskMark with sudo to automatically clear the disk cache.
-                        
-                        For a valid READ benchmark please clear the disk cache now 
-                        by using: \"sudo sh -c \'sync; echo 1 > /proc/sys/vm/drop_caches\'\".
-                        
-                        Press OK to continue when disk cache has been dropped.""";
-                System.out.println(message);
-                try (Scanner scanner = new Scanner(System.in)) {
-                    // Block until Enter is pressed
-                    scanner.nextLine();
-                } catch (java.util.NoSuchElementException ex) {
-                    System.err.println("Input stream closed unexpectedly.");
+                return UtilOs.dropWriteCacheLinux();
+            }
+            switch (UtilOs.dropCacheElevated()) {
+                case CLEARED -> { return true; }
+                case DENIED -> { return false; }
+                case UNAVAILABLE -> {
+                    /* Revised the drop_caches command so it works. - JSL 2024-01-16 */
+                    String message = """
+                            \nRun JDiskMark with sudo to automatically clear the disk cache.
+                            
+                            For a valid READ benchmark please clear the disk cache now 
+                            by using: \"sudo sh -c \'sync; echo 1 > /proc/sys/vm/drop_caches\'\".
+                            
+                            Press OK to continue when disk cache has been dropped.""";
+                    System.out.println(message);
+                    try (Scanner scanner = new Scanner(System.in)) {
+                        // Block until Enter is pressed
+                        scanner.nextLine();
+                    } catch (java.util.NoSuchElementException ex) {
+                        System.err.println("Input stream closed unexpectedly.");
+                    }
                 }
             }
         } else if (App.isMacOs()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
                 UtilsMacOs.flushDataToDrive();
-                UtilsMacOs.dropWriteCache();
-            } else {
-                String message = """
-                        \nFor valid READ benchmarks please clear the disk cache.
+                return UtilsMacOs.dropWriteCache();
+            }
+            switch (UtilOs.dropCacheElevated()) {
+                case CLEARED -> { return true; }
+                case DENIED -> { return false; }
+                case UNAVAILABLE -> {
+                    String message = """
+                            \nFor valid READ benchmarks please clear the disk cache.
 
-                        Removable drives can be disconnected and reconnected.
+                            Removable drives can be disconnected and reconnected.
 
-                        run command `sudo purge`
+                            run command `sudo purge`
 
-                        Press OK to continue when disk cache has been cleared.""";
-                System.out.println(message);
-                try (Scanner scanner = new Scanner(System.in)) {
-                    // Block until Enter is pressed
-                    scanner.nextLine();
-                } catch (java.util.NoSuchElementException ex) {
-                    System.err.println("Input stream closed unexpectedly.");
+                            Press OK to continue when disk cache has been cleared.""";
+                    System.out.println(message);
+                    try (Scanner scanner = new Scanner(System.in)) {
+                        // Block until Enter is pressed
+                        scanner.nextLine();
+                    } catch (java.util.NoSuchElementException ex) {
+                        System.err.println("Input stream closed unexpectedly.");
+                    }
                 }
             }
         } else if (App.isWindows()) {
@@ -121,5 +134,6 @@ public class Cli {
                 System.err.println("Input stream closed unexpectedly.");
             }
         }
+        return true;
     }
 }
