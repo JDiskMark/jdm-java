@@ -8,16 +8,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### added
 - #232 dynamic hiding of benchmark progress bar
 
+
 ### Planned/Proposed
 - [#118](https://github.com/JDiskMark/jdm-java/issues/118) test interlock or OAuth upload
 - refactor package classes
 - custom user profiles, save to profile database
 
-## [0.9.1-rc2] release candidate
+## [0.9.1]
 - #232 dynamic benchmark progress bar
 - #234 collect interface version
 - #236 fix profile modified flag
 - #238 include local time offset w IANA zone
+- #246 OS detail label for linux distro
+- #248 auto clear the disk cache before READ / Direct IO is off 
+    - admin login w Linux pkexec, macOS sudo purge READ recorded as failed if declined, chart notice when administrator login required
+    - teal badge when a setting was changed automatically (directio turned off)
+    - each sample has its own region in single-file mode
+    - writes flushed per sample
+    - random write data defeats filesystem compression
 
 ## [0.9.0]
 - #205 drive dropdown linux

@@ -144,7 +144,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
                         o.getStartTimeString(),
                         o.getDuration(),
                         o.getAccTimeDisplay(),
-                        o.getIops(),
+                        o.getIopsDisplay(),
                         o.getBwAvgDisplay(),
                     });
         }

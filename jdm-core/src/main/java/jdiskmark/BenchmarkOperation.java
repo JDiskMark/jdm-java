@@ -204,6 +204,10 @@ public class BenchmarkOperation implements Serializable {
         if (isFailed()) return "Failed";
         return bwAvg == -1 ? "- -" : DF.format(bwAvg);
     }
+    @JsonIgnore
+    public String getIopsDisplay() {
+        return iops == -1 ? "- -" : String.valueOf(iops);
+    }
     
     public String getDuration() {
         if (endTime == null) {

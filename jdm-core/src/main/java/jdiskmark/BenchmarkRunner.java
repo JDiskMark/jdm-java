@@ -319,6 +319,7 @@ public class BenchmarkRunner {
         op.bwMax = -1;
         op.bwMin = -1;
         op.accAvg = -1;
+        op.iops = -1;
         op.endTime = LocalDateTime.now();
     }
 
