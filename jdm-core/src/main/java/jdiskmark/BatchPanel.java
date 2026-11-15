@@ -146,6 +146,11 @@ public class BatchPanel extends JPanel {
         driveSelectPanel.add(driveSelectAll);
         driveSelectPanel.add(Box.createHorizontalStrut(8));
         driveSelectPanel.add(driveDeselectAll);
+        JButton driveRefresh = new JButton("Refresh");
+        driveRefresh.setToolTipText("Rescan drives");
+        driveRefresh.addActionListener(e -> populateDrives());
+        driveSelectPanel.add(Box.createHorizontalStrut(8));
+        driveSelectPanel.add(driveRefresh);
         driveColumn.add(driveSelectPanel);
 
         // ── Right: Profile selection ────────────────────────────────────────
@@ -484,6 +489,12 @@ public class BatchPanel extends JPanel {
                     JPanel driveListPanel = findDriveListPanel();
                     if (driveListPanel == null) return;
 
+                    boolean firstLoad = driveFiles.isEmpty();
+                    java.util.Set<File> previouslySelected = new java.util.HashSet<>();
+                    for (int i = 0; i < driveCheckBoxes.size(); i++) {
+                        if (driveCheckBoxes.get(i).isSelected()) previouslySelected.add(driveFiles.get(i));
+                    }
+
                     driveCheckBoxes.clear();
                     driveFiles.clear();
                     driveLabels.clear();
@@ -492,12 +503,13 @@ public class BatchPanel extends JPanel {
                     for (DriveEntry entry : entries) {
                         JCheckBox cb = new JCheckBox(entry.label());
                         cb.setAlignmentX(0);
+                        cb.setSelected(previouslySelected.contains(entry.root()));
                         driveCheckBoxes.add(cb);
                         driveFiles.add(entry.root());
                         driveLabels.add(entry.model());
                         driveListPanel.add(cb);
                     }
-                    if (!driveCheckBoxes.isEmpty()) {
+                    if (firstLoad && !driveCheckBoxes.isEmpty()) {
                         driveCheckBoxes.getFirst().setSelected(true);
                     }
 
