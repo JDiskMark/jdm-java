@@ -23,13 +23,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.metricus.jdm.os.UtilsLinuxOs;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import jdiskmark.App.IoEngine;
 import jdiskmark.Benchmark.IOMode;
 import static jdiskmark.Benchmark.IOMode.READ;
 import static jdiskmark.Benchmark.IOMode.WRITE;
+import org.metricus.jdm.os.UtilsLinuxOs;
 
 public class BenchmarkRunner {
     
@@ -141,8 +141,7 @@ public class BenchmarkRunner {
         Util.UsbIds usbIds = isUsb
                 ? Util.getUsbIds(configDir.toPath())
                 : null;
-        String driveModel = Util.formatDriveModelWithUsbIds(
-                Util.getDriveModel(configDir), usbIds);
+        String driveModel = Util.getDriveModel(configDir, usbIds);
 
         // Initialize Benchmark
         

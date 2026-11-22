@@ -127,14 +127,30 @@ public class Util {
      */
     public static String getDriveModel(File dataDir) {
         String model = getRawDriveModel(dataDir);
-        if (model == null || model.isBlank() || ERROR_DRIVE_INFO.equals(model)
-                || model.startsWith("Multiple drives:") || "OS not supported".equals(model)) {
+        if (!isModelDetected(model)) {
             return model;
         }
         if ("USB".equalsIgnoreCase(getDriveInterface(dataDir))) {
             return formatDriveModelWithUsbIds(model, getUsbIds(dataDir.toPath()));
         }
         return model;
+    }
+
+    /**
+     * Same as {@link #getDriveModel(File)} but reuses USB IDs the caller has
+     * already resolved, avoiding repeated interface and USB lookups.
+     *
+     * @param dataDir the data directory being used in the run.
+     * @param usbIds  previously resolved USB IDs, or {@code null} for non-USB drives.
+     */
+    public static String getDriveModel(File dataDir, UsbIds usbIds) {
+        String model = getRawDriveModel(dataDir);
+        return isModelDetected(model) ? formatDriveModelWithUsbIds(model, usbIds) : model;
+    }
+
+    private static boolean isModelDetected(String model) {
+        return model != null && !model.isBlank() && !ERROR_DRIVE_INFO.equals(model)
+                && !model.startsWith("Multiple drives:") && !"OS not supported".equals(model);
     }
 
     private static String getRawDriveModel(File dataDir) {
