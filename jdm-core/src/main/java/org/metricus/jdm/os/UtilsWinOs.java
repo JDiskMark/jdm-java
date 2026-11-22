@@ -20,7 +20,8 @@ public final class UtilsWinOs {
 
     /**
      * Get the USB Vendor ID and Product ID for a Windows drive letter by
-     * walking up the PnP parent chain from {@code Get-Disk.PNPDeviceID}.
+     * walking up the PnP parent chain from {@code Win32_DiskDrive.PNPDeviceID}.
+     * ({@code Get-Disk}/MSFT_Disk does not expose a PNPDeviceID property.)
      *
      * @param driveLetter single drive letter (e.g. "E")
      * @return USB VID/PID pair, or {@code null} if unavailable
@@ -30,7 +31,8 @@ public final class UtilsWinOs {
         driveLetter = driveLetter.toUpperCase();
         try {
             String script = String.format(
-                    "$id = (Get-Partition -DriveLetter %s | Get-Disk).PNPDeviceID; "
+                    "$n = (Get-Partition -DriveLetter %s).DiskNumber; "
+                    + "$id = (Get-CimInstance Win32_DiskDrive | Where-Object Index -eq $n).PNPDeviceID; "
                     + "for ($i = 0; $i -lt 4 -and $id; $i++) { "
                     + "if ($id -match 'VID_[0-9A-Fa-f]{4}&PID_[0-9A-Fa-f]{4}') { $id; break } "
                     + "$id = (Get-PnpDeviceProperty -InstanceId $id -KeyName DEVPKEY_Device_Parent -ErrorAction SilentlyContinue).Data "
@@ -63,7 +65,9 @@ public final class UtilsWinOs {
 
     /**
      * Extracts a lowercase 4-digit hex {@link Util.UsbIds} pair from a Windows
-     * PnP device instance ID (e.g. {@code USB\VID_0781&PID_5583\...}).
+     * PnP device instance ID (e.g.{@code USB\VID_0781&PID_5583\...}).
+     * @param pnpId
+     * @return usb ids
      */
     public static Util.UsbIds parseUsbIdsFromPnpId(String pnpId) {
         if (pnpId == null || pnpId.isBlank()) return null;
