@@ -1,6 +1,10 @@
 package jdiskmark;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.metricus.jdm.os.UtilsLinuxOs;
+import org.metricus.jdm.os.UtilsMacOs;
+import org.metricus.jdm.os.UtilsWinOs;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -60,5 +64,59 @@ class BenchmarkRunnerTest {
             assertEquals(1, ranges[0][0]);
             assertEquals(201, ranges[threads - 1][1]);
         }
+    }
+
+    @Test
+    void formatDriveModelWithUsbIds_appendsWhenPresent() {
+        Util.UsbIds ids = new Util.UsbIds("0781", "5583");
+        assertEquals("SanDisk 3.2Gen1 [0781:5583]",
+                Util.formatDriveModelWithUsbIds("SanDisk 3.2Gen1", ids));
+        assertEquals("SanDisk 3.2Gen1 [0781:5583]",
+                Util.formatDriveModelWithUsbIds("SanDisk 3.2Gen1 [0781:5583]", ids));
+        assertEquals("SanDisk 3.2Gen1",
+                Util.formatDriveModelWithUsbIds("SanDisk 3.2Gen1", null));
+    }
+
+    @Test
+    void parseUsbIdsFromPnpId_extractsLowercaseHex() {
+        Util.UsbIds ids = UtilsWinOs.parseUsbIdsFromPnpId("USB\\VID_0781&PID_5583\\0401A1B2C3");
+        assertEquals(new Util.UsbIds("0781", "5583"), ids);
+
+        Util.UsbIds composite = UtilsWinOs.parseUsbIdsFromPnpId("USB\\VID_0BDA&PID_9210&MI_00\\6&1234&0");
+        assertEquals(new Util.UsbIds("0bda", "9210"), composite);
+
+        assertNull(UtilsWinOs.parseUsbIdsFromPnpId("USBSTOR\\DISK&VEN_SANDISK&PROD_3.2GEN1\\123"));
+        assertNull(UtilsWinOs.parseUsbIdsFromPnpId(null));
+    }
+
+    @Test
+    void normalizeHexId_padsAndLowercases() {
+        assertEquals("0781", UtilsLinuxOs.normalizeHexId("0x0781\n"));
+        assertEquals("0781", UtilsLinuxOs.normalizeHexId("781"));
+        assertEquals("0bda", UtilsLinuxOs.normalizeHexId("0BDA"));
+        assertNull(UtilsLinuxOs.normalizeHexId("not-hex"));
+    }
+
+    @Test
+    void parseUsbIdsFromIoreg_matchesOwningUsbDevice() {
+        List<String> lines = List.of(
+                "+-o  USB3.1 Hub@03100000  <class IOUSBHostDevice, id 0x100>",
+                "  | {",
+                "  |   \"idVendor\" = 8457",
+                "  |   \"idProduct\" = 1640",
+                "  | }",
+                "+-o  SanDisk 3.2Gen1@03200000  <class IOUSBHostDevice, id 0x101>",
+                "  | {",
+                "  |   \"idVendor\" = 1921",
+                "  |   \"idProduct\" = 21891",
+                "  | }",
+                "  +-o IOMedia  <class IOMedia, id 0x102>",
+                "    | {",
+                "    |   \"BSD Name\" = \"disk4\"",
+                "    | }"
+        );
+        assertEquals(new Util.UsbIds("0781", "5583"),
+                UtilsMacOs.parseUsbIdsFromIoreg(lines, "disk4"));
+        assertNull(UtilsMacOs.parseUsbIdsFromIoreg(lines, "disk9"));
     }
 }

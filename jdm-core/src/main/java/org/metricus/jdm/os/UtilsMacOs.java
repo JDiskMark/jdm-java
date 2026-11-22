@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import jdiskmark.DiskUsageInfo;
+import jdiskmark.Util;
 import jdiskmark.UtilOs;
 
 /**
@@ -435,6 +436,100 @@ public final class UtilsMacOs {
         return null;
     }
 
+    /**
+     * Returns the USB Vendor ID and Product ID for the USB-attached volume at {@code path}
+     * by parsing {@code ioreg -r -c IOUSBHostDevice -l}, or {@code null} when unavailable.
+     *
+     * @param path any path on the target volume
+     * @return USB VID/PID pair, or {@code null}
+     */
+    public static Util.UsbIds getUsbIds(Path path) {
+        if (path == null) return null;
+        String partition = getDeviceFromPath(path);
+        if (partition == null) return null;
+        String wholeDisk = getWholeDeviceName(partition);
+        if (wholeDisk == null) return null;
+        String physicalDisk = resolvePhysicalWholeDisk(wholeDisk);
+
+        List<String> lines = runCommandLines("ioreg", "-r", "-c", "IOUSBHostDevice", "-l");
+        if (lines.isEmpty()) return null;
+        Util.UsbIds ids = parseUsbIdsFromIoreg(lines, physicalDisk);
+        if (ids == null && !physicalDisk.equals(wholeDisk)) {
+            ids = parseUsbIdsFromIoreg(lines, wholeDisk);
+        }
+        return ids;
+    }
+
+    /**
+     * Resolves a synthesized APFS container disk (e.g. {@code disk5}) to its
+     * underlying physical whole disk (e.g. {@code disk4}) via {@code diskutil info}.
+     */
+    private static String resolvePhysicalWholeDisk(String wholeDisk) {
+        for (String line : runDiskutilInfo("/dev/" + wholeDisk)) {
+            if (line.contains("APFS Physical Store:")) {
+                String store = line.split("APFS Physical Store:")[1].trim();
+                String physical = getWholeDeviceName(store);
+                if (physical != null) {
+                    return physical;
+                }
+            }
+        }
+        return wholeDisk;
+    }
+
+    /**
+     * Parses {@code ioreg -r -c IOUSBHostDevice -l} output to find the
+     * {@code idVendor} and {@code idProduct} owning {@code targetWholeDisk}
+     * (e.g. {@code "disk4"}).
+     */
+    public static Util.UsbIds parseUsbIdsFromIoreg(List<String> lines, String targetWholeDisk) {
+        if (lines == null || targetWholeDisk == null || targetWholeDisk.isBlank()) {
+            return null;
+        }
+        Pattern vendorPattern = Pattern.compile("\"idVendor\"\\s*=\\s*(\\d+)");
+        Pattern productPattern = Pattern.compile("\"idProduct\"\\s*=\\s*(\\d+)");
+        Pattern bsdPattern = Pattern.compile("\"BSD Name\"\\s*=\\s*\"([^\"]+)\"");
+
+        String currentVid = null;
+        String currentPid = null;
+        for (String line : lines) {
+            if (line.contains("<class IOUSBHostDevice,")) {
+                currentVid = null;
+                currentPid = null;
+                continue;
+            }
+            Matcher vm = vendorPattern.matcher(line);
+            if (vm.find()) {
+                currentVid = formatDecimalAsHex4(vm.group(1));
+                continue;
+            }
+            Matcher pm = productPattern.matcher(line);
+            if (pm.find()) {
+                currentPid = formatDecimalAsHex4(pm.group(1));
+                continue;
+            }
+            Matcher bm = bsdPattern.matcher(line);
+            if (bm.find()) {
+                String bsdName = bm.group(1).trim();
+                if ((bsdName.equals(targetWholeDisk) || bsdName.startsWith(targetWholeDisk + "s"))
+                        && currentVid != null && currentPid != null) {
+                    return new Util.UsbIds(currentVid, currentPid);
+                }
+            }
+        }
+        return null;
+    }
+
+    private static String formatDecimalAsHex4(String decimalStr) {
+        try {
+            int val = Integer.parseInt(decimalStr);
+            if (val < 0 || val > 0xFFFF) return null;
+            return String.format("%04x", val);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Private helpers
     // -----------------------------------------------------------------------
@@ -444,9 +539,13 @@ public final class UtilsMacOs {
      * Returns an empty list on any error.
      */
     private static List<String> runDiskutilInfo(String device) {
+        return runCommandLines("diskutil", "info", device);
+    }
+
+    private static List<String> runCommandLines(String... command) {
         List<String> lines = new ArrayList<>();
         try {
-            ProcessBuilder pb = new ProcessBuilder("diskutil", "info", device);
+            ProcessBuilder pb = new ProcessBuilder(command);
             pb.environment().put("LC_ALL", "C");
             pb.redirectErrorStream(true);
             Process process = pb.start();
@@ -459,7 +558,10 @@ public final class UtilsMacOs {
             }
             process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
         } catch (IOException | InterruptedException e) {
-            LOGGER.log(Level.WARNING, "diskutil info failed for " + device, e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            LOGGER.log(Level.WARNING, "Command failed: " + String.join(" ", command), e);
         }
         return lines;
     }

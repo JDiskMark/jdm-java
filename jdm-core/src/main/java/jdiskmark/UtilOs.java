@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,6 +22,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.metricus.jdm.os.UtilsLinuxOs;
 
 /**
  * OS Specific Utility methods for JDiskMark
@@ -467,148 +471,6 @@ public class UtilOs {
                 .replace("\\011", "\t")
                 .replace("\\012", "\n")
                 .replace("\\134", "\\");
-    }
-
-    /**
-     * On Linux OS get the device path when given a file path.
-     * eg.  filePath = /home/james/Desktop/jdm-data
-     * devicePath = /dev/sda
-     * * Example command and output:
-     * $ df /home/james/jdm-data
-     * Filesystem     1K-blocks     Used Available Use% Mounted on
-     * /dev/sda2      238737052 54179492 172357524  24% /
-     * * @param path the file path
-     * @return the device path
-     */
-    static public String getPartitionFromFilePathLinux(Path path) {
-        if (App.verbose) {
-            System.out.println("filePath=" + path.toString());
-        }
-        try {
-            ProcessBuilder pb = new ProcessBuilder("df", "-k", path.toString());
-            Map<String, String> env = pb.environment();
-            env.put("LC_ALL", "C"); // set language to english
-            Process process = pb.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            String curPartition = null;
-            while ((line = reader.readLine()) != null) {
-                if (App.verbose) {
-                    System.out.println("curLine=" + line);
-                }
-                if (line.contains("/dev/")) {
-                    curPartition = line.split(" ")[0];
-                    break;
-                }
-            }
-            int exitCode = process.waitFor();
-            if (exitCode == 0 && curPartition != null) {
-                return curPartition;
-            }
-        } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-            LOGGER.log(Level.SEVERE, null, e);
-        }
-        return null;
-    }
-    
-    /**
-     * This method returns a list to handle multiple physical drives
-     * in case the partition is part of an LVM or RAID in Linux
-     * @param partition the partition to look up
-     * @return list of physical drives
-     */
-    static public List<String> getDeviceNamesFromPartitionLinux(String partition) {
-        List<String> deviceNames = new ArrayList<>();
-        if (partition == null) {
-            return deviceNames;
-        }
-        try {
-            ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "pkname", partition);
-            Map<String, String> env = pb.environment();
-            env.put("LC_ALL", "C"); // set language to english
-            Process process = pb.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            // detect multiple lines and if so indicate it is an LVM
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (App.verbose) {
-                    System.err.println("devName=" + line);
-                }
-                if (!line.trim().isEmpty()) {
-                    deviceNames.add(line.trim());
-                }
-            }
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                deviceNames.clear();
-            }
-        } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-            LOGGER.log(Level.SEVERE, null, e);
-        }
-        return deviceNames;
-    }
-
-    /**
-     * Resolves a block device to the whole disk(s) beneath it, walking down
-     * through partition, dm-crypt (LUKS), LVM and md RAID layers. Unlike
-     * {@code lsblk -no pkname}, which stops one layer down (e.g. at the LUKS
-     * partition), this always reaches devices of TYPE {@code disk}.
-     *
-     * @param device device path, e.g. {@code /dev/mapper/vg-root}
-     * @return kernel names such as {@code sda} or {@code nvme0n1}; empty on failure
-     */
-    static List<String> getBaseDisksLinux(String device) {
-        Set<String> disks = new LinkedHashSet<>();
-        if (device == null || device.isBlank()) return new ArrayList<>();
-        Process process = null;
-        try {
-            ProcessBuilder pb = new ProcessBuilder("lsblk", "--inverse", "--noheadings",
-                    "--raw", "--output", "KNAME,TYPE", device);
-            pb.environment().put("LC_ALL", "C");
-            pb.redirectError(ProcessBuilder.Redirect.DISCARD);
-            Process p = pb.start();
-            process = p;
-            java.util.concurrent.CompletableFuture<List<String>> output =
-                    java.util.concurrent.CompletableFuture.supplyAsync(() -> {
-                try (BufferedReader reader = p.inputReader()) {
-                    return reader.lines().toList();
-                } catch (IOException e) {
-                    throw new java.io.UncheckedIOException(e);
-                }
-            });
-            if (!p.waitFor(10, java.util.concurrent.TimeUnit.SECONDS)) {
-                LOGGER.log(Level.WARNING, "lsblk --inverse timed out for {0}", device);
-                return new ArrayList<>();
-            }
-            if (p.exitValue() != 0) {
-                return new ArrayList<>();
-            }
-            for (String line : output.get(1, java.util.concurrent.TimeUnit.SECONDS)) {
-                String[] cols = line.trim().split("\\s+");
-                if (cols.length >= 2 && "disk".equals(cols[1]) && !cols[0].isEmpty()) {
-                    disks.add(cols[0]);
-                }
-            }
-        } catch (IOException | InterruptedException
-                | java.util.concurrent.ExecutionException
-                | java.util.concurrent.TimeoutException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-            LOGGER.log(Level.WARNING, "lsblk --inverse failed for " + device, e);
-            disks.clear();
-        } finally {
-            if (process != null && process.isAlive()) {
-                process.destroyForcibly();
-            }
-        }
-        return new ArrayList<>(disks);
     }
     
     /**
@@ -1509,9 +1371,9 @@ public class UtilOs {
      * @return bus type (uppercased) or {@code null} on failure
      */
     static String getBusTypeLinux(Path path) {
-        String partition = getPartitionFromFilePathLinux(path);
+        String partition = UtilsLinuxOs.getPartitionFromFilePath(path);
         if (partition == null || partition.isBlank()) return null;
-        for (String disk : getBaseDisksLinux(partition)) {
+        for (String disk : UtilsLinuxOs.getBaseDisks(partition)) {
             String diskTran = lsblkTran("/dev/" + disk);
             if (diskTran != null) return diskTran;
         }
@@ -1520,7 +1382,7 @@ public class UtilOs {
         String tran = lsblkTran(partition);
         if (tran != null) return tran;
 
-        List<String> parents = getDeviceNamesFromPartitionLinux(partition);
+        List<String> parents = UtilsLinuxOs.getDeviceNamesFromPartition(partition);
         if (!parents.isEmpty()) {
             tran = lsblkTran("/dev/" + parents.getFirst());
             if (tran != null) return tran;
@@ -1549,77 +1411,6 @@ public class UtilOs {
             LOGGER.log(Level.WARNING, "lsblk TRAN failed for " + device, e);
         }
         return null;
-    }
-
-    /**
-     * Detects the negotiated USB link speed for a block device by reading
-     * the {@code speed} file from its sysfs USB ancestor. Returns a
-     * human-readable USB version string (e.g. {@code "3.0"}), or
-     * {@code null} if the device is not USB-attached or detection fails.
-     *
-     * @param path path on the target filesystem
-     * @return USB version string or {@code null}
-     */
-    static String getUsbVersionLinux(Path path) {
-        String partition = getPartitionFromFilePathLinux(path);
-        if (partition == null || partition.isBlank()) return null;
-
-        List<String> disks = getBaseDisksLinux(partition);
-        if (disks.isEmpty()) {
-            disks = getDeviceNamesFromPartitionLinux(partition);
-        }
-        String devName = disks.isEmpty()
-                ? partition.replace("/dev/", "")
-                : disks.getFirst().trim();
-        if (devName.isEmpty() || devName.contains("/")) return null;
-
-        try {
-            java.nio.file.Path sysPath = java.nio.file.Path.of("/sys/block", devName);
-            if (!java.nio.file.Files.exists(sysPath)) return null;
-            java.nio.file.Path realPath = sysPath.toRealPath();
-
-            // The nearest ancestor with idVendor is the USB device itself; its
-            // speed file holds the negotiated link rate in Mbps.
-            java.nio.file.Path current = realPath;
-            while (current != null && current.getNameCount() > 0) {
-                java.nio.file.Path speedFile = current.resolve("speed");
-                if (java.nio.file.Files.isRegularFile(speedFile)
-                        && java.nio.file.Files.isRegularFile(current.resolve("idVendor"))) {
-                    String speed = java.nio.file.Files.readString(speedFile).trim();
-                    return mapUsbSpeed(speed, readUsbLanes(current));
-                }
-                current = current.getParent();
-            }
-        } catch (IOException | RuntimeException e) {
-            LOGGER.log(Level.WARNING, "USB version detection failed for " + devName, e);
-        }
-        return null;
-    }
-
-    /** Reads {@code rx_lanes} (kernel 4.18+); defaults to 1 when absent. */
-    private static int readUsbLanes(java.nio.file.Path usbDevice) {
-        try {
-            java.nio.file.Path lanes = usbDevice.resolve("rx_lanes");
-            if (java.nio.file.Files.isRegularFile(lanes)) {
-                return Integer.parseInt(java.nio.file.Files.readString(lanes).trim());
-            }
-        } catch (IOException | NumberFormatException e) {
-            LOGGER.log(Level.FINE, "rx_lanes unreadable for " + usbDevice, e);
-        }
-        return 1;
-    }
-
-    static String mapUsbSpeed(String speedMbps, int lanes) {
-        if (speedMbps == null) return null;
-        return switch (speedMbps.trim()) {
-            case "1.5"   -> "1.0";
-            case "12"    -> "1.1";
-            case "480"   -> "2.0";
-            case "5000"  -> "3.0";
-            case "10000" -> lanes == 2 ? "3.2 Gen 1x2" : "3.2 Gen 2";
-            case "20000" -> "3.2 Gen 2x2";
-            default      -> null;
-        };
     }
 
     /**
@@ -1767,7 +1558,7 @@ public class UtilOs {
      * @return sector size string or {@code null} on failure
      */
     static String getSectorSizeLinux(Path path) {
-        String partition = getPartitionFromFilePathLinux(path);
+        String partition = UtilsLinuxOs.getPartitionFromFilePath(path);
         if (partition == null || partition.isBlank()) return null;
         try {
             ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "LOG-SEC,PHY-SEC", partition);

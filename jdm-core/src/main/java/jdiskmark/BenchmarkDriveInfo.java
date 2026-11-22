@@ -29,6 +29,12 @@ public class BenchmarkDriveInfo {
     @Column
     String driveInterfaceVersion = null;     // e.g. USB link version "3.0"
     public String getDriveInterfaceVersion() { return driveInterfaceVersion; }
+    @Column
+    String usbVendorId = null;               // 4-char lowercase hex, e.g. "0781"
+    public String getUsbVendorId() { return usbVendorId; }
+    @Column
+    String usbProductId = null;              // 4-char lowercase hex, e.g. "5583"
+    public String getUsbProductId() { return usbProductId; }
     
     public BenchmarkDriveInfo() {}
 }

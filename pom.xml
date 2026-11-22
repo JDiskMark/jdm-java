@@ -16,13 +16,32 @@
     </modules>
 
     <properties>
+        <!-- package properties -->
+        <pkg.name>jdiskmark</pkg.name>
+        <app.name>JDiskMark</app.name>
+
         <!-- CI-friendly version placeholder. Override with -Drevision=<value> at build time.
              Default produces the current release build used by NetBeans and plain mvn.
              CI workflows set this to a labelled version (e.g. 0.8.0-ci.d.47).
              Keep the -SNAPSHOT suffix on dev/feature branches: local builds then get an
              auto pre-release label (e.g. 0.9.1-a.f.cleanup). A plain or labelled version
              (0.9.1, 0.9.1-rc4) is used as-is. -->
-        <revision>0.9.1</revision>
+        <revision>0.10.0-SNAPSHOT</revision>
+        <!-- MSI (Windows Installer) requires a purely numeric version in Major.Minor.Build
+             format — no letters, no -SNAPSHOT. This is an MSI format restriction, not
+             jpackage itself. Linux packages (DEB/RPM) can use the full project.version.
+             Update this alongside project.version when cutting a release. -->
+        <msi.version>0.10.0</msi.version>
+        <app.title>${app.name} ${project.version}</app.title>
+        <release.dir>${pkg.name}-${msi.version}</release.dir>
+        <!-- RPM version must not contain hyphens -->
+        <rpm.version>0.10.0</rpm.version>
+        <!-- RPM release field: CI overrides with pre-release label (e.g. ci.d.47) -->
+        <rpm.release>1</rpm.release>
+        <!-- macos versions do not accept values less than 1.0.0 -->
+        <dmg.version>1.0.0</dmg.version>
+
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>25</maven.compiler.release>
         <exec.mainClass>jdiskmark.App</exec.mainClass>
@@ -36,18 +55,6 @@
         <exec.plugin.version>3.2.0</exec.plugin.version>
         <download.plugin.version>1.9.0</download.plugin.version>
 
-        <!-- package properties -->
-        <pkg.name>jdiskmark</pkg.name>
-        <app.name>JDiskMark</app.name>
-
-        <!-- MSI (Windows Installer) requires a purely numeric version in Major.Minor.Build
-             format — no letters, no -SNAPSHOT. This is an MSI format restriction, not
-             jpackage itself. Linux packages (DEB/RPM) can use the full project.version.
-             Update this alongside project.version when cutting a release. -->
-        <msi.version>0.9.1</msi.version>
-        <app.title>${app.name} ${project.version}</app.title>
-        <release.dir>${pkg.name}-${msi.version}</release.dir>
-
         <!-- JVM options passed to jpackage for all installer types -->
         <jvm.run.options>--enable-native-access=ALL-UNNAMED -XX:+UseZGC</jvm.run.options>
 
@@ -59,14 +66,6 @@
         <app.icon.win>jdm-turtle-logo.ico</app.icon.win>
         <app.icon.mac>images/JDiskMark-turtle.icns</app.icon.mac>
         <app.icon.linux>jdm-turtle-logo-256x256.png</app.icon.linux>
-
-        <!-- RPM version must not contain hyphens -->
-        <rpm.version>0.9.1</rpm.version>
-        <!-- RPM release field: CI overrides with pre-release label (e.g. ci.d.47) -->
-        <rpm.release>1</rpm.release>
-
-        <!-- macos versions do not accept values less than 1.0.0 -->
-        <dmg.version>1.0.0</dmg.version>
 
         <!-- Bundled smartctl: version, platform-specific download URLs, and checksums.
              All dist modules inherit these properties. To upgrade smartctl, update
