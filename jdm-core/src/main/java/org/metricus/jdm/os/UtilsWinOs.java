@@ -2,7 +2,12 @@ package org.metricus.jdm.os;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -15,6 +20,7 @@ import jdiskmark.Util;
 public final class UtilsWinOs {
 
     private static final Logger LOGGER = Logger.getLogger(UtilsWinOs.class.getName());
+    private static final long TIMEOUT_SECONDS = 15;
 
     private UtilsWinOs() {}
 
@@ -29,6 +35,7 @@ public final class UtilsWinOs {
     public static Util.UsbIds getUsbIds(String driveLetter) {
         if (driveLetter == null || driveLetter.isBlank()) return null;
         driveLetter = driveLetter.toUpperCase();
+        Process process = null;
         try {
             String script = String.format(
                     "$n = (Get-Partition -DriveLetter %s).DiskNumber; "
@@ -41,24 +48,34 @@ public final class UtilsWinOs {
             ProcessBuilder pb = new ProcessBuilder("powershell", "-NoProfile",
                     "-ExecutionPolicy", "Bypass", "-Command", script);
             pb.redirectErrorStream(true);
-            Process process = pb.start();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    Util.UsbIds ids = parseUsbIdsFromPnpId(line.trim());
-                    if (ids != null) {
-                        return ids;
-                    }
+            Process p = pb.start();
+            process = p;
+            CompletableFuture<List<String>> output = CompletableFuture.supplyAsync(() -> {
+                try (BufferedReader reader = p.inputReader()) {
+                    return reader.lines().toList();
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
                 }
-            } finally {
-                process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+            });
+            if (!p.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                LOGGER.log(Level.WARNING, "USB VID/PID lookup timed out for drive {0}", driveLetter);
+                return null;
             }
-        } catch (IOException | InterruptedException e) {
+            for (String line : output.get(1, TimeUnit.SECONDS)) {
+                Util.UsbIds ids = parseUsbIdsFromPnpId(line.trim());
+                if (ids != null) {
+                    return ids;
+                }
+            }
+        } catch (IOException | InterruptedException | ExecutionException | TimeoutException e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
             LOGGER.log(Level.WARNING, "Could not detect USB VID/PID on Windows", e);
+        } finally {
+            if (process != null && process.isAlive()) {
+                process.destroyForcibly();
+            }
         }
         return null;
     }

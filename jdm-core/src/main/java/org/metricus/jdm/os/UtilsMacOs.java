@@ -543,27 +543,39 @@ public final class UtilsMacOs {
     }
 
     private static List<String> runCommandLines(String... command) {
-        List<String> lines = new ArrayList<>();
+        Process process = null;
         try {
             ProcessBuilder pb = new ProcessBuilder(command);
             pb.environment().put("LC_ALL", "C");
             pb.redirectErrorStream(true);
-            Process process = pb.start();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    lines.add(line);
+            Process p = pb.start();
+            process = p;
+            java.util.concurrent.CompletableFuture<List<String>> output =
+                    java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+                try (BufferedReader reader = p.inputReader()) {
+                    return reader.lines().toList();
+                } catch (IOException e) {
+                    throw new java.io.UncheckedIOException(e);
                 }
+            });
+            if (!p.waitFor(10, java.util.concurrent.TimeUnit.SECONDS)) {
+                LOGGER.log(Level.WARNING, "Command timed out: {0}", String.join(" ", command));
+                return new ArrayList<>();
             }
-            process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
-        } catch (IOException | InterruptedException e) {
+            return new ArrayList<>(output.get(1, java.util.concurrent.TimeUnit.SECONDS));
+        } catch (IOException | InterruptedException
+                | java.util.concurrent.ExecutionException
+                | java.util.concurrent.TimeoutException e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
             LOGGER.log(Level.WARNING, "Command failed: " + String.join(" ", command), e);
+        } finally {
+            if (process != null && process.isAlive()) {
+                process.destroyForcibly();
+            }
         }
-        return lines;
+        return new ArrayList<>();
     }
 
     /**
