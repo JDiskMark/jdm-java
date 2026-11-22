@@ -9,6 +9,7 @@ import org.metricus.jdm.ui.ButtonStyles;
 import org.metricus.jdm.ui.Palette;
 import org.metricus.jdm.ui.Theme;
 import org.metricus.jdm.ui.ThemeDefinition;
+import org.metricus.jdm.os.UtilsLinuxOs;
 import org.metricus.jdm.os.UtilsMacOs;
 
 import java.awt.BorderLayout;
@@ -1661,9 +1662,9 @@ public final class Gui {
                 try {
                     Path path = locDir.toPath();
                     if (App.isLinux()) {
-                        String partition = UtilOs.getPartitionFromFilePathLinux(path);
+                        String partition = UtilsLinuxOs.getPartitionFromFilePath(path);
                         List<String> devices =
-                                UtilOs.getDeviceNamesFromPartitionLinux(partition);
+                                UtilsLinuxOs.getDeviceNamesFromPartition(partition);
                         if (devices == null || devices.isEmpty()) {
                             SMART_LOG.log(Level.WARNING, "runSmart: no device for {0}", locDir);
                             return null;

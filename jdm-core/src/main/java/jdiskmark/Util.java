@@ -13,7 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import javax.swing.filechooser.FileSystemView;
+import org.metricus.jdm.os.UtilsLinuxOs;
 import org.metricus.jdm.os.UtilsMacOs;
+import org.metricus.jdm.os.UtilsWinOs;
 
 /**
  * Utility methods for JDiskMark
@@ -117,22 +119,51 @@ public class Util {
     }
     
     /**
-     * Get disk model info based on the drive the path is mapped to.
-     * 
+     * Get disk model info based on the drive the path is mapped to,
+     * appending {@code [vid:pid]} when the drive is USB-attached.
+     *
      * @param dataDir the data directory being used in the run.
      * @return Disk info if available.
      */
     public static String getDriveModel(File dataDir) {
+        String model = getRawDriveModel(dataDir);
+        if (!isModelDetected(model)) {
+            return model;
+        }
+        if ("USB".equalsIgnoreCase(getDriveInterface(dataDir))) {
+            return formatDriveModelWithUsbIds(model, getUsbIds(dataDir.toPath()));
+        }
+        return model;
+    }
+
+    /**
+     * Same as {@link #getDriveModel(File)} but reuses USB IDs the caller has
+     * already resolved, avoiding repeated interface and USB lookups.
+     *
+     * @param dataDir the data directory being used in the run.
+     * @param usbIds  previously resolved USB IDs, or {@code null} for non-USB drives.
+     */
+    public static String getDriveModel(File dataDir, UsbIds usbIds) {
+        String model = getRawDriveModel(dataDir);
+        return isModelDetected(model) ? formatDriveModelWithUsbIds(model, usbIds) : model;
+    }
+
+    private static boolean isModelDetected(String model) {
+        return model != null && !model.isBlank() && !ERROR_DRIVE_INFO.equals(model)
+                && !model.startsWith("Multiple drives:") && !"OS not supported".equals(model);
+    }
+
+    private static String getRawDriveModel(File dataDir) {
         //System.out.println("os: " + System.getProperty("os.name"));
         Path dataDirPath = Paths.get(dataDir.getAbsolutePath());
         String deviceModel;
         if (App.isLinux()) {
             // get disk info for linux
-            String partition = UtilOs.getPartitionFromFilePathLinux(dataDirPath);
+            String partition = UtilsLinuxOs.getPartitionFromFilePath(dataDirPath);
             if (partition == null) {
                 return ERROR_DRIVE_INFO;
             }
-            List<String> deviceNames = UtilOs.getDeviceNamesFromPartitionLinux(partition);
+            List<String> deviceNames = UtilsLinuxOs.getDeviceNamesFromPartition(partition);
             
             // handle whole-disk filesystem (no partition table) — pkname is empty
             if (deviceNames.isEmpty()) {
@@ -195,11 +226,11 @@ public class Util {
         String iface = null;
         try {
             if (App.isLinux()) {
-                String partition = UtilOs.getPartitionFromFilePathLinux(dataDirPath);
+                String partition = UtilsLinuxOs.getPartitionFromFilePath(dataDirPath);
                 if (partition != null) {
-                    List<String> deviceNames = UtilOs.getBaseDisksLinux(partition);
+                    List<String> deviceNames = UtilsLinuxOs.getBaseDisks(partition);
                     if (deviceNames.isEmpty()) {
-                        deviceNames = UtilOs.getDeviceNamesFromPartitionLinux(partition);
+                        deviceNames = UtilsLinuxOs.getDeviceNamesFromPartition(partition);
                     }
                     if (deviceNames.size() > 1) {
                         StringBuilder sb = new StringBuilder();
@@ -314,7 +345,7 @@ public class Util {
             }
             return devicePath;
         } else {
-            String partitionPath = UtilOs.getPartitionFromFilePathLinux(path);
+            String partitionPath = UtilsLinuxOs.getPartitionFromFilePath(path);
             if (partitionPath.contains("/dev/")) {
                 return partitionPath.split("/dev/")[1];
             }
@@ -373,18 +404,57 @@ public class Util {
         return null;
     }
 
+    /** USB Vendor ID and Product ID pair, each formatted as 4-character lowercase hex. */
+    public record UsbIds(String vendorId, String productId) {}
+
     /**
      * Returns the USB version string for the device at {@code path}
-     * (e.g. "3.0", "3.2 Gen 2"). Linux only; returns {@code null}
+     * (e.g. "3.0", "3.2 Gen 2"). Linux and macOS supported; returns {@code null}
      * on other platforms or when the device is not USB-attached.
      */
     public static String getUsbVersion(Path path) {
         if (App.isLinux()) {
-            return UtilOs.getUsbVersionLinux(path);
+            return UtilsLinuxOs.getUsbVersion(path);
         } else if (App.isMacOs()) {
             return UtilsMacOs.getUsbVersion(path);
         }
         return null;
+    }
+
+    /**
+     * Returns the USB Vendor ID and Product ID for the USB-attached device at {@code path},
+     * or {@code null} when unavailable or not USB-attached.
+     */
+    public static UsbIds getUsbIds(Path path) {
+        if (path == null) return null;
+        if (App.isLinux()) {
+            return UtilsLinuxOs.getUsbIds(path);
+        } else if (App.isMacOs()) {
+            return UtilsMacOs.getUsbIds(path);
+        } else if (App.isWindows()) {
+            String driveLetter = UtilOs.getDriveLetterWindows(path);
+            if (driveLetter != null) return UtilsWinOs.getUsbIds(driveLetter);
+        }
+        return null;
+    }
+
+    /**
+     * Appends {@code [vid:pid]} to {@code driveModel} when both IDs are present
+     * and not already included in the model string.
+     */
+    public static String formatDriveModelWithUsbIds(String driveModel, UsbIds usbIds) {
+        if (driveModel == null || driveModel.isBlank() || usbIds == null) {
+            return driveModel;
+        }
+        if (usbIds.vendorId() == null || usbIds.vendorId().isBlank()
+                || usbIds.productId() == null || usbIds.productId().isBlank()) {
+            return driveModel;
+        }
+        String suffix = "[" + usbIds.vendorId() + ":" + usbIds.productId() + "]";
+        if (driveModel.contains(suffix)) {
+            return driveModel;
+        }
+        return driveModel + " " + suffix;
     }
 
     /**

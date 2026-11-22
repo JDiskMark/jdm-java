@@ -29,6 +29,7 @@ import jdiskmark.App.IoEngine;
 import jdiskmark.Benchmark.IOMode;
 import static jdiskmark.Benchmark.IOMode.READ;
 import static jdiskmark.Benchmark.IOMode.WRITE;
+import org.metricus.jdm.os.UtilsLinuxOs;
 
 public class BenchmarkRunner {
     
@@ -130,18 +131,23 @@ public class BenchmarkRunner {
         ThreadLocalRandom.current().nextBytes(blockArr);
 
         File configDir = new File(config.testDir);
-        String driveModel = Util.getDriveModel(configDir);
         String partitionId = Util.getPartitionId(configDir.toPath());
         DiskUsageInfo usageInfo = Util.getDiskUsage(configDir.getAbsolutePath());
         String driveInterface = Util.getDriveInterface(configDir);
-        String driveInterfaceVersion = "USB".equalsIgnoreCase(driveInterface)
+        boolean isUsb = "USB".equalsIgnoreCase(driveInterface);
+        String driveInterfaceVersion = isUsb
                 ? Util.getUsbVersion(configDir.toPath())
                 : null;
+        Util.UsbIds usbIds = isUsb
+                ? Util.getUsbIds(configDir.toPath())
+                : null;
+        String driveModel = Util.getDriveModel(configDir, usbIds);
 
         // Initialize Benchmark
         
         Benchmark benchmark = new Benchmark(config);
-        mapEnvironment(benchmark, driveModel, partitionId, usageInfo, driveInterface, driveInterfaceVersion);
+        mapEnvironment(benchmark, driveModel, partitionId, usageInfo,
+                driveInterface, driveInterfaceVersion, usbIds);
         // capture the render mode chosen at the time this run starts
         benchmark.setRenderMode(App.rmOption);
         Gui.resetAutoAdjusted(benchmark);
@@ -161,8 +167,8 @@ public class BenchmarkRunner {
             try {
                 Path path = App.locationDir.toPath();
                 if (App.isLinux() || App.isMacOs()) {
-                    String partition = UtilOs.getPartitionFromFilePathLinux(path);
-                    List<String> devices = UtilOs.getDeviceNamesFromPartitionLinux(partition);
+                    String partition = UtilsLinuxOs.getPartitionFromFilePath(path);
+                    List<String> devices = UtilsLinuxOs.getDeviceNamesFromPartition(partition);
                     if (devices != null && !devices.isEmpty()) {
                         String device = devices.get(0);
                         if (Smart.process == null || !Smart.process.isAlive()) {
@@ -477,7 +483,7 @@ public class BenchmarkRunner {
     }
     
     private void mapEnvironment(Benchmark b, String model, String partId, DiskUsageInfo u,
-            String driveIface, String driveIfaceVersion) {
+            String driveIface, String driveIfaceVersion, Util.UsbIds usbIds) {
         b.systemId = (App.systemId != null) ? App.systemId : "";
 
         b.systemInfo.processorName = App.processorName;
@@ -494,6 +500,10 @@ public class BenchmarkRunner {
         b.driveInfo.totalGb = u.totalGb;
         b.driveInfo.driveInterface = driveIface;
         b.driveInfo.driveInterfaceVersion = driveIfaceVersion;
+        if (usbIds != null) {
+            b.driveInfo.usbVendorId = usbIds.vendorId();
+            b.driveInfo.usbProductId = usbIds.productId();
+        }
     }
 
     /**
