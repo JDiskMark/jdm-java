@@ -90,6 +90,18 @@ class BenchmarkRunnerTest {
     }
 
     @Test
+    void mapUsbVersion_mapsSpeedAndV2Flags() {
+        assertEquals("3.2 Gen 2", UtilsWinOs.mapUsbVersion(2, 0x07));
+        assertEquals("3.2 Gen 2", UtilsWinOs.mapUsbVersion(2, 0x04));
+        assertEquals("3.0", UtilsWinOs.mapUsbVersion(2, 0x03));
+        assertEquals("3.0", UtilsWinOs.mapUsbVersion(2, 0x01));
+        assertEquals("2.0", UtilsWinOs.mapUsbVersion(2, 0));
+        assertEquals("1.1", UtilsWinOs.mapUsbVersion(1, 0));
+        assertEquals("1.0", UtilsWinOs.mapUsbVersion(0, 0));
+        assertNull(UtilsWinOs.mapUsbVersion(99, 0));
+    }
+
+    @Test
     void normalizeHexId_padsAndLowercases() {
         assertEquals("0781", UtilsLinuxOs.normalizeHexId("0x0781\n"));
         assertEquals("0781", UtilsLinuxOs.normalizeHexId("781"));

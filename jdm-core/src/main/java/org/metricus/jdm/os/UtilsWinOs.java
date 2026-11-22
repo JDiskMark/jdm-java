@@ -3,6 +3,8 @@ package org.metricus.jdm.os;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -33,20 +35,139 @@ public final class UtilsWinOs {
      * @return USB VID/PID pair, or {@code null} if unavailable
      */
     public static Util.UsbIds getUsbIds(String driveLetter) {
-        if (driveLetter == null || driveLetter.isBlank()) return null;
-        driveLetter = driveLetter.toUpperCase();
+        String letter = normalizeDriveLetter(driveLetter);
+        if (letter == null) return null;
+        String script = """
+                $n = (Get-Partition -DriveLetter %s).DiskNumber
+                $id = (Get-CimInstance Win32_DiskDrive | Where-Object Index -eq $n).PNPDeviceID
+                for ($i = 0; $i -lt 4 -and $id; $i++) {
+                    if ($id -match 'VID_[0-9A-Fa-f]{4}&PID_[0-9A-Fa-f]{4}') { $id; break }
+                    $id = (Get-PnpDeviceProperty -InstanceId $id -KeyName DEVPKEY_Device_Parent -ErrorAction SilentlyContinue).Data
+                }
+                """.formatted(letter);
+        for (String line : runPowerShellLines(script, "USB VID/PID lookup for drive " + letter)) {
+            Util.UsbIds ids = parseUsbIdsFromPnpId(line.trim());
+            if (ids != null) {
+                return ids;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns the negotiated USB interface version (e.g. {@code "2.0"}, {@code "3.0"},
+     * {@code "3.2 Gen 2"}) for a Windows drive letter by querying its parent USB hub
+     * via {@code IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX} and {@code _V2}.
+     *
+     * @param driveLetter single drive letter (e.g. "E")
+     * @return USB version string, or {@code null} if unavailable or not USB-attached
+     */
+    public static String getUsbVersion(String driveLetter) {
+        String letter = normalizeDriveLetter(driveLetter);
+        if (letter == null) return null;
+        String script = """
+                $n = (Get-Partition -DriveLetter %s).DiskNumber
+                $id = (Get-CimInstance Win32_DiskDrive | Where-Object Index -eq $n).PNPDeviceID
+                for ($i = 0; $i -lt 4 -and $id; $i++) {
+                    if ($id -match 'VID_[0-9A-Fa-f]{4}&PID_[0-9A-Fa-f]{4}') { break }
+                    $id = (Get-PnpDeviceProperty -InstanceId $id -KeyName DEVPKEY_Device_Parent -ErrorAction SilentlyContinue).Data
+                }
+                if (-not ($id -match 'VID_[0-9A-Fa-f]{4}&PID_[0-9A-Fa-f]{4}')) { return }
+                $hub = (Get-PnpDeviceProperty -InstanceId $id -KeyName DEVPKEY_Device_Parent -ErrorAction SilentlyContinue).Data
+                $port = (Get-PnpDeviceProperty -InstanceId $id -KeyName DEVPKEY_Device_Address -ErrorAction SilentlyContinue).Data
+                if (-not $hub -or -not $port) { return }
+                Add-Type -TypeDefinition @'
+                using System;
+                using System.Runtime.InteropServices;
+                using Microsoft.Win32.SafeHandles;
+                public static class JdmUsbIoctl {
+                    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+                    public static extern SafeFileHandle CreateFile(string lpFileName, uint dwDesiredAccess, uint dwShareMode, IntPtr lpSecurityAttributes, uint dwCreationDisposition, uint dwFlagsAndAttributes, IntPtr hTemplateFile);
+                    [DllImport("kernel32.dll", SetLastError = true)]
+                    public static extern bool DeviceIoControl(SafeFileHandle hDevice, uint dwIoControlCode, IntPtr lpInBuffer, int nInBufferSize, IntPtr lpOutBuffer, int nOutBufferSize, out int lpBytesReturned, IntPtr lpOverlapped);
+                    public static string Query(string hubId, int port) {
+                        string path = "\\\\\\\\.\\\\" + hubId.Replace('\\\\', '#') + "#{f18a0e88-c30c-11d0-8815-00a0c906bed8}";
+                        using (SafeFileHandle h = CreateFile(path, 0xC0000000u, 3u, IntPtr.Zero, 3u, 0u, IntPtr.Zero)) {
+                            if (h.IsInvalid) return null;
+                            IntPtr b1 = Marshal.AllocHGlobal(256);
+                            try {
+                                for (int i = 0; i < 256; i++) Marshal.WriteByte(b1, i, 0);
+                                Marshal.WriteInt32(b1, 0, port);
+                                int ret;
+                                if (!DeviceIoControl(h, 0x00220448u, b1, 256, b1, 256, out ret, IntPtr.Zero)) return null;
+                                byte speed = Marshal.ReadByte(b1, 23);
+                                int flags = 0;
+                                IntPtr b2 = Marshal.AllocHGlobal(16);
+                                try {
+                                    for (int i = 0; i < 16; i++) Marshal.WriteByte(b2, i, 0);
+                                    Marshal.WriteInt32(b2, 0, port);
+                                    Marshal.WriteInt32(b2, 4, 16);
+                                    Marshal.WriteInt32(b2, 8, 0x07);
+                                    if (DeviceIoControl(h, 0x0022045Cu, b2, 16, b2, 16, out ret, IntPtr.Zero)) {
+                                        flags = Marshal.ReadInt32(b2, 12);
+                                    }
+                                } finally { Marshal.FreeHGlobal(b2); }
+                                return speed + " " + flags;
+                            } finally { Marshal.FreeHGlobal(b1); }
+                        }
+                    }
+                }
+                '@
+                [JdmUsbIoctl]::Query($hub, [int]$port)
+                """.formatted(letter);
+        for (String line : runPowerShellLines(script, "USB version lookup for drive " + letter)) {
+            String[] parts = line.trim().split("\\s+");
+            if (parts.length == 2) {
+                try {
+                    int speed = Integer.parseInt(parts[0]);
+                    int flags = Integer.parseInt(parts[1]);
+                    String version = mapUsbVersion(speed, flags);
+                    if (version != null) {
+                        return version;
+                    }
+                } catch (NumberFormatException ignored) {
+                    // Ignore non-numeric diagnostic lines
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Maps {@code USB_NODE_CONNECTION_INFORMATION_EX.Speed} and
+     * {@code USB_NODE_CONNECTION_INFORMATION_EX_V2.Flags} to a USB version string.
+     */
+    public static String mapUsbVersion(int speed, int v2Flags) {
+        if ((v2Flags & 0x04) != 0) {
+            return "3.2 Gen 2";
+        }
+        if ((v2Flags & 0x01) != 0) {
+            return "3.0";
+        }
+        return switch (speed) {
+            case 2 -> "2.0";
+            case 1 -> "1.1";
+            case 0 -> "1.0";
+            default -> null;
+        };
+    }
+
+    private static String normalizeDriveLetter(String driveLetter) {
+        if (driveLetter == null) return null;
+        String trimmed = driveLetter.trim().toUpperCase();
+        if (trimmed.length() != 1 || trimmed.charAt(0) < 'A' || trimmed.charAt(0) > 'Z') {
+            return null;
+        }
+        return trimmed;
+    }
+
+    private static List<String> runPowerShellLines(String script, String context) {
         Process process = null;
         try {
-            String script = String.format(
-                    "$n = (Get-Partition -DriveLetter %s).DiskNumber; "
-                    + "$id = (Get-CimInstance Win32_DiskDrive | Where-Object Index -eq $n).PNPDeviceID; "
-                    + "for ($i = 0; $i -lt 4 -and $id; $i++) { "
-                    + "if ($id -match 'VID_[0-9A-Fa-f]{4}&PID_[0-9A-Fa-f]{4}') { $id; break } "
-                    + "$id = (Get-PnpDeviceProperty -InstanceId $id -KeyName DEVPKEY_Device_Parent -ErrorAction SilentlyContinue).Data "
-                    + "}",
-                    driveLetter);
+            String encoded = Base64.getEncoder()
+                    .encodeToString(script.getBytes(StandardCharsets.UTF_16LE));
             ProcessBuilder pb = new ProcessBuilder("powershell", "-NoProfile",
-                    "-ExecutionPolicy", "Bypass", "-Command", script);
+                    "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded);
             pb.redirectErrorStream(true);
             Process p = pb.start();
             process = p;
@@ -58,26 +179,21 @@ public final class UtilsWinOs {
                 }
             });
             if (!p.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                LOGGER.log(Level.WARNING, "USB VID/PID lookup timed out for drive {0}", driveLetter);
-                return null;
+                LOGGER.log(Level.WARNING, "{0} timed out", context);
+                return List.of();
             }
-            for (String line : output.get(1, TimeUnit.SECONDS)) {
-                Util.UsbIds ids = parseUsbIdsFromPnpId(line.trim());
-                if (ids != null) {
-                    return ids;
-                }
-            }
+            return output.get(1, TimeUnit.SECONDS);
         } catch (IOException | InterruptedException | ExecutionException | TimeoutException e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            LOGGER.log(Level.WARNING, "Could not detect USB VID/PID on Windows", e);
+            LOGGER.log(Level.WARNING, context + " failed", e);
         } finally {
             if (process != null && process.isAlive()) {
                 process.destroyForcibly();
             }
         }
-        return null;
+        return List.of();
     }
 
     /**
