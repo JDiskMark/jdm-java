@@ -3,13 +3,16 @@ package jdiskmark;
 import static jdiskmark.GcDetector.MAX_GC_RETRIES;
 
 import java.io.File;
+import java.io.IOException;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.time.LocalDateTime;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
@@ -22,6 +25,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -32,6 +37,9 @@ import static jdiskmark.Benchmark.IOMode.WRITE;
 import org.metricus.jdm.os.UtilsLinuxOs;
 
 public class BenchmarkRunner {
+    
+    /** How to proceed when Direct I/O would keep test files locked until exit (#257). */
+    public enum DirectLockChoice { CANCEL, BUFFERED, KEEP }
     
     // Listener interface to decouple from Swing/CLI
     public interface BenchmarkListener {
@@ -52,6 +60,15 @@ public class BenchmarkRunner {
          * unaffected.
          */
         default void onOperationComplete() {}
+
+        /**
+         * Called before the run when Direct I/O would keep the test files
+         * locked until JDiskMark exits (#257). Defaults to the
+         * {@code --direct-lock} preference; {@code null} means none was given.
+         */
+        default DirectLockChoice onDirectIoLocked(String location, String fileSystem) {
+            return App.directLockChoice;
+        }
     }
     
     @FunctionalInterface
@@ -108,6 +125,7 @@ public class BenchmarkRunner {
     }
 
     public Benchmark execute() throws Exception {
+        checkDirectIoLock();
         long blocksPerPhase = (long) config.numBlocks * config.numSamples;
 
         long wUnitsTotal = config.hasWriteOperation() ? blocksPerPhase : 0L;
@@ -254,7 +272,7 @@ public class BenchmarkRunner {
                 String msg = "READ skipped: disk cache could not be cleared, "
                         + "read results would measure memory instead of the drive";
                 logger.warning(msg);
-                App.err(msg);
+                App.warn(msg);
             }
             listener.onOperationComplete();
         }
@@ -279,7 +297,92 @@ public class BenchmarkRunner {
         Gui.markDirectIoAuto(msg);
         Gui.syncIoOptionMenus();
         logger.warning(msg);
-        App.err(msg);
+        App.warn(msg);
+    }
+
+    /** Release probe result per location; probed once per session. */
+    private static final Map<Path, Boolean> DIRECT_RELEASE_PROBES = new ConcurrentHashMap<>();
+
+    private static final String DIRECT_LOCK_REASON = "Direct I/O works on %s, but on %s drives "
+            + "Java keeps Direct I/O test files locked until JDiskMark closes so they can't be "
+            + "deleted (Windows only; NTFS is not affected)";
+
+    private boolean directLockKept = false;
+
+    /** True when Direct I/O was kept although it leaves the test files locked until exit. */
+    public boolean isDirectLockKept() { return directLockKept; }
+
+    /**
+     * On Windows, FAT32 drives keep a file opened with
+     * {@link ExtendedOpenOption#DIRECT} locked inside the JVM after the channel
+     * is closed, so it can't be deleted or re-created until JDiskMark exits.
+     * Probes once per location and asks the listener how to proceed.
+     *
+     * @throws CancellationException when the benchmark should not run
+     */
+    private void checkDirectIoLock() {
+        if (!App.isWindows() || config.ioEngine != IoEngine.MODERN
+                || !Boolean.TRUE.equals(config.getDirectIoEnabled())) {
+            return;
+        }
+        Path testDir = Path.of(config.testDir).toAbsolutePath();
+        Path location = testDir.getParent() != null ? testDir.getParent() : testDir;
+        if (DIRECT_RELEASE_PROBES.computeIfAbsent(location, BenchmarkRunner::probeDirectRelease)) {
+            return;
+        }
+        String fileSystem = fileSystemType(location);
+        String reason = DIRECT_LOCK_REASON.formatted(location, fileSystem);
+        DirectLockChoice choice = listener.onDirectIoLocked(location.toString(), fileSystem);
+        if (choice == null) {
+            throw new CancellationException(App.mode == App.Mode.CLI
+                    ? "Benchmark aborted: " + reason + ". Rerun with --direct-lock=buffered "
+                            + "(Direct I/O off; clear the disk cache before READ, needs admin) "
+                            + "or --direct-lock=keep (keep Direct I/O; test data is removed "
+                            + "when JDiskMark exits)."
+                    : "Skipped: " + reason + ". Turn Direct I/O off for this batch or "
+                            + "benchmark this drive on its own.");
+        }
+        switch (choice) {
+            case BUFFERED -> disableDirectIo(reason);
+            case KEEP -> {
+                directLockKept = true;
+                App.warn(reason + ". Keeping Direct I/O as requested; the test data is "
+                        + "removed when JDiskMark closes.");
+            }
+            case CANCEL -> throw new CancellationException("Benchmark cancelled: " + reason + ".");
+        }
+    }
+
+    /** File system type of {@code dir} (e.g. "FAT32"); "FAT32" when it can't be read. */
+    private static String fileSystemType(Path dir) {
+        try {
+            String type = Files.getFileStore(dir).type();
+            return (type == null || type.isBlank()) ? "FAT32" : type;
+        } catch (IOException e) {
+            return "FAT32";
+        }
+    }
+
+    private static boolean probeDirectRelease(Path dir) {
+        Path probe = dir.resolve(".jdm-dio-probe-" + ProcessHandle.current().pid() + ".tmp");
+        try {
+            FileChannel.open(probe, StandardOpenOption.CREATE, StandardOpenOption.WRITE,
+                    ExtendedOpenOption.DIRECT).close();
+        } catch (IOException | UnsupportedOperationException e) {
+            // Direct I/O itself fails here; the per-sample fallback reports that
+            try { Files.deleteIfExists(probe); } catch (IOException ignored) { }
+            return true;
+        }
+        try {
+            Files.delete(probe);
+            FileChannel.open(probe, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).close();
+            Files.delete(probe);
+            return true;
+        } catch (IOException e) {
+            logger.log(Level.INFO, "Direct I/O release probe failed in {0}: {1}",
+                    new Object[]{dir, e.toString()});
+            return false;
+        }
     }
 
     /**

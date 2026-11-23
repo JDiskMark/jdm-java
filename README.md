@@ -203,6 +203,11 @@ Starts a disk benchmark test with specified parameters.
                               specified)
   -c, --clean               Remove existing JDiskMark data directory before starting.
   -d, --direct              Enable Direct I/O (bypass OS cache). Only works with MODERN engine.
+      --direct-lock=<directLock>
+                            Windows FAT32 drives: what to do when Direct I/O would keep test
+                              files locked until JDiskMark exits: buffered (Direct I/O off;
+                              clear the disk cache before READ) or keep (keep Direct I/O; test
+                              data is removed on exit).
   -e, --export=<exportPath> The output file to export benchmark results in json format.
   -h, --help                Display this help and exit.
   -i, --io-engine=<ioEngine>

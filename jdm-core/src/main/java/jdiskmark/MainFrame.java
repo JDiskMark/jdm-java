@@ -919,8 +919,12 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_multiFileCheckBoxMenuItemActionPerformed
 
     private void deleteDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteDataMenuItemActionPerformed
-        Util.deleteDirectory(App.dataDir);
-        App.msg("Data dir " + App.dataDir + " has been deleted.");
+        String failure = Util.deleteDirectoryReason(App.dataDir);
+        if (failure != null) {
+            App.err("Unable to delete test data: " + failure);
+        } else {
+            App.msg("Data dir " + App.dataDir + " has been deleted.");
+        }
     }//GEN-LAST:event_deleteDataMenuItemActionPerformed
 
     private void resetSequenceMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetSequenceMenuItemActionPerformed
@@ -1161,6 +1165,29 @@ public final class MainFrame extends javax.swing.JFrame {
     public void msg(String message) {
         msgTextArea.append(message + '\n');
     }
+
+    /** Appends an error to the Events log, highlighted red. */
+    public void err(String message) {
+        appendHighlighted(message, new java.awt.Color(0xD3, 0x2F, 0x2F, 110));
+    }
+
+    /** Appends a warning to the Events log, highlighted with the theme's stale amber. */
+    public void warn(String message) {
+        java.awt.Color amber = Gui.BADGE_STALE_BG;
+        appendHighlighted(message,
+                new java.awt.Color(amber.getRed(), amber.getGreen(), amber.getBlue(), 110));
+    }
+
+    private void appendHighlighted(String message, java.awt.Color color) {
+        int start = msgTextArea.getDocument().getLength();
+        msgTextArea.append(message + '\n');
+        try {
+            msgTextArea.getHighlighter().addHighlight(start, start + message.length(),
+                    new javax.swing.text.DefaultHighlighter.DefaultHighlightPainter(color));
+        } catch (javax.swing.text.BadLocationException e) {
+            // the highlight is cosmetic; the message is already in the log
+        }
+    }
     
     public void applyTestParams() {
         if (Gui.controlPanel != null) {
@@ -1174,6 +1201,7 @@ public final class MainFrame extends javax.swing.JFrame {
     }
     
     public void clearMessages() {
+        msgTextArea.getHighlighter().removeAllHighlights();
         msgTextArea.setText("");
     }
     

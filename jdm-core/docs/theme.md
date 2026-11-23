@@ -57,6 +57,8 @@ Theme enum
 | `badgeEvenFg()` | No | Even-index badge fg when cycling (default: `badgeDefaultFg()`) |
 | `badgeOddFg()` | No | Odd-index badge fg when cycling (default: `badgeDefaultFg()`) |
 
+The Events log highlights warnings with `badgeStaleBg()` at partial alpha and errors with a fixed translucent red (`#D32F2F`, alpha 110), so both read on light and dark themes without overriding LAF-owned colours.
+
 ### Enums (auto-populate menus)
 
 **`Palette`** drives **Graph > Color Palette** menu (via `GraphPaletteMenu` iterating `values()`):

@@ -233,6 +233,8 @@ public class App {
     public static boolean autoRemoveData = true;
     public static boolean autoReset = true;
     public static boolean directEnable = true;
+    /** Preference from {@code --direct-lock} (#257); {@code null} when not given. */
+    public static BenchmarkRunner.DirectLockChoice directLockChoice = null;
     public static boolean writeSyncEnable = false;
 
     // benchmark io options
@@ -634,6 +636,19 @@ public class App {
 
         value = p.getProperty("multiFile", String.valueOf(multiFile));
         multiFile = Boolean.parseBoolean(value);
+
+        // last selected drive location; keep the default when it is not available
+        value = p.getProperty("locationDir", "");
+        if (!value.isBlank()) {
+            File savedLocation = new File(value);
+            if (savedLocation.isDirectory()) {
+                locationDir = savedLocation;
+                dataDir = new File(savedLocation.getAbsolutePath() + File.separator + DATADIRNAME);
+            } else {
+                Logger.getLogger(App.class.getName()).log(Level.INFO,
+                        "Saved location {0} is not available, using the default", value);
+            }
+        }
         
         value = p.getProperty("smartEnable", String.valueOf(Smart.smartEnable));
         Smart.smartEnable = Boolean.parseBoolean(value);
@@ -770,6 +785,10 @@ public class App {
         p.remove("profileModified");
         p.setProperty("benchmarkType", benchmarkType.name());
         p.setProperty("multiFile", String.valueOf(multiFile));
+        // a batch points locationDir at each batch drive temporarily; keep the user's choice
+        if (locationDir != null && !batchRunning) {
+            p.setProperty("locationDir", locationDir.getAbsolutePath());
+        }
         p.setProperty("smartEnable", String.valueOf(Smart.smartEnable));
         p.setProperty("autoRemoveData", String.valueOf(autoRemoveData));
         p.setProperty("autoReset", String.valueOf(autoReset));
@@ -946,12 +965,35 @@ public class App {
         switch (mode) {
             case GUI -> {
                 System.err.println(formattedMsg);
+                noteEventsAttention();
                 if (Gui.mainFrame != null) {
-                    SwingUtilities.invokeLater(() -> Gui.mainFrame.msg(formattedMsg));
+                    SwingUtilities.invokeLater(() -> Gui.mainFrame.err(formattedMsg));
                 }
             }
             case CLI -> System.err.println(formattedMsg);
         }
+    }
+
+    /** Like {@link #err(String)} for recoverable problems; highlighted amber in the Events tab. */
+    public static void warn(String message) {
+        String formattedMsg = formatWithTimestamp(message);
+        switch (mode) {
+            case GUI -> {
+                System.err.println(formattedMsg);
+                noteEventsAttention();
+                if (Gui.mainFrame != null) {
+                    SwingUtilities.invokeLater(() -> Gui.mainFrame.warn(formattedMsg));
+                }
+            }
+            case CLI -> System.err.println(formattedMsg);
+        }
+    }
+
+    /** During a single benchmark run, brings the Events tab forward so problems are seen. */
+    private static void noteEventsAttention() {
+        if (state != State.DISK_TEST_STATE || batchRunning) return;
+        Gui.eventsNeedAttention = true;
+        SwingUtilities.invokeLater(() -> Gui.selectBottomTab(org.metricus.jdm.ui.Tabs.BOTTOM_EVENTS));
     }
 
     public static void msg(String message) {
@@ -1006,6 +1048,7 @@ public class App {
         }
 
         // 4. update state
+        Gui.eventsNeedAttention = false;
         state = State.DISK_TEST_STATE;
         if (mode == Mode.GUI) {
             Gui.mainFrame.adjustSensitivity();
@@ -1014,22 +1057,35 @@ public class App {
         // 5. create data dir reference
         dataDir = new File(locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
 
-        // 6. remove existing test data if present (recursive — File.delete() only
-        // removes empty dirs)
+        // 6. remove existing test data if present; abort if it can't be removed
+        // so the run doesn't fail on a locked or stale test file
         if (autoRemoveData && dataDir.exists()) {
-            boolean removed = Util.deleteDirectory(dataDir);
+            String failure = Util.deleteDirectoryReason(dataDir);
+            if (failure != null) {
+                err("Unable to delete existing test data, benchmark aborted: " + failure
+                        + ". Close any program using it or restart JDiskMark, then try again.");
+                Util.removeDirectoryAfterExit(dataDir);
+                state = State.IDLE_STATE;
+                if (mode == Mode.GUI) {
+                    Gui.mainFrame.adjustSensitivity();
+                }
+                return;
+            }
             if (verbose) {
-                msg(removed
-                        ? "Removed existing data dir: " + dataDir
-                        : "Unable to remove existing data dir: " + dataDir);
-            } else if (!removed) {
-                msg("Unable to remove existing data dir: " + dataDir);
+                msg("Removed existing data dir: " + dataDir);
             }
         }
 
-        // 7. create data dir if not already present
-        if (dataDir.exists() == false) {
-            dataDir.mkdirs();
+        // 7. create the data dir and make sure it is usable; a folder deleted
+        // while another program has it open can vanish later in the run
+        String dirFailure = Util.prepareDirectory(dataDir);
+        if (dirFailure != null) {
+            err("Unable to create test data folder, benchmark aborted: " + dirFailure);
+            state = State.IDLE_STATE;
+            if (mode == Mode.GUI) {
+                Gui.mainFrame.adjustSensitivity();
+            }
+            return;
         }
 
         // 8. start benchmark job thread
@@ -1059,10 +1115,20 @@ public class App {
                 }
             }
             case CLI -> {
+                if (cliResult == null) {
+                    return;
+                }
                 try {
                     benchmark = cliResult.get();
                 } catch (InterruptedException | ExecutionException e) {
-                    Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+                    Throwable cause = (e instanceof ExecutionException && e.getCause() != null)
+                            ? e.getCause() : e;
+                    if (cause instanceof java.util.concurrent.CancellationException) {
+                        err(cause.getMessage());
+                    } else {
+                        Logger.getLogger(App.class.getName()).log(Level.SEVERE, null, e);
+                        err("Benchmark failed: " + cause.getMessage());
+                    }
                 }
             }
         }

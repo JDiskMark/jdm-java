@@ -591,11 +591,19 @@ Without Direct IO, reads and writes pass through the OS page cache and can measu
 Direct IO is only trusted if it is actually in effect. `BenchmarkRunner` turns it off for the run when:
 
 - the legacy IO engine is selected (checked before WRITE),
-- a sample fails to open or write with `ExtendedOpenOption.DIRECT` and falls back to buffered IO, or
+- on Windows, a small probe file opened with `ExtendedOpenOption.DIRECT` can't be deleted and re-created after it is closed (checked once per location per session, before anything else in the run). On FAT32 drives the JDK keeps Direct IO files locked inside the JVM until exit, which would leave the test data undeletable; NTFS is not affected ([#257](https://github.com/JDiskMark/jdm-java/issues/257)). Messages name the detected file system (`FileStore.type()`). Direct IO itself works there, so the user decides via `BenchmarkListener.onDirectIoLocked()`:
+  - **GUI**: a dialog offers *Use Buffered I/O* (Direct IO off; cache must be cleared before READ), *Keep Direct I/O* (run as configured; after the run a notice explains the test data is removed when JDiskMark closes and a restart is needed before the next run on that drive), or *Cancel Benchmark*.
+  - **CLI**: `--direct-lock=buffered|keep` picks the same choices; without it the run aborts with a message naming the flag (exit code 1).
+  - **Batch**: no prompt; the drive is skipped with the reason,
+- a sample fails to open or write with `ExtendedOpenOption.DIRECT` and the buffered retry succeeds (if the buffered retry also fails, the real open error is reported and the operation aborts), or
 - a one-block `O_DIRECT` probe read of the first test file fails (checked before READ).
 
 `BenchmarkRunner.disableDirectIo()` runs once per run: it clears
 `config.directIoEnabled` and `App.directEnable`, updates the badge and the Options menu, and logs an event. Direct IO stays off for later runs until the user turns it back on.
+
+Test data is removed after each run when auto-remove is on. If removal fails, the error with its reason is logged and, on Windows, `Util.removeDirectoryAfterExit()` registers the folder: on exit a hidden PowerShell waits for the JDiskMark process to end (when Windows finally deletes files Java kept locked) and removes the folder if it is empty by then, so the next session starts without a leftover `jdm-data`. If existing test data can't be removed at the start of the next run, that run is aborted with the reason instead of running against a locked file. The data folder is then created with `Util.prepareDirectory()`, which checks a file can be created in it. A folder deleted while another program has it open (e.g. File Explorer) stays pending delete and vanishes when that program lets go, so it waits up to 3 seconds for it to disappear and aborts with a clear message otherwise.
+
+Problems during a run are logged with `App.warn()` (recoverable, e.g. Direct IO turned off or READ skipped) or `App.err()` (failures, e.g. a test file can't be opened or deleted). In the GUI they are highlighted amber or red in the Events log, and a single run that logged one ends on the Events tab instead of Benchmarks.
 
 ### 4.2 Disk Cache Drop Before READ
 
