@@ -109,6 +109,7 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
 
     private BatchResult.RunResult runSingle(int runIndex, UUID batchId, File drive, String driveModel,
                                              BenchmarkProfile profile, boolean isRetry) {
+        BenchmarkRunner bRunner = null;
         try {
             config.applyProfileToApp(profile, drive);
 
@@ -169,7 +170,7 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
                 }
             };
 
-            BenchmarkRunner bRunner = new BenchmarkRunner(listener, App.getConfig());
+            bRunner = new BenchmarkRunner(listener, App.getConfig());
             Benchmark benchmark = bRunner.execute();
             benchmark.recordEndTime();
             benchmark.setBatchId(batchId);
@@ -208,7 +209,9 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
                             : BatchResult.DriveStatus.SKIPPED,
                     err);
         } finally {
-            if (App.dataDir != null && App.dataDir.exists()) {
+            if (bRunner != null && !bRunner.isCleanupSafe()) {
+                LOG.log(Level.WARNING, "Test data in {0} kept: benchmark threads were still running", App.dataDir);
+            } else if (App.dataDir != null && App.dataDir.exists()) {
                 String failure = Util.deleteDirectoryReason(App.dataDir);
                 if (failure != null) {
                     LOG.log(Level.WARNING, "Unable to delete test data: {0}", failure);

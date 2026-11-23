@@ -95,7 +95,7 @@ public class BenchmarkCallable implements Callable<Benchmark> {
             handlePostBenchmark(benchmark);
         } finally {
             // remove test data even when the run failed so the next run starts clean
-            removeTestData(bRunner.isDirectLockKept());
+            removeTestData(bRunner);
         }
 
         long duration = System.currentTimeMillis() - start;
@@ -131,9 +131,15 @@ public class BenchmarkCallable implements Callable<Benchmark> {
         App.nextSampleNumber += App.numOfSamples;
     }
 
-    /** Removes test data after the run (mirrors BenchmarkWorker.done() for the CLI path). */
-    private void removeTestData(boolean directLockKept) {
+    /** Removes test data after the run (mirrors BenchmarkWorker for the CLI path). */
+    private void removeTestData(BenchmarkRunner runner) {
         if (App.autoRemoveData && App.dataDir != null) {
+            if (!runner.isCleanupSafe()) {
+                App.err("Test data in " + App.dataDir + " was kept because benchmark threads were "
+                        + "still running; it is removed at the start of the next run.");
+                return;
+            }
+            boolean directLockKept = runner.isDirectLockKept();
             String failure;
             try {
                 failure = Util.deleteDirectoryReason(App.dataDir);

@@ -33,7 +33,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
     private final java.util.List<Sample> intervalBuffer  = new java.util.ArrayList<>();
     private long nextPublishTime = 0;
     /** Direct I/O was kept although it leaves the test files locked until exit (#257). */
-    private boolean directLockKept = false;
+    private volatile boolean directLockKept = false;
 
     BenchmarkRunner.BenchmarkListener listener = new BenchmarkRunner.BenchmarkListener() {
         @Override
@@ -141,8 +141,36 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         Gui.lockSampleAxis(App.numOfSamples);
 
         BenchmarkRunner bRunner = new BenchmarkRunner(listener, App.getConfig());
+        try {
+            return runAndRecord(bRunner);
+        } finally {
+            // on the benchmark thread, after all workers stopped; done() can run
+            // earlier than this on cancel, so it must not delete the test data
+            directLockKept = bRunner.isDirectLockKept();
+            removeTestData(bRunner);
+        }
+    }
+
+    /** Test data could not be deleted although Direct I/O was kept (#257). */
+    private volatile boolean showLockNotice = false;
+
+    private void removeTestData(BenchmarkRunner bRunner) {
+        if (!App.autoRemoveData) return;
+        if (!bRunner.isCleanupSafe()) {
+            App.err("Test data in " + dataDir + " was kept because benchmark threads were "
+                    + "still running; it is removed at the start of the next run.");
+            return;
+        }
+        String failure = Util.deleteDirectoryReason(dataDir);
+        if (failure != null) {
+            App.err("Unable to delete test data: " + failure);
+            Util.removeDirectoryAfterExit(dataDir);
+            showLockNotice = directLockKept;
+        }
+    }
+
+    private Benchmark runAndRecord(BenchmarkRunner bRunner) throws Exception {
         Benchmark benchmark = bRunner.execute();
-        directLockKept = bRunner.isDirectLockKept();
 
         // Flush any samples still in the interval buffer for timed render modes.
         // PER_OPERATION is handled by onOperationComplete(); PER_SAMPLE needs no flush.
@@ -250,15 +278,6 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-        }
-        boolean showLockNotice = false;
-        if (App.autoRemoveData) {
-            String failure = Util.deleteDirectoryReason(dataDir);
-            if (failure != null) {
-                App.err("Unable to delete test data: " + failure);
-                Util.removeDirectoryAfterExit(dataDir);
-                showLockNotice = directLockKept;
-            }
         }
         Gui.unlockSampleAxis();
         App.state = App.State.IDLE_STATE;

@@ -142,6 +142,9 @@ public class SmartEscalation {
      */
     public static Integer dropCacheElevated(String smartctlPath)
             throws IOException, InterruptedException {
+        if (!isAvailable(smartctlPath)) {
+            return null;
+        }
         Path ipcDir = resolveIpcDir();
         Files.createDirectories(ipcDir);
         if (!ensureAgentRunning(smartctlPath, ipcDir)) {
@@ -175,9 +178,44 @@ public class SmartEscalation {
         return null;
     }
 
-    /** True when the elevated agent script is installed next to {@code smartctl.exe}. */
+    /**
+     * True when the elevated agent can be used for the cache drop: the agent
+     * script is installed next to {@code smartctl.exe} in a protected location
+     * (see {@link #isProtectedLocation}).
+     */
     public static boolean isAvailable(String smartctlPath) {
-        return smartctlPath != null && resolveAgentScript(smartctlPath) != null;
+        if (smartctlPath == null) return false;
+        Path script = resolveAgentScript(smartctlPath);
+        return script != null && isProtectedLocation(script);
+    }
+
+    /** Opt-in for developer builds outside Program Files: {@code -Djdm.devElevation=true}. */
+    static final String DEV_ELEVATION_PROPERTY = "jdm.devElevation";
+
+    /**
+     * The agent and the EmptyStandbyList.exe next to it run as admin, so they
+     * may only be elevated from a folder a non-admin user can't modify: under
+     * Program Files (the MSI install). Zip or IDE layouts in user-writable
+     * folders would let any process replace them and get code run elevated.
+     * Developers can opt in with {@code -Djdm.devElevation=true}.
+     */
+    static boolean isProtectedLocation(Path script) {
+        if (Boolean.getBoolean(DEV_ELEVATION_PROPERTY)) return true;
+        try {
+            Path real = script.toRealPath();
+            for (String env : new String[] { "ProgramW6432", "ProgramFiles", "ProgramFiles(x86)" }) {
+                String dir = System.getenv(env);
+                if (dir != null && !dir.isBlank() && real.startsWith(Path.of(dir).toRealPath())) {
+                    return true;
+                }
+            }
+        } catch (IOException | RuntimeException e) {
+            LOGGER.warning("SmartEscalation: cannot verify agent location: " + e.getMessage());
+            return false;
+        }
+        LOGGER.info("SmartEscalation: agent " + script + " is not under Program Files; "
+                + "automatic cache drop disabled (set -D" + DEV_ELEVATION_PROPERTY + "=true to allow)");
+        return false;
     }
 
     private static volatile Boolean installed = null;

@@ -25,7 +25,10 @@ while ($true) {
         } else {
             $dropResult = 'missing'
         }
-        [System.IO.File]::WriteAllText((Join-Path $IpcDir 'drop-cache-result.txt'), $dropResult, $utf8NoBom)
+        # publish atomically: the Java side polls for the result file name
+        $dropFile = Join-Path $IpcDir 'drop-cache-result.txt'
+        [System.IO.File]::WriteAllText("$dropFile.tmp", $dropResult, $utf8NoBom)
+        Move-Item -LiteralPath "$dropFile.tmp" -Destination $dropFile -Force
     }
 
     $reqs = Get-ChildItem (Join-Path $IpcDir 'smart-req-*.txt') -ErrorAction SilentlyContinue

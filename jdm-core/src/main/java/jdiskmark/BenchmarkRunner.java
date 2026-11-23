@@ -541,6 +541,9 @@ public class BenchmarkRunner {
         } catch (ExecutionException e) {
             stopWorkers(executor);
             throw new Exception("Threaded IO operation failed", e.getCause());
+        } catch (InterruptedException e) {
+            stopWorkers(executor);
+            throw e;
         } finally {
             op.endTime = LocalDateTime.now();
             op.setTotalOps(mode == IOMode.WRITE ? writeUnitsComplete.sum() : readUnitsComplete.sum());
@@ -566,34 +569,53 @@ public class BenchmarkRunner {
         } catch (ExecutionException e) {
             stopWorkers(executor);
             throw new Exception("read prep failed", e.getCause());
+        } catch (InterruptedException e) {
+            stopWorkers(executor);
+            throw e;
         }
     }
 
     /** Set when one worker fails so the others stop after their current block. */
     private final AtomicBoolean aborted = new AtomicBoolean(false);
 
+    /** False when workers were still running after a failure, so their files must not be deleted. */
+    private volatile boolean cleanupSafe = true;
+
     /** True when the run was cancelled by the user or aborted by a failed worker. */
     boolean isStopping() {
         return aborted.get() || listener.isCancelled();
     }
 
+    /** True unless workers may still be using the test data (see {@link #stopWorkers}). */
+    public boolean isCleanupSafe() {
+        return cleanupSafe;
+    }
+
     private static final long WORKER_STOP_TIMEOUT_SECONDS = 60;
 
     /**
-     * After a worker failure, stops the remaining workers cooperatively and
-     * waits for them, so test data cleanup can't run while they still use it.
-     * Workers are not interrupted: interrupting file I/O closes the channel
-     * and would be misreported as a Direct I/O failure.
+     * After a worker failure or an interruption (user cancel), stops the
+     * remaining workers cooperatively and waits for them, so test data cleanup
+     * can't run while they still use it. Workers are not interrupted:
+     * interrupting file I/O closes the channel and would be misreported as a
+     * Direct I/O failure. If they don't stop in time, cleanup is marked unsafe.
      */
     private void stopWorkers(ExecutorService executor) {
         aborted.set(true);
+        boolean interrupted = Thread.interrupted();
         try {
             if (!executor.awaitTermination(WORKER_STOP_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                cleanupSafe = false;
                 logger.warning("Benchmark workers did not stop within "
-                        + WORKER_STOP_TIMEOUT_SECONDS + " s after a failure");
+                        + WORKER_STOP_TIMEOUT_SECONDS + " s; test data will be kept");
             }
         } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
+            cleanupSafe = false;
+            interrupted = true;
+        } finally {
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
     

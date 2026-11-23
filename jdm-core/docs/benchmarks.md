@@ -615,7 +615,7 @@ When Direct IO is off the page cache is cleared once before READ. Not running as
 | macOS | `sync; purge` | `osascript` dialog + `sudo -S bash` | "Administrator login is required to clear the disk cache using the “sudo purge” command." |
 | Windows | `EmptyStandbyList.exe` | persistent elevated SMART agent (`smart-agent.ps1`, UAC via `Start-Process -Verb RunAs`), shared with SMART | Windows UAC prompt |
 
-On Windows the cache drop is a fixed `drop-cache-req.txt` request to the agent's IPC directory (`~\.jdm\<version>\smart-ipc`); the agent answers in `drop-cache-result.txt` with the exit code. It only runs the `EmptyStandbyList.exe` installed next to its own folder (`<install>\app\`, admin-write-only under Program Files), never a path from the request ([#258](https://github.com/JDiskMark/jdm-java/issues/258)). When JDiskMark runs as admin, `EmptyStandbyList.exe` is run directly as before.
+On Windows the cache drop is a fixed `drop-cache-req.txt` request to the agent's IPC directory (`~\.jdm\<version>\smart-ipc`); the agent answers in `drop-cache-result.txt` (written to a temp file and renamed, so it is never read half-written) with the exit code. It only runs the `EmptyStandbyList.exe` installed next to its own folder (`<install>\app\`), never a path from the request ([#258](https://github.com/JDiskMark/jdm-java/issues/258)). The automatic drop is only used when the agent is installed under Program Files (the MSI install, admin-write-only); zip or IDE layouts in user-writable folders get the manual prompt, because anything there could be replaced and run elevated. Developers can opt in with `-Djdm.devElevation=true`. When JDiskMark runs as admin, `EmptyStandbyList.exe` is run directly as before.
 
 Outcomes:
 
