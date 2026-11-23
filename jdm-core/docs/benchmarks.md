@@ -613,15 +613,17 @@ When Direct IO is off the page cache is cleared once before READ. Not running as
 |---|---|---|---|
 | Linux | `sync; echo 1 > /proc/sys/vm/drop_caches` | `pkexec bash` (polkit) | polkit agent default |
 | macOS | `sync; purge` | `osascript` dialog + `sudo -S bash` | "Administrator login is required to clear the disk cache using the “sudo purge” command." |
-| Windows | `EmptyStandbyList.exe` (admin only) | none | manual prompt when not admin |
+| Windows | `EmptyStandbyList.exe` | persistent elevated SMART agent (`smart-agent.ps1`, UAC via `Start-Process -Verb RunAs`), shared with SMART | Windows UAC prompt |
+
+On Windows the cache drop is a fixed `drop-cache-req.txt` request to the agent's IPC directory (`~\.jdm\<version>\smart-ipc`); the agent answers in `drop-cache-result.txt` with the exit code. It only runs the `EmptyStandbyList.exe` installed next to its own folder (`<install>\app\`, admin-write-only under Program Files), never a path from the request ([#258](https://github.com/JDiskMark/jdm-java/issues/258)). When JDiskMark runs as admin, `EmptyStandbyList.exe` is run directly as before.
 
 Outcomes:
 
 | Result | Cause | Behaviour |
 |---|---|---|
 | `CLEARED` | command exit 0 | READ runs |
-| `UNAVAILABLE` | Flatpak, `pkexec` not on `PATH`, or `pkexec` exit 127 (no polkit agent, or authorization not obtained) | manual "run sudo, then press OK" prompt, then READ runs |
-| `DENIED` | dialog cancelled (`pkexec` exit 126, macOS Cancel), command failure, 120 s timeout | READ skipped and recorded as failed (§4.3) |
+| `UNAVAILABLE` | Flatpak, `pkexec` not on `PATH`, or `pkexec` exit 127 (no polkit agent, or authorization not obtained); Windows: agent or `EmptyStandbyList.exe` not installed | manual "run sudo, then press OK" prompt, then READ runs |
+| `DENIED` | dialog cancelled (`pkexec` exit 126, macOS Cancel, Windows UAC declined), command failure, 120 s timeout (60 s on Windows) | READ skipped and recorded as failed (§4.3) |
 
 `pkexec`/polkit is not bundled or declared as a package dependency; it is assumed present on desktop Linux. The DEB and RPM install a polkit policy for SMART only. Systems without it fall back to the manual prompt.
 

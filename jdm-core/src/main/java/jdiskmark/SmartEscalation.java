@@ -121,6 +121,82 @@ public class SmartEscalation {
         return null;
     }
 
+    /** Seconds to wait for EmptyStandbyList.exe run by the agent. */
+    private static final int DROP_CACHE_TIMEOUT_SECONDS = 60;
+
+    /** {@link #dropCacheElevated} result when EmptyStandbyList.exe is not installed. */
+    public static final int DROP_CACHE_MISSING = -2;
+
+    /**
+     * Clears the Windows standby list (disk cache) through the persistent
+     * elevated agent, prompting for UAC only if the agent is not running yet,
+     * so the prompt is shared with SMART (#258). The agent only runs the
+     * {@code EmptyStandbyList.exe} installed next to its own folder.
+     *
+     * @param smartctlPath absolute path to {@code smartctl.exe}, which locates the agent
+     * @return the exit code of {@code EmptyStandbyList.exe}, {@link #DROP_CACHE_MISSING}
+     *         when it is not installed, or {@code null} if the agent could not be
+     *         started (UAC cancelled, agent not installed) or did not answer
+     * @throws IOException          if the IPC directory cannot be used
+     * @throws InterruptedException if the calling thread is interrupted
+     */
+    public static Integer dropCacheElevated(String smartctlPath)
+            throws IOException, InterruptedException {
+        Path ipcDir = resolveIpcDir();
+        Files.createDirectories(ipcDir);
+        if (!ensureAgentRunning(smartctlPath, ipcDir)) {
+            LOGGER.warning("SmartEscalation: agent not ready for cache drop — UAC may have been cancelled");
+            return null;
+        }
+        Path reqFile = ipcDir.resolve("drop-cache-req.txt");
+        Path resultFile = ipcDir.resolve("drop-cache-result.txt");
+        Files.deleteIfExists(resultFile);
+        Files.writeString(reqFile, "drop", StandardCharsets.UTF_8);
+
+        long deadline = System.currentTimeMillis() + DROP_CACHE_TIMEOUT_SECONDS * 1000L;
+        while (System.currentTimeMillis() < deadline) {
+            if (Files.exists(resultFile)) {
+                String text = Files.readString(resultFile, StandardCharsets.UTF_8).trim();
+                Files.deleteIfExists(resultFile);
+                if (text.startsWith("\uFEFF")) text = text.substring(1).trim();
+                if (text.equals("missing")) return DROP_CACHE_MISSING;
+                try {
+                    return Integer.parseInt(text);
+                } catch (NumberFormatException e) {
+                    LOGGER.warning("SmartEscalation: unexpected cache drop result: " + text);
+                    return -1;
+                }
+            }
+            Thread.sleep(200);
+        }
+        LOGGER.warning("SmartEscalation: cache drop timed out — resetting agent state");
+        Files.deleteIfExists(reqFile);
+        agentReady = false;
+        return null;
+    }
+
+    /** True when the elevated agent script is installed next to {@code smartctl.exe}. */
+    public static boolean isAvailable(String smartctlPath) {
+        return smartctlPath != null && resolveAgentScript(smartctlPath) != null;
+    }
+
+    private static volatile Boolean installed = null;
+
+    /** Cached {@link #isAvailable} for the bundled smartctl; safe to call from the UI thread. */
+    public static boolean isInstalled() {
+        Boolean result = installed;
+        if (result == null) {
+            result = isAvailable(Smart.resolveSmartctlPath());
+            installed = result;
+        }
+        return result;
+    }
+
+    /** True once the elevated agent is running, so no UAC prompt is needed. */
+    public static boolean isAgentReady() {
+        return agentReady;
+    }
+
     /**
      * Ensures the persistent elevated agent is running. On the first call
      * this triggers a single UAC prompt; subsequent calls return immediately.

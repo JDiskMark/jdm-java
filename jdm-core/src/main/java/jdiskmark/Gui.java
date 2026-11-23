@@ -192,6 +192,10 @@ public final class Gui {
         if (App.directEnable || !App.hasReadOperation() || App.isRoot || App.isAdmin) return null;
         if (Smart.process != null && Smart.process.isAlive()) return null;
         if (App.isWindows()) {
+            if (SmartEscalation.isAgentReady()) return null;
+            if (SmartEscalation.isInstalled()) {
+                return "Direct IO off — administrator approval (UAC) required to clear the disk cache before READ";
+            }
             return "Direct IO off — run as administrator to clear the disk cache automatically before READ";
         }
         if (UtilOs.isFlatpak()) {
@@ -1950,7 +1954,13 @@ public final class Gui {
                         message, "Missing Disk Cache Utility",
                         JOptionPane.WARNING_MESSAGE);
                 
-            } else if (!App.isAdmin) {
+            } else {
+                // not admin: clear through the elevated SMART agent, UAC once per session (#258)
+                UtilOs.CacheDropResult winResult = UtilOs.dropCacheElevated();
+                refreshCacheDropNotice();
+                if (winResult == UtilOs.CacheDropResult.CLEARED) return true;
+                if (winResult == UtilOs.CacheDropResult.DENIED) return false;
+                // UNAVAILABLE: no installed agent or EmptyStandbyList.exe, ask the user
                 String message = """
                         Run JDiskMark as admin to automatically clear the disk cache.
 

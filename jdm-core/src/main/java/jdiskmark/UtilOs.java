@@ -740,6 +740,9 @@ public class UtilOs {
      * @return the outcome of the attempt
      */
     public static CacheDropResult dropCacheElevated() {
+        if (App.isWindows()) {
+            return dropCacheElevatedWindows();
+        }
         String command;
         if (App.isLinux()) {
             if (isFlatpak() || !isOnPath("pkexec")) {
@@ -807,6 +810,50 @@ public class UtilOs {
                 LOGGER.log(Level.WARNING, "Elevated cache drop failed", e);
                 return shellExitResult(shell);
             }
+        }
+    }
+
+    /**
+     * Windows: clears the standby list (disk cache) with EmptyStandbyList.exe
+     * through the elevated SMART agent, so the UAC prompt appears at most once
+     * per session and is shared with SMART (#258).
+     *
+     * @return {@code UNAVAILABLE} when the agent or EmptyStandbyList.exe is not
+     *         installed (e.g. IDE runs), {@code DENIED} when UAC is cancelled or
+     *         the tool fails
+     */
+    private static CacheDropResult dropCacheElevatedWindows() {
+        if (!SmartEscalation.isInstalled()) {
+            return CacheDropResult.UNAVAILABLE;
+        }
+        String smartctlPath = Smart.resolveSmartctlPath();
+        if (!SmartEscalation.isAgentReady()) {
+            App.msg("Requesting administrator privileges to clear the disk cache...");
+        }
+        try {
+            // GH-2: delays in place of flushing the cache, as in the admin path
+            Thread.sleep(1300);
+            Integer code = SmartEscalation.dropCacheElevated(smartctlPath);
+            if (code == null) {
+                return CacheDropResult.DENIED;
+            }
+            if (code == SmartEscalation.DROP_CACHE_MISSING) {
+                LOGGER.warning("EmptyStandbyList.exe is not installed next to the elevated agent");
+                return CacheDropResult.UNAVAILABLE;
+            }
+            if (code != 0) {
+                LOGGER.log(Level.WARNING, "Elevated cache drop failed, exit={0}", code);
+                return CacheDropResult.DENIED;
+            }
+            Thread.sleep(700);
+            App.msg("Disk cache cleared");
+            return CacheDropResult.CLEARED;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return CacheDropResult.DENIED;
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Elevated cache drop failed", e);
+            return CacheDropResult.DENIED;
         }
     }
 
