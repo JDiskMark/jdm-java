@@ -97,6 +97,7 @@ public final class UtilsWinOs {
                                 if (!DeviceIoControl(h, 0x00220448u, b1, 256, b1, 256, out ret, IntPtr.Zero)) return null;
                                 byte speed = Marshal.ReadByte(b1, 23);
                                 int flags = 0;
+                                int v2 = 0;
                                 IntPtr b2 = Marshal.AllocHGlobal(16);
                                 try {
                                     for (int i = 0; i < 16; i++) Marshal.WriteByte(b2, i, 0);
@@ -105,9 +106,10 @@ public final class UtilsWinOs {
                                     Marshal.WriteInt32(b2, 8, 0x07);
                                     if (DeviceIoControl(h, 0x0022045Cu, b2, 16, b2, 16, out ret, IntPtr.Zero)) {
                                         flags = Marshal.ReadInt32(b2, 12);
+                                        v2 = 1;
                                     }
                                 } finally { Marshal.FreeHGlobal(b2); }
-                                return speed + " " + flags;
+                                return speed + " " + flags + " " + v2;
                             } finally { Marshal.FreeHGlobal(b1); }
                         }
                     }
@@ -117,11 +119,12 @@ public final class UtilsWinOs {
                 """.formatted(letter);
         for (String line : runPowerShellLines(script, "USB version lookup for drive " + letter)) {
             String[] parts = line.trim().split("\\s+");
-            if (parts.length == 2) {
+            if (parts.length == 3) {
                 try {
                     int speed = Integer.parseInt(parts[0]);
                     int flags = Integer.parseInt(parts[1]);
-                    String version = mapUsbVersion(speed, flags);
+                    boolean v2Ok = "1".equals(parts[2]);
+                    String version = mapUsbVersion(speed, flags, v2Ok);
                     if (version != null) {
                         return version;
                     }
@@ -136,16 +139,19 @@ public final class UtilsWinOs {
     /**
      * Maps {@code USB_NODE_CONNECTION_INFORMATION_EX.Speed} and
      * {@code USB_NODE_CONNECTION_INFORMATION_EX_V2.Flags} to a USB version string.
+     * Windows reports SuperSpeed devices as high speed in the V1 structure, so
+     * high speed is only trusted as USB 2.0 when the V2 query succeeded.
      */
-    public static String mapUsbVersion(int speed, int v2Flags) {
-        if ((v2Flags & 0x04) != 0) {
+    public static String mapUsbVersion(int speed, int v2Flags, boolean v2Ok) {
+        if (v2Ok && (v2Flags & 0x04) != 0) {
             return "3.2 Gen 2";
         }
-        if ((v2Flags & 0x01) != 0) {
+        if (v2Ok && (v2Flags & 0x01) != 0) {
             return "3.0";
         }
         return switch (speed) {
-            case 2 -> "2.0";
+            case 3 -> "3.0";
+            case 2 -> v2Ok ? "2.0" : null;
             case 1 -> "1.1";
             case 0 -> "1.0";
             default -> null;
