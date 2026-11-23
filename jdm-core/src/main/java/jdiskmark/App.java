@@ -1049,6 +1049,11 @@ public class App {
             msg("Batch in progress, aborting...");
             return;
         }
+        if (BenchmarkRunner.previousWorkersRunning()) {
+            err("Threads of the previous benchmark are still running, benchmark aborted. "
+                    + "Wait for them to finish or restart JDiskMark.");
+            return;
+        }
 
         // 2. check can write to location
         if (locationDir.canWrite() == false) {

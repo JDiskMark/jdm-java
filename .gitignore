@@ -43,3 +43,4 @@ flatpak-staging
 # rotating log files (portable/IDE mode writes to ./logs/)
 logs/
 *.log
+jdm-core/nbactions.xml

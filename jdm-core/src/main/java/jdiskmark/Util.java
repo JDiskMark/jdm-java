@@ -129,8 +129,20 @@ public class Util {
      * removes the emptied folder. Folders that still contain files are left alone.
      */
     static public void removeDirectoryAfterExit(File dir) {
-        if (dir == null || !App.isWindows()) return;
-        REMOVE_AFTER_EXIT.add(dir.toPath().toAbsolutePath());
+        removeAfterExit(dir);
+    }
+
+    /**
+     * Windows only: deletes {@code file} after JDiskMark exits, for files that
+     * could not be deleted while it was running (e.g. a leftover probe file).
+     */
+    static public void removeFileAfterExit(File file) {
+        removeAfterExit(file);
+    }
+
+    private static void removeAfterExit(File path) {
+        if (path == null || !App.isWindows()) return;
+        REMOVE_AFTER_EXIT.add(path.toPath().toAbsolutePath());
         if (REMOVE_HOOK_ADDED.compareAndSet(false, true)) {
             Runtime.getRuntime().addShutdownHook(
                     new Thread(Util::launchRemoveAfterExit, "jdm-remove-after-exit"));
@@ -148,7 +160,13 @@ public class Util {
                 Wait-Process -Id %d -Timeout 120 -ErrorAction SilentlyContinue
                 foreach ($d in @(%s)) {
                     for ($i = 0; $i -lt 20 -and (Test-Path -LiteralPath $d); $i++) {
-                        try { [System.IO.Directory]::Delete($d) } catch { Start-Sleep -Milliseconds 250 }
+                        try {
+                            if (Test-Path -LiteralPath $d -PathType Leaf) {
+                                Remove-Item -LiteralPath $d -Force -ErrorAction Stop
+                            } else {
+                                [System.IO.Directory]::Delete($d)
+                            }
+                        } catch { Start-Sleep -Milliseconds 250 }
                     }
                 }
                 """.formatted(ProcessHandle.current().pid(), dirs);

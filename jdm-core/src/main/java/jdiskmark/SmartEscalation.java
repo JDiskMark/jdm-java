@@ -121,6 +121,144 @@ public class SmartEscalation {
         return null;
     }
 
+    /** Seconds to wait for EmptyStandbyList.exe run by the agent. */
+    private static final int DROP_CACHE_TIMEOUT_SECONDS = 60;
+
+    /** {@link #dropCacheElevated} result when EmptyStandbyList.exe is not installed. */
+    public static final int DROP_CACHE_MISSING = -2;
+
+    /**
+     * Clears the Windows standby list (disk cache) through the persistent
+     * elevated agent, prompting for UAC only if the agent is not running yet,
+     * so the prompt is shared with SMART (#258). The agent only runs the
+     * {@code EmptyStandbyList.exe} installed next to its own folder.
+     *
+     * @param smartctlPath absolute path to {@code smartctl.exe}, which locates the agent
+     * @return the exit code of {@code EmptyStandbyList.exe}, {@link #DROP_CACHE_MISSING}
+     *         when it is not installed, or {@code null} if the agent could not be
+     *         started (UAC cancelled, agent not installed) or did not answer
+     * @throws IOException          if the IPC directory cannot be used
+     * @throws InterruptedException if the calling thread is interrupted
+     */
+    public static Integer dropCacheElevated(String smartctlPath)
+            throws IOException, InterruptedException {
+        if (!isAvailable(smartctlPath)) {
+            return null;
+        }
+        Path ipcDir = resolveIpcDir();
+        Files.createDirectories(ipcDir);
+        if (!ensureAgentRunning(smartctlPath, ipcDir)) {
+            LOGGER.warning("SmartEscalation: agent not ready for cache drop — UAC may have been cancelled");
+            return null;
+        }
+        Path reqFile = ipcDir.resolve("drop-cache-req.txt");
+        Path resultFile = ipcDir.resolve("drop-cache-result.txt");
+        Files.deleteIfExists(resultFile);
+        Files.writeString(reqFile, "drop", StandardCharsets.UTF_8);
+
+        long deadline = System.currentTimeMillis() + DROP_CACHE_TIMEOUT_SECONDS * 1000L;
+        while (System.currentTimeMillis() < deadline) {
+            if (Files.exists(resultFile)) {
+                String text = Files.readString(resultFile, StandardCharsets.UTF_8).trim();
+                Files.deleteIfExists(resultFile);
+                if (text.startsWith("\uFEFF")) text = text.substring(1).trim();
+                if (text.equals("missing")) return DROP_CACHE_MISSING;
+                try {
+                    return Integer.parseInt(text);
+                } catch (NumberFormatException e) {
+                    LOGGER.warning("SmartEscalation: unexpected cache drop result: " + text);
+                    return -1;
+                }
+            }
+            Thread.sleep(200);
+        }
+        LOGGER.warning("SmartEscalation: cache drop timed out — resetting agent state");
+        Files.deleteIfExists(reqFile);
+        agentReady = false;
+        return null;
+    }
+
+    /**
+     * True when the elevated agent can be used for the cache drop: the agent
+     * script is installed next to {@code smartctl.exe} in a protected location
+     * (see {@link #isProtectedLocation}) and EmptyStandbyList.exe is installed
+     * next to its folder, so a partial install never shows a UAC prompt.
+     */
+    public static boolean isAvailable(String smartctlPath) {
+        if (smartctlPath == null) return false;
+        Path script = resolveAgentScript(smartctlPath);
+        if (script == null || script.getParent() == null || script.getParent().getParent() == null) {
+            return false;
+        }
+        Path esbl = script.getParent().getParent().resolve(App.ESBL_EXE);
+        return Files.isRegularFile(esbl) && isProtectedLocation(script);
+    }
+
+    /** Opt-in for developer builds outside Program Files: {@code -Djdm.devElevation=true}. */
+    static final String DEV_ELEVATION_PROPERTY = "jdm.devElevation";
+
+    /**
+     * The agent and the EmptyStandbyList.exe next to it run as admin, so they
+     * may only be elevated from files a non-admin user can't modify, as in the
+     * MSI install under Program Files. The check asks Windows (ACL access
+     * check) whether the current user could write the script, its folder, the
+     * install folder above it or EmptyStandbyList.exe; it does not rely on
+     * environment variables such as {@code %ProgramFiles%}, which the launching
+     * process could override. Zip or IDE layouts in user-writable folders fail
+     * it. Developers can opt in with {@code -Djdm.devElevation=true}.
+     */
+    static boolean isProtectedLocation(Path script) {
+        if (Boolean.getBoolean(DEV_ELEVATION_PROPERTY)) return true;
+        try {
+            Path real = script.toRealPath();
+            Path agentDir = real.getParent();
+            Path installDir = agentDir == null ? null : agentDir.getParent();
+            if (installDir == null) return false;
+            Path esbl = installDir.resolve(App.ESBL_EXE);
+            for (Path p : new Path[] { real, agentDir, installDir, esbl }) {
+                if (!Files.exists(p) || Files.isWritable(p)) {
+                    LOGGER.info("SmartEscalation: " + p + " is writable or missing; automatic cache "
+                            + "drop disabled (set -D" + DEV_ELEVATION_PROPERTY + "=true to allow)");
+                    return false;
+                }
+            }
+            return true;
+        } catch (IOException | RuntimeException e) {
+            LOGGER.warning("SmartEscalation: cannot verify agent location: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private static volatile Boolean installed = null;
+
+    /**
+     * Hint for the manual cache prompt when the agent is present but not trusted
+     * (IDE or zip layout in a user-writable folder), or {@code null} otherwise.
+     */
+    public static String untrustedAgentHint() {
+        String smartctlPath = Smart.resolveSmartctlPath();
+        Path script = smartctlPath == null ? null : resolveAgentScript(smartctlPath);
+        if (script == null || isProtectedLocation(script)) return null;
+        return "The elevated agent in " + script.getParent() + " can be modified by your\n"
+                + "user account, so it is not used to clear the cache. Developer builds\n"
+                + "can allow it with the VM option -D" + DEV_ELEVATION_PROPERTY + "=true.";
+    }
+
+    /** Cached {@link #isAvailable} for the bundled smartctl; safe to call from the UI thread. */
+    public static boolean isInstalled() {
+        Boolean result = installed;
+        if (result == null) {
+            result = isAvailable(Smart.resolveSmartctlPath());
+            installed = result;
+        }
+        return result;
+    }
+
+    /** True once the elevated agent is running, so no UAC prompt is needed. */
+    public static boolean isAgentReady() {
+        return agentReady;
+    }
+
     /**
      * Ensures the persistent elevated agent is running. On the first call
      * this triggers a single UAC prompt; subsequent calls return immediately.

@@ -20,7 +20,7 @@
 - Configure block size, blocks, samples and other benchmark parameters
 - Detect drive model, capacity and processor
 - Save and load benchmark
-- Auto clear disk cache (when sudo or admin)
+- Auto clear disk cache (when sudo or admin, or after an admin prompt once per session)
 - multi threaded benchmarks
 - Default profiles
 - Command line interface
@@ -303,6 +303,25 @@ On Ubuntu Desktop, the JDK can be installed with:
 | RPM (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm` |
 | Flatpak (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak` |
 | macOS PKG (macOS only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am -Pmacos-pkg` |
+
+### Windows Disk Cache Drop Development
+
+When Direct I/O is off, JDiskMark clears the Windows disk cache before READ with
+`EmptyStandbyList.exe`, run through the same elevated agent as SMART (one UAC
+prompt per session). The agent is only elevated when its files can't be modified
+by your user account, as in the MSI install under Program Files.
+
+Running from NetBeans or `jdm-core/target`, those files are user-writable, so the
+manual "Clear Disk Cache Now" prompt appears instead. To test the automatic cache
+drop in a developer build, add this VM option (NetBeans: Project Properties → Run
+→ VM Options):
+
+```
+-Djdm.devElevation=true
+```
+
+Only use it on a development machine; it allows elevating scripts from a
+user-writable folder.
 
 ### SMART Feature Development (Linux)
 

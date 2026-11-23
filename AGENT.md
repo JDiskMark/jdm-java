@@ -28,6 +28,13 @@ The default position is: **do nothing with git unless explicitly told to.**
 
 - **Branch:** Do not create, switch, or delete branches without explicit instruction.
 
+- **Pull request reviews before merging:** Before merging any pull request (even
+  when asked to merge), read all review comments, including Copilot's automated
+  review (`gh api repos/<owner>/<repo>/pulls/<n>/comments` and `.../reviews`).
+  Resolve every critical/high finding first, or report it to the user and wait.
+  Summarize the remaining findings and how they will be handled (fixed now or
+  tracked in an issue) before merging.
+
 ---
 
 ### Design Documentation
