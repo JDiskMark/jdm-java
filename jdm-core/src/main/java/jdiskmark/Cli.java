@@ -102,7 +102,12 @@ public class Cli {
                 } catch (java.util.NoSuchElementException ex) {
                     System.err.println("Input stream closed unexpectedly.");
                 }
-            } else if (!App.isAdmin) {
+            } else {
+                // not admin: clear through the elevated SMART agent, UAC once per session (#258)
+                UtilOs.CacheDropResult winResult = UtilOs.dropCacheElevated();
+                if (winResult == UtilOs.CacheDropResult.CLEARED) return true;
+                if (winResult == UtilOs.CacheDropResult.DENIED) return false;
+                // UNAVAILABLE: no installed agent or EmptyStandbyList.exe, ask the user
                 String message = """
                         \nRun JDiskMark as admin to automatically clear the disk cache.
 
@@ -110,6 +115,8 @@ public class Cli {
                         using EmptyStandbyList.exe or RAMMap.exe utilities.
 
                         Press OK to continue when disk cache has been cleared.""";
+                String devHint = SmartEscalation.untrustedAgentHint();
+                if (devHint != null) message += "\n\n" + devHint;
                 System.out.println(message);
                 try (Scanner scanner = new Scanner(System.in)) {
                     // Block until Enter is pressed

@@ -107,6 +107,12 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             description = "Enable Direct I/O (bypass OS cache). Only works with MODERN engine.")
     boolean directEnable = false;
 
+    @Option(names = {"--direct-lock"},
+            description = "Windows FAT32/exFAT drives: what to do when Direct I/O would keep test files "
+                    + "locked until JDiskMark exits: buffered (Direct I/O off; clear the disk "
+                    + "cache before READ) or keep (keep Direct I/O; test data is removed on exit).")
+    String directLock;
+
     @Option(names = {"-y", "--write-sync"},
             description = "Enable Write Sync (flush to disk).")
     boolean writeSyncEnable = false;
@@ -184,6 +190,15 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             App.loadProfile(profile);
             // apply profile parameter overrides
             applyOverrides(spec.commandLine().getParseResult());
+            if (directLock != null) {
+                App.directLockChoice = switch (directLock.toLowerCase()) {
+                    case "buffered" -> BenchmarkRunner.DirectLockChoice.BUFFERED;
+                    case "keep" -> BenchmarkRunner.DirectLockChoice.KEEP;
+                    default -> throw new CommandLine.ParameterException(spec.commandLine(),
+                            "Invalid value for --direct-lock: '" + directLock
+                                    + "' (expected buffered or keep)");
+                };
+            }
             // environment and persistance
             App.setLocationDir(locationDir);
             App.autoRemoveData = autoRemoveData;
@@ -211,7 +226,7 @@ public class RunBenchmarkCommand implements Callable<Integer> {
             } finally {
                 System.out.print(ANSI_SHOW_CURSOR);
             }
-            return 0; // Success exit code
+            return App.benchmark != null ? 0 : 1;
             
         } catch (RuntimeException e) {
             System.err.println("Error running benchmark: " + e.getMessage());

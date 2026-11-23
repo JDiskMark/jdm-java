@@ -109,14 +109,38 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
 
     private BatchResult.RunResult runSingle(int runIndex, UUID batchId, File drive, String driveModel,
                                              BenchmarkProfile profile, boolean isRetry) {
+        BenchmarkRunner bRunner = null;
         try {
             config.applyProfileToApp(profile, drive);
 
-            File dataDir = App.dataDir;
-            if (dataDir.exists()) {
-                Util.deleteDirectory(dataDir);
+            if (BenchmarkRunner.previousWorkersRunning()) {
+                String err = "Threads of the previous benchmark are still running";
+                App.err(err);
+                return new BatchResult.RunResult(drive, driveModel, profile, null,
+                        isRetry ? BatchResult.DriveStatus.RETRIED_THEN_SKIPPED
+                                : BatchResult.DriveStatus.SKIPPED,
+                        err);
             }
-            dataDir.mkdirs();
+
+            File dataDir = App.dataDir;
+            String cleanupFailure = Util.deleteDirectoryReason(dataDir);
+            if (cleanupFailure != null) {
+                String err = "Unable to delete existing test data: " + cleanupFailure;
+                App.err(err);
+                return new BatchResult.RunResult(drive, driveModel, profile, null,
+                        isRetry ? BatchResult.DriveStatus.RETRIED_THEN_SKIPPED
+                                : BatchResult.DriveStatus.SKIPPED,
+                        err);
+            }
+            String dirFailure = Util.prepareDirectory(dataDir);
+            if (dirFailure != null) {
+                String err = "Unable to create test data folder: " + dirFailure;
+                App.err(err);
+                return new BatchResult.RunResult(drive, driveModel, profile, null,
+                        isRetry ? BatchResult.DriveStatus.RETRIED_THEN_SKIPPED
+                                : BatchResult.DriveStatus.SKIPPED,
+                        err);
+            }
 
             if (!DriveChecker.validateTargetDirectory(App.locationDir, false)) {
                 return new BatchResult.RunResult(drive, driveModel, profile, null,
@@ -155,7 +179,7 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
                 }
             };
 
-            BenchmarkRunner bRunner = new BenchmarkRunner(listener, App.getConfig());
+            bRunner = new BenchmarkRunner(listener, App.getConfig());
             Benchmark benchmark = bRunner.execute();
             benchmark.recordEndTime();
             benchmark.setBatchId(batchId);
@@ -194,8 +218,15 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
                             : BatchResult.DriveStatus.SKIPPED,
                     err);
         } finally {
-            if (App.dataDir != null && App.dataDir.exists()) {
-                Util.deleteDirectory(App.dataDir);
+            if (BenchmarkRunner.previousWorkersRunning()
+                    || (bRunner != null && !bRunner.isCleanupSafe())) {
+                LOG.log(Level.WARNING, "Test data in {0} kept: benchmark threads were still running", App.dataDir);
+            } else if (App.dataDir != null && App.dataDir.exists()) {
+                String failure = Util.deleteDirectoryReason(App.dataDir);
+                if (failure != null) {
+                    LOG.log(Level.WARNING, "Unable to delete test data: {0}", failure);
+                    Util.removeDirectoryAfterExit(App.dataDir);
+                }
             }
         }
     }

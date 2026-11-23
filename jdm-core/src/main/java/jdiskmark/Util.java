@@ -6,12 +6,22 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.FileSystemException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.filechooser.FileSystemView;
 import org.metricus.jdm.os.UtilsLinuxOs;
 import org.metricus.jdm.os.UtilsMacOs;
@@ -29,20 +39,149 @@ public class Util {
     /**
      * Deletes the Directory and all files within
      * @param path
-     * @return 
+     * @return {@code true} if the directory no longer exists
      */
     static public boolean deleteDirectory(File path) {
-        if (path.exists()) {
-            File[] files = path.listFiles();
+        return deleteDirectoryReason(path) == null;
+    }
+
+    /**
+     * Deletes {@code path} and everything in it.
+     *
+     * @param path directory to delete
+     * @return {@code null} on success, otherwise the first failure and its reason
+     */
+    static public String deleteDirectoryReason(File path) {
+        if (path == null || !path.exists()) return null;
+        String failure = null;
+        File[] files = path.listFiles();
+        if (files != null) {
             for (File file : files) {
-                if (file.isDirectory()) {
-                    deleteDirectory(file);
-                } else {
-                    file.delete();
-                }
+                String f = file.isDirectory()
+                        ? deleteDirectoryReason(file)
+                        : deletePathReason(file.toPath());
+                if (failure == null) failure = f;
             }
         }
-        return (path.delete());
+        return failure != null ? failure : deletePathReason(path.toPath());
+    }
+
+    private static String deletePathReason(Path p) {
+        try {
+            Files.deleteIfExists(p);
+            return null;
+        } catch (DirectoryNotEmptyException e) {
+            String[] left = p.toFile().list();
+            String names = (left == null || left.length == 0) ? "" : " " + String.join(", ", left);
+            return p + ": still contains" + names + " (in use or pending delete)";
+        } catch (IOException e) {
+            return p + ": " + describeIoError(e);
+        }
+    }
+
+    /** Short human-readable reason for a file operation failure. */
+    public static String describeIoError(Exception e) {
+        return switch (e) {
+            case AccessDeniedException ade -> "access denied (file may be in use or pending delete)";
+            case NoSuchFileException nsf -> "file not found";
+            case FileSystemException fse when fse.getReason() != null -> fse.getReason();
+            default -> e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+        };
+    }
+
+    /**
+     * Creates {@code dir} if needed and checks that a file can be created in it.
+     * A folder deleted while another program has it open (e.g. File Explorer)
+     * stays pending delete and vanishes once that program lets go, so this waits
+     * up to 3 seconds for such a folder to disappear before re-creating it.
+     *
+     * @return {@code null} when the directory is ready, otherwise the reason
+     */
+    static public String prepareDirectory(File dir) {
+        Path p = dir.toPath();
+        String reason = null;
+        for (int attempt = 0; attempt < 30; attempt++) {
+            try {
+                Files.createDirectories(p);
+                Files.delete(Files.createTempFile(p, ".jdm-ready-", ".tmp"));
+                return null;
+            } catch (IOException e) {
+                reason = describeIoError(e);
+            }
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        return dir + ": " + reason + " (if another program has this folder open, close it)";
+    }
+
+    private static final Set<Path> REMOVE_AFTER_EXIT = ConcurrentHashMap.newKeySet();
+    private static final AtomicBoolean REMOVE_HOOK_ADDED = new AtomicBoolean(false);
+
+    /**
+     * Windows only: removes {@code dir} after JDiskMark exits, if it is empty by
+     * then. Test files Java keeps locked (Direct I/O on FAT32, #257) are only
+     * deleted by Windows when the JVM's handles close, which is after shutdown
+     * hooks run, so a hidden PowerShell waits for this process to end and then
+     * removes the emptied folder. Folders that still contain files are left alone.
+     */
+    static public void removeDirectoryAfterExit(File dir) {
+        removeAfterExit(dir);
+    }
+
+    /**
+     * Windows only: deletes {@code file} after JDiskMark exits, for files that
+     * could not be deleted while it was running (e.g. a leftover probe file).
+     */
+    static public void removeFileAfterExit(File file) {
+        removeAfterExit(file);
+    }
+
+    private static void removeAfterExit(File path) {
+        if (path == null || !App.isWindows()) return;
+        REMOVE_AFTER_EXIT.add(path.toPath().toAbsolutePath());
+        if (REMOVE_HOOK_ADDED.compareAndSet(false, true)) {
+            Runtime.getRuntime().addShutdownHook(
+                    new Thread(Util::launchRemoveAfterExit, "jdm-remove-after-exit"));
+        }
+    }
+
+    private static void launchRemoveAfterExit() {
+        StringBuilder dirs = new StringBuilder();
+        for (Path p : REMOVE_AFTER_EXIT) {
+            if (dirs.length() > 0) dirs.append(',');
+            dirs.append('\'').append(p.toString().replace("'", "''")).append('\'');
+        }
+        if (dirs.length() == 0) return;
+        String script = """
+                Wait-Process -Id %d -Timeout 120 -ErrorAction SilentlyContinue
+                foreach ($d in @(%s)) {
+                    for ($i = 0; $i -lt 20 -and (Test-Path -LiteralPath $d); $i++) {
+                        try {
+                            if (Test-Path -LiteralPath $d -PathType Leaf) {
+                                Remove-Item -LiteralPath $d -Force -ErrorAction Stop
+                            } else {
+                                [System.IO.Directory]::Delete($d)
+                            }
+                        } catch { Start-Sleep -Milliseconds 250 }
+                    }
+                }
+                """.formatted(ProcessHandle.current().pid(), dirs);
+        String encoded = Base64.getEncoder()
+                .encodeToString(script.getBytes(StandardCharsets.UTF_16LE));
+        try {
+            new ProcessBuilder("powershell", "-NoProfile", "-NonInteractive",
+                    "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden",
+                    "-EncodedCommand", encoded)
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                    .redirectError(ProcessBuilder.Redirect.DISCARD)
+                    .start();
+        } catch (IOException e) {
+            // best effort; the next run removes the empty folder anyway
+        }
     }
     
     /**

@@ -32,6 +32,10 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
     private final java.util.List<Sample> operationBuffer = new java.util.ArrayList<>();
     private final java.util.List<Sample> intervalBuffer  = new java.util.ArrayList<>();
     private long nextPublishTime = 0;
+    /** Direct I/O was kept although it leaves the test files locked until exit (#257). */
+    private volatile boolean directLockKept = false;
+    /** Set when doInBackground() begins; a worker cancelled before that never runs it. */
+    private volatile boolean started = false;
 
     BenchmarkRunner.BenchmarkListener listener = new BenchmarkRunner.BenchmarkListener() {
         @Override
@@ -67,6 +71,11 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         public boolean attemptCacheDrop() { return Gui.dropCache(); }
 
         @Override
+        public BenchmarkRunner.DirectLockChoice onDirectIoLocked(String location, String fileSystem) {
+            return Gui.askDirectLockChoice(location, fileSystem);
+        }
+
+        @Override
         public void onOperationComplete() {
             if (renderMode == RenderFrequencyMode.PER_OPERATION) {
                 // Copy and clear the buffer under the lock, then render
@@ -96,6 +105,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
     
     @Override
     protected Benchmark doInBackground() throws Exception {
+        started = true;
         // Clear amber stale-highlights from any previous run's setting changes.
         // The new baseline will be App.benchmark.config once this run completes.
         Gui.clearAllStaleHighlights();
@@ -134,6 +144,46 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         Gui.lockSampleAxis(App.numOfSamples);
 
         BenchmarkRunner bRunner = new BenchmarkRunner(listener, App.getConfig());
+        try {
+            return runAndRecord(bRunner);
+        } finally {
+            // on the benchmark thread, after all workers stopped; done() can run
+            // earlier than this on cancel, so it must not delete the test data
+            directLockKept = bRunner.isDirectLockKept();
+            removeTestData(bRunner);
+            if (isCancelled()) {
+                // done() leaves the state busy on cancel until the workers stopped
+                SwingUtilities.invokeLater(BenchmarkWorker::returnToIdle);
+            }
+        }
+    }
+
+    /** Re-enables the controls once the benchmark thread has finished. */
+    private static void returnToIdle() {
+        Gui.unlockSampleAxis();
+        App.state = App.State.IDLE_STATE;
+        Gui.mainFrame.adjustSensitivity();
+    }
+
+    /** Test data could not be deleted although Direct I/O was kept (#257). */
+    private volatile boolean showLockNotice = false;
+
+    private void removeTestData(BenchmarkRunner bRunner) {
+        if (!App.autoRemoveData) return;
+        if (!bRunner.isCleanupSafe()) {
+            App.err("Test data in " + dataDir + " was kept because benchmark threads were "
+                    + "still running; it is removed at the start of the next run.");
+            return;
+        }
+        String failure = Util.deleteDirectoryReason(dataDir);
+        if (failure != null) {
+            App.err("Unable to delete test data: " + failure);
+            Util.removeDirectoryAfterExit(dataDir);
+            showLockNotice = directLockKept;
+        }
+    }
+
+    private Benchmark runAndRecord(BenchmarkRunner bRunner) throws Exception {
         Benchmark benchmark = bRunner.execute();
 
         // Flush any samples still in the interval buffer for timed render modes.
@@ -234,19 +284,27 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         } catch (CancellationException e) {
             // Normal cancellation path — no error to report
         } catch (ExecutionException e) {
-            LOG.log(Level.SEVERE, "Benchmark failed", e.getCause());
-            App.err("Benchmark failed: " + e.getCause().getMessage());
+            if (e.getCause() instanceof CancellationException ce) {
+                msg(ce.getMessage());
+            } else {
+                LOG.log(Level.SEVERE, "Benchmark failed", e.getCause());
+                App.err("Benchmark failed: " + e.getCause().getMessage());
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        if (App.autoRemoveData) {
-            Util.deleteDirectory(dataDir);
+        // On cancel Swing calls done() before the benchmark thread has stopped;
+        // the controls stay busy until doInBackground() returns to idle. If it
+        // never started (cancelled first), there is nothing to wait for.
+        if (!isCancelled() || !started) {
+            returnToIdle();
         }
-        Gui.unlockSampleAxis();
-        App.state = App.State.IDLE_STATE;
-        Gui.mainFrame.adjustSensitivity();
-        // Switch to Benchmarks tab and select the new record for immediate visibility.
-        Gui.selectBottomTab(Tabs.BOTTOM_BENCHMARKS);
+        // Switch to Benchmarks tab and select the new record for immediate visibility,
+        // or to Events when a problem was logged during the run.
+        Gui.selectBottomTab(Gui.eventsNeedAttention ? Tabs.BOTTOM_EVENTS : Tabs.BOTTOM_BENCHMARKS);
         if (Gui.runPanel != null) Gui.runPanel.selectLastRow();
+        if (showLockNotice) {
+            Gui.showDirectLockKeptNotice(dataDir);
+        }
     }
 }

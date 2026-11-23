@@ -11,6 +11,26 @@ Remove-Item (Join-Path $IpcDir 'smart-agent-stop.txt') -Force -ErrorAction Silen
 
 while ($true) {
     if (Test-Path (Join-Path $IpcDir 'smart-agent-stop.txt')) { break }
+
+    # Disk cache drop (#258): a fixed request with no arguments. Only the
+    # EmptyStandbyList.exe installed next to this script's folder is run,
+    # never a path taken from the request.
+    $dropReq = Join-Path $IpcDir 'drop-cache-req.txt'
+    if (Test-Path $dropReq) {
+        Remove-Item $dropReq -Force -ErrorAction SilentlyContinue
+        $esbl = Join-Path (Split-Path $PSScriptRoot -Parent) 'EmptyStandbyList.exe'
+        if (Test-Path -LiteralPath $esbl -PathType Leaf) {
+            & $esbl 2>&1 | Out-Null
+            $dropResult = "$LASTEXITCODE"
+        } else {
+            $dropResult = 'missing'
+        }
+        # publish atomically: the Java side polls for the result file name
+        $dropFile = Join-Path $IpcDir 'drop-cache-result.txt'
+        [System.IO.File]::WriteAllText("$dropFile.tmp", $dropResult, $utf8NoBom)
+        Move-Item -LiteralPath "$dropFile.tmp" -Destination $dropFile -Force
+    }
+
     $reqs = Get-ChildItem (Join-Path $IpcDir 'smart-req-*.txt') -ErrorAction SilentlyContinue
     foreach ($req in $reqs) {
         $device = (Get-Content $req.FullName -Raw -ErrorAction SilentlyContinue).Trim()

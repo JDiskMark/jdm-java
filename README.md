@@ -20,7 +20,7 @@
 - Configure block size, blocks, samples and other benchmark parameters
 - Detect drive model, capacity and processor
 - Save and load benchmark
-- Auto clear disk cache (when sudo or admin)
+- Auto clear disk cache (when sudo or admin, or after an admin prompt once per session)
 - multi threaded benchmarks
 - Default profiles
 - Command line interface
@@ -203,6 +203,11 @@ Starts a disk benchmark test with specified parameters.
                               specified)
   -c, --clean               Remove existing JDiskMark data directory before starting.
   -d, --direct              Enable Direct I/O (bypass OS cache). Only works with MODERN engine.
+      --direct-lock=<directLock>
+                            Windows FAT32/exFAT drives: what to do when Direct I/O would keep test
+                              files locked until JDiskMark exits: buffered (Direct I/O off;
+                              clear the disk cache before READ) or keep (keep Direct I/O; test
+                              data is removed on exit).
   -e, --export=<exportPath> The output file to export benchmark results in json format.
   -h, --help                Display this help and exit.
   -i, --io-engine=<ioEngine>
@@ -298,6 +303,25 @@ On Ubuntu Desktop, the JDK can be installed with:
 | RPM (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-rpm -am -Plinux-rpm` |
 | Flatpak (Linux only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak` |
 | macOS PKG (macOS only) | `mvn clean install -pl jdm-core,jdm-dist/jdm-pkg -am -Pmacos-pkg` |
+
+### Windows Disk Cache Drop Development
+
+When Direct I/O is off, JDiskMark clears the Windows disk cache before READ with
+`EmptyStandbyList.exe`, run through the same elevated agent as SMART (one UAC
+prompt per session). The agent is only elevated when its files can't be modified
+by your user account, as in the MSI install under Program Files.
+
+Running from NetBeans or `jdm-core/target`, those files are user-writable, so the
+manual "Clear Disk Cache Now" prompt appears instead. To test the automatic cache
+drop in a developer build, add this VM option (NetBeans: Project Properties → Run
+→ VM Options):
+
+```
+-Djdm.devElevation=true
+```
+
+Only use it on a development machine; it allows elevating scripts from a
+user-writable folder.
 
 ### SMART Feature Development (Linux)
 

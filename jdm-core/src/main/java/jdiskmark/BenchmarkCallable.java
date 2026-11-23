@@ -88,10 +88,15 @@ public class BenchmarkCallable implements Callable<Benchmark> {
 
         // Orchestration via BenchmarkRunner
         BenchmarkRunner bRunner = new BenchmarkRunner(listener, App.getConfig());
-        Benchmark benchmark = bRunner.execute();
-
-        // 4. Persistence & Export
-        handlePostBenchmark(benchmark);
+        Benchmark benchmark;
+        try {
+            benchmark = bRunner.execute();
+            // 4. Persistence & Export (successful runs only)
+            handlePostBenchmark(benchmark);
+        } finally {
+            // remove test data even when the run failed so the next run starts clean
+            removeTestData(bRunner);
+        }
 
         long duration = System.currentTimeMillis() - start;
         System.out.println(); 
@@ -123,27 +128,31 @@ public class BenchmarkCallable implements Callable<Benchmark> {
             }
         }
 
-        // Remove test data after save/export are complete so no results are lost.
-        // Mirrors BenchmarkWorker.done() for the CLI execution path.
+        App.nextSampleNumber += App.numOfSamples;
+    }
+
+    /** Removes test data after the run (mirrors BenchmarkWorker for the CLI path). */
+    private void removeTestData(BenchmarkRunner runner) {
         if (App.autoRemoveData && App.dataDir != null) {
-            boolean removed = false;
-            String failureReason = null;
-            try {
-                removed = Util.deleteDirectory(App.dataDir);
-                if (!removed) {
-                    failureReason = "deleteDirectory returned false";
-                }
-            } catch (RuntimeException e) {
-                failureReason = e.getMessage();
+            if (!runner.isCleanupSafe()) {
+                App.err("Test data in " + App.dataDir + " was kept because benchmark threads were "
+                        + "still running; it is removed at the start of the next run.");
+                return;
             }
-            if (App.verbose || !removed) {
-                App.msg(removed
-                        ? "Data dir removed: " + App.dataDir
-                        : "Unable to remove data dir: " + App.dataDir
-                                + (failureReason != null ? " (" + failureReason + ")" : ""));
+            boolean directLockKept = runner.isDirectLockKept();
+            String failure;
+            try {
+                failure = Util.deleteDirectoryReason(App.dataDir);
+            } catch (RuntimeException e) {
+                failure = App.dataDir + ": " + e.getMessage();
+            }
+            if (failure != null) {
+                App.err("Unable to delete test data: " + failure
+                        + (directLockKept ? " (kept Direct I/O: the file is removed when JDiskMark exits)" : ""));
+                Util.removeDirectoryAfterExit(App.dataDir);
+            } else if (App.verbose) {
+                App.msg("Data dir removed: " + App.dataDir);
             }
         }
-
-        App.nextSampleNumber += App.numOfSamples;
     }
 }
