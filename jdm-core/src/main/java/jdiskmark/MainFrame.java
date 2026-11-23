@@ -147,6 +147,8 @@ public final class MainFrame extends javax.swing.JFrame {
         // auto scroll the text area.
         DefaultCaret caret = (DefaultCaret)msgTextArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+        msgTextArea.addPropertyChangeListener("highlighter",
+                e -> javax.swing.SwingUtilities.invokeLater(this::reapplyEventHighlights));
         
         
         // Build the left-side main navigation tab pane on all platforms.
@@ -1168,24 +1170,68 @@ public final class MainFrame extends javax.swing.JFrame {
 
     /** Appends an error to the Events log, highlighted red. */
     public void err(String message) {
-        appendHighlighted(message, new java.awt.Color(0xD3, 0x2F, 0x2F, 110));
+        appendHighlighted(message, true);
     }
 
-    /** Appends a warning to the Events log, highlighted with the theme's stale amber. */
+    /** Appends a warning to the Events log, highlighted amber. */
     public void warn(String message) {
-        java.awt.Color amber = Gui.BADGE_STALE_BG;
-        appendHighlighted(message,
-                new java.awt.Color(amber.getRed(), amber.getGreen(), amber.getBlue(), 110));
+        appendHighlighted(message, false);
     }
 
-    private void appendHighlighted(String message, java.awt.Color color) {
-        int start = msgTextArea.getDocument().getLength();
+    private record EventHighlight(javax.swing.text.Position start,
+            javax.swing.text.Position end, boolean error) {}
+
+    private final java.util.List<EventHighlight> eventHighlights = new java.util.ArrayList<>();
+
+    /** Red or amber, stronger on light Events backgrounds; resolved at paint time so theme changes apply. */
+    private final class EventHighlightPainter
+            extends javax.swing.text.DefaultHighlighter.DefaultHighlightPainter {
+        private final boolean error;
+
+        EventHighlightPainter(boolean error) {
+            super(null);
+            this.error = error;
+        }
+
+        @Override
+        public java.awt.Color getColor() {
+            java.awt.Color bg = msgTextArea.getBackground();
+            boolean light = bg == null
+                    || 0.299 * bg.getRed() + 0.587 * bg.getGreen() + 0.114 * bg.getBlue() > 128;
+            int alpha = light ? 150 : 110;
+            return error
+                    ? new java.awt.Color(0xE5, 0x39, 0x35, alpha)
+                    : new java.awt.Color(0xFF, 0xA0, 0x00, alpha);
+        }
+    }
+
+    private void appendHighlighted(String message, boolean error) {
+        javax.swing.text.Document doc = msgTextArea.getDocument();
+        int start = doc.getLength();
         msgTextArea.append(message + '\n');
         try {
-            msgTextArea.getHighlighter().addHighlight(start, start + message.length(),
-                    new javax.swing.text.DefaultHighlighter.DefaultHighlightPainter(color));
+            EventHighlight h = new EventHighlight(doc.createPosition(start),
+                    doc.createPosition(start + message.length()), error);
+            eventHighlights.add(h);
+            addEventHighlight(h);
         } catch (javax.swing.text.BadLocationException e) {
             // the highlight is cosmetic; the message is already in the log
+        }
+    }
+
+    private void addEventHighlight(EventHighlight h) throws javax.swing.text.BadLocationException {
+        msgTextArea.getHighlighter().addHighlight(h.start().getOffset(), h.end().getOffset(),
+                new EventHighlightPainter(h.error()));
+    }
+
+    /** A theme change installs a new highlighter on the Events log, dropping its highlights. */
+    private void reapplyEventHighlights() {
+        for (EventHighlight h : eventHighlights) {
+            try {
+                addEventHighlight(h);
+            } catch (javax.swing.text.BadLocationException e) {
+                // text was cleared; nothing to highlight
+            }
         }
     }
     
@@ -1201,6 +1247,7 @@ public final class MainFrame extends javax.swing.JFrame {
     }
     
     public void clearMessages() {
+        eventHighlights.clear();
         msgTextArea.getHighlighter().removeAllHighlights();
         msgTextArea.setText("");
     }

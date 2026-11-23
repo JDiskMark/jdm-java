@@ -57,7 +57,7 @@ Theme enum
 | `badgeEvenFg()` | No | Even-index badge fg when cycling (default: `badgeDefaultFg()`) |
 | `badgeOddFg()` | No | Odd-index badge fg when cycling (default: `badgeDefaultFg()`) |
 
-The Events log highlights warnings with `badgeStaleBg()` at partial alpha and errors with a fixed translucent red (`#D32F2F`, alpha 110), so both read on light and dark themes without overriding LAF-owned colours.
+The Events log highlights warnings amber (`#FFA000`) and errors red (`#E53935`), translucent at alpha 150 on light log backgrounds and 110 on dark ones. The colour is resolved at paint time from the log's current background, and highlights are re-applied when a theme change installs a new highlighter, so they stay visible across themes without overriding LAF-owned colours.
 
 ### Enums (auto-populate menus)
 
