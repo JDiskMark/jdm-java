@@ -231,6 +231,19 @@ public class SmartEscalation {
 
     private static volatile Boolean installed = null;
 
+    /**
+     * Hint for the manual cache prompt when the agent is present but not trusted
+     * (IDE or zip layout in a user-writable folder), or {@code null} otherwise.
+     */
+    public static String untrustedAgentHint() {
+        String smartctlPath = Smart.resolveSmartctlPath();
+        Path script = smartctlPath == null ? null : resolveAgentScript(smartctlPath);
+        if (script == null || isProtectedLocation(script)) return null;
+        return "The elevated agent in " + script.getParent() + " can be modified by your\n"
+                + "user account, so it is not used to clear the cache. Developer builds\n"
+                + "can allow it with the VM option -D" + DEV_ELEVATION_PROPERTY + "=true.";
+    }
+
     /** Cached {@link #isAvailable} for the bundled smartctl; safe to call from the UI thread. */
     public static boolean isInstalled() {
         Boolean result = installed;

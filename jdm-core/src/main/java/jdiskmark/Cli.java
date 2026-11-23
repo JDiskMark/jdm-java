@@ -115,6 +115,8 @@ public class Cli {
                         using EmptyStandbyList.exe or RAMMap.exe utilities.
 
                         Press OK to continue when disk cache has been cleared.""";
+                String devHint = SmartEscalation.untrustedAgentHint();
+                if (devHint != null) message += "\n\n" + devHint;
                 System.out.println(message);
                 try (Scanner scanner = new Scanner(System.in)) {
                     // Block until Enter is pressed

@@ -1968,6 +1968,8 @@ public final class Gui {
                         using EmptyStandbyList.exe or RAMMap.exe utilities.
 
                         Press OK to continue when disk cache has been cleared.""";
+                String devHint = SmartEscalation.untrustedAgentHint();
+                if (devHint != null) message += "\n\n" + devHint;
                 JOptionPane.showMessageDialog(mainFrame, 
                         message, "Clear Disk Cache Now",
                         JOptionPane.PLAIN_MESSAGE);
