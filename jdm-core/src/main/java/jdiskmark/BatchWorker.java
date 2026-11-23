@@ -218,7 +218,8 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
                             : BatchResult.DriveStatus.SKIPPED,
                     err);
         } finally {
-            if (bRunner != null && !bRunner.isCleanupSafe()) {
+            if (BenchmarkRunner.previousWorkersRunning()
+                    || (bRunner != null && !bRunner.isCleanupSafe())) {
                 LOG.log(Level.WARNING, "Test data in {0} kept: benchmark threads were still running", App.dataDir);
             } else if (App.dataDir != null && App.dataDir.exists()) {
                 String failure = Util.deleteDirectoryReason(App.dataDir);

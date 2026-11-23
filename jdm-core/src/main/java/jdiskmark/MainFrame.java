@@ -921,6 +921,10 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_multiFileCheckBoxMenuItemActionPerformed
 
     private void deleteDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteDataMenuItemActionPerformed
+        if (BenchmarkRunner.previousWorkersRunning()) {
+            App.err("Test data not deleted: threads of the previous benchmark are still running.");
+            return;
+        }
         String failure = Util.deleteDirectoryReason(App.dataDir);
         if (failure != null) {
             App.err("Unable to delete test data: " + failure);
