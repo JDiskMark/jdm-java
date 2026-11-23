@@ -9,6 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.time.LocalDateTime;
 import java.nio.file.Files;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -312,7 +314,7 @@ public class BenchmarkRunner {
     /** Release probe result per location; probed once per session. */
     private static final Map<Path, Boolean> DIRECT_RELEASE_PROBES = new ConcurrentHashMap<>();
 
-    private static final String DIRECT_LOCK_REASON = "Direct I/O works on %s, but on %s drives "
+    private static final String DIRECT_LOCK_REASON = "Direct I/O works on %s, but %s "
             + "Java keeps Direct I/O test files locked until JDiskMark closes so they can't be "
             + "deleted (Windows only; NTFS is not affected)";
 
@@ -341,7 +343,8 @@ public class BenchmarkRunner {
             return;
         }
         String fileSystem = fileSystemType(location);
-        String reason = DIRECT_LOCK_REASON.formatted(location, fileSystem);
+        String onDrives = fileSystem != null ? "on " + fileSystem + " drives" : "on this drive";
+        String reason = DIRECT_LOCK_REASON.formatted(location, onDrives);
         DirectLockChoice choice = listener.onDirectIoLocked(location.toString(), fileSystem);
         if (choice == null) {
             throw new CancellationException(App.mode == App.Mode.CLI
@@ -363,16 +366,22 @@ public class BenchmarkRunner {
         }
     }
 
-    /** File system type of {@code dir} (e.g. "FAT32"); "FAT32" when it can't be read. */
+    /** File system type of {@code dir} (e.g. "FAT32"), or {@code null} when it can't be read. */
     private static String fileSystemType(Path dir) {
         try {
             String type = Files.getFileStore(dir).type();
-            return (type == null || type.isBlank()) ? "FAT32" : type;
+            return (type == null || type.isBlank()) ? null : type;
         } catch (IOException e) {
-            return "FAT32";
+            return null;
         }
     }
 
+    /**
+     * Returns {@code false} only for the JDK's Direct I/O handle leak (#257, #260):
+     * the probe file deletes, but re-creating it is denied because it is still
+     * held open. Any other failure is logged and does not count as the lock, so
+     * the real error surfaces in the run instead of the lock dialog.
+     */
     private static boolean probeDirectRelease(Path dir) {
         Path probe = dir.resolve(".jdm-dio-probe-" + ProcessHandle.current().pid() + ".tmp");
         try {
@@ -385,13 +394,25 @@ public class BenchmarkRunner {
         }
         try {
             Files.delete(probe);
-            FileChannel.open(probe, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).close();
-            Files.delete(probe);
-            return true;
         } catch (IOException e) {
+            logger.log(Level.WARNING, "Direct I/O probe file could not be deleted in {0}: {1}",
+                    new Object[]{dir, e.toString()});
+            Util.removeFileAfterExit(probe.toFile());
+            return true;
+        }
+        try {
+            FileChannel.open(probe, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).close();
+            Files.deleteIfExists(probe);
+            return true;
+        } catch (AccessDeniedException e) {
+            // deleted but still held open: Windows removes it when the JVM exits
             logger.log(Level.INFO, "Direct I/O release probe failed in {0}: {1}",
                     new Object[]{dir, e.toString()});
             return false;
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Direct I/O probe could not re-create its file in {0}: {1}",
+                    new Object[]{dir, e.toString()});
+            return true;
         }
     }
 
@@ -464,7 +485,7 @@ public class BenchmarkRunner {
                 GcDetector gcDetector = config.gcRetryEnabled ? new GcDetector() : null;
                 if (gcDetector != null) gcDetector.start();
                 try {
-                    for (int s = range[0]; s < range[1] && !listener.isCancelled(); s++) {
+                    for (int s = range[0]; s < range[1] && !isStopping(); s++) {
                         Sample.Type type = mode == IOMode.WRITE ? Sample.Type.WRITE : Sample.Type.READ;
                         Sample sample = new Sample(type, s);
                         int retries = 0;
@@ -518,6 +539,7 @@ public class BenchmarkRunner {
         try {
             for (Future<?> f : futures) f.get(); // Wait and propagate exceptions
         } catch (ExecutionException e) {
+            stopWorkers(executor);
             throw new Exception("Threaded IO operation failed", e.getCause());
         } finally {
             op.endTime = LocalDateTime.now();
@@ -532,7 +554,7 @@ public class BenchmarkRunner {
         List<Future<?>> futures = new ArrayList<>();
         for (int[] range : ranges) {
             futures.add(executor.submit(() -> {
-                for (int s = range[0]; s < range[1] && !listener.isCancelled(); s++) {
+                for (int s = range[0]; s < range[1] && !isStopping(); s++) {
                     Sample sample = new Sample(Sample.Type.READ, s);
                     sample.prepareRead(blockSize, config.numBlocks, this);
                 }
@@ -542,7 +564,36 @@ public class BenchmarkRunner {
         try {
             for (Future<?> f : futures) f.get(); // Wait and propagate exceptions
         } catch (ExecutionException e) {
+            stopWorkers(executor);
             throw new Exception("read prep failed", e.getCause());
+        }
+    }
+
+    /** Set when one worker fails so the others stop after their current block. */
+    private final AtomicBoolean aborted = new AtomicBoolean(false);
+
+    /** True when the run was cancelled by the user or aborted by a failed worker. */
+    boolean isStopping() {
+        return aborted.get() || listener.isCancelled();
+    }
+
+    private static final long WORKER_STOP_TIMEOUT_SECONDS = 60;
+
+    /**
+     * After a worker failure, stops the remaining workers cooperatively and
+     * waits for them, so test data cleanup can't run while they still use it.
+     * Workers are not interrupted: interrupting file I/O closes the channel
+     * and would be misreported as a Direct I/O failure.
+     */
+    private void stopWorkers(ExecutorService executor) {
+        aborted.set(true);
+        try {
+            if (!executor.awaitTermination(WORKER_STOP_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                logger.warning("Benchmark workers did not stop within "
+                        + WORKER_STOP_TIMEOUT_SECONDS + " s after a failure");
+            }
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
         }
     }
     

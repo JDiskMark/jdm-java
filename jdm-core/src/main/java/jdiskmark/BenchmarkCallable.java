@@ -88,10 +88,15 @@ public class BenchmarkCallable implements Callable<Benchmark> {
 
         // Orchestration via BenchmarkRunner
         BenchmarkRunner bRunner = new BenchmarkRunner(listener, App.getConfig());
-        Benchmark benchmark = bRunner.execute();
-
-        // 4. Persistence & Export
-        handlePostBenchmark(benchmark, bRunner.isDirectLockKept());
+        Benchmark benchmark;
+        try {
+            benchmark = bRunner.execute();
+            // 4. Persistence & Export (successful runs only)
+            handlePostBenchmark(benchmark);
+        } finally {
+            // remove test data even when the run failed so the next run starts clean
+            removeTestData(bRunner.isDirectLockKept());
+        }
 
         long duration = System.currentTimeMillis() - start;
         System.out.println(); 
@@ -100,7 +105,7 @@ public class BenchmarkCallable implements Callable<Benchmark> {
         return benchmark;
     }
 
-    private void handlePostBenchmark(Benchmark benchmark, boolean directLockKept) {
+    private void handlePostBenchmark(Benchmark benchmark) {
         // In CLI mode we intentionally do not retain benchmarks/operations in App.*
         // In-memory history is managed by other modes; persistence here is via DB/JSON only.
 
@@ -123,8 +128,11 @@ public class BenchmarkCallable implements Callable<Benchmark> {
             }
         }
 
-        // Remove test data after save/export are complete so no results are lost.
-        // Mirrors BenchmarkWorker.done() for the CLI execution path.
+        App.nextSampleNumber += App.numOfSamples;
+    }
+
+    /** Removes test data after the run (mirrors BenchmarkWorker.done() for the CLI path). */
+    private void removeTestData(boolean directLockKept) {
         if (App.autoRemoveData && App.dataDir != null) {
             String failure;
             try {
@@ -140,7 +148,5 @@ public class BenchmarkCallable implements Callable<Benchmark> {
                 App.msg("Data dir removed: " + App.dataDir);
             }
         }
-
-        App.nextSampleNumber += App.numOfSamples;
     }
 }

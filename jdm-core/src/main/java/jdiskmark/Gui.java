@@ -1603,9 +1603,10 @@ public final class Gui {
      */
     public static BenchmarkRunner.DirectLockChoice askDirectLockChoice(String location, String fileSystem) {
         final BenchmarkRunner.DirectLockChoice[] choice = { BenchmarkRunner.DirectLockChoice.CANCEL };
+        String onDrives = fileSystem != null ? "on " + fileSystem + " drives" : "on this drive";
         Runnable ask = () -> {
             String message = """
-                    Direct I/O works on %s, but on %s drives Java keeps Direct I/O
+                    Direct I/O works on %s, but %s Java keeps Direct I/O
                     test files locked until JDiskMark is closed (Windows only; NTFS
                     drives are not affected). The test data can't be deleted after
                     the run, so another benchmark on this drive won't run until
@@ -1616,10 +1617,11 @@ public final class Gui {
                     Keep Direct I/O: run as configured. The test data is removed
                         when JDiskMark closes.
                     Cancel Benchmark: don't run.
-                    """.formatted(location, fileSystem);
+                    """.formatted(location, onDrives);
             Object[] options = { "Use Buffered I/O", "Keep Direct I/O", "Cancel Benchmark" };
             int result = JOptionPane.showOptionDialog(mainFrame, message,
-                    "Direct I/O Locks Test Files on " + fileSystem, JOptionPane.DEFAULT_OPTION,
+                    "Direct I/O Locks Test Files" + (fileSystem != null ? " on " + fileSystem : ""),
+                    JOptionPane.DEFAULT_OPTION,
                     JOptionPane.WARNING_MESSAGE, null, options, options[0]);
             choice[0] = switch (result) {
                 case 0 -> BenchmarkRunner.DirectLockChoice.BUFFERED;

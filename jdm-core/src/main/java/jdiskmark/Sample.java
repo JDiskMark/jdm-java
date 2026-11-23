@@ -242,7 +242,7 @@ public class Sample {
                 MemorySegment.copy(MemorySegment.ofArray(bRunner.blockArr), 0, segment, 0, blockSize);
                 totalBytesWritten = 0;
                 for (int b = 0; b < numOfBlocks; b++) {
-                    if (bRunner.listener.isCancelled()) break;
+                    if (bRunner.isStopping()) break;
                     long blockIndex = (bRunner.config.blockOrder == RANDOM) ?
                             Util.randInt(0, numOfBlocks - 1) : b;
                     long byteOffset = base + blockIndex * blockSize;
@@ -292,7 +292,7 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
         long totalBytesWritten = 0;
         
         for (int b = 0; b < numOfBlocks; b++) {
-            if (bRunner.listener.isCancelled()) break;
+            if (bRunner.isStopping()) break;
             
             long byteOffset = base + (long) b * blockSize;
             int written = fc.write(segment.asByteBuffer(), byteOffset);
@@ -346,7 +346,7 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
                 MemorySegment segment = arena.allocate(blockSize, byteAlignment);
                 totalBytesRead = 0;
                 for (int b = 0; b < numOfBlocks; b++) {
-                    if (bRunner.listener.isCancelled()) break;
+                    if (bRunner.isStopping()) break;
                     long blockIndex = (bRunner.config.blockOrder == RANDOM) ? Util.randInt(0, (int)(numOfBlocks - 1)) : b;
                     long byteOffset = base + blockIndex * blockSize;
                     int read = fc.read(segment.asByteBuffer(), byteOffset);
@@ -394,6 +394,7 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
                 cause instanceof IOException io ? io : new IOException(cause));
     }
 
+    /** Buffered retry after a Direct I/O write/read error; aborts the run if it can't open. */
     private static FileChannel openWithoutDirect(File testFile,
             Set<OpenOption> originalOptions) {
         Set<OpenOption> fallback = new HashSet<>(originalOptions);
@@ -405,7 +406,7 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
                     + Util.describeIoError(e);
             Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, msg, e);
             App.err(msg);
-            return null;
+            throw new UncheckedIOException(msg, e);
         }
     }
 }
