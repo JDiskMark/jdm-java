@@ -181,12 +181,17 @@ public class SmartEscalation {
     /**
      * True when the elevated agent can be used for the cache drop: the agent
      * script is installed next to {@code smartctl.exe} in a protected location
-     * (see {@link #isProtectedLocation}).
+     * (see {@link #isProtectedLocation}) and EmptyStandbyList.exe is installed
+     * next to its folder, so a partial install never shows a UAC prompt.
      */
     public static boolean isAvailable(String smartctlPath) {
         if (smartctlPath == null) return false;
         Path script = resolveAgentScript(smartctlPath);
-        return script != null && isProtectedLocation(script);
+        if (script == null || script.getParent() == null || script.getParent().getParent() == null) {
+            return false;
+        }
+        Path esbl = script.getParent().getParent().resolve(App.ESBL_EXE);
+        return Files.isRegularFile(esbl) && isProtectedLocation(script);
     }
 
     /** Opt-in for developer builds outside Program Files: {@code -Djdm.devElevation=true}. */

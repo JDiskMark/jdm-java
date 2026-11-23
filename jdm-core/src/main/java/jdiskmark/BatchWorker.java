@@ -113,6 +113,15 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
         try {
             config.applyProfileToApp(profile, drive);
 
+            if (BenchmarkRunner.previousWorkersRunning()) {
+                String err = "Threads of the previous benchmark are still running";
+                App.err(err);
+                return new BatchResult.RunResult(drive, driveModel, profile, null,
+                        isRetry ? BatchResult.DriveStatus.RETRIED_THEN_SKIPPED
+                                : BatchResult.DriveStatus.SKIPPED,
+                        err);
+            }
+
             File dataDir = App.dataDir;
             String cleanupFailure = Util.deleteDirectoryReason(dataDir);
             if (cleanupFailure != null) {

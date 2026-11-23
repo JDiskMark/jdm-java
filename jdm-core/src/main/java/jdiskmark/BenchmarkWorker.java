@@ -34,6 +34,8 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
     private long nextPublishTime = 0;
     /** Direct I/O was kept although it leaves the test files locked until exit (#257). */
     private volatile boolean directLockKept = false;
+    /** Set when doInBackground() begins; a worker cancelled before that never runs it. */
+    private volatile boolean started = false;
 
     BenchmarkRunner.BenchmarkListener listener = new BenchmarkRunner.BenchmarkListener() {
         @Override
@@ -103,6 +105,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
     
     @Override
     protected Benchmark doInBackground() throws Exception {
+        started = true;
         // Clear amber stale-highlights from any previous run's setting changes.
         // The new baseline will be App.benchmark.config once this run completes.
         Gui.clearAllStaleHighlights();
@@ -148,7 +151,18 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             // earlier than this on cancel, so it must not delete the test data
             directLockKept = bRunner.isDirectLockKept();
             removeTestData(bRunner);
+            if (isCancelled()) {
+                // done() leaves the state busy on cancel until the workers stopped
+                SwingUtilities.invokeLater(BenchmarkWorker::returnToIdle);
+            }
         }
+    }
+
+    /** Re-enables the controls once the benchmark thread has finished. */
+    private static void returnToIdle() {
+        Gui.unlockSampleAxis();
+        App.state = App.State.IDLE_STATE;
+        Gui.mainFrame.adjustSensitivity();
     }
 
     /** Test data could not be deleted although Direct I/O was kept (#257). */
@@ -279,9 +293,12 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        Gui.unlockSampleAxis();
-        App.state = App.State.IDLE_STATE;
-        Gui.mainFrame.adjustSensitivity();
+        // On cancel Swing calls done() before the benchmark thread has stopped;
+        // the controls stay busy until doInBackground() returns to idle. If it
+        // never started (cancelled first), there is nothing to wait for.
+        if (!isCancelled() || !started) {
+            returnToIdle();
+        }
         // Switch to Benchmarks tab and select the new record for immediate visibility,
         // or to Events when a problem was logged during the run.
         Gui.selectBottomTab(Gui.eventsNeedAttention ? Tabs.BOTTOM_EVENTS : Tabs.BOTTOM_BENCHMARKS);

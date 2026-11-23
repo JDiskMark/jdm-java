@@ -591,6 +591,15 @@ public class BenchmarkRunner {
         return cleanupSafe;
     }
 
+    /** Workers of an earlier run that did not stop in time; their files must stay untouched. */
+    private static volatile ExecutorService stuckWorkers = null;
+
+    /** True while workers of an earlier run are still running, so a new run must not start. */
+    public static boolean previousWorkersRunning() {
+        ExecutorService stuck = stuckWorkers;
+        return stuck != null && !stuck.isTerminated();
+    }
+
     private static final long WORKER_STOP_TIMEOUT_SECONDS = 60;
 
     /**
@@ -606,11 +615,13 @@ public class BenchmarkRunner {
         try {
             if (!executor.awaitTermination(WORKER_STOP_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
                 cleanupSafe = false;
+                stuckWorkers = executor;
                 logger.warning("Benchmark workers did not stop within "
                         + WORKER_STOP_TIMEOUT_SECONDS + " s; test data will be kept");
             }
         } catch (InterruptedException ie) {
             cleanupSafe = false;
+            stuckWorkers = executor;
             interrupted = true;
         } finally {
             if (interrupted) {
