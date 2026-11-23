@@ -631,8 +631,15 @@ public class App {
             activeProfile = previousActiveProfile;
         }
 
-        value = p.getProperty("benchmarkType", String.valueOf(benchmarkType));
-        benchmarkType = BenchmarkType.valueOf(value.toUpperCase());
+        value = p.getProperty("benchmarkType", benchmarkType.name());
+        try {
+            benchmarkType = BenchmarkType.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid benchmarkType value in properties: \"{0}\", using default: {1}",
+                    new Object[] { value, benchmarkType.name() });
+        }
 
         value = p.getProperty("multiFile", String.valueOf(multiFile));
         multiFile = Boolean.parseBoolean(value);
@@ -659,8 +666,15 @@ public class App {
         value = p.getProperty("autoReset", String.valueOf(autoReset));
         autoReset = Boolean.parseBoolean(value);
 
-        value = p.getProperty("blockSequence", String.valueOf(blockSequence));
-        blockSequence = BlockSequence.valueOf(value.toUpperCase());
+        value = p.getProperty("blockSequence", blockSequence.name());
+        try {
+            blockSequence = BlockSequence.valueOf(value.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            Logger.getLogger(App.class.getName()).log(
+                    Level.WARNING,
+                    "Invalid blockSequence value in properties: \"{0}\", using default: {1}",
+                    new Object[] { value, blockSequence.name() });
+        }
 
         value = p.getProperty("numOfSamples", String.valueOf(numOfSamples));
         numOfSamples = Integer.parseInt(value);
