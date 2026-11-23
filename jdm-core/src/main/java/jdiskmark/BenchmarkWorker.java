@@ -32,6 +32,8 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
     private final java.util.List<Sample> operationBuffer = new java.util.ArrayList<>();
     private final java.util.List<Sample> intervalBuffer  = new java.util.ArrayList<>();
     private long nextPublishTime = 0;
+    /** Direct I/O was kept although it leaves the test files locked until exit (#257). */
+    private boolean directLockKept = false;
 
     BenchmarkRunner.BenchmarkListener listener = new BenchmarkRunner.BenchmarkListener() {
         @Override
@@ -65,6 +67,11 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
         @Override
         public boolean attemptCacheDrop() { return Gui.dropCache(); }
+
+        @Override
+        public BenchmarkRunner.DirectLockChoice onDirectIoLocked(String location, String fileSystem) {
+            return Gui.askDirectLockChoice(location, fileSystem);
+        }
 
         @Override
         public void onOperationComplete() {
@@ -135,6 +142,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
         BenchmarkRunner bRunner = new BenchmarkRunner(listener, App.getConfig());
         Benchmark benchmark = bRunner.execute();
+        directLockKept = bRunner.isDirectLockKept();
 
         // Flush any samples still in the interval buffer for timed render modes.
         // PER_OPERATION is handled by onOperationComplete(); PER_SAMPLE needs no flush.
@@ -234,19 +242,33 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
         } catch (CancellationException e) {
             // Normal cancellation path — no error to report
         } catch (ExecutionException e) {
-            LOG.log(Level.SEVERE, "Benchmark failed", e.getCause());
-            App.err("Benchmark failed: " + e.getCause().getMessage());
+            if (e.getCause() instanceof CancellationException ce) {
+                msg(ce.getMessage());
+            } else {
+                LOG.log(Level.SEVERE, "Benchmark failed", e.getCause());
+                App.err("Benchmark failed: " + e.getCause().getMessage());
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+        boolean showLockNotice = false;
         if (App.autoRemoveData) {
-            Util.deleteDirectory(dataDir);
+            String failure = Util.deleteDirectoryReason(dataDir);
+            if (failure != null) {
+                App.err("Unable to delete test data: " + failure);
+                Util.removeDirectoryAfterExit(dataDir);
+                showLockNotice = directLockKept;
+            }
         }
         Gui.unlockSampleAxis();
         App.state = App.State.IDLE_STATE;
         Gui.mainFrame.adjustSensitivity();
-        // Switch to Benchmarks tab and select the new record for immediate visibility.
-        Gui.selectBottomTab(Tabs.BOTTOM_BENCHMARKS);
+        // Switch to Benchmarks tab and select the new record for immediate visibility,
+        // or to Events when a problem was logged during the run.
+        Gui.selectBottomTab(Gui.eventsNeedAttention ? Tabs.BOTTOM_EVENTS : Tabs.BOTTOM_BENCHMARKS);
         if (Gui.runPanel != null) Gui.runPanel.selectLastRow();
+        if (showLockNotice) {
+            Gui.showDirectLockKeptNotice(dataDir);
+        }
     }
 }

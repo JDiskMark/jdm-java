@@ -1,7 +1,14 @@
 package jdiskmark;
 
+import java.io.IOException;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileSystemException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.metricus.jdm.os.UtilsLinuxOs;
 import org.metricus.jdm.os.UtilsMacOs;
 import org.metricus.jdm.os.UtilsWinOs;
@@ -12,6 +19,36 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests divideIntoRanges() — pure logic, no I/O required.
  */
 class BenchmarkRunnerTest {
+
+    @Test
+    void deleteDirectoryReason_removesTreeAndReturnsNull(@TempDir Path tmp) throws IOException {
+        Path dataDir = tmp.resolve("jdm-data");
+        Files.createDirectories(dataDir.resolve("sub"));
+        Files.write(dataDir.resolve("testdata.jdm"), new byte[16]);
+        Files.write(dataDir.resolve("sub").resolve("testdata1.jdm"), new byte[16]);
+        assertNull(Util.deleteDirectoryReason(dataDir.toFile()));
+        assertFalse(Files.exists(dataDir));
+        assertNull(Util.deleteDirectoryReason(dataDir.toFile()));
+    }
+
+    @Test
+    void prepareDirectory_createsUsableDirectory(@TempDir Path tmp) {
+        Path dataDir = tmp.resolve("jdm-data");
+        assertNull(Util.prepareDirectory(dataDir.toFile()));
+        assertTrue(Files.isDirectory(dataDir));
+        assertNull(Util.prepareDirectory(dataDir.toFile()));
+    }
+
+    @Test
+    void describeIoError_givesReadableReason() {
+        assertEquals("access denied (file may be in use or pending delete)",
+                Util.describeIoError(new AccessDeniedException("G:\\jdm-data\\testdata.jdm")));
+        assertEquals("file not found",
+                Util.describeIoError(new NoSuchFileException("x")));
+        assertEquals("disk full",
+                Util.describeIoError(new FileSystemException("x", null, "disk full")));
+        assertEquals("boom", Util.describeIoError(new IOException("boom")));
+    }
 
     @Test
     void divideIntoRanges_singleThread_returnsOneRange() {

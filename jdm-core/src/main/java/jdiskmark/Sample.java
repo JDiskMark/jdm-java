@@ -14,6 +14,7 @@ import com.sun.nio.file.ExtendedOpenOption;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.UncheckedIOException;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
@@ -226,22 +227,7 @@ public class Sample {
         try {
             initialFc = FileChannel.open(testFile.toPath(), options);
         } catch (UnsupportedOperationException | IOException e) {
-            // If direct I/O was requested, try falling back to buffered I/O
-            if (options.contains(ExtendedOpenOption.DIRECT)) {
-                bRunner.disableDirectIo("Direct I/O open failed or unsupported: " + e.getMessage());
-                options.remove(ExtendedOpenOption.DIRECT);
-                try {
-                    initialFc = FileChannel.open(testFile.toPath(), options);
-                } catch (IOException ex) {
-                    Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Failed to open FileChannel on fallback", ex);
-                    App.err("Failed to open FileChannel, aborting measurement");
-                    return;
-                }
-            } else {
-                // If it wasn't a Direct I/O issue, it's a fatal IO error (e.g., disk full, permissions)
-                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Fatal error opening FileChannel", e);
-                return;
-            }
+            initialFc = openFallbackOrAbort(testFile, options, e, bRunner);
         }
         
         boolean directRetried = false;
@@ -346,22 +332,7 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
         try {
             initialFc = FileChannel.open(testFile.toPath(), options);
         } catch (UnsupportedOperationException | IOException e) {
-            // If direct I/O was requested, try falling back to buffered I/O
-            if (options.contains(ExtendedOpenOption.DIRECT)) {
-                bRunner.disableDirectIo("Direct I/O open failed or unsupported: " + e.getMessage());
-                options.remove(ExtendedOpenOption.DIRECT);
-                try {
-                    initialFc = FileChannel.open(testFile.toPath(), options);
-                } catch (IOException ex) {
-                    Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Failed to open FileChannel on fallback", ex);
-                    App.err("Failed to open FileChannel, aborting measurement");
-                    return;
-                }
-            } else {
-                // If it wasn't a Direct I/O issue, it's a fatal IO error (e.g., disk full, permissions)
-                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Fatal error opening FileChannel", e);
-                return;
-            }
+            initialFc = openFallbackOrAbort(testFile, options, e, bRunner);
         }
         
         boolean directRetried = false;
@@ -399,6 +370,30 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
         bwMbSec = ((double) totalBytesRead / (double) MEGABYTE) / sec;
     }
 
+    /**
+     * Retries a failed open without Direct I/O. Direct I/O is only blamed when
+     * the buffered retry succeeds; otherwise the real open error is reported
+     * and the operation is aborted.
+     */
+    private static FileChannel openFallbackOrAbort(File testFile, Set<OpenOption> options,
+            Exception cause, BenchmarkRunner bRunner) {
+        if (options.remove(ExtendedOpenOption.DIRECT)) {
+            try {
+                FileChannel fc = FileChannel.open(testFile.toPath(), options);
+                bRunner.disableDirectIo("Direct I/O open failed or unsupported: "
+                        + Util.describeIoError(cause));
+                return fc;
+            } catch (IOException ex) {
+                cause = ex;
+            }
+        }
+        String msg = "Cannot open test file " + testFile + ": " + Util.describeIoError(cause);
+        Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, msg, cause);
+        App.err(msg);
+        throw new UncheckedIOException(msg,
+                cause instanceof IOException io ? io : new IOException(cause));
+    }
+
     private static FileChannel openWithoutDirect(File testFile,
             Set<OpenOption> originalOptions) {
         Set<OpenOption> fallback = new HashSet<>(originalOptions);
@@ -406,9 +401,10 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
         try {
             return FileChannel.open(testFile.toPath(), fallback);
         } catch (IOException e) {
-            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE,
-                    "Buffered I/O fallback failed", e);
-            App.err("Failed to open FileChannel for buffered I/O fallback");
+            String msg = "Cannot open test file " + testFile + " for buffered I/O fallback: "
+                    + Util.describeIoError(e);
+            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, msg, e);
+            App.err(msg);
             return null;
         }
     }

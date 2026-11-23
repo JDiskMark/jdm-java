@@ -147,6 +147,8 @@ public final class MainFrame extends javax.swing.JFrame {
         // auto scroll the text area.
         DefaultCaret caret = (DefaultCaret)msgTextArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+        msgTextArea.addPropertyChangeListener("highlighter",
+                e -> javax.swing.SwingUtilities.invokeLater(this::reapplyEventHighlights));
         
         
         // Build the left-side main navigation tab pane on all platforms.
@@ -919,8 +921,12 @@ public final class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_multiFileCheckBoxMenuItemActionPerformed
 
     private void deleteDataMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteDataMenuItemActionPerformed
-        Util.deleteDirectory(App.dataDir);
-        App.msg("Data dir " + App.dataDir + " has been deleted.");
+        String failure = Util.deleteDirectoryReason(App.dataDir);
+        if (failure != null) {
+            App.err("Unable to delete test data: " + failure);
+        } else {
+            App.msg("Data dir " + App.dataDir + " has been deleted.");
+        }
     }//GEN-LAST:event_deleteDataMenuItemActionPerformed
 
     private void resetSequenceMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetSequenceMenuItemActionPerformed
@@ -1161,6 +1167,73 @@ public final class MainFrame extends javax.swing.JFrame {
     public void msg(String message) {
         msgTextArea.append(message + '\n');
     }
+
+    /** Appends an error to the Events log, highlighted red. */
+    public void err(String message) {
+        appendHighlighted(message, true);
+    }
+
+    /** Appends a warning to the Events log, highlighted amber. */
+    public void warn(String message) {
+        appendHighlighted(message, false);
+    }
+
+    private record EventHighlight(javax.swing.text.Position start,
+            javax.swing.text.Position end, boolean error) {}
+
+    private final java.util.List<EventHighlight> eventHighlights = new java.util.ArrayList<>();
+
+    /** Red or amber, stronger on light Events backgrounds; resolved at paint time so theme changes apply. */
+    private final class EventHighlightPainter
+            extends javax.swing.text.DefaultHighlighter.DefaultHighlightPainter {
+        private final boolean error;
+
+        EventHighlightPainter(boolean error) {
+            super(null);
+            this.error = error;
+        }
+
+        @Override
+        public java.awt.Color getColor() {
+            java.awt.Color bg = msgTextArea.getBackground();
+            boolean light = bg == null
+                    || 0.299 * bg.getRed() + 0.587 * bg.getGreen() + 0.114 * bg.getBlue() > 128;
+            int alpha = light ? 150 : 110;
+            return error
+                    ? new java.awt.Color(0xE5, 0x39, 0x35, alpha)
+                    : new java.awt.Color(0xFF, 0xA0, 0x00, alpha);
+        }
+    }
+
+    private void appendHighlighted(String message, boolean error) {
+        javax.swing.text.Document doc = msgTextArea.getDocument();
+        int start = doc.getLength();
+        msgTextArea.append(message + '\n');
+        try {
+            EventHighlight h = new EventHighlight(doc.createPosition(start),
+                    doc.createPosition(start + message.length()), error);
+            eventHighlights.add(h);
+            addEventHighlight(h);
+        } catch (javax.swing.text.BadLocationException e) {
+            // the highlight is cosmetic; the message is already in the log
+        }
+    }
+
+    private void addEventHighlight(EventHighlight h) throws javax.swing.text.BadLocationException {
+        msgTextArea.getHighlighter().addHighlight(h.start().getOffset(), h.end().getOffset(),
+                new EventHighlightPainter(h.error()));
+    }
+
+    /** A theme change installs a new highlighter on the Events log, dropping its highlights. */
+    private void reapplyEventHighlights() {
+        for (EventHighlight h : eventHighlights) {
+            try {
+                addEventHighlight(h);
+            } catch (javax.swing.text.BadLocationException e) {
+                // text was cleared; nothing to highlight
+            }
+        }
+    }
     
     public void applyTestParams() {
         if (Gui.controlPanel != null) {
@@ -1174,6 +1247,8 @@ public final class MainFrame extends javax.swing.JFrame {
     }
     
     public void clearMessages() {
+        eventHighlights.clear();
+        msgTextArea.getHighlighter().removeAllHighlights();
         msgTextArea.setText("");
     }
     

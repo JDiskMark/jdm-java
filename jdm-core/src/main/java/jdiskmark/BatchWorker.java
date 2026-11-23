@@ -113,10 +113,24 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
             config.applyProfileToApp(profile, drive);
 
             File dataDir = App.dataDir;
-            if (dataDir.exists()) {
-                Util.deleteDirectory(dataDir);
+            String cleanupFailure = Util.deleteDirectoryReason(dataDir);
+            if (cleanupFailure != null) {
+                String err = "Unable to delete existing test data: " + cleanupFailure;
+                App.err(err);
+                return new BatchResult.RunResult(drive, driveModel, profile, null,
+                        isRetry ? BatchResult.DriveStatus.RETRIED_THEN_SKIPPED
+                                : BatchResult.DriveStatus.SKIPPED,
+                        err);
             }
-            dataDir.mkdirs();
+            String dirFailure = Util.prepareDirectory(dataDir);
+            if (dirFailure != null) {
+                String err = "Unable to create test data folder: " + dirFailure;
+                App.err(err);
+                return new BatchResult.RunResult(drive, driveModel, profile, null,
+                        isRetry ? BatchResult.DriveStatus.RETRIED_THEN_SKIPPED
+                                : BatchResult.DriveStatus.SKIPPED,
+                        err);
+            }
 
             if (!DriveChecker.validateTargetDirectory(App.locationDir, false)) {
                 return new BatchResult.RunResult(drive, driveModel, profile, null,
@@ -195,7 +209,11 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
                     err);
         } finally {
             if (App.dataDir != null && App.dataDir.exists()) {
-                Util.deleteDirectory(App.dataDir);
+                String failure = Util.deleteDirectoryReason(App.dataDir);
+                if (failure != null) {
+                    LOG.log(Level.WARNING, "Unable to delete test data: {0}", failure);
+                    Util.removeDirectoryAfterExit(App.dataDir);
+                }
             }
         }
     }

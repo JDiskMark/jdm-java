@@ -91,7 +91,7 @@ public class BenchmarkCallable implements Callable<Benchmark> {
         Benchmark benchmark = bRunner.execute();
 
         // 4. Persistence & Export
-        handlePostBenchmark(benchmark);
+        handlePostBenchmark(benchmark, bRunner.isDirectLockKept());
 
         long duration = System.currentTimeMillis() - start;
         System.out.println(); 
@@ -100,7 +100,7 @@ public class BenchmarkCallable implements Callable<Benchmark> {
         return benchmark;
     }
 
-    private void handlePostBenchmark(Benchmark benchmark) {
+    private void handlePostBenchmark(Benchmark benchmark, boolean directLockKept) {
         // In CLI mode we intentionally do not retain benchmarks/operations in App.*
         // In-memory history is managed by other modes; persistence here is via DB/JSON only.
 
@@ -126,21 +126,18 @@ public class BenchmarkCallable implements Callable<Benchmark> {
         // Remove test data after save/export are complete so no results are lost.
         // Mirrors BenchmarkWorker.done() for the CLI execution path.
         if (App.autoRemoveData && App.dataDir != null) {
-            boolean removed = false;
-            String failureReason = null;
+            String failure;
             try {
-                removed = Util.deleteDirectory(App.dataDir);
-                if (!removed) {
-                    failureReason = "deleteDirectory returned false";
-                }
+                failure = Util.deleteDirectoryReason(App.dataDir);
             } catch (RuntimeException e) {
-                failureReason = e.getMessage();
+                failure = App.dataDir + ": " + e.getMessage();
             }
-            if (App.verbose || !removed) {
-                App.msg(removed
-                        ? "Data dir removed: " + App.dataDir
-                        : "Unable to remove data dir: " + App.dataDir
-                                + (failureReason != null ? " (" + failureReason + ")" : ""));
+            if (failure != null) {
+                App.err("Unable to delete test data: " + failure
+                        + (directLockKept ? " (kept Direct I/O: the file is removed when JDiskMark exits)" : ""));
+                Util.removeDirectoryAfterExit(App.dataDir);
+            } else if (App.verbose) {
+                App.msg("Data dir removed: " + App.dataDir);
             }
         }
 

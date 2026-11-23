@@ -7,6 +7,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### added
 - #232 dynamic hiding of benchmark progress bar
+- #257 handle direct io test file locks on windows FAT32/exFAT drives, remember selected drive
 
 
 ### Planned/Proposed

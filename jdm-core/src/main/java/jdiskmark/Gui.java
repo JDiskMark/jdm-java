@@ -114,6 +114,8 @@ public final class Gui {
     /** Teal used when the runner changed a setting automatically during a run. */
     static Color BADGE_AUTO_BG = new Color(0x0E, 0x7C, 0x9A);
     static Color BADGE_AUTO_FG = Color.WHITE;
+    /** Set when an error or warning is logged during a run; the run then ends on the Events tab. */
+    public static volatile boolean eventsNeedAttention = false;
     /** Run whose settings were auto-adjusted; highlights only apply while it is shown. */
     private static Benchmark autoRun = null;
     private static String directIoAutoReason = null;
@@ -1592,6 +1594,62 @@ public final class Gui {
                 return;
             }
         }
+    }
+
+    /**
+     * Asks how to proceed when Direct I/O would keep the test files locked
+     * until JDiskMark exits (#257). Called from the benchmark thread; closing
+     * the dialog cancels the benchmark.
+     */
+    public static BenchmarkRunner.DirectLockChoice askDirectLockChoice(String location, String fileSystem) {
+        final BenchmarkRunner.DirectLockChoice[] choice = { BenchmarkRunner.DirectLockChoice.CANCEL };
+        Runnable ask = () -> {
+            String message = """
+                    Direct I/O works on %s, but on %s drives Java keeps Direct I/O
+                    test files locked until JDiskMark is closed (Windows only; NTFS
+                    drives are not affected). The test data can't be deleted after
+                    the run, so another benchmark on this drive won't run until
+                    JDiskMark is restarted.
+
+                    Use Buffered I/O: turn Direct I/O off. The disk cache must be
+                        cleared before READ (automatic when running as admin).
+                    Keep Direct I/O: run as configured. The test data is removed
+                        when JDiskMark closes.
+                    Cancel Benchmark: don't run.
+                    """.formatted(location, fileSystem);
+            Object[] options = { "Use Buffered I/O", "Keep Direct I/O", "Cancel Benchmark" };
+            int result = JOptionPane.showOptionDialog(mainFrame, message,
+                    "Direct I/O Locks Test Files on " + fileSystem, JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.WARNING_MESSAGE, null, options, options[0]);
+            choice[0] = switch (result) {
+                case 0 -> BenchmarkRunner.DirectLockChoice.BUFFERED;
+                case 1 -> BenchmarkRunner.DirectLockChoice.KEEP;
+                default -> BenchmarkRunner.DirectLockChoice.CANCEL;
+            };
+        };
+        try {
+            if (javax.swing.SwingUtilities.isEventDispatchThread()) {
+                ask.run();
+            } else {
+                javax.swing.SwingUtilities.invokeAndWait(ask);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            Logger.getLogger(Gui.class.getName()).log(Level.WARNING, "Direct I/O lock dialog failed", e);
+        }
+        return choice[0];
+    }
+
+    /** Explains, after a run that kept Direct I/O, why the test data is still there (#257). */
+    public static void showDirectLockKeptNotice(File dataDir) {
+        if (mainFrame == null) return;
+        JOptionPane.showMessageDialog(mainFrame, """
+                The test data in %s is still locked by Java because Direct I/O
+                was kept on this drive. It is removed when JDiskMark closes.
+
+                Restart JDiskMark before running another benchmark on this drive.
+                """.formatted(dataDir), "Test Data Locked", JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**
