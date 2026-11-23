@@ -6,6 +6,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -160,7 +161,7 @@ public final class UtilsWinOs {
 
     private static String normalizeDriveLetter(String driveLetter) {
         if (driveLetter == null) return null;
-        String trimmed = driveLetter.trim().toUpperCase();
+        String trimmed = driveLetter.trim().toUpperCase(Locale.ROOT);
         if (trimmed.length() != 1 || trimmed.charAt(0) < 'A' || trimmed.charAt(0) > 'Z') {
             return null;
         }
