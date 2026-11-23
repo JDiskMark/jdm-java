@@ -108,7 +108,7 @@ public class RunBenchmarkCommand implements Callable<Integer> {
     boolean directEnable = false;
 
     @Option(names = {"--direct-lock"},
-            description = "Windows FAT32 drives: what to do when Direct I/O would keep test files "
+            description = "Windows FAT32/exFAT drives: what to do when Direct I/O would keep test files "
                     + "locked until JDiskMark exits: buffered (Direct I/O off; clear the disk "
                     + "cache before READ) or keep (keep Direct I/O; test data is removed on exit).")
     String directLock;

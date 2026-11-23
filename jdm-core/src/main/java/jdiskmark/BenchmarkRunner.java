@@ -93,6 +93,8 @@ public class BenchmarkRunner {
     int firstSample;
     byte[] blockArr; // random write pattern, also the legacy io buffer
     final AtomicBoolean directDisabled = new AtomicBoolean(false);
+    /** Badge reason from the first disableDirectIo() call, re-applied after the run's mark reset. */
+    private volatile String directDisabledMsg = null;
     final AtomicBoolean flushNoted = new AtomicBoolean(false);
 
     public static int[][] divideIntoRanges(int startIndex, int endIndex, int numThreads) {
@@ -169,6 +171,12 @@ public class BenchmarkRunner {
         // capture the render mode chosen at the time this run starts
         benchmark.setRenderMode(App.rmOption);
         Gui.resetAutoAdjusted(benchmark);
+        // Less likely path: checkDirectIoLock() runs before the reset above, so
+        // re-mark a Direct I/O change it made. Normally disableDirectIo() marks
+        // the badge itself, since it is called after this reset.
+        if (directDisabledMsg != null) {
+            Gui.markDirectIoAuto(directDisabledMsg);
+        }
 
         int startingSample = App.nextSampleNumber;
         int endingSample = App.nextSampleNumber + config.numSamples;
@@ -294,6 +302,7 @@ public class BenchmarkRunner {
         config.setDirectIoEnabled(false);
         App.directEnable = false;
         String msg = reason + ". Direct I/O disabled, using buffered I/O.";
+        directDisabledMsg = msg;
         Gui.markDirectIoAuto(msg);
         Gui.syncIoOptionMenus();
         logger.warning(msg);
@@ -313,9 +322,10 @@ public class BenchmarkRunner {
     public boolean isDirectLockKept() { return directLockKept; }
 
     /**
-     * On Windows, FAT32 drives keep a file opened with
+     * On Windows, FAT32 and exFAT drives keep a file opened with
      * {@link ExtendedOpenOption#DIRECT} locked inside the JVM after the channel
-     * is closed, so it can't be deleted or re-created until JDiskMark exits.
+     * is closed (the JDK's setDirect0 leaks a ReOpenFile handle), so it can't
+     * be deleted or re-created until JDiskMark exits.
      * Probes once per location and asks the listener how to proceed.
      *
      * @throws CancellationException when the benchmark should not run
