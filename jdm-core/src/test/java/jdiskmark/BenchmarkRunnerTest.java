@@ -21,6 +21,23 @@ import static org.junit.jupiter.api.Assertions.*;
 class BenchmarkRunnerTest {
 
     @Test
+    void directProbeKey_distinguishesVolumesOnSameLocation(@TempDir Path tmp) {
+        BenchmarkRunner.DirectProbeKey key = BenchmarkRunner.directProbeKey(tmp);
+        assertEquals(tmp, key.location());
+        assertEquals(key, BenchmarkRunner.directProbeKey(tmp));
+        assertNotEquals(new BenchmarkRunner.DirectProbeKey(tmp, 1),
+                new BenchmarkRunner.DirectProbeKey(tmp, 2));
+    }
+
+    @Test
+    void directProbeKey_toleratesMissingLocation(@TempDir Path tmp) {
+        Path missing = tmp.resolve("not-mounted");
+        BenchmarkRunner.DirectProbeKey key = BenchmarkRunner.directProbeKey(missing);
+        assertEquals(missing, key.location());
+        assertNull(key.volumeSerial());
+    }
+
+    @Test
     void deleteDirectoryReason_removesTreeAndReturnsNull(@TempDir Path tmp) throws IOException {
         Path dataDir = tmp.resolve("jdm-data");
         Files.createDirectories(dataDir.resolve("sub"));
