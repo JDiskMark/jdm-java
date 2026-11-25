@@ -1062,10 +1062,10 @@ public class App {
         }
 
         // 3. check enough disk space for the configured benchmark
-        if (!DriveChecker.checkDiskSpace(locationDir)) {
+        if (!DriveChecker.checkDiskSpace(locationDir, true)) {
             return;
         }
-        if (!DriveChecker.checkMaxFileSize(locationDir)) {
+        if (!DriveChecker.checkMaxFileSize(locationDir, true)) {
             return;
         }
 

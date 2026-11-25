@@ -72,9 +72,10 @@ public class DriveChecker {
      * account for filesystem metadata, journaling, and rounding.
      *
      * @param locationDir the benchmark target directory
+     * @param showPopup use dialog popup (GUI only; batch passes false)
      * @return {@code true} if there is enough space, {@code false} otherwise
      */
-    public static boolean checkDiskSpace(File locationDir) {
+    public static boolean checkDiskSpace(File locationDir, boolean showPopup) {
         // single-file holds one region per sample, so both modes need the full size
         long requiredBytes = (long) App.blockSizeKb * App.numOfBlocks * App.numOfSamples * App.KILOBYTE;
 
@@ -99,7 +100,7 @@ public class DriveChecker {
         LOG.log(Level.WARNING, msg);
         App.err(msg);
 
-        if (App.mode == App.Mode.GUI && Gui.mainFrame != null) {
+        if (showPopup && App.mode == App.Mode.GUI && Gui.mainFrame != null) {
             JOptionPane.showMessageDialog(Gui.mainFrame, msg,
                     "Insufficient disk space", JOptionPane.WARNING_MESSAGE);
         }
@@ -128,9 +129,10 @@ public class DriveChecker {
      * single sample can't be split (#253).
      *
      * @param locationDir the benchmark target directory
+     * @param showPopup use dialog popup (GUI only; batch passes false)
      * @return {@code true} if every test file fits, {@code false} otherwise
      */
-    public static boolean checkMaxFileSize(File locationDir) {
+    public static boolean checkMaxFileSize(File locationDir, boolean showPopup) {
         long sampleBytes = (long) App.blockSizeKb * App.numOfBlocks * App.KILOBYTE;
         String fsType = BenchmarkRunner.fileSystemType(locationDir.toPath());
         long maxBytes = maxFileBytes(fsType);
@@ -149,7 +151,7 @@ public class DriveChecker {
         LOG.log(Level.WARNING, msg);
         App.err(msg);
 
-        if (App.mode == App.Mode.GUI && Gui.mainFrame != null) {
+        if (showPopup && App.mode == App.Mode.GUI && Gui.mainFrame != null) {
             JOptionPane.showMessageDialog(Gui.mainFrame, msg,
                     "File size limit", JOptionPane.WARNING_MESSAGE);
         }

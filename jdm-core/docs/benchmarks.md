@@ -646,7 +646,7 @@ Both modes need `numSamples × numBlocks × blockSize` of free space (`DriveChec
 FAT12/16/32 limit a file to 4 GiB − 1 bytes (`DriveChecker.maxFileBytes()`, matched on `FileStore.type()`: `FAT32`/`FAT` on Windows, `vfat`/`msdos` on Linux, `msdos` on macOS). exFAT, NTFS, ext4, APFS etc. are treated as unlimited. Profiles such as Max Throughput (25.6 GB), Video Exporting and Media Playback use Multi-File off and exceed it ([#253](https://github.com/JDiskMark/jdm-java/issues/253)):
 
 - **Multi-File off:** when the single-file data would exceed the limit, `BenchmarkRunner.planSingleFileSplit()` splits it into `testdata.jdm`, `testdata.part1.jdm`, `testdata.part2.jdm`, … each holding `samplesPerFile = floor(limit / regionSize)` whole sample regions (Max Throughput: 15 samples per 3.75 GiB file, 7 files). An event names the file system and the split. Sample *N* uses file `(N − firstSample) / samplesPerFile` at region `(N − firstSample) % samplesPerFile`. The profile, its settings and the Multi-File badge are unchanged, so results stay comparable across drives.
-- **One sample larger than the limit** (custom `numBlocks × blockSize` ≥ 4 GiB) can't be split; `DriveChecker.checkMaxFileSize()` rejects the run before it starts (batch: the drive is skipped with the reason).
+- **One sample larger than the limit** (custom `numBlocks × blockSize` ≥ 4 GiB) can't be split; `DriveChecker.checkMaxFileSize()` rejects the run before it starts (batch: the drive is skipped with the reason, without a dialog; the disk space check behaves the same).
 
 #### Failed Samples
 
