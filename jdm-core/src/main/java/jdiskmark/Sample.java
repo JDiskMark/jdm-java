@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 // See https://github.com/JDiskMark/jdm-java/issues/190
 // on approaches to formally resolve
 import com.sun.nio.file.ExtendedOpenOption;
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -134,13 +135,24 @@ public class Sample {
         if (App.multiFile) {
             return new File(bRunner.config.testDir + File.separator + "testdata" + sampleNum + ".jdm");
         }
-        return new File(bRunner.config.testDir + File.separator + "testdata.jdm");
+        int part = bRunner.fileIndex(sampleNum);
+        String name = (part == 0) ? "testdata.jdm" : "testdata.part" + part + ".jdm";
+        return new File(bRunner.config.testDir + File.separator + name);
     }
     
     /** Start of this sample's region; in single-file mode each sample has its own region. */
     long regionOffset(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
         if (App.multiFile) return 0;
-        return (long) (sampleNum - bRunner.firstSample) * numOfBlocks * blockSize;
+        return (long) bRunner.regionInFile(sampleNum) * numOfBlocks * blockSize;
+    }
+    
+    /** Reports a failed sample; the operation aborts instead of recording 0 MB/s (#253). */
+    private UncheckedIOException sampleFailed(String action, File testFile, IOException e) {
+        String msg = action + " failed for sample " + sampleNum + " on " + testFile + ": "
+                + Util.describeIoError(e);
+        Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, msg, e);
+        App.err(msg);
+        return new UncheckedIOException(msg, e);
     }
     
     // pre jdk 25 io api
@@ -166,7 +178,7 @@ public class Sample {
                 if (bRunner.flushWriteSamples()) rAccFile.getFD().sync();
             }
         } catch (IOException ex) {
-            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
+            throw sampleFailed("Write", testFile, ex);
         }
         long endTime = System.nanoTime();
         long elapsedTimeNs = endTime - startTime;
@@ -197,7 +209,7 @@ public class Sample {
                 }
             }
         } catch (IOException ex) {
-            Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
+            throw sampleFailed("Read", testFile, ex);
         }
         long endTime = System.nanoTime();
         long elapsedTimeNs = endTime - startTime;
@@ -230,10 +242,11 @@ public class Sample {
             initialFc = openFallbackOrAbort(testFile, options, e, bRunner);
         }
         
-        boolean directRetried = false;
+        // Direct I/O is only blamed when the buffered retry succeeds (#253)
+        IOException directError = null;
         retry:
         while (true) {
-            FileChannel retryFc = directRetried
+            FileChannel retryFc = (directError != null)
                     ? openWithoutDirect(testFile, options)
                     : initialFc;
             if (retryFc == null) break;
@@ -251,16 +264,17 @@ public class Sample {
                     totalBytesWritten += written;
                     bRunner.updateWriteProgress();
                 }
+                if (directError != null) {
+                    bRunner.disableDirectIo("Direct I/O write failed: " + Util.describeIoError(directError));
+                }
                 if (bRunner.flushWriteSamples()) fc.force(false);
                 break retry;
             } catch (IOException e) {
-                if (!directRetried && options.contains(ExtendedOpenOption.DIRECT)) {
-                    bRunner.disableDirectIo("Direct I/O write failed: " + e.getMessage());
-                    directRetried = true;
+                if (directError == null && options.contains(ExtendedOpenOption.DIRECT)) {
+                    directError = e;
                     continue retry;
                 }
-                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
-                break retry;
+                throw sampleFailed("Write", testFile, e);
             }
         }
         long elapsedTimeNs = System.nanoTime() - startTime;
@@ -335,10 +349,11 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
             initialFc = openFallbackOrAbort(testFile, options, e, bRunner);
         }
         
-        boolean directRetried = false;
+        // Direct I/O is only blamed when the buffered retry succeeds (#253)
+        IOException directError = null;
         retry:
         while (true) {
-            FileChannel retryFc = directRetried
+            FileChannel retryFc = (directError != null)
                     ? openWithoutDirect(testFile, options)
                     : initialFc;
             if (retryFc == null) break;
@@ -350,18 +365,22 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
                     long blockIndex = (bRunner.config.blockOrder == RANDOM) ? Util.randInt(0, (int)(numOfBlocks - 1)) : b;
                     long byteOffset = base + blockIndex * blockSize;
                     int read = fc.read(segment.asByteBuffer(), byteOffset);
+                    if (read < 0) {
+                        throw new EOFException("test data ends before offset " + byteOffset);
+                    }
                     totalBytesRead += read;
                     bRunner.updateReadProgress();
                 }
+                if (directError != null) {
+                    bRunner.disableDirectIo("Direct I/O read failed: " + Util.describeIoError(directError));
+                }
                 break retry;
             } catch (IOException e) {
-                if (!directRetried && options.contains(ExtendedOpenOption.DIRECT)) {
-                    bRunner.disableDirectIo("Direct I/O read failed: " + e.getMessage());
-                    directRetried = true;
+                if (directError == null && options.contains(ExtendedOpenOption.DIRECT)) {
+                    directError = e;
                     continue retry;
                 }
-                Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, e);
-                break retry;
+                throw sampleFailed("Read", testFile, e);
             }
         }
         long elapsedTimeNs = System.nanoTime() - startTime;

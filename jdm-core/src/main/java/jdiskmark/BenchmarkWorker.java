@@ -120,6 +120,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
                 App.blockSizeKb,
                 App.numOfThreads,
                 App.locationDir != null ? App.locationDir.getAbsolutePath() : "(none)");
+        LOG.info(startedMsg);
         if (App.mode == App.Mode.GUI) {
             SwingUtilities.invokeLater(() -> msg(startedMsg));
         } else {
@@ -171,12 +172,15 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
     private void removeTestData(BenchmarkRunner bRunner) {
         if (!App.autoRemoveData) return;
         if (!bRunner.isCleanupSafe()) {
-            App.err("Test data in " + dataDir + " was kept because benchmark threads were "
-                    + "still running; it is removed at the start of the next run.");
+            String msg = "Test data in " + dataDir + " was kept because benchmark threads were "
+                    + "still running; it is removed at the start of the next run.";
+            LOG.severe(msg);
+            App.err(msg);
             return;
         }
         String failure = Util.deleteDirectoryReason(dataDir);
         if (failure != null) {
+            LOG.log(Level.SEVERE, "Unable to delete test data: {0}", failure);
             App.err("Unable to delete test data: " + failure);
             Util.removeDirectoryAfterExit(dataDir);
             showLockNotice = directLockKept;
@@ -221,6 +225,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             }
             completedMsg = result.toString();
         }
+        LOG.info(completedMsg);
         if (App.mode == App.Mode.GUI) {
             SwingUtilities.invokeLater(() -> msg(completedMsg));
         } else {
@@ -285,6 +290,7 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             // Normal cancellation path — no error to report
         } catch (ExecutionException e) {
             if (e.getCause() instanceof CancellationException ce) {
+                LOG.info(ce.getMessage());
                 msg(ce.getMessage());
             } else {
                 LOG.log(Level.SEVERE, "Benchmark failed", e.getCause());

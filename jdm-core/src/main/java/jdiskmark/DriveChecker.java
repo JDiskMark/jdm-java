@@ -2,6 +2,7 @@ package jdiskmark;
 
 import javax.swing.JOptionPane;
 import java.io.File;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -71,9 +72,10 @@ public class DriveChecker {
      * account for filesystem metadata, journaling, and rounding.
      *
      * @param locationDir the benchmark target directory
+     * @param showPopup use dialog popup (GUI only; batch passes false)
      * @return {@code true} if there is enough space, {@code false} otherwise
      */
-    public static boolean checkDiskSpace(File locationDir) {
+    public static boolean checkDiskSpace(File locationDir, boolean showPopup) {
         // single-file holds one region per sample, so both modes need the full size
         long requiredBytes = (long) App.blockSizeKb * App.numOfBlocks * App.numOfSamples * App.KILOBYTE;
 
@@ -98,9 +100,60 @@ public class DriveChecker {
         LOG.log(Level.WARNING, msg);
         App.err(msg);
 
-        if (App.mode == App.Mode.GUI && Gui.mainFrame != null) {
+        if (showPopup && App.mode == App.Mode.GUI && Gui.mainFrame != null) {
             JOptionPane.showMessageDialog(Gui.mainFrame, msg,
                     "Insufficient disk space", JOptionPane.WARNING_MESSAGE);
+        }
+        return false;
+    }
+
+    /** FAT12/16/32 limit a file to 4 GiB - 1 bytes. */
+    static final long FAT_MAX_FILE_BYTES = 4L * App.GIGABYTE - 1;
+
+    /**
+     * Largest file the file system type allows ({@link java.nio.file.FileStore#type()}:
+     * "FAT32"/"FAT" on Windows, "vfat"/"msdos" on Linux, "msdos" on macOS),
+     * or {@link Long#MAX_VALUE} when there is no practical limit.
+     */
+    static long maxFileBytes(String fsType) {
+        if (fsType == null) return Long.MAX_VALUE;
+        return switch (fsType.toLowerCase(Locale.ROOT)) {
+            case "fat", "fat12", "fat16", "fat32", "vfat", "msdos" -> FAT_MAX_FILE_BYTES;
+            default -> Long.MAX_VALUE;
+        };
+    }
+
+    /**
+     * Checks that one sample fits in the file system's maximum file size.
+     * Single-file data larger than the limit is split by the runner, but a
+     * single sample can't be split (#253).
+     *
+     * @param locationDir the benchmark target directory
+     * @param showPopup use dialog popup (GUI only; batch passes false)
+     * @return {@code true} if every test file fits, {@code false} otherwise
+     */
+    public static boolean checkMaxFileSize(File locationDir, boolean showPopup) {
+        long sampleBytes = (long) App.blockSizeKb * App.numOfBlocks * App.KILOBYTE;
+        String fsType = BenchmarkRunner.fileSystemType(locationDir.toPath());
+        long maxBytes = maxFileBytes(fsType);
+        if (sampleBytes <= maxBytes) {
+            return true;
+        }
+
+        String msg = String.format(
+                "Sample size exceeds the %s maximum file size.%n"
+              + "Sample : %s (%d blocks x %d KB)%n"
+              + "Maximum: %s on %s%n"
+              + "Reduce the number of blocks or the block size.",
+                fsType, formatBytes(sampleBytes), App.numOfBlocks, App.blockSizeKb,
+                formatBytes(maxBytes), locationDir.getAbsolutePath());
+
+        LOG.log(Level.WARNING, msg);
+        App.err(msg);
+
+        if (showPopup && App.mode == App.Mode.GUI && Gui.mainFrame != null) {
+            JOptionPane.showMessageDialog(Gui.mainFrame, msg,
+                    "File size limit", JOptionPane.WARNING_MESSAGE);
         }
         return false;
     }

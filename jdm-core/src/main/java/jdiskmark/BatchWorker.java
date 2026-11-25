@@ -149,11 +149,18 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
                         "Target directory validation failed");
             }
 
-            if (!DriveChecker.checkDiskSpace(App.locationDir)) {
+            if (!DriveChecker.checkDiskSpace(App.locationDir, false)) {
                 return new BatchResult.RunResult(drive, driveModel, profile, null,
                         isRetry ? BatchResult.DriveStatus.RETRIED_THEN_SKIPPED
                                 : BatchResult.DriveStatus.SKIPPED,
                         "Insufficient disk space");
+            }
+
+            if (!DriveChecker.checkMaxFileSize(App.locationDir, false)) {
+                return new BatchResult.RunResult(drive, driveModel, profile, null,
+                        isRetry ? BatchResult.DriveStatus.RETRIED_THEN_SKIPPED
+                                : BatchResult.DriveStatus.SKIPPED,
+                        "Sample size exceeds the file system's maximum file size");
             }
 
             App.nextSampleNumber = 1;
