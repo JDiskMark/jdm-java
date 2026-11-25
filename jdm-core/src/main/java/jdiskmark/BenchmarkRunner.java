@@ -311,8 +311,26 @@ public class BenchmarkRunner {
         App.warn(msg);
     }
 
-    /** Release probe result per location; probed once per session. */
-    private static final Map<Path, Boolean> DIRECT_RELEASE_PROBES = new ConcurrentHashMap<>();
+    /**
+     * Release probe result per location and volume; probed once per session.
+     * The volume serial is part of the key so a different drive mounted on the
+     * same letter is probed again instead of reusing the previous drive's result.
+     * Locations whose volume serial can't be read are probed on every run.
+     */
+    private static final Map<DirectProbeKey, Boolean> DIRECT_RELEASE_PROBES = new ConcurrentHashMap<>();
+
+    record DirectProbeKey(Path location, Object volumeSerial) {}
+
+    /** Key for {@link #DIRECT_RELEASE_PROBES}; the serial is {@code null} when it can't be read. */
+    static DirectProbeKey directProbeKey(Path location) {
+        Object serial;
+        try {
+            serial = Files.getFileStore(location).getAttribute("volume:vsn");
+        } catch (IOException | UnsupportedOperationException | IllegalArgumentException e) {
+            serial = null;
+        }
+        return new DirectProbeKey(location, serial);
+    }
 
     private static final String DIRECT_LOCK_REASON = "Direct I/O works on %s, but %s "
             + "Java keeps Direct I/O test files locked until JDiskMark closes so they can't be "
@@ -328,7 +346,7 @@ public class BenchmarkRunner {
      * {@link ExtendedOpenOption#DIRECT} locked inside the JVM after the channel
      * is closed (the JDK's setDirect0 leaks a ReOpenFile handle), so it can't
      * be deleted or re-created until JDiskMark exits.
-     * Probes once per location and asks the listener how to proceed.
+     * Probes once per location and volume, and asks the listener how to proceed.
      *
      * @throws CancellationException when the benchmark should not run
      */
@@ -339,7 +357,12 @@ public class BenchmarkRunner {
         }
         Path testDir = Path.of(config.testDir).toAbsolutePath();
         Path location = testDir.getParent() != null ? testDir.getParent() : testDir;
-        if (DIRECT_RELEASE_PROBES.computeIfAbsent(location, BenchmarkRunner::probeDirectRelease)) {
+        DirectProbeKey probeKey = directProbeKey(location);
+        boolean released = probeKey.volumeSerial() == null
+                ? probeDirectRelease(location)
+                : DIRECT_RELEASE_PROBES.computeIfAbsent(probeKey,
+                        key -> probeDirectRelease(key.location()));
+        if (released) {
             return;
         }
         String fileSystem = fileSystemType(location);

@@ -21,6 +21,23 @@ import static org.junit.jupiter.api.Assertions.*;
 class BenchmarkRunnerTest {
 
     @Test
+    void directProbeKey_distinguishesVolumesOnSameLocation(@TempDir Path tmp) {
+        BenchmarkRunner.DirectProbeKey key = BenchmarkRunner.directProbeKey(tmp);
+        assertEquals(tmp, key.location());
+        assertEquals(key, BenchmarkRunner.directProbeKey(tmp));
+        assertNotEquals(new BenchmarkRunner.DirectProbeKey(tmp, 1),
+                new BenchmarkRunner.DirectProbeKey(tmp, 2));
+    }
+
+    @Test
+    void directProbeKey_toleratesMissingLocation(@TempDir Path tmp) {
+        Path missing = tmp.resolve("not-mounted");
+        BenchmarkRunner.DirectProbeKey key = BenchmarkRunner.directProbeKey(missing);
+        assertEquals(missing, key.location());
+        assertNull(key.volumeSerial());
+    }
+
+    @Test
     void deleteDirectoryReason_removesTreeAndReturnsNull(@TempDir Path tmp) throws IOException {
         Path dataDir = tmp.resolve("jdm-data");
         Files.createDirectories(dataDir.resolve("sub"));
@@ -124,6 +141,27 @@ class BenchmarkRunnerTest {
 
         assertNull(UtilsWinOs.parseUsbIdsFromPnpId("USBSTOR\\DISK&VEN_SANDISK&PROD_3.2GEN1\\123"));
         assertNull(UtilsWinOs.parseUsbIdsFromPnpId(null));
+    }
+
+    @Test
+    void mapUsbVersion_mapsSpeedAndV2Flags() {
+        assertEquals("3.2 Gen 2", UtilsWinOs.mapUsbVersion(2, 0x07, true));
+        assertEquals("3.2 Gen 2", UtilsWinOs.mapUsbVersion(2, 0x04, true));
+        assertEquals("3.0", UtilsWinOs.mapUsbVersion(2, 0x03, true));
+        assertEquals("3.0", UtilsWinOs.mapUsbVersion(2, 0x01, true));
+        assertEquals("2.0", UtilsWinOs.mapUsbVersion(2, 0, true));
+        assertEquals("1.1", UtilsWinOs.mapUsbVersion(1, 0, true));
+        assertEquals("1.0", UtilsWinOs.mapUsbVersion(0, 0, true));
+        assertEquals("3.0", UtilsWinOs.mapUsbVersion(3, 0, true));
+        assertNull(UtilsWinOs.mapUsbVersion(99, 0, true));
+    }
+
+    @Test
+    void mapUsbVersion_doesNotReportHighSpeedAsUsb2WithoutV2() {
+        assertNull(UtilsWinOs.mapUsbVersion(2, 0, false));
+        assertNull(UtilsWinOs.mapUsbVersion(2, 0x07, false));
+        assertEquals("3.0", UtilsWinOs.mapUsbVersion(3, 0, false));
+        assertEquals("1.1", UtilsWinOs.mapUsbVersion(1, 0, false));
     }
 
     @Test

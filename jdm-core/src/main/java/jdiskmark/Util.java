@@ -548,14 +548,17 @@ public class Util {
 
     /**
      * Returns the USB version string for the device at {@code path}
-     * (e.g. "3.0", "3.2 Gen 2"). Linux and macOS supported; returns {@code null}
-     * on other platforms or when the device is not USB-attached.
+     * (e.g. "3.0", "3.2 Gen 2"). Linux, macOS, and Windows supported; returns
+     * {@code null} on other platforms or when the device is not USB-attached.
      */
     public static String getUsbVersion(Path path) {
         if (App.isLinux()) {
             return UtilsLinuxOs.getUsbVersion(path);
         } else if (App.isMacOs()) {
             return UtilsMacOs.getUsbVersion(path);
+        } else if (App.isWindows()) {
+            String driveLetter = UtilOs.getDriveLetterWindows(path);
+            if (driveLetter != null) return UtilsWinOs.getUsbVersion(driveLetter);
         }
         return null;
     }

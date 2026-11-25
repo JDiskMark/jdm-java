@@ -6,7 +6,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased] — v1.0.0
 
 ### added
-- #232 dynamic hiding of benchmark progress bar
+- #252 include usb vendor id and product id in model number
+- #256 improve usb interface version detect in windows
 - #257 handle direct io test file locks on windows FAT32/exFAT drives, remember selected drive
 - #258 Windows cache drop automated via UAC priv escalation
 
