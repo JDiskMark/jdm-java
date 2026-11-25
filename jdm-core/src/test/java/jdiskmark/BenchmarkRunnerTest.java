@@ -121,6 +121,44 @@ class BenchmarkRunnerTest {
     }
 
     @Test
+    void maxFileBytes_limitsFatFamilyOnly() {
+        long fat = DriveChecker.FAT_MAX_FILE_BYTES;
+        assertEquals(4L * App.GIGABYTE - 1, fat);
+        for (String type : List.of("FAT32", "FAT", "vfat", "msdos")) {
+            assertEquals(fat, DriveChecker.maxFileBytes(type), type);
+        }
+        for (String type : List.of("NTFS", "exFAT", "ext4", "apfs")) {
+            assertEquals(Long.MAX_VALUE, DriveChecker.maxFileBytes(type), type);
+        }
+        assertEquals(Long.MAX_VALUE, DriveChecker.maxFileBytes(null));
+    }
+
+    @Test
+    void samplesPerFile_splitsOnlyPastTheLimit() {
+        long fat = DriveChecker.FAT_MAX_FILE_BYTES;
+        long maxThroughputRegion = 256L * App.MEGABYTE; // 256 blocks x 1024 KB
+        assertEquals(15, BenchmarkRunner.samplesPerFile(maxThroughputRegion, 100, fat));
+        assertEquals(0, BenchmarkRunner.samplesPerFile(maxThroughputRegion, 15, fat));
+        assertEquals(0, BenchmarkRunner.samplesPerFile(maxThroughputRegion, 100, Long.MAX_VALUE));
+        assertEquals(1, BenchmarkRunner.samplesPerFile(fat + 1, 2, fat));
+    }
+
+    @Test
+    void fileIndexAndRegion_mapSamplesToSplitFiles() {
+        BenchmarkRunner runner = new BenchmarkRunner(null, null);
+        runner.firstSample = 101;
+        assertEquals(0, runner.fileIndex(150));
+        assertEquals(49, runner.regionInFile(150));
+        runner.samplesPerFile = 15;
+        assertEquals(0, runner.fileIndex(115));
+        assertEquals(14, runner.regionInFile(115));
+        assertEquals(1, runner.fileIndex(116));
+        assertEquals(0, runner.regionInFile(116));
+        assertEquals(6, runner.fileIndex(200));
+        assertEquals(9, runner.regionInFile(200));
+    }
+
+    @Test
     void formatDriveModelWithUsbIds_appendsWhenPresent() {
         Util.UsbIds ids = new Util.UsbIds("0781", "5583");
         assertEquals("SanDisk 3.2Gen1 [0781:5583]",

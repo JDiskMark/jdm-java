@@ -93,6 +93,8 @@ public class BenchmarkRunner {
     long effectiveAlignment;
     /** First sample number of this run; single-file regions are offset from it. */
     int firstSample;
+    /** Sample regions per single-file data file; 0 when one file holds them all (#253). */
+    int samplesPerFile = 0;
     byte[] blockArr; // random write pattern, also the legacy io buffer
     final AtomicBoolean directDisabled = new AtomicBoolean(false);
     /** Badge reason from the first disableDirectIo() call, re-applied after the run's mark reset. */
@@ -183,6 +185,7 @@ public class BenchmarkRunner {
         int startingSample = App.nextSampleNumber;
         int endingSample = App.nextSampleNumber + config.numSamples;
         firstSample = startingSample;
+        planSingleFileSplit();
         int[][] tRanges = divideIntoRanges(startingSample, endingSample, config.numThreads);
 
         if (config.gcHintsEnabled && !listener.isCancelled()) {
@@ -382,21 +385,60 @@ public class BenchmarkRunner {
             case BUFFERED -> disableDirectIo(reason);
             case KEEP -> {
                 directLockKept = true;
-                App.warn(reason + ". Keeping Direct I/O as requested; the test data is "
-                        + "removed when JDiskMark closes.");
+                String msg = reason + ". Keeping Direct I/O as requested; the test data is "
+                        + "removed when JDiskMark closes.";
+                logger.warning(msg);
+                App.warn(msg);
             }
             case CANCEL -> throw new CancellationException("Benchmark cancelled: " + reason + ".");
         }
     }
 
     /** File system type of {@code dir} (e.g. "FAT32"), or {@code null} when it can't be read. */
-    private static String fileSystemType(Path dir) {
+    static String fileSystemType(Path dir) {
         try {
             String type = Files.getFileStore(dir).type();
             return (type == null || type.isBlank()) ? null : type;
         } catch (IOException e) {
             return null;
         }
+    }
+
+    /**
+     * Single-file data larger than the file system's maximum file size (FAT32:
+     * 4 GiB - 1) is split into several files, each holding whole sample regions.
+     */
+    private void planSingleFileSplit() {
+        samplesPerFile = 0;
+        if (App.multiFile) return;
+        String fsType = fileSystemType(Path.of(config.testDir).toAbsolutePath());
+        long maxBytes = DriveChecker.maxFileBytes(fsType);
+        int perFile = samplesPerFile((long) config.numBlocks * blockSize, config.numSamples, maxBytes);
+        if (perFile == 0) return;
+        samplesPerFile = perFile;
+        int files = (config.numSamples + perFile - 1) / perFile;
+        String msg = fsType + " limits files to 4 GiB, so the single-file test data is split into "
+                + files + " files of up to " + perFile + " samples.";
+        logger.info(msg);
+        App.msg(msg);
+    }
+
+    /** Sample regions per data file, or 0 when all of them fit in one file. */
+    static int samplesPerFile(long regionBytes, int numSamples, long maxFileBytes) {
+        if (regionBytes <= 0 || regionBytes * numSamples <= maxFileBytes) return 0;
+        return (int) Math.max(1, maxFileBytes / regionBytes);
+    }
+
+    /** Single-file data file holding {@code sampleNum}; 0 is {@code testdata.jdm}. */
+    int fileIndex(int sampleNum) {
+        int region = sampleNum - firstSample;
+        return samplesPerFile > 0 ? region / samplesPerFile : 0;
+    }
+
+    /** Region of {@code sampleNum} within its single-file data file. */
+    int regionInFile(int sampleNum) {
+        int region = sampleNum - firstSample;
+        return samplesPerFile > 0 ? region % samplesPerFile : region;
     }
 
     /**

@@ -135,8 +135,10 @@ public class BenchmarkCallable implements Callable<Benchmark> {
     private void removeTestData(BenchmarkRunner runner) {
         if (App.autoRemoveData && App.dataDir != null) {
             if (!runner.isCleanupSafe()) {
-                App.err("Test data in " + App.dataDir + " was kept because benchmark threads were "
-                        + "still running; it is removed at the start of the next run.");
+                String msg = "Test data in " + App.dataDir + " was kept because benchmark threads were "
+                        + "still running; it is removed at the start of the next run.";
+                logger.severe(msg);
+                App.err(msg);
                 return;
             }
             boolean directLockKept = runner.isDirectLockKept();
@@ -147,8 +149,10 @@ public class BenchmarkCallable implements Callable<Benchmark> {
                 failure = App.dataDir + ": " + e.getMessage();
             }
             if (failure != null) {
-                App.err("Unable to delete test data: " + failure
-                        + (directLockKept ? " (kept Direct I/O: the file is removed when JDiskMark exits)" : ""));
+                String msg = "Unable to delete test data: " + failure
+                        + (directLockKept ? " (kept Direct I/O: the file is removed when JDiskMark exits)" : "");
+                logger.severe(msg);
+                App.err(msg);
                 Util.removeDirectoryAfterExit(App.dataDir);
             } else if (App.verbose) {
                 App.msg("Data dir removed: " + App.dataDir);

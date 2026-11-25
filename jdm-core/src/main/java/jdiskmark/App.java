@@ -1065,6 +1065,9 @@ public class App {
         if (!DriveChecker.checkDiskSpace(locationDir)) {
             return;
         }
+        if (!DriveChecker.checkMaxFileSize(locationDir)) {
+            return;
+        }
 
         // 4. update state
         Gui.eventsNeedAttention = false;

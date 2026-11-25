@@ -595,7 +595,7 @@ Direct IO is only trusted if it is actually in effect. `BenchmarkRunner` turns i
   - **GUI**: a dialog offers *Use Buffered I/O* (Direct IO off; cache must be cleared before READ), *Keep Direct I/O* (run as configured; after the run a notice explains the test data is removed when JDiskMark closes and a restart is needed before the next run on that drive), or *Cancel Benchmark*.
   - **CLI**: `--direct-lock=buffered|keep` picks the same choices; without it the run aborts with a message naming the flag (exit code 1).
   - **Batch**: no prompt; the drive is skipped with the reason,
-- a sample fails to open or write with `ExtendedOpenOption.DIRECT` and the buffered retry succeeds (if the buffered retry also fails, the real open error is reported and the operation aborts), or
+- a sample fails to open, write or read with `ExtendedOpenOption.DIRECT` and the buffered retry succeeds. If the buffered retry also fails the error is not a Direct IO problem (e.g. `File too large`, `No space left on device`, unexpected end of file): Direct IO stays on, the real error is reported and the operation aborts ([#253](https://github.com/JDiskMark/jdm-java/issues/253)), or
 - a one-block `O_DIRECT` probe read of the first test file fails (checked before READ).
 
 `BenchmarkRunner.disableDirectIo()` runs once per run: it clears
@@ -640,6 +640,17 @@ Every sample reads and writes its own data so READ samples are never served from
 - **Multi-File off:** one file (`testdata.jdm`) holding a region per sample, the aggregate of the multi-file data. Sample *N* uses offset `(N − firstSample) × numBlocks × blockSize` (`Sample.regionOffset()`); random block order stays within that region. Read preparation does not truncate the shared file because threads fill different regions concurrently.
 
 Both modes need `numSamples × numBlocks × blockSize` of free space (`DriveChecker.checkDiskSpace`). Multi-File is never changed automatically.
+
+#### File System Maximum File Size
+
+FAT12/16/32 limit a file to 4 GiB − 1 bytes (`DriveChecker.maxFileBytes()`, matched on `FileStore.type()`: `FAT32`/`FAT` on Windows, `vfat`/`msdos` on Linux, `msdos` on macOS). exFAT, NTFS, ext4, APFS etc. are treated as unlimited. Profiles such as Max Throughput (25.6 GB), Video Exporting and Media Playback use Multi-File off and exceed it ([#253](https://github.com/JDiskMark/jdm-java/issues/253)):
+
+- **Multi-File off:** when the single-file data would exceed the limit, `BenchmarkRunner.planSingleFileSplit()` splits it into `testdata.jdm`, `testdata.part1.jdm`, `testdata.part2.jdm`, … each holding `samplesPerFile = floor(limit / regionSize)` whole sample regions (Max Throughput: 15 samples per 3.75 GiB file, 7 files). An event names the file system and the split. Sample *N* uses file `(N − firstSample) / samplesPerFile` at region `(N − firstSample) % samplesPerFile`. The profile, its settings and the Multi-File badge are unchanged, so results stay comparable across drives.
+- **One sample larger than the limit** (custom `numBlocks × blockSize` ≥ 4 GiB) can't be split; `DriveChecker.checkMaxFileSize()` rejects the run before it starts (batch: the drive is skipped with the reason).
+
+#### Failed Samples
+
+A sample whose write or read fails (both engines), or whose read hits end of file, is not recorded as a 0 MB/s sample: the error is logged with `App.err()`, the operation aborts and no benchmark is recorded. Before #253 such samples were averaged in, so a run that hit the FAT32 limit reported ~16% of the real speed as `COMPLETED`.
 
 > Before this change single-file mode reused one sample-sized region for every sample (since the initial version). That was harmless with Direct IO, but without it READ samples after the first were served from the page cache.
 
