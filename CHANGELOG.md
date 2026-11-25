@@ -10,6 +10,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - #256 improve usb interface version detect in windows
 - #257 handle direct io test file locks on windows FAT32/exFAT drives, remember selected drive
 - #258 Windows cache drop automated via UAC priv escalation
+- #253 fix single-file benchmarks over 4 GiB on FAT32
 
 ### Planned/Proposed
 - [#118](https://github.com/JDiskMark/jdm-java/issues/118) test interlock or OAuth upload
