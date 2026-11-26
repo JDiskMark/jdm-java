@@ -61,23 +61,23 @@ public class DrivePanel extends JPanel {
 
     private static class DriveEntry {
         final File   root;
-        final String pathLabel;    // "/ [SSD]"
         final String capacity;     // "467 GB"
+        String       typeDesc;     // OS description, replaced by "USB Drive" once USB is detected
         String       model = "loading\u2026";   // filled in asynchronously
 
         DriveEntry(File root) {
             this.root = root;
-            double totalGb  = root.getTotalSpace() / (double) App.GIGABYTE;
-            String typeDesc = Util.getDriveType(root);
-            String type     = (typeDesc != null && !typeDesc.isBlank())
-                              ? "  [" + typeDesc + "]" : "";
-            pathLabel = root.getAbsolutePath() + type;
-            capacity  = String.format("%.0f GB", totalGb);
+            double totalGb = root.getTotalSpace() / (double) App.GIGABYTE;
+            typeDesc = Util.getDriveType(root);
+            capacity = String.format("%.0f GB", totalGb);
         }
 
         @Override public String toString() {
-            // path   —   model   —   capacity
-            return pathLabel + "   \u2014   " + model + "   \u2014   " + capacity;
+            // path [type]   —   model   —   capacity
+            String type = (typeDesc != null && !typeDesc.isBlank())
+                          ? "  [" + typeDesc + "]" : "";
+            return root.getAbsolutePath() + type
+                    + "   \u2014   " + model + "   \u2014   " + capacity;
         }
     }
 
@@ -387,18 +387,25 @@ public class DrivePanel extends JPanel {
         }.execute();
     }
 
-    /** Fetches the drive model in the background, then repaints the combo. */
+    /**
+     * Fetches the drive model and bus type in the background, then repaints
+     * the combo. USB drives that the OS reports as fixed disks (e.g. USB SSDs
+     * shown as "Local Disk" on Windows) are relabelled "USB Drive".
+     */
     private void fetchDriveModel(DriveEntry entry) {
-        new SwingWorker<String, Void>() {
+        new SwingWorker<String[], Void>() {
             @Override
-            protected String doInBackground() {
-                return Util.getDriveModel(entry.root);
+            protected String[] doInBackground() {
+                String model   = Util.getDriveModel(entry.root);
+                String busType = Util.getBusType(entry.root.toPath());
+                return new String[]{ model, busType };
             }
             @Override
             protected void done() {
                 try {
-                    String m = get();
-                    entry.model = (m != null && !m.isBlank()) ? m : "\u2014";
+                    String[] r = get();
+                    entry.model = (r[0] != null && !r[0].isBlank()) ? r[0] : "\u2014";
+                    if ("USB".equalsIgnoreCase(r[1])) entry.typeDesc = "USB Drive";
                 } catch (Exception ex) {
                     entry.model = "\u2014";
                 }
