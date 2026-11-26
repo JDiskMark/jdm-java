@@ -1567,17 +1567,53 @@ public final class Gui {
     
     private static final Logger SMART_LOG = Logger.getLogger(Gui.class.getName());
 
+    /** Latest drive title lookup; older lookups are discarded (EDT only). */
+    private static int driveTitleGeneration = 0;
+
+    /**
+     * Refreshes the drive panel and the chart drive title. Safe to call from
+     * any thread.
+     */
     static public void updateDiskInfo() {
-        String currentTitle = App.getDriveInfo();
-        boolean changed = displayedTitle != null
-                && !driveIdentity(displayedTitle).equals(driveIdentity(currentTitle));
-        // back on the plotted run's drive: restore its title so usage matches the data
-        chart.getTitle().setText((displayedTitle != null && !changed) ? displayedTitle : currentTitle);
-        setDriveChanged(changed);
-        setChartModifiedIndicator(settingsStale);
         if (drivePanel != null) {
             drivePanel.refresh();
         }
+        updateDriveTitle();
+    }
+
+    /**
+     * Looks up the selected drive's title (model, partition, usage) off the
+     * EDT, then updates the chart title and drive-changed indicator. Safe to
+     * call from any thread.
+     */
+    static void updateDriveTitle() {
+        runOnEdt(() -> {
+            int generation = ++driveTitleGeneration;
+            new javax.swing.SwingWorker<String, Void>() {
+                @Override
+                protected String doInBackground() {
+                    return App.getDriveInfo();
+                }
+
+                @Override
+                protected void done() {
+                    if (generation != driveTitleGeneration || chart == null) return;
+                    String currentTitle;
+                    try {
+                        currentTitle = get();
+                    } catch (InterruptedException | ExecutionException ex) {
+                        SMART_LOG.log(Level.WARNING, "drive title lookup failed", ex);
+                        return;
+                    }
+                    boolean changed = displayedTitle != null
+                            && !driveIdentity(displayedTitle).equals(driveIdentity(currentTitle));
+                    // back on the plotted run's drive: restore its title so usage matches the data
+                    chart.getTitle().setText((displayedTitle != null && !changed) ? displayedTitle : currentTitle);
+                    setDriveChanged(changed);
+                    setChartModifiedIndicator(settingsStale);
+                }
+            }.execute();
+        });
 
         // SMART data is fetched lazily via runSmart(), which is called
         // by the "Run SMART" button in SmartPanel and optionally after each

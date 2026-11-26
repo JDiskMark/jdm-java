@@ -10,7 +10,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
@@ -113,6 +115,12 @@ public class DrivePanel extends JPanel {
 
     /** Prevents combo listener from firing during a programmatic refresh(). */
     private boolean suppressComboEvents = false;
+
+    // Latest async request of each kind; older results are discarded (EDT only).
+    private int comboGeneration     = 0;
+    private int allDrivesGeneration = 0;
+    private int infoGeneration      = 0;
+    private int selectionGeneration = 0;
 
     // -----------------------------------------------------------------------
     // Constructor
@@ -338,37 +346,65 @@ public class DrivePanel extends JPanel {
     // Private helpers
     // -----------------------------------------------------------------------
 
+    /**
+     * Enumerates the drives off the EDT, then fills the combo and re-selects
+     * the entry for the current {@link App#locationDir}.
+     */
     private void populateCombo() {
-        // Suppress events: removeAllItems() and addItem() both fire ActionEvent,
-        // which would invoke applySelectedDrive() and overwrite App.locationDir.
-        suppressComboEvents = true;
-        try {
-            driveCombo.removeAllItems();
-            for (File root : listDriveRoots()) {
-                if (root.getTotalSpace() == 0) continue;
-                DriveEntry entry = new DriveEntry(root);
-                driveCombo.addItem(entry);
-                // Fetch the drive model in the background, then refresh the combo
-                new SwingWorker<String, Void>() {
-                    @Override
-                    protected String doInBackground() {
-                        return Util.getDriveModel(root);
-                    }
-                    @Override
-                    protected void done() {
-                        try {
-                            String m = get();
-                            entry.model = (m != null && !m.isBlank()) ? m : "\u2014";
-                        } catch (Exception ex) {
-                            entry.model = "\u2014";
-                        }
-                        driveCombo.repaint();
-                    }
-                }.execute();
+        int generation = ++comboGeneration;
+        new SwingWorker<List<DriveEntry>, Void>() {
+            @Override
+            protected List<DriveEntry> doInBackground() {
+                List<DriveEntry> entries = new ArrayList<>();
+                for (File root : listDriveRoots()) {
+                    if (root.getTotalSpace() == 0) continue;
+                    entries.add(new DriveEntry(root));
+                }
+                return entries;
             }
-        } finally {
-            suppressComboEvents = false;
-        }
+            @Override
+            protected void done() {
+                if (generation != comboGeneration) return;
+                List<DriveEntry> entries;
+                try {
+                    entries = get();
+                } catch (InterruptedException | ExecutionException ex) {
+                    LOG.log(Level.WARNING, "drive enumeration failed", ex);
+                    return;
+                }
+                // Suppress events: removeAllItems() and addItem() both fire ActionEvent,
+                // which would invoke applySelectedDrive() and overwrite App.locationDir.
+                suppressComboEvents = true;
+                try {
+                    driveCombo.removeAllItems();
+                    for (DriveEntry entry : entries) driveCombo.addItem(entry);
+                } finally {
+                    suppressComboEvents = false;
+                }
+                syncComboToLocation();
+                for (DriveEntry entry : entries) fetchDriveModel(entry);
+            }
+        }.execute();
+    }
+
+    /** Fetches the drive model in the background, then repaints the combo. */
+    private void fetchDriveModel(DriveEntry entry) {
+        new SwingWorker<String, Void>() {
+            @Override
+            protected String doInBackground() {
+                return Util.getDriveModel(entry.root);
+            }
+            @Override
+            protected void done() {
+                try {
+                    String m = get();
+                    entry.model = (m != null && !m.isBlank()) ? m : "\u2014";
+                } catch (Exception ex) {
+                    entry.model = "\u2014";
+                }
+                driveCombo.repaint();
+            }
+        }.execute();
     }
 
     private void syncComboToLocation() {
@@ -408,96 +444,141 @@ public class DrivePanel extends JPanel {
         // drive, even when it is read-only or otherwise not usable.
         refreshDriveInfo(entry.root);
 
-        File resolved = resolveLocationForRoot(entry.root);
-        if (resolved == null) {
-            return;
-        }
+        // Drive probes can stall on a waking USB drive, so they run off the EDT.
+        int generation = ++selectionGeneration;
+        new SwingWorker<File, Void>() {
+            private boolean valid;
 
-        if (!DriveChecker.validateTargetDirectory(resolved, true)) {
-            return;
-        }
+            @Override
+            protected File doInBackground() {
+                File resolved = resolveLocationForRoot(entry.root);
+                valid = resolved != null
+                        && DriveChecker.validateTargetDirectory(resolved, false);
+                return resolved;
+            }
 
-        App.setLocationDir(resolved);
-        App.saveConfig();
-        Gui.updateDiskInfo();
+            @Override
+            protected void done() {
+                if (generation != selectionGeneration) return;
+                File resolved;
+                try {
+                    resolved = get();
+                } catch (InterruptedException | ExecutionException ex) {
+                    LOG.log(Level.WARNING, "drive selection failed for " + entry.root, ex);
+                    return;
+                }
+                if (resolved == null) return;
+                // re-validate on the EDT so the failure dialog is shown
+                if (!valid && !DriveChecker.validateTargetDirectory(resolved, true)) return;
+
+                App.setLocationDir(resolved);
+                App.saveConfig();
+                pathField.setText(App.dataDir.getAbsolutePath());
+                Gui.updateDriveTitle();
+            }
+        }.execute();
     }
 
     private static File resolveLocationForRoot(File root) {
         return DriveChecker.resolveLocationForRoot(root);
     }
 
+    /** One All Drives table row, with space figures computed off the EDT. */
+    private record DriveRow(File root, Object[] cells) {}
+
     /**
-     * Populates the All Drives table. Each row includes the drive model,
-     * which is fetched asynchronously via a SwingWorker to avoid blocking
-     * the EDT.
+     * Populates the All Drives table. Drive enumeration and space queries run
+     * off the EDT; model, interface and filesystem are then fetched per row.
      */
     private void refreshAllDrivesTable() {
         if (allDrivesTableModel == null) return;
-        allDrivesTableModel.setRowCount(0);
+        int generation = ++allDrivesGeneration;
+        new SwingWorker<List<DriveRow>, Void>() {
+            @Override
+            protected List<DriveRow> doInBackground() {
+                List<DriveRow> rows = new ArrayList<>();
+                for (File root : listDriveRoots()) {
+                    long total = root.getTotalSpace();
+                    if (total == 0) continue;
+                    long free  = root.getFreeSpace();
+                    long used  = total - free;
 
-        for (File root : listDriveRoots()) {
-            long total = root.getTotalSpace();
-            long free  = root.getFreeSpace();
-            long used  = total - free;
-            if (total == 0) continue;
+                    double totalGb = total / (double) App.GIGABYTE;
+                    double usedGb  = used  / (double) App.GIGABYTE;
+                    double freeGb  = free  / (double) App.GIGABYTE;
+                    double pct     = 100.0 * used / total;
 
-            double totalGb = total / (double) App.GIGABYTE;
-            double usedGb  = used  / (double) App.GIGABYTE;
-            double freeGb  = free  / (double) App.GIGABYTE;
-            double pct     = 100.0 * used / total;
-
-            // Add row with placeholders — filled in asynchronously
-            int rowIndex = allDrivesTableModel.getRowCount();
-            allDrivesTableModel.addRow(new Object[]{
-                root.getAbsolutePath(),
-                "loading…",
-                "loading…",
-                "loading…",
-                Math.round(totalGb * 10.0) / 10.0,
-                Math.round(usedGb  * 10.0) / 10.0,
-                Math.round(freeGb  * 10.0) / 10.0,
-                (int) Math.round(pct)
-            });
-
-            // Fetch model, interface, and filesystem in background
-            final int row = rowIndex;
-            final File driveRoot = root;
-            new SwingWorker<String[], Void>() {
-                @Override
-                protected String[] doInBackground() {
-                    String model = Util.getDriveModel(driveRoot);
-                    String busType = Util.getBusType(driveRoot.toPath());
-                    String busDisplay = busType;
-                    if ("USB".equalsIgnoreCase(busType)) {
-                        String usbVer = Util.getUsbVersion(driveRoot.toPath());
-                        if (usbVer != null) busDisplay = busType + " " + usbVer;
-                    }
-                    String filesystem = Util.getFilesystem(driveRoot.toPath());
-                    return new String[]{ model, busDisplay, filesystem };
+                    rows.add(new DriveRow(root, new Object[]{
+                        root.getAbsolutePath(),
+                        "loading…",
+                        "loading…",
+                        "loading…",
+                        Math.round(totalGb * 10.0) / 10.0,
+                        Math.round(usedGb  * 10.0) / 10.0,
+                        Math.round(freeGb  * 10.0) / 10.0,
+                        (int) Math.round(pct)
+                    }));
                 }
-                @Override
-                protected void done() {
-                    try {
-                        String[] r = get();
-                        if (row < allDrivesTableModel.getRowCount()) {
-                            allDrivesTableModel.setValueAt(
-                                    (r[0] != null && !r[0].isBlank()) ? r[0] : "—", row, 1);
-                            allDrivesTableModel.setValueAt(
-                                    (r[1] != null && !r[1].isBlank()) ? r[1] : "—", row, 2);
-                            allDrivesTableModel.setValueAt(
-                                    (r[2] != null && !r[2].isBlank()) ? r[2] : "—", row, 3);
-                        }
-                    } catch (Exception ex) {
-                        LOG.log(Level.WARNING, "drive attribute lookup failed for " + driveRoot, ex);
-                        if (row < allDrivesTableModel.getRowCount()) {
-                            allDrivesTableModel.setValueAt("—", row, 1);
-                            allDrivesTableModel.setValueAt("—", row, 2);
-                            allDrivesTableModel.setValueAt("—", row, 3);
-                        }
+                return rows;
+            }
+            @Override
+            protected void done() {
+                if (generation != allDrivesGeneration) return;
+                List<DriveRow> rows;
+                try {
+                    rows = get();
+                } catch (InterruptedException | ExecutionException ex) {
+                    LOG.log(Level.WARNING, "drive enumeration failed", ex);
+                    return;
+                }
+                allDrivesTableModel.setRowCount(0);
+                for (DriveRow r : rows) {
+                    int rowIndex = allDrivesTableModel.getRowCount();
+                    allDrivesTableModel.addRow(r.cells());
+                    fetchDriveAttributes(r.root(), rowIndex, generation);
+                }
+            }
+        }.execute();
+    }
+
+    /** Fetches model, interface, and filesystem for one All Drives row in the background. */
+    private void fetchDriveAttributes(File driveRoot, int row, int generation) {
+        new SwingWorker<String[], Void>() {
+            @Override
+            protected String[] doInBackground() {
+                String model = Util.getDriveModel(driveRoot);
+                String busType = Util.getBusType(driveRoot.toPath());
+                String busDisplay = busType;
+                if ("USB".equalsIgnoreCase(busType)) {
+                    String usbVer = Util.getUsbVersion(driveRoot.toPath());
+                    if (usbVer != null) busDisplay = busType + " " + usbVer;
+                }
+                String filesystem = Util.getFilesystem(driveRoot.toPath());
+                return new String[]{ model, busDisplay, filesystem };
+            }
+            @Override
+            protected void done() {
+                if (generation != allDrivesGeneration) return;
+                try {
+                    String[] r = get();
+                    if (row < allDrivesTableModel.getRowCount()) {
+                        allDrivesTableModel.setValueAt(
+                                (r[0] != null && !r[0].isBlank()) ? r[0] : "—", row, 1);
+                        allDrivesTableModel.setValueAt(
+                                (r[1] != null && !r[1].isBlank()) ? r[1] : "—", row, 2);
+                        allDrivesTableModel.setValueAt(
+                                (r[2] != null && !r[2].isBlank()) ? r[2] : "—", row, 3);
+                    }
+                } catch (Exception ex) {
+                    LOG.log(Level.WARNING, "drive attribute lookup failed for " + driveRoot, ex);
+                    if (row < allDrivesTableModel.getRowCount()) {
+                        allDrivesTableModel.setValueAt("—", row, 1);
+                        allDrivesTableModel.setValueAt("—", row, 2);
+                        allDrivesTableModel.setValueAt("—", row, 3);
                     }
                 }
-            }.execute();
-        }
+            }
+        }.execute();
     }
 
     /**
@@ -539,6 +620,7 @@ public class DrivePanel extends JPanel {
         usageBar.setValue(0);
         usageBar.setString("…");
 
+        int generation = ++infoGeneration;
         new SwingWorker<String[], Void>() {
             @Override
             protected String[] doInBackground() {
@@ -572,6 +654,7 @@ public class DrivePanel extends JPanel {
 
             @Override
             protected void done() {
+                if (generation != infoGeneration) return;
                 try {
                     String[] r = get();
                     infoModelLabel.setText("Model: " + ((r[0] != null && !r[0].isBlank()) ? r[0] : "—"));
@@ -620,7 +703,6 @@ public class DrivePanel extends JPanel {
                         + File.separator + App.DATADIRNAME);
             }
             populateCombo();
-            syncComboToLocation();
             refreshAllDrivesTable();
             refreshDriveInfo();
         };
