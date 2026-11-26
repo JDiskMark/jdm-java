@@ -149,7 +149,10 @@ public class BatchPanel extends JPanel {
         driveSelectPanel.add(driveDeselectAll);
         JButton driveRefresh = new JButton("Refresh");
         driveRefresh.setToolTipText("Rescan drives");
-        driveRefresh.addActionListener(e -> populateDrives());
+        driveRefresh.addActionListener(e -> {
+            DriveDetailsCache.clear();
+            populateDrives();
+        });
         driveSelectPanel.add(Box.createHorizontalStrut(8));
         driveSelectPanel.add(driveRefresh);
         driveColumn.add(driveSelectPanel);
