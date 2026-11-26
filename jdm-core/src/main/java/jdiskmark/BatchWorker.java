@@ -10,6 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingWorker;
+import org.metricus.jdm.util.LockedTestData;
 
 public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
     private static final Logger LOG = Logger.getLogger(BatchWorker.class.getName());
@@ -17,11 +18,17 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
     private final BatchConfig config;
     private final File originalLocationDir;
     private final File originalDataDir;
+    /** Answer given once before the batch for drives with the Direct I/O lock (#268); null skips them. */
+    private volatile BenchmarkRunner.DirectLockChoice directLockChoice = null;
 
     public BatchWorker(BatchConfig config) {
         this.config = config;
         this.originalLocationDir = App.locationDir;
         this.originalDataDir = App.dataDir;
+    }
+
+    public void setDirectLockChoice(BenchmarkRunner.DirectLockChoice choice) {
+        this.directLockChoice = choice;
     }
 
     @Override
@@ -112,6 +119,11 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
         BenchmarkRunner bRunner = null;
         try {
             config.applyProfileToApp(profile, drive);
+            LockedTestData.awaitStartupCleanup();
+            // earlier Direct I/O test data on this drive is locked until exit; use a fresh folder (#268)
+            if (LockedTestData.hasLocked(App.locationDir)) {
+                App.dataDir = LockedTestData.nextRunDir(App.locationDir);
+            }
 
             if (BenchmarkRunner.previousWorkersRunning()) {
                 String err = "Threads of the previous benchmark are still running";
@@ -150,10 +162,13 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
             }
 
             if (!DriveChecker.checkDiskSpace(App.locationDir, false)) {
+                String held = LockedTestData.describe(App.locationDir);
                 return new BatchResult.RunResult(drive, driveModel, profile, null,
                         isRetry ? BatchResult.DriveStatus.RETRIED_THEN_SKIPPED
                                 : BatchResult.DriveStatus.SKIPPED,
-                        "Insufficient disk space");
+                        held == null ? "Insufficient disk space"
+                                : "Insufficient disk space: locked Direct I/O test data (" + held
+                                        + ") is freed when JDiskMark restarts");
             }
 
             if (!DriveChecker.checkMaxFileSize(App.locationDir, false)) {
@@ -183,6 +198,12 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
                 @Override
                 public boolean attemptCacheDrop() {
                     return Gui.dropCache();
+                }
+
+                @Override
+                public BenchmarkRunner.DirectLockChoice onDirectIoLocked(String location, String fileSystem) {
+                    BenchmarkRunner.DirectLockChoice choice = directLockChoice;
+                    return choice != null ? choice : App.directLockChoice;
                 }
             };
 
@@ -229,10 +250,15 @@ public class BatchWorker extends SwingWorker<BatchResult, BatchEvent> {
                     || (bRunner != null && !bRunner.isCleanupSafe())) {
                 LOG.log(Level.WARNING, "Test data in {0} kept: benchmark threads were still running", App.dataDir);
             } else if (App.dataDir != null && App.dataDir.exists()) {
+                boolean lockKept = bRunner != null && bRunner.isDirectLockKept();
+                long bytes = lockKept ? LockedTestData.sizeOf(App.dataDir) : 0;
                 String failure = Util.deleteDirectoryReason(App.dataDir);
                 if (failure != null) {
                     LOG.log(Level.WARNING, "Unable to delete test data: {0}", failure);
                     Util.removeDirectoryAfterExit(App.dataDir);
+                    if (lockKept) {
+                        LockedTestData.register(App.locationDir, App.dataDir, bytes);
+                    }
                 }
             }
         }

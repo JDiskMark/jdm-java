@@ -37,6 +37,7 @@ import jdiskmark.Benchmark.IOMode;
 import static jdiskmark.Benchmark.IOMode.READ;
 import static jdiskmark.Benchmark.IOMode.WRITE;
 import org.metricus.jdm.os.UtilsLinuxOs;
+import org.metricus.jdm.util.LockedTestData;
 
 public class BenchmarkRunner {
     
@@ -359,7 +360,8 @@ public class BenchmarkRunner {
             return;
         }
         Path testDir = Path.of(config.testDir).toAbsolutePath();
-        Path location = testDir.getParent() != null ? testDir.getParent() : testDir;
+        // the drive location, also when the test folder is jdm-data/run-N (#268)
+        Path location = LockedTestData.locationOf(testDir);
         DirectProbeKey probeKey = directProbeKey(location);
         boolean released = probeKey.volumeSerial() == null
                 ? probeDirectRelease(location)
