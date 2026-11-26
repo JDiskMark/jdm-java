@@ -147,5 +147,34 @@ sequenceDiagram
   same mount path, device node, file system and exact size are indistinguishable
   until ⟳ clears the cache.
 
+# Direct I/O file lock on Windows FAT32 / exFAT
+
+**Suspected JDK bug (#260, not yet filed):** on Windows, every
+`FileChannel.open(..., ExtendedOpenOption.DIRECT)` leaks a handle.
+`FileDispatcherImpl.setDirect0()` calls `ReOpenFile()` to query the sector size
+and never closes it. On FAT32/exFAT a deleted file stays pending-delete while
+any handle is open, so test files and their folder can't be deleted or
+re-created until JDiskMark exits. NTFS is unaffected. The handle lives in the
+JVM, so **closing JDiskMark frees it; no reboot is needed.** The same code is in
+Oracle JDK and Temurin (both OpenJDK builds). Verify with
+`java jdm-core/docs/repro/DirectIoLockRepro.java E:\` (exit code 1 = reproduced).
+
+**Current workarounds (#257):**
+- `BenchmarkRunner.checkDirectIoLock()` probes once per location and volume
+  serial whether a Direct I/O file can be released; only affected volumes go on.
+- The user picks how to proceed (`DirectLockChoice`): **Buffered** (Direct I/O
+  off, disk cache cleared before READ), **Keep** (Direct I/O kept, test data
+  removed after exit) or **Cancel**. The GUI asks via `Gui.askDirectLockChoice()`;
+  the CLI uses `--direct-lock=buffered|keep`.
+- Locked test data is registered with `Util.removeDirectoryAfterExit()`, which
+  deletes it from a separate process after the JVM exits.
+- Batch runs skip affected drives when Direct I/O is on.
+
+**Limits and planned work (#268):** only one Direct I/O run per affected drive
+per session (the next run can't delete `jdm-data`). Planned: separate test
+folder per run, ask once per batch, prompt to restart JDiskMark only when free
+space runs out, and clear leftover folders at startup. Remove the workarounds
+once a fixed JDK is the minimum.
+
 
 # 
