@@ -36,6 +36,7 @@ import jdiskmark.Benchmark.BlockSequence;
 
 import org.metricus.jdm.ui.Palette;
 import org.metricus.jdm.ui.Theme;
+import org.metricus.jdm.util.DriveDetailsCache;
 
 /**
  * Primary class for global variables.
@@ -1302,8 +1303,9 @@ public class App {
         if (locationDir == null) {
             return LOCATION_NOT_SELECTED_ERROR;
         }
-        String driveModel = Util.getDriveModel(locationDir);
-        String partitionId = Util.getPartitionId(locationDir.toPath());
+        DriveDetailsCache.Details details = DriveDetailsCache.get(locationDir);
+        String driveModel = details.model();
+        String partitionId = details.partitionId();
         DiskUsageInfo usageInfo;
         try {
             usageInfo = Util.getDiskUsage(locationDir.toString());

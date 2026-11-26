@@ -73,5 +73,79 @@ ChartPalette, ThemeColors, GraphPaletteMenu, GraphThemeMenu, AppIcon
 
 **util** — Portal, Exporter, Util, RoundingSerializer
 
+Already in `org.metricus.jdm.util`: DriveDetailsCache (per-drive OS lookup
+cache for the drive UI, validated by volume fingerprint; see #267)
+
+# Drive details caching
+
+`DriveDetailsCache` (#267) holds the slow per-drive OS lookups (PowerShell,
+`lsblk`, `diskutil`) used by the drive UI. Callers run it from `SwingWorker`
+background threads, never on the EDT.
+
+```mermaid
+classDiagram
+    class DriveDetailsCache {
+        -Map~String, Slot~ CACHE
+        +get(File location)$ Details
+        +clear()$
+        -fingerprint(File location)$ String
+        -load(File location)$ Details
+    }
+    class Details {
+        <<record>>
+        model
+        busType
+        usbVersion
+        filesystem
+        sectorSize
+        partitionId
+        +busDisplay() String
+    }
+    class Slot {
+        <<record>>
+        fingerprint
+        CompletableFuture~Details~ details
+    }
+    DriveDetailsCache *-- Slot
+    Slot --> Details
+    DriveDetailsCache ..> Util : load() on miss
+
+    DrivePanel ..> DriveDetailsCache : fetchDriveModel() dropdown
+    DrivePanel ..> DriveDetailsCache : fetchDriveAttributes() All Drives
+    DrivePanel ..> DriveDetailsCache : refreshDriveInfo() Summary
+    DrivePanel ..> DriveDetailsCache : refresh button clear()
+    App ..> DriveDetailsCache : getDriveInfo() chart title
+    BatchPanel ..> DriveDetailsCache : populateDrives() batch drive list
+```
+
+```mermaid
+sequenceDiagram
+    participant W as SwingWorker (caller)
+    participant C as DriveDetailsCache
+    participant FS as FileStore (fast)
+    participant U as Util / OS tools (slow)
+    W->>C: get(location)
+    C->>FS: fingerprint = name | type | total size | volume serial (Windows)
+    alt fingerprint unreadable (drive removed / not ready)
+        C->>U: load(), not cached
+    else cached slot with same fingerprint
+        C-->>W: cached Details (waits if lookup in flight)
+    else no slot, or fingerprint changed
+        C->>U: load() model, bus, USB version, fs, sector, partition
+        C->>C: store Slot(fingerprint, details)
+    end
+    C-->>W: Details
+```
+
+- **Key:** mount path (`G:\`, `/run/media/...`). The fingerprint check means a
+  drive letter or mount point reassigned to a different device is looked up
+  again without pressing ⟳.
+- **Not cached:** usage / free space and read/write access are always read fresh.
+- **Not used by benchmark or batch runs:** they call `Util` directly so the drive
+  details recorded with results are always current.
+- **Limitation:** Linux and macOS have no volume serial, so two devices with the
+  same mount path, device node, file system and exact size are indistinguishable
+  until ⟳ clears the cache.
+
 
 # 

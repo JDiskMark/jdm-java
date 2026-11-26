@@ -29,6 +29,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import org.metricus.jdm.util.DriveDetailsCache;
 
 /**
  * Drives tab — lets the user select the benchmark target drive, shows a
@@ -147,7 +148,10 @@ public class DrivePanel extends JPanel {
         JButton refreshButton = new JButton("\u27F3");
         refreshButton.setToolTipText("Refresh drive list");
         refreshButton.setMargin(new Insets(2, 6, 2, 6));
-        refreshButton.addActionListener(e -> refresh());
+        refreshButton.addActionListener(e -> {
+            DriveDetailsCache.clear();
+            refresh();
+        });
         selectorRow.add(refreshButton, BorderLayout.EAST);
         northPanel.add(selectorRow, BorderLayout.NORTH);
 
@@ -393,19 +397,17 @@ public class DrivePanel extends JPanel {
      * shown as "Local Disk" on Windows) are relabelled "USB Drive".
      */
     private void fetchDriveModel(DriveEntry entry) {
-        new SwingWorker<String[], Void>() {
+        new SwingWorker<DriveDetailsCache.Details, Void>() {
             @Override
-            protected String[] doInBackground() {
-                String model   = Util.getDriveModel(entry.root);
-                String busType = Util.getBusType(entry.root.toPath());
-                return new String[]{ model, busType };
+            protected DriveDetailsCache.Details doInBackground() {
+                return DriveDetailsCache.get(entry.root);
             }
             @Override
             protected void done() {
                 try {
-                    String[] r = get();
-                    entry.model = (r[0] != null && !r[0].isBlank()) ? r[0] : "\u2014";
-                    if ("USB".equalsIgnoreCase(r[1])) entry.typeDesc = "USB Drive";
+                    DriveDetailsCache.Details d = get();
+                    entry.model = (d.model() != null && !d.model().isBlank()) ? d.model() : "\u2014";
+                    if ("USB".equalsIgnoreCase(d.busType())) entry.typeDesc = "USB Drive";
                 } catch (Exception ex) {
                     entry.model = "\u2014";
                 }
@@ -553,15 +555,8 @@ public class DrivePanel extends JPanel {
         new SwingWorker<String[], Void>() {
             @Override
             protected String[] doInBackground() {
-                String model = Util.getDriveModel(driveRoot);
-                String busType = Util.getBusType(driveRoot.toPath());
-                String busDisplay = busType;
-                if ("USB".equalsIgnoreCase(busType)) {
-                    String usbVer = Util.getUsbVersion(driveRoot.toPath());
-                    if (usbVer != null) busDisplay = busType + " " + usbVer;
-                }
-                String filesystem = Util.getFilesystem(driveRoot.toPath());
-                return new String[]{ model, busDisplay, filesystem };
+                DriveDetailsCache.Details details = DriveDetailsCache.get(driveRoot);
+                return new String[]{ details.model(), details.busDisplay(), details.filesystem() };
             }
             @Override
             protected void done() {
@@ -631,8 +626,9 @@ public class DrivePanel extends JPanel {
         new SwingWorker<String[], Void>() {
             @Override
             protected String[] doInBackground() {
-                String model     = Util.getDriveModel(dir);
-                String partition = Util.getPartitionId(dir.toPath());
+                DriveDetailsCache.Details details = DriveDetailsCache.get(dir);
+                String model     = details.model();
+                String partition = details.partitionId();
                 DiskUsageInfo usage;
                 try {
                     usage = Util.getDiskUsage(dir.getAbsolutePath());
@@ -641,14 +637,9 @@ public class DrivePanel extends JPanel {
                     usage = new DiskUsageInfo();
                 }
                 // Drive attributes — null on unsupported OS
-                String filesystem  = Util.getFilesystem(dir.toPath());
-                String busType     = Util.getBusType(dir.toPath());
-                String busDisplay  = busType;
-                if ("USB".equalsIgnoreCase(busType)) {
-                    String usbVer = Util.getUsbVersion(dir.toPath());
-                    if (usbVer != null) busDisplay = busType + " " + usbVer;
-                }
-                String sectorSize  = Util.getSectorSize(dir.toPath());
+                String filesystem  = details.filesystem();
+                String busDisplay  = details.busDisplay();
+                String sectorSize  = details.sectorSize();
                 return new String[]{
                     model, partition,
                     usage.toDisplayString(),

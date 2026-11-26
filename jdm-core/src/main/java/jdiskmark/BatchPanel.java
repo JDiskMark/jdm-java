@@ -30,6 +30,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingWorker;
+import org.metricus.jdm.util.DriveDetailsCache;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import org.jfree.chart.ChartPanel;
@@ -467,7 +468,7 @@ public class BatchPanel extends JPanel {
                 List<File> roots = listDriveRoots();
                 List<DriveEntry> entries = new ArrayList<>();
                 for (File root : roots) {
-                    String model = Util.getDriveModel(root);
+                    String model = DriveDetailsCache.get(root).model();
                     if (model == null || model.isBlank()) model = "Unknown";
                     DiskUsageInfo usage;
                     try {
