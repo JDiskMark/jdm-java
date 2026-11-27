@@ -1653,20 +1653,20 @@ public final class Gui {
                     the run. Later runs on this drive use a new test folder, and
                     JDiskMark offers a restart if free space runs out.
 
-                    Use Buffered I/O: turn Direct I/O off. The disk cache must be
-                        cleared before READ (automatic when running as admin).
                     Keep Direct I/O: run as configured. The test data is removed
                         when JDiskMark closes. Not asked again for this drive.
+                    Use Buffered I/O: turn Direct I/O off. The disk cache must be
+                        cleared before READ (automatic when running as admin).
                     Cancel Benchmark: don't run.
                     """.formatted(location, onDrives);
-            Object[] options = { "Use Buffered I/O", "Keep Direct I/O", "Cancel Benchmark" };
+            Object[] options = { "Keep Direct I/O", "Use Buffered I/O", "Cancel Benchmark" };
             int result = JOptionPane.showOptionDialog(mainFrame, message,
                     "Direct I/O Locks Test Files" + (fileSystem != null ? " on " + fileSystem : ""),
                     JOptionPane.DEFAULT_OPTION,
                     JOptionPane.WARNING_MESSAGE, null, options, options[0]);
             choice[0] = switch (result) {
-                case 0 -> BenchmarkRunner.DirectLockChoice.BUFFERED;
-                case 1 -> BenchmarkRunner.DirectLockChoice.KEEP;
+                case 0 -> BenchmarkRunner.DirectLockChoice.KEEP;
+                case 1 -> BenchmarkRunner.DirectLockChoice.BUFFERED;
                 default -> BenchmarkRunner.DirectLockChoice.CANCEL;
             };
         };
@@ -1712,19 +1712,19 @@ public final class Gui {
                 until JDiskMark is closed (NTFS is not affected). Choose how the
                 batch should handle them; other drives are not affected.
 
-                Use Buffered I/O: turn Direct I/O off on these drives. The disk
-                    cache must be cleared before READ (automatic as admin).
                 Keep Direct I/O: each run uses a new test folder; the test data
                     is removed when JDiskMark closes. Runs are skipped if a drive
                     runs out of free space.
+                Use Buffered I/O: turn Direct I/O off on these drives. The disk
+                    cache must be cleared before READ (automatic as admin).
                 Cancel Batch: don't start.
                 """.formatted(String.join("\n    ", drives));
-        Object[] options = { "Use Buffered I/O", "Keep Direct I/O", "Cancel Batch" };
+        Object[] options = { "Keep Direct I/O", "Use Buffered I/O", "Cancel Batch" };
         int result = JOptionPane.showOptionDialog(mainFrame, message, "Direct I/O Locks Test Files",
                 JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
         return switch (result) {
-            case 0 -> BenchmarkRunner.DirectLockChoice.BUFFERED;
-            case 1 -> BenchmarkRunner.DirectLockChoice.KEEP;
+            case 0 -> BenchmarkRunner.DirectLockChoice.KEEP;
+            case 1 -> BenchmarkRunner.DirectLockChoice.BUFFERED;
             default -> BenchmarkRunner.DirectLockChoice.CANCEL;
         };
     }
@@ -1744,6 +1744,7 @@ public final class Gui {
                 Because of a bug in Java (JDK), Direct I/O test files on FAT32 and
                 exFAT drives stay locked until JDiskMark closes, so their space
                 can't be freed while it is running.
+                Details: https://github.com/JDiskMark/jdm-java/issues/260
 
                 Restart JDiskMark to remove the locked test data and free the space.
                 Your settings and saved results are kept.
