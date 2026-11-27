@@ -19,6 +19,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - #266 relocate external usb drive task into swing workers
 - #267 cache drive details for the drive UI, cleared on refresh
 - #268 separate test dirs for directIO/windows/exFAT,FAT32 (workaround for #260)
+- #269 fix wr reporting on drive panel
 
 ## [0.9.1]
 - #232 dynamic benchmark progress bar
@@ -26,7 +27,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - #236 fix profile modified flag
 - #238 include local time offset w IANA zone
 - #246 OS detail label for linux distro
-- #248 auto clear the disk cache before READ / Direct IO is off 
+- #248 auto clear the disk cache before READ / Direct IO is off
     - admin login w Linux pkexec, macOS sudo purge READ recorded as failed if declined, chart notice when administrator login required
     - teal badge when a setting was changed automatically (directio turned off)
     - each sample has its own region in single-file mode
