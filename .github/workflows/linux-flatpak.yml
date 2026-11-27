@@ -112,5 +112,7 @@ jobs:
       # finish-args such as --device=all and --filesystem=home are expected to be flagged until Flathub exceptions are requested.
       continue-on-error: true
       run: |
-        flatpak-builder-lint manifest jdm-dist/jdm-flatpak/target/staging/net.jdiskmark.JDiskMark.yml
-        flatpak-builder-lint repo jdm-dist/jdm-flatpak/target/repo
+        rc=0
+        flatpak-builder-lint manifest jdm-dist/jdm-flatpak/target/staging/net.jdiskmark.JDiskMark.yml || rc=1
+        flatpak-builder-lint repo jdm-dist/jdm-flatpak/target/repo || rc=1
+        exit $rc
