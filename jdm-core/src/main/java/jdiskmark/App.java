@@ -478,11 +478,12 @@ public class App {
                     VERSION, os, jdk,
                     logDir != null ? logDir.toAbsolutePath() : "(console only)"));
             // hardware lookup runs in the background; log it when it completes
-            hardwareFuture.thenAccept(hardware -> msg("System — CPU: " + processorName
+            hardwareFuture.thenAccept(hardware -> msg("System — "
                     + (hardware == null
-                            ? " | hardware info unavailable"
-                            : " | Machine: " + hardware.system().display()
-                                    + " | Board: " + hardware.boardDisplay())));
+                            ? "hardware info unavailable"
+                            : "Machine: " + hardware.system().display()
+                                    + " | Board: " + hardware.boardDisplay())
+                    + " | CPU: " + processorName));
         }
     }
 
