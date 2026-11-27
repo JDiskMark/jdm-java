@@ -42,10 +42,12 @@ jobs:
         cache: maven
 
     - name: Install Maven
+      # setup-java caches $HOME/.m2 but Maven in this container resolves user.home to /root, so pin the repo to $HOME.
       run: |
         mkdir -p /opt
         curl -fsSL https://archive.apache.org/dist/maven/maven-3/3.9.11/binaries/apache-maven-3.9.11-bin.tar.gz | tar -xz -C /opt
         echo "/opt/apache-maven-3.9.11/bin" >> "$GITHUB_PATH"
+        echo "MAVEN_ARGS=-ntp -Dmaven.repo.local=$HOME/.m2/repository" >> "$GITHUB_ENV"
 
     - name: Compute CI version
       id: ver
@@ -110,9 +112,8 @@ jobs:
 
     - name: Lint Flatpak (Flathub rules, informational)
       # finish-args such as --device=all and --filesystem=home are expected to be flagged until Flathub exceptions are requested.
-      continue-on-error: true
       run: |
         rc=0
         flatpak-builder-lint manifest jdm-dist/jdm-flatpak/target/staging/net.jdiskmark.JDiskMark.yml || rc=1
         flatpak-builder-lint repo jdm-dist/jdm-flatpak/target/repo || rc=1
-        exit $rc
+        [ $rc -eq 0 ] || echo "::warning::flatpak-builder-lint reported issues (informational, see log)"
