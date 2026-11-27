@@ -287,8 +287,6 @@ public class Sample {
     }
     
 public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
-    long byteAlignment = bRunner.effectiveAlignment;
-    
     File testFile = getTestFile(bRunner);
     long base = regionOffset(blockSize, numOfBlocks, bRunner);
     Set<OpenOption> options = new HashSet<>();
@@ -299,37 +297,50 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
         options.add(StandardOpenOption.TRUNCATE_EXISTING);
     }
 
-    // Use a single try-with-resources and let the Exception bubble up
-    // to the BenchmarkRunner's try-catch block.
-    try (FileChannel fc = FileChannel.open(testFile.toPath(), options); 
+    // macOS Direct I/O (F_NOCACHE) still serves reads from pages already cached, and the
+    // cache is not dropped when Direct I/O is on, so the prep data must not enter the cache (#288)
+    boolean direct = App.isMacOs() && Boolean.TRUE.equals(bRunner.config.getDirectIoEnabled());
+    try {
+        writePrepData(testFile, options, direct, base, blockSize, numOfBlocks, bRunner);
+    } catch (IOException | UnsupportedOperationException e) {
+        if (!direct) throw prepFailed(testFile, e);
+        // buffered retry; Direct I/O is then off, so the cache is cleared before READ
+        try {
+            writePrepData(testFile, options, false, base, blockSize, numOfBlocks, bRunner);
+        } catch (IOException retryEx) {
+            throw prepFailed(testFile, retryEx);
+        }
+        bRunner.disableDirectIo("Direct I/O read preparation failed: " + Util.describeIoError(e));
+    }
+}
+
+private void writePrepData(File testFile, Set<OpenOption> options, boolean direct, long base,
+        long blockSize, int numOfBlocks, BenchmarkRunner bRunner) throws IOException {
+    Set<OpenOption> openOptions = new HashSet<>(options);
+    if (direct) openOptions.add(ExtendedOpenOption.DIRECT);
+    try (FileChannel fc = FileChannel.open(testFile.toPath(), openOptions);
          Arena arena = Arena.ofConfined()) {
-        
-        MemorySegment segment = arena.allocate(blockSize, byteAlignment);
+        MemorySegment segment = arena.allocate(blockSize, bRunner.effectiveAlignment);
         MemorySegment.copy(MemorySegment.ofArray(bRunner.blockArr), 0, segment, 0, blockSize);
         long totalBytesWritten = 0;
-        
         for (int b = 0; b < numOfBlocks; b++) {
             if (bRunner.isStopping()) break;
-            
-            long byteOffset = base + (long) b * blockSize;
-            int written = fc.write(segment.asByteBuffer(), byteOffset);
-            totalBytesWritten += written;
+            totalBytesWritten += fc.write(segment.asByteBuffer(), base + (long) b * blockSize);
             // For read-only benchmarks, we reuse the "write" progress counters to
             // track preparation of data to be read. In execute(), wUnitsTotal is
             // set from rUnitsTotal so this correctly reflects read preparation.
             bRunner.updateWriteProgress();
         }
-
         if (App.verbose) {
             App.msg("bytesGenerated=" + totalBytesWritten + " for " + testFile.getName());
         }
-        
-    } catch (IOException e) {
-        // Log it, but CRITICALLY: throw a RuntimeException so the 
-        // ExecutorService's Future.get() catches the failure.
-        Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Prep failed", e);
-        throw new RuntimeException("Read preparation failed for: " + testFile.getName(), e);
     }
+}
+
+/** Throws so the ExecutorService's Future.get() catches the failure. */
+private RuntimeException prepFailed(File testFile, Exception e) {
+    Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, "Prep failed", e);
+    return new RuntimeException("Read preparation failed for: " + testFile.getName(), e);
 }
     
     public void measureRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner) {
