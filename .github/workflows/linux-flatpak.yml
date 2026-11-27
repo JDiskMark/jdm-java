@@ -43,6 +43,7 @@ jobs:
 
     - name: Install Maven
       run: |
+        mkdir -p /opt
         curl -fsSL https://archive.apache.org/dist/maven/maven-3/3.9.11/binaries/apache-maven-3.9.11-bin.tar.gz | tar -xz -C /opt
         echo "/opt/apache-maven-3.9.11/bin" >> "$GITHUB_PATH"
 
