@@ -23,6 +23,10 @@ concurrency:
 jobs:
   build-flatpak:
     runs-on: ubuntu-latest
+    # The image tag must track runtime-version in jdm-dist/jdm-flatpak/net.jdiskmark.JDiskMark.yml
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
     permissions:
       contents: read
 
@@ -37,21 +41,10 @@ jobs:
         distribution: 'oracle'
         cache: maven
 
-    - name: Install Build Dependencies
+    - name: Install Maven
       run: |
-        sudo apt-get update
-        sudo apt-get install -y flatpak flatpak-builder
-
-    - name: Add Flathub Remote
-      run: |
-        flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-
-    - name: Install Flatpak Runtime and SDK
-      run: |
-        flatpak install --user --noninteractive flathub \
-          org.freedesktop.Platform//25.08 \
-          org.freedesktop.Sdk//25.08 \
-          org.freedesktop.Sdk.Extension.openjdk25//25.08
+        curl -fsSL https://archive.apache.org/dist/maven/maven-3/3.9.11/binaries/apache-maven-3.9.11-bin.tar.gz | tar -xz -C /opt
+        echo "/opt/apache-maven-3.9.11/bin" >> "$GITHUB_PATH"
 
     - name: Compute CI version
       id: ver
@@ -61,8 +54,10 @@ jobs:
 
     - name: Build Flatpak Bundle
       # Explicitly activating the linux-flatpak profile to ensure jpackage/antrun runs.
+      # The container has the runtime/SDK installed system-wide, so build against that, not a --user install.
       run: |
         mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak \
+          "-Dflatpak.builder.opts=--system --disable-rofiles-fuse" \
           -Drevision=${{ steps.ver.outputs.install_version }} \
           -Ddisplay.version=${{ steps.ver.outputs.display_version }} \
           --no-transfer-progress
