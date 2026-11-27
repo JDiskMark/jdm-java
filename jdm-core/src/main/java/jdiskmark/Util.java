@@ -555,6 +555,21 @@ public class Util {
     }
 
     /**
+     * Returns the motherboard vendor and model, or {@code null} on an
+     * unsupported platform. Parts that cannot be read are {@code null}.
+     */
+    public static Motherboard getMotherboard() {
+        if (App.isWindows()) {
+            return UtilsWinOs.getMotherboard();
+        } else if (App.isMacOs()) {
+            return UtilsMacOs.getMotherboard();
+        } else if (App.isLinux()) {
+            return UtilsLinuxOs.getMotherboard();
+        }
+        return null;
+    }
+
+    /**
      * Returns the filesystem type for the volume containing {@code path}
      * (e.g. "NTFS", "ext4"). Windows and Linux supported.
      */
@@ -588,6 +603,44 @@ public class Util {
 
     /** USB Vendor ID and Product ID pair, each formatted as 4-character lowercase hex. */
     public record UsbIds(String vendorId, String productId) {}
+
+    /**
+     * Motherboard (or system board) vendor and model. Either part is
+     * {@code null} when unavailable; build with {@link #of} so blank and
+     * firmware placeholder values are normalized to {@code null}.
+     */
+    public record Motherboard(String vendor, String model) {
+        private static final Set<String> PLACEHOLDERS = Set.of(
+                "default string", "system manufacturer", "system product name",
+                "not applicable", "not specified", "n/a", "none", "unknown",
+                "base board", "o.e.m.", "oem", "type1productconfigid");
+
+        public static Motherboard of(String vendor, String model) {
+            return new Motherboard(clean(vendor), clean(model));
+        }
+
+        public boolean isEmpty() {
+            return vendor == null && model == null;
+        }
+
+        /** Vendor and model joined for display, or {@code "unknown"}. */
+        public String display() {
+            if (isEmpty()) return "unknown";
+            if (vendor == null) return model;
+            if (model == null) return vendor;
+            return vendor + " " + model;
+        }
+
+        private static String clean(String value) {
+            if (value == null) return null;
+            String trimmed = value.replace("\0", "").trim();
+            String lower = trimmed.toLowerCase(java.util.Locale.ROOT);
+            if (trimmed.isEmpty() || lower.startsWith("to be filled") || PLACEHOLDERS.contains(lower)) {
+                return null;
+            }
+            return trimmed;
+        }
+    }
 
     /**
      * Returns the USB version string for the device at {@code path}

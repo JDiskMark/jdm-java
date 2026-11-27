@@ -142,6 +142,7 @@ public class App {
     public static String os;
     public static String arch;
     public static String processorName;
+    public static Util.Motherboard motherboard;
     public static String jdk;
     public static String osLabel;
     // PII: OS username collection removed (#117 — use anonymous or a non-PII system
@@ -388,6 +389,7 @@ public class App {
         os = System.getProperty("os.name");
         arch = System.getProperty("os.arch");
         processorName = Util.getProcessorName();
+        motherboard = Util.getMotherboard();
         jdk = Util.getJvmInfo();
         osLabel = UtilOs.getOsLabel(os);
 
@@ -469,8 +471,9 @@ public class App {
             // Logged after the window is shown so it appears as the first visible entry.
             java.nio.file.Path logDir = Logging.getLogDir();
             msg(String.format(
-                    "JDiskMark %s started — OS: %s | JDK: %s | CPU: %s | logs: %s",
+                    "JDiskMark %s started — OS: %s | JDK: %s | CPU: %s | Board: %s | logs: %s",
                     VERSION, os, jdk, processorName,
+                    motherboard != null ? motherboard.display() : "unknown",
                     logDir != null ? logDir.toAbsolutePath() : "(console only)"));
         }
     }

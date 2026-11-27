@@ -56,6 +56,37 @@ public final class UtilsWinOs {
     }
 
     /**
+     * Returns the baseboard manufacturer and product from
+     * {@code Win32_BaseBoard}, or {@code null} if the query fails.
+     */
+    public static Util.Motherboard getMotherboard() {
+        String script = """
+                $b = Get-CimInstance Win32_BaseBoard | Select-Object -First 1
+                "Manufacturer=$($b.Manufacturer)"
+                "Product=$($b.Product)"
+                """;
+        return parseMotherboard(runPowerShellLines(script, "motherboard lookup"));
+    }
+
+    /**
+     * Parses the labeled {@code Manufacturer=} / {@code Product=} lines
+     * emitted by {@link #getMotherboard()}; other lines are ignored.
+     */
+    public static Util.Motherboard parseMotherboard(List<String> lines) {
+        String vendor = null;
+        String model = null;
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (trimmed.startsWith("Manufacturer=")) {
+                vendor = trimmed.substring("Manufacturer=".length());
+            } else if (trimmed.startsWith("Product=")) {
+                model = trimmed.substring("Product=".length());
+            }
+        }
+        return Util.Motherboard.of(vendor, model);
+    }
+
+    /**
      * Returns the negotiated USB interface version (e.g. {@code "2.0"}, {@code "3.0"},
      * {@code "3.2 Gen 2"}) for a Windows drive letter by querying its parent USB hub
      * via {@code IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX} and {@code _V2}.

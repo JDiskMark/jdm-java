@@ -294,6 +294,25 @@ public final class UtilsMacOs {
         return "";
     }
 
+    /**
+     * Returns the Mac hardware model identifier via {@code sysctl -n hw.model}
+     * (e.g. {@code MacBookPro18,3}) with Apple as the vendor, or {@code null}.
+     */
+    public static Util.Motherboard getMotherboard() {
+        try {
+            Process process = new ProcessBuilder("sysctl", "-n", "hw.model").start();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line = reader.readLine();
+                Util.Motherboard board = Util.Motherboard.of("Apple", line);
+                return board.model() == null ? null : board;
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.FINE, "Unable to read hw.model", e);
+        }
+        return null;
+    }
+
     // -----------------------------------------------------------------------
     // Volume enumeration (new)
     // -----------------------------------------------------------------------

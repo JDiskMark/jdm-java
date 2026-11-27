@@ -246,6 +246,8 @@ public class Benchmark implements Serializable {
         sb.append("Capacity: ").append(App.getDriveCapacity()).append("\n");
         sb.append("Timestamp: ").append(startTime).append("\n");
         sb.append("CPU: ").append(systemInfo.processorName).append("\n");
+        sb.append("Board: ").append(Util.Motherboard.of(
+                systemInfo.motherboardVendor, systemInfo.motherboardModel).display()).append("\n");
         sb.append("System: ").append(UtilOs.formatOsDisplay(systemInfo.os, systemInfo.osLabel))
                 .append(" / ").append(systemInfo.arch).append("\n");
         sb.append("Java: ").append(systemInfo.jdk).append("\n");
