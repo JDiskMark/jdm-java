@@ -100,6 +100,7 @@ public class BenchmarkRunner {
     final AtomicBoolean directDisabled = new AtomicBoolean(false);
     /** Badge reason from the first disableDirectIo() call, re-applied after the run's mark reset. */
     private volatile String directDisabledMsg = null;
+    private final Map<String, Integer> directReasons = new java.util.LinkedHashMap<>();
     final AtomicBoolean flushNoted = new AtomicBoolean(false);
 
     public static int[][] divideIntoRanges(int startIndex, int endIndex, int numThreads) {
@@ -242,6 +243,14 @@ public class BenchmarkRunner {
         
         benchmark.recordStartTime();
         
+        if (config.ioEngine == IoEngine.MODERN && !Boolean.TRUE.equals(config.getDirectIoEnabled())
+                && !directDisabled.get()) {
+            String msg = "Direct I/O is off before this run starts: it was turned off in the settings "
+                    + "(Options menu, saved settings or a loaded benchmark), or dropped in an earlier run. "
+                    + "Enable it in the Options menu to use it.";
+            logger.info(msg);
+            App.msg(msg);
+        }        
         if (config.ioEngine == IoEngine.LEGACY && Boolean.TRUE.equals(config.getDirectIoEnabled())) {
             disableDirectIo("Direct I/O is not supported by the legacy IO engine");
         }
@@ -292,6 +301,7 @@ public class BenchmarkRunner {
         }
 
         benchmark.recordEndTime();
+        logDirectDisabledSummary();
         
         if (config.gcHintsEnabled) { System.gc(); } // clear heap no wait
         
@@ -304,13 +314,56 @@ public class BenchmarkRunner {
      * the first call logs and updates state.
      */
     void disableDirectIo(String reason) {
-        if (!directDisabled.compareAndSet(false, true)) return;
-        config.setDirectIoEnabled(false);
-        App.directEnable = false;
-        String msg = reason + ". Direct I/O disabled, using buffered I/O.";
+        boolean first;
+        boolean isNew;
+        synchronized (directReasons) {
+            isNew = !directReasons.containsKey(reason);
+            directReasons.merge(reason, 1, Integer::sum);
+            first = directDisabled.compareAndSet(false, true);
+        }
+        if (first) {
+            config.setDirectIoEnabled(false);
+            App.directEnable = false;
+            String msg = reason + ". Direct I/O disabled, using buffered I/O.";
+            directDisabledMsg = msg;
+            Gui.markDirectIoAuto(msg);
+            Gui.syncIoOptionMenus();
+            logger.warning(msg);
+            App.warn(msg);
+        } else if (isNew) {
+            String msg = "Direct I/O was also reported unusable: " + reason + ".";
+            directDisabledMsg = directDisabledSummary();
+            Gui.markDirectIoAuto(directDisabledMsg);
+            logger.warning(msg);
+            App.warn(msg);
+        }
+    }
+
+    /** All distinct reasons Direct I/O was dropped, in the order first seen, with counts. */
+    private String directDisabledSummary() {
+        synchronized (directReasons) {
+            StringBuilder sb = new StringBuilder("Direct I/O disabled, using buffered I/O. Reasons: ");
+            int n = 0;
+            for (Map.Entry<String, Integer> e : directReasons.entrySet()) {
+                if (n++ > 0) sb.append("; ");
+                sb.append(n).append(") ").append(e.getKey());
+                if (e.getValue() > 1) sb.append(" (").append(e.getValue()).append("x)");
+            }
+            return sb.toString();
+        }
+    }
+
+    /** Logs the full list of reasons at the end of a run when Direct I/O was dropped more than once. */
+    private void logDirectDisabledSummary() {
+        boolean multiple;
+        synchronized (directReasons) {
+            multiple = directReasons.size() > 1
+                    || directReasons.values().stream().anyMatch(c -> c > 1);
+        }
+        if (!multiple) return;
+        String msg = directDisabledSummary();
         directDisabledMsg = msg;
         Gui.markDirectIoAuto(msg);
-        Gui.syncIoOptionMenus();
         logger.warning(msg);
         App.warn(msg);
     }
@@ -783,7 +836,7 @@ public class BenchmarkRunner {
      * write/read will fail with an {@code IOException}. This is critical for
      * vfat (FAT32) which typically uses 32 KB blocks.
      */
-    private static long resolveAlignment(BenchmarkConfig config) {
+    private long resolveAlignment(BenchmarkConfig config) {
         long userAlign = config.sectorAlignment.bytes;
         if (userAlign <= 0) {
             return MemoryLayout.sequenceLayout(
@@ -805,13 +858,9 @@ public class BenchmarkRunner {
             // the cluster size, disable Direct IO upfront and inform the
             // user rather than silently retrying on every sample.
             if (config.blockSize < fsBlockSize) {
-                App.msg("Direct I/O disabled: block size ("
-                        + (config.blockSize / 1024) + " KB) is smaller than "
-                        + "the filesystem block size ("
-                        + (fsBlockSize / 1024) + " KB).");
-                config.setDirectIoEnabled(false);
-                App.directEnable = false;
-                Gui.refreshChartBadges();
+                disableDirectIo("Block size (" + (config.blockSize / 1024)
+                        + " KB) is smaller than the filesystem block size ("
+                        + (fsBlockSize / 1024) + " KB)");
                 return userAlign;
             }
 

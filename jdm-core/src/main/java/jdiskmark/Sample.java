@@ -162,12 +162,13 @@ public class Sample {
         long startTime = System.nanoTime();
         long totalBytesWrittenInSample = 0;
         String mode = (App.writeSyncEnable) ? "rwd" : "rw";
+        int[] writeOrder = (App.blockSequence == Benchmark.BlockSequence.RANDOM)
+                ? Util.shuffledIndices(numOfBlocks) : null;
         try {
             try (RandomAccessFile rAccFile = new RandomAccessFile(testFile, mode)) {
                 for (int b = 0; b < numOfBlocks; b++) {
-                    if (App.blockSequence == Benchmark.BlockSequence.RANDOM) {
-                        int rLoc = Util.randInt(0, numOfBlocks - 1);
-                        rAccFile.seek(base + rLoc * blockSize);
+                    if (writeOrder != null) {
+                        rAccFile.seek(base + writeOrder[b] * blockSize);
                     } else {
                         rAccFile.seek(base + b * blockSize);
                     }
@@ -254,10 +255,12 @@ public class Sample {
                 MemorySegment segment = arena.allocate(blockSize, byteAlignment);
                 MemorySegment.copy(MemorySegment.ofArray(bRunner.blockArr), 0, segment, 0, blockSize);
                 totalBytesWritten = 0;
+                // each block exactly once, so the whole region exists for later random reads
+                int[] writeOrder = (bRunner.config.blockOrder == RANDOM)
+                        ? Util.shuffledIndices(numOfBlocks) : null;
                 for (int b = 0; b < numOfBlocks; b++) {
                     if (bRunner.isStopping()) break;
-                    long blockIndex = (bRunner.config.blockOrder == RANDOM) ?
-                            Util.randInt(0, numOfBlocks - 1) : b;
+                    long blockIndex = (writeOrder != null) ? writeOrder[b] : b;
                     long byteOffset = base + blockIndex * blockSize;
 
                     int written = fc.write(segment.asByteBuffer(), byteOffset);
@@ -376,7 +379,9 @@ public void prepareRead(long blockSize, int numOfBlocks, BenchmarkRunner bRunner
                 }
                 break retry;
             } catch (IOException e) {
-                if (directError == null && options.contains(ExtendedOpenOption.DIRECT)) {
+                // a short file is a test data problem, not a Direct I/O failure
+                if (directError == null && !(e instanceof EOFException)
+                        && options.contains(ExtendedOpenOption.DIRECT)) {
                     directError = e;
                     continue retry;
                 }

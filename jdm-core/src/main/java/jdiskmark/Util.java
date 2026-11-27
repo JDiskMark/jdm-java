@@ -248,6 +248,20 @@ public class Util {
 
         return randomNum;
     }
+
+    /** Block indices 0..count-1 in random order, each exactly once. */
+    public static int[] shuffledIndices(int count) {
+        int[] indices = new int[count];
+        for (int i = 0; i < count; i++) indices[i] = i;
+        java.util.concurrent.ThreadLocalRandom rnd = java.util.concurrent.ThreadLocalRandom.current();
+        for (int i = count - 1; i > 0; i--) {
+            int j = rnd.nextInt(i + 1);
+            int tmp = indices[i];
+            indices[i] = indices[j];
+            indices[j] = tmp;
+        }
+        return indices;
+    }
     
     /*
      * Not used kept here for reference.

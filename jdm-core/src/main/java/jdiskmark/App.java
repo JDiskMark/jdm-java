@@ -474,11 +474,11 @@ public class App {
             // Logged after the window is shown so it appears as the first visible entry.
             java.nio.file.Path logDir = Logging.getLogDir();
             msg(String.format(
-                    "JDiskMark %s started — OS: %s | JDK: %s | logs: %s",
-                    VERSION, os, jdk,
+                    "JDiskMark %s started — logs: %s",
+                    VERSION,
                     logDir != null ? logDir.toAbsolutePath() : "(console only)"));
             // hardware lookup runs in the background; log it when it completes
-            hardwareFuture.thenAccept(hardware -> msg("System — "
+            hardwareFuture.thenAccept(hardware -> msg("OS: " + os + " | JDK: " + jdk + " | "
                     + (hardware == null
                             ? "hardware info unavailable"
                             : "Machine: " + hardware.system().display()
