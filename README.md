@@ -10,7 +10,7 @@
 [![Download](https://img.shields.io/sourceforge/dt/jdiskmark.svg)](https://sourceforge.net/projects/jdiskmark/files/latest/download)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE.md)
 
-![JDiskMark v0.8.0 benchmark screenshot](docs/images/jdiskmark-screenshot.png)
+![JDiskMark v0.9.2 benchmark screenshot](docs/images/jdiskmark-0.9.2.png)
 
 ## Features
 

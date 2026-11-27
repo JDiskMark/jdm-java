@@ -20,7 +20,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - #267 cache drive details for the drive UI, cleared on refresh
 - #268 separate test dirs for directIO/windows/exFAT,FAT32 (workaround for #260)
 - #269 fix wr reporting on drive panel
-- #87 collect system and board vendor and model
+- #87 collect system and board vendor and model (based on solution from @Avinash1423)
 - #288 fix prepare read with direct for macos
 
 ## [0.9.1]

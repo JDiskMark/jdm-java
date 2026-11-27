@@ -22,7 +22,7 @@
   <screenshots>
     <screenshot type="default">
       <caption>JDiskMark benchmark results</caption>
-      <image type="source">https://raw.githubusercontent.com/JDiskMark/jdm-java/dev/docs/images/jdiskmark-screenshot.png</image>
+      <image type="source">https://raw.githubusercontent.com/JDiskMark/jdm-java/dev/docs/images/jdiskmark-0.9.2.png</image>
     </screenshot>
   </screenshots>
   <url type="homepage">https://github.com/JDiskMark/jdm-java</url>
