@@ -18,6 +18,7 @@
         <flatpak.staging.dir>${project.build.directory}/staging</flatpak.staging.dir>
         <flatpak.repo.dir>${project.build.directory}/repo</flatpak.repo.dir>
         <flatpak.build.dir>${project.build.directory}/flatpak-build</flatpak.build.dir>
+        <flatpak.builder.opts>--user</flatpak.builder.opts>
     </properties>
 
     <profiles>
@@ -76,7 +77,7 @@
 
                                         <echo message="Running flatpak-builder..."/>
                                         <exec executable="flatpak-builder" dir="${flatpak.staging.dir}" failonerror="true">
-                                            <arg value="--user"/>
+                                            <arg line="${flatpak.builder.opts}"/>
                                             <arg value="--install-deps-from=flathub"/>
                                             <arg value="--assumeyes"/>
                                             <arg value="--force-clean"/>

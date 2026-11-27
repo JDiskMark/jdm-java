@@ -24,6 +24,8 @@ import java.util.logging.Logger;
  *   <li><b>Windows installer</b> — {@code %LOCALAPPDATA%\JDiskMark\logs\}</li>
  *   <li><b>Linux installer</b>  — {@code $XDG_STATE_HOME/jdiskmark/logs/} or
  *       {@code ~/.local/state/jdiskmark/logs/}</li>
+ *   <li><b>Flatpak</b> — {@code $XDG_STATE_HOME/jdiskmark/logs/}, which Flatpak sets to
+ *       {@code ~/.var/app/net.jdiskmark.JDiskMark/.local/state}</li>
  *   <li><b>macOS installer</b>  — {@code ~/Library/Logs/jdiskmark/}</li>
  *   <li><b>Portable / IDE</b>   — {@code ./logs/} (relative to working directory)</li>
  * </ul>
@@ -151,15 +153,19 @@ public final class Logging {
     }
 
     /**
-     * Detects whether the app was launched from a jpackage-produced installer.
+     * Detects whether the app was launched from a packaged install.
      *
      * <p>jpackage injects {@code -Djpackage.app-version=<version>} into the JVM
      * on every platform via the launcher config (e.g. {@code JDiskMark.cfg}).
      * This property is never present when running from the IDE or a portable zip,
      * making it a reliable cross-platform packaged-install signal.
+     *
+     * <p>The Flatpak runs the shaded jar directly, so it is detected through the
+     * {@code FLATPAK_ID} variable that Flatpak sets in every sandbox.
      */
     private static boolean isPackagedInstall() {
-        return System.getProperty("jpackage.app-version") != null;
+        return System.getProperty("jpackage.app-version") != null
+                || System.getenv("FLATPAK_ID") != null;
     }
 
     // -------------------------------------------------------------------------

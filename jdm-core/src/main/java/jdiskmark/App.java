@@ -573,7 +573,10 @@ public class App {
             multiFile = profile.isMultiFile();
             // Smart.smartEnable = profile.getEnableSmart();
         } finally {
-            saveConfig();
+            // the CLI must not overwrite the GUI's saved settings
+            if (mode != Mode.CLI) {
+                saveConfig();
+            }
         }
     }
 
@@ -833,6 +836,10 @@ public class App {
 
         // write properties file
         try {
+            File parent = PROPERTIES_FILE.getParentFile();
+            if (parent != null && !parent.exists()) {
+                parent.mkdirs();
+            }
             OutputStream out = new FileOutputStream(PROPERTIES_FILE);
             p.store(out, "JDiskMark " + VERSION + " Properties File");
         } catch (IOException ex) {

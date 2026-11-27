@@ -15,6 +15,20 @@ on:
         description: 'Skip CI pre-release label and pass POM version through unchanged'
         type: boolean
         default: false
+      release_version:
+        description: 'Build this exact version (a leading v is stripped) instead of the CI-labelled version'
+        type: string
+        default: ''
+  workflow_call:
+    inputs:
+      disable_ci_label:
+        description: 'Skip CI pre-release label and pass POM version through unchanged'
+        type: boolean
+        default: false
+      release_version:
+        description: 'Build this exact version (a leading v is stripped) instead of the CI-labelled version'
+        type: string
+        default: ''
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -23,6 +37,10 @@ concurrency:
 jobs:
   build-flatpak:
     runs-on: ubuntu-latest
+    # The image tag must track runtime-version in jdm-dist/jdm-flatpak/net.jdiskmark.JDiskMark.yml
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-26.08
+      options: --privileged
     permissions:
       contents: read
 
@@ -37,34 +55,36 @@ jobs:
         distribution: 'oracle'
         cache: maven
 
-    - name: Install Build Dependencies
+    - name: Install Maven
+      # setup-java caches $HOME/.m2 but Maven in this container resolves user.home to /root, so pin the repo to $HOME.
       run: |
-        sudo apt-get update
-        sudo apt-get install -y flatpak flatpak-builder
-
-    - name: Add Flathub Remote
-      run: |
-        flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-
-    - name: Install Flatpak Runtime and SDK
-      run: |
-        flatpak install --user --noninteractive flathub \
-          org.freedesktop.Platform//25.08 \
-          org.freedesktop.Sdk//25.08 \
-          org.freedesktop.Sdk.Extension.openjdk25//25.08
+        mkdir -p /opt
+        curl -fsSL https://archive.apache.org/dist/maven/maven-3/3.9.11/binaries/apache-maven-3.9.11-bin.tar.gz | tar -xz -C /opt
+        echo "/opt/apache-maven-3.9.11/bin" >> "$GITHUB_PATH"
+        echo "MAVEN_ARGS=-ntp -Dmaven.repo.local=$HOME/.m2/repository" >> "$GITHUB_ENV"
 
     - name: Compute CI version
       id: ver
+      if: inputs.release_version == ''
       uses: ./.github/actions/ci-version
       with:
         disable_ci_label: ${{ inputs.disable_ci_label || false }}
 
+    - name: Use release version
+      id: rel
+      if: inputs.release_version != ''
+      env:
+        RELEASE_VERSION: ${{ inputs.release_version }}
+      run: echo "version=${RELEASE_VERSION#v}" >> "$GITHUB_OUTPUT"
+
     - name: Build Flatpak Bundle
       # Explicitly activating the linux-flatpak profile to ensure jpackage/antrun runs.
+      # The container has the runtime/SDK installed system-wide, so build against that, not a --user install.
       run: |
         mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak \
-          -Drevision=${{ steps.ver.outputs.install_version }} \
-          -Ddisplay.version=${{ steps.ver.outputs.display_version }} \
+          "-Dflatpak.builder.opts=--system --disable-rofiles-fuse" \
+          -Drevision=${{ steps.rel.outputs.version || steps.ver.outputs.install_version }} \
+          -Ddisplay.version=${{ steps.rel.outputs.version || steps.ver.outputs.display_version }} \
           --no-transfer-progress
 
     - name: Upload Flatpak Artifact
@@ -75,3 +95,53 @@ jobs:
         if-no-files-found: error
         # Disable zipping so it can be downloaded raw from the Actions tab
         archive: false
+
+    - name: Test - Install Bundle and Verify Metadata
+      run: |
+        set -eu
+        flatpak install --system --noninteractive --bundle jdm-dist/jdm-flatpak/target/*.flatpak
+        flatpak info --show-metadata net.jdiskmark.JDiskMark | tee /tmp/metadata.txt
+        grep -q '^runtime=org.freedesktop.Platform/.*/26.08' /tmp/metadata.txt
+        grep -q '^command=jdiskmark' /tmp/metadata.txt
+        FILES="$(flatpak info --show-location net.jdiskmark.JDiskMark)/files"
+        for f in \
+          bin/jdiskmark \
+          jre/bin/java \
+          lib/jdiskmark/jdiskmark.jar \
+          share/applications/net.jdiskmark.JDiskMark.desktop \
+          share/metainfo/net.jdiskmark.JDiskMark.metainfo.xml \
+          share/icons/hicolor/128x128/apps/net.jdiskmark.JDiskMark.png \
+          share/icons/hicolor/64x64/apps/net.jdiskmark.JDiskMark.png; do
+          test -f "$FILES/$f" || { echo "MISSING: $f"; exit 1; }
+        done
+
+    - name: Test - CLI Version
+      run: |
+        set -eu
+        flatpak run net.jdiskmark.JDiskMark --version | tee /tmp/version.txt
+        grep -q '^JDiskMark ' /tmp/version.txt
+
+    - name: Test - CLI Benchmark
+      # The Flatpak has --filesystem=home, so the test location and export live under $HOME.
+      run: |
+        set -eu
+        mkdir -p "$HOME/jdm-ci"
+        timeout 300 flatpak run net.jdiskmark.JDiskMark run \
+          -t WRITE -n 3 -b 4 -z 256 \
+          -l "$HOME/jdm-ci" -e "$HOME/jdm-ci/result.json" 2>&1 | tee /tmp/cli-run.txt
+        test -s "$HOME/jdm-ci/result.json" || { echo "export missing or empty"; exit 1; }
+        head -c 600 "$HOME/jdm-ci/result.json"
+        # a default CLI run must not save settings or log errors
+        if find "$HOME/.jdm" -name jdm.properties 2>/dev/null | grep -q .; then echo "CLI wrote jdm.properties"; exit 1; fi
+        if grep -q SEVERE /tmp/cli-run.txt; then echo "SEVERE logged during CLI run"; exit 1; fi
+        # logs belong in the sandbox state dir, not ./logs in the working directory
+        if grep -q 'Could not create log directory' /tmp/cli-run.txt; then echo "log directory not writable"; exit 1; fi
+        if ! find "$HOME" /root -path '*/.var/app/net.jdiskmark.JDiskMark/*' -name 'jdiskmark-*.log' 2>/dev/null | grep -q .; then echo "no log file in the Flatpak state dir"; exit 1; fi
+
+    - name: Lint Flatpak (Flathub rules, informational)
+      # finish-args such as --device=all and --filesystem=home are expected to be flagged until Flathub exceptions are requested.
+      run: |
+        rc=0
+        flatpak-builder-lint manifest jdm-dist/jdm-flatpak/target/staging/net.jdiskmark.JDiskMark.yml || rc=1
+        flatpak-builder-lint repo jdm-dist/jdm-flatpak/target/repo || rc=1
+        [ $rc -eq 0 ] || echo "::warning::flatpak-builder-lint reported issues (informational, see log)"

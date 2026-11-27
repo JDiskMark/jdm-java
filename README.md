@@ -8,7 +8,7 @@
 [![Linux Flatpak Build](https://github.com/JDiskMark/jdm-java/actions/workflows/linux-flatpak.yml/badge.svg)](https://github.com/JDiskMark/jdm-java/actions/workflows/linux-flatpak.yml)
 [![MacOS PKG Build](https://github.com/JDiskMark/jdm-java/actions/workflows/macos-pkg.yml/badge.svg)](https://github.com/JDiskMark/jdm-java/actions/workflows/macos-pkg.yml)
 [![Download](https://img.shields.io/sourceforge/dt/jdiskmark.svg)](https://sourceforge.net/projects/jdiskmark/files/latest/download)
-[![License](https://img.shields.io/badge/License-Custom-blue.svg)](LICENSE.md)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE.md)
 
 ![JDiskMark v0.8.0 benchmark screenshot](docs/images/jdiskmark-screenshot.png)
 
@@ -93,10 +93,10 @@ flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flath
 
 #### 2. Install the required runtime
 
-JDiskMark depends on the `org.freedesktop.Platform 25.08` runtime. Install it from Flathub:
+JDiskMark depends on the `org.freedesktop.Platform 26.08` runtime. Install it from Flathub:
 
 ```sh
-flatpak install --user flathub org.freedesktop.Platform//25.08
+flatpak install --user flathub org.freedesktop.Platform//26.08
 ```
 
 #### 3. Install JDiskMark
