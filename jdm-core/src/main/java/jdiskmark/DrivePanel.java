@@ -640,12 +640,14 @@ public class DrivePanel extends JPanel {
                 String filesystem  = details.filesystem();
                 String busDisplay  = details.busDisplay();
                 String sectorSize  = details.sectorSize();
+                File testDir = new File(testPath);
+                File accessDir = testDir.isDirectory() ? testDir : dir;
                 return new String[]{
                     model, partition,
                     usage.toDisplayString(),
                     String.valueOf(usage.percentUsed),
-                    dir.canRead()  ? "✓" : "✗",
-                    dir.canWrite() ? "✓" : "✗",
+                    accessDir.canRead()  ? "✓" : "✗",
+                    accessDir.canWrite() ? "✓" : "✗",
                     filesystem, busDisplay, sectorSize
                 };
             }
