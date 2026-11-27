@@ -26,7 +26,7 @@
              Keep the -SNAPSHOT suffix on dev/feature branches: local builds then get an
              auto pre-release label (e.g. 0.9.1-a.f.cleanup). A plain or labelled version
              (0.9.1, 0.9.1-rc4) is used as-is. -->
-        <revision>0.9.2-rc1</revision>
+        <revision>0.9.2</revision>
         <!-- MSI (Windows Installer) requires a purely numeric version in Major.Minor.Build
              format — no letters, no -SNAPSHOT. This is an MSI format restriction, not
              jpackage itself. Linux packages (DEB/RPM) can use the full project.version.
