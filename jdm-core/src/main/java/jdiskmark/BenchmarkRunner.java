@@ -751,9 +751,12 @@ public class BenchmarkRunner {
         b.systemId = (App.systemId != null) ? App.systemId : "";
 
         b.systemInfo.processorName = App.processorName;
-        if (App.motherboard != null) {
-            b.systemInfo.motherboardVendor = App.motherboard.vendor();
-            b.systemInfo.motherboardModel = App.motherboard.model();
+        Util.HardwareInfo hardware = App.getHardwareInfo();
+        if (hardware != null) {
+            b.systemInfo.motherboardVendor = hardware.motherboard().vendor();
+            b.systemInfo.motherboardModel = hardware.motherboard().model();
+            b.systemInfo.systemVendor = hardware.system().vendor();
+            b.systemInfo.systemModel = hardware.system().model();
         }
         b.systemInfo.os = App.os;
         b.systemInfo.arch = App.arch;

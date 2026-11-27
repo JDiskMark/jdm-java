@@ -25,14 +25,23 @@ public final class UtilsLinuxOs {
     private UtilsLinuxOs() {}
 
     /**
+     * Returns the motherboard and system vendor/model from the DMI sysfs
+     * files. See {@link #getMotherboard(Path, Path)} for the board fallbacks.
+     */
+    public static Util.HardwareInfo getHardwareInfo() {
+        Path dmiDir = Path.of("/sys/class/dmi/id");
+        return new Util.HardwareInfo(
+                getMotherboard(dmiDir, Path.of("/proc/device-tree/model")),
+                Util.SystemModel.of(
+                        readFirstLine(dmiDir.resolve("sys_vendor")),
+                        readFirstLine(dmiDir.resolve("product_name"))));
+    }
+
+    /**
      * Returns the motherboard vendor and model from the DMI sysfs files.
      * Falls back to the system vendor/product, then to the device tree model
      * on ARM boards without DMI. The serial number is never read.
      */
-    public static Util.Motherboard getMotherboard() {
-        return getMotherboard(Path.of("/sys/class/dmi/id"), Path.of("/proc/device-tree/model"));
-    }
-
     static Util.Motherboard getMotherboard(Path dmiDir, Path deviceTreeModel) {
         Util.Motherboard board = Util.Motherboard.of(
                 readFirstLine(dmiDir.resolve("board_vendor")),

@@ -56,34 +56,48 @@ public final class UtilsWinOs {
     }
 
     /**
-     * Returns the baseboard manufacturer and product from
-     * {@code Win32_BaseBoard}, or {@code null} if the query fails.
+     * Returns the baseboard ({@code Win32_BaseBoard}) and system
+     * ({@code Win32_ComputerSystem}) vendor/model in a single PowerShell
+     * call, bounded by {@link #TIMEOUT_SECONDS}. Parts that cannot be read
+     * are {@code null}.
      */
-    public static Util.Motherboard getMotherboard() {
+    public static Util.HardwareInfo getHardwareInfo() {
         String script = """
                 $b = Get-CimInstance Win32_BaseBoard | Select-Object -First 1
-                "Manufacturer=$($b.Manufacturer)"
-                "Product=$($b.Product)"
+                $s = Get-CimInstance Win32_ComputerSystem | Select-Object -First 1
+                "BoardManufacturer=$($b.Manufacturer)"
+                "BoardProduct=$($b.Product)"
+                "SystemManufacturer=$($s.Manufacturer)"
+                "SystemModel=$($s.Model)"
                 """;
-        return parseMotherboard(runPowerShellLines(script, "motherboard lookup"));
+        return parseHardwareInfo(runPowerShellLines(script, "hardware lookup"));
     }
 
     /**
-     * Parses the labeled {@code Manufacturer=} / {@code Product=} lines
-     * emitted by {@link #getMotherboard()}; other lines are ignored.
+     * Parses the labeled lines emitted by {@link #getHardwareInfo()}
+     * ({@code BoardManufacturer=}, {@code BoardProduct=},
+     * {@code SystemManufacturer=}, {@code SystemModel=}); other lines are ignored.
      */
-    public static Util.Motherboard parseMotherboard(List<String> lines) {
-        String vendor = null;
-        String model = null;
+    public static Util.HardwareInfo parseHardwareInfo(List<String> lines) {
+        String boardVendor = null;
+        String boardModel = null;
+        String systemVendor = null;
+        String systemModel = null;
         for (String line : lines) {
             String trimmed = line.trim();
-            if (trimmed.startsWith("Manufacturer=")) {
-                vendor = trimmed.substring("Manufacturer=".length());
-            } else if (trimmed.startsWith("Product=")) {
-                model = trimmed.substring("Product=".length());
+            if (trimmed.startsWith("BoardManufacturer=")) {
+                boardVendor = trimmed.substring("BoardManufacturer=".length());
+            } else if (trimmed.startsWith("BoardProduct=")) {
+                boardModel = trimmed.substring("BoardProduct=".length());
+            } else if (trimmed.startsWith("SystemManufacturer=")) {
+                systemVendor = trimmed.substring("SystemManufacturer=".length());
+            } else if (trimmed.startsWith("SystemModel=")) {
+                systemModel = trimmed.substring("SystemModel=".length());
             }
         }
-        return Util.Motherboard.of(vendor, model);
+        return new Util.HardwareInfo(
+                Util.Motherboard.of(boardVendor, boardModel),
+                Util.SystemModel.of(systemVendor, systemModel));
     }
 
     /**

@@ -23,6 +23,12 @@ public class BenchmarkSystemInfo implements Serializable {
     String motherboardModel;
     public String getMotherboardModel() { return motherboardModel; }
     @Column
+    String systemVendor;
+    public String getSystemVendor() { return systemVendor; }
+    @Column
+    String systemModel;
+    public String getSystemModel() { return systemModel; }
+    @Column
     String jdk;
     public String getJdk() { return jdk; }
     @Column

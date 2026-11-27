@@ -555,16 +555,18 @@ public class Util {
     }
 
     /**
-     * Returns the motherboard vendor and model, or {@code null} on an
-     * unsupported platform. Parts that cannot be read are {@code null}.
+     * Returns the motherboard and system vendor/model, or {@code null} on an
+     * unsupported platform. Parts that cannot be read are {@code null}. May
+     * run external commands, so call it off the EDT; see
+     * {@link App#getHardwareInfo()}.
      */
-    public static Motherboard getMotherboard() {
+    public static HardwareInfo getHardwareInfo() {
         if (App.isWindows()) {
-            return UtilsWinOs.getMotherboard();
+            return UtilsWinOs.getHardwareInfo();
         } else if (App.isMacOs()) {
-            return UtilsMacOs.getMotherboard();
+            return UtilsMacOs.getHardwareInfo();
         } else if (App.isLinux()) {
-            return UtilsLinuxOs.getMotherboard();
+            return UtilsLinuxOs.getHardwareInfo();
         }
         return null;
     }
@@ -639,6 +641,42 @@ public class Util {
                 return null;
             }
             return trimmed;
+        }
+    }
+
+    /**
+     * Whole-system vendor and model (e.g. {@code Dell Inc.} / {@code XPS 15 9520}),
+     * as opposed to the board inside it. Build with {@link #of}.
+     */
+    public record SystemModel(String vendor, String model) {
+        public static SystemModel of(String vendor, String model) {
+            Motherboard cleaned = Motherboard.of(vendor, model);
+            return new SystemModel(cleaned.vendor(), cleaned.model());
+        }
+
+        public boolean isEmpty() {
+            return vendor == null && model == null;
+        }
+
+        /** Vendor and model joined for display, or {@code "unknown"}. */
+        public String display() {
+            return new Motherboard(vendor, model).display();
+        }
+    }
+
+    /** Motherboard and system vendor/model; neither component is ever {@code null}. */
+    public record HardwareInfo(Motherboard motherboard, SystemModel system) {
+        public HardwareInfo {
+            if (motherboard == null) motherboard = new Motherboard(null, null);
+            if (system == null) system = new SystemModel(null, null);
+        }
+
+        /** Board for display, omitting its vendor when it matches the system vendor. */
+        public String boardDisplay() {
+            if (motherboard.vendor() != null && motherboard.vendor().equalsIgnoreCase(system.vendor())) {
+                return new Motherboard(null, motherboard.model()).display();
+            }
+            return motherboard.display();
         }
     }
 
