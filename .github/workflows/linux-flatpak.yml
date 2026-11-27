@@ -106,9 +106,12 @@ jobs:
         mkdir -p "$HOME/jdm-ci"
         timeout 300 flatpak run net.jdiskmark.JDiskMark run \
           -t WRITE -n 3 -b 4 -z 256 \
-          -l "$HOME/jdm-ci" -e "$HOME/jdm-ci/result.json"
+          -l "$HOME/jdm-ci" -e "$HOME/jdm-ci/result.json" 2>&1 | tee /tmp/cli-run.txt
         test -s "$HOME/jdm-ci/result.json" || { echo "export missing or empty"; exit 1; }
         head -c 600 "$HOME/jdm-ci/result.json"
+        # a default CLI run must not save settings or log errors
+        if find "$HOME/.jdm" -name jdm.properties 2>/dev/null | grep -q .; then echo "CLI wrote jdm.properties"; exit 1; fi
+        if grep -q SEVERE /tmp/cli-run.txt; then echo "SEVERE logged during CLI run"; exit 1; fi
 
     - name: Lint Flatpak (Flathub rules, informational)
       # finish-args such as --device=all and --filesystem=home are expected to be flagged until Flathub exceptions are requested.

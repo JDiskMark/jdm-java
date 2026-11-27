@@ -19,6 +19,12 @@
     <category>Utility</category>
     <category>System</category>
   </categories>
+  <screenshots>
+    <screenshot type="default">
+      <caption>JDiskMark benchmark results</caption>
+      <image type="source">https://raw.githubusercontent.com/JDiskMark/jdm-java/dev/docs/images/jdiskmark-screenshot.png</image>
+    </screenshot>
+  </screenshots>
   <url type="homepage">https://github.com/JDiskMark/jdm-java</url>
   <url type="bugtracker">https://github.com/JDiskMark/jdm-java/issues</url>
   <content_rating type="oars-1.1"/>
