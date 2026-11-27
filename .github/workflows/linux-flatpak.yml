@@ -15,6 +15,20 @@ on:
         description: 'Skip CI pre-release label and pass POM version through unchanged'
         type: boolean
         default: false
+      release_version:
+        description: 'Build this exact version (a leading v is stripped) instead of the CI-labelled version'
+        type: string
+        default: ''
+  workflow_call:
+    inputs:
+      disable_ci_label:
+        description: 'Skip CI pre-release label and pass POM version through unchanged'
+        type: boolean
+        default: false
+      release_version:
+        description: 'Build this exact version (a leading v is stripped) instead of the CI-labelled version'
+        type: string
+        default: ''
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
@@ -51,9 +65,17 @@ jobs:
 
     - name: Compute CI version
       id: ver
+      if: inputs.release_version == ''
       uses: ./.github/actions/ci-version
       with:
         disable_ci_label: ${{ inputs.disable_ci_label || false }}
+
+    - name: Use release version
+      id: rel
+      if: inputs.release_version != ''
+      env:
+        RELEASE_VERSION: ${{ inputs.release_version }}
+      run: echo "version=${RELEASE_VERSION#v}" >> "$GITHUB_OUTPUT"
 
     - name: Build Flatpak Bundle
       # Explicitly activating the linux-flatpak profile to ensure jpackage/antrun runs.
@@ -61,8 +83,8 @@ jobs:
       run: |
         mvn clean install -pl jdm-core,jdm-dist/jdm-flatpak -am -Plinux-flatpak \
           "-Dflatpak.builder.opts=--system --disable-rofiles-fuse" \
-          -Drevision=${{ steps.ver.outputs.install_version }} \
-          -Ddisplay.version=${{ steps.ver.outputs.display_version }} \
+          -Drevision=${{ steps.rel.outputs.version || steps.ver.outputs.install_version }} \
+          -Ddisplay.version=${{ steps.rel.outputs.version || steps.ver.outputs.display_version }} \
           --no-transfer-progress
 
     - name: Upload Flatpak Artifact
