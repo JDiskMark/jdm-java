@@ -74,7 +74,9 @@ ChartPalette, ThemeColors, GraphPaletteMenu, GraphThemeMenu, AppIcon
 **util** — Portal, Exporter, Util, RoundingSerializer
 
 Already in `org.metricus.jdm.util`: DriveDetailsCache (per-drive OS lookup
-cache for the drive UI, validated by volume fingerprint; see #267)
+cache for the drive UI, validated by volume fingerprint; see #267),
+LockedTestData (Direct I/O test data Java keeps locked on Windows FAT32/exFAT;
+see #268)
 
 # Drive details caching
 
@@ -159,22 +161,41 @@ JVM, so **closing JDiskMark frees it; no reboot is needed.** The same code is in
 Oracle JDK and Temurin (both OpenJDK builds). Verify with
 `java jdm-core/docs/repro/DirectIoLockRepro.java E:\` (exit code 1 = reproduced).
 
-**Current workarounds (#257):**
+**Current workarounds (#257, #268):**
 - `BenchmarkRunner.checkDirectIoLock()` probes once per location and volume
   serial whether a Direct I/O file can be released; only affected volumes go on.
-- The user picks how to proceed (`DirectLockChoice`): **Buffered** (Direct I/O
-  off, disk cache cleared before READ), **Keep** (Direct I/O kept, test data
-  removed after exit) or **Cancel**. The GUI asks via `Gui.askDirectLockChoice()`;
-  the CLI uses `--direct-lock=buffered|keep`.
+- The user picks how to proceed (`DirectLockChoice`): **Keep** (default; Direct
+  I/O kept, test data removed after exit), **Buffered** (Direct I/O off, disk
+  cache cleared before READ) or **Cancel**. The GUI asks once per drive per
+  session via `Gui.askDirectLockChoice()`; the CLI uses
+  `--direct-lock=buffered|keep`.
 - Locked test data is registered with `Util.removeDirectoryAfterExit()`, which
   deletes it from a separate process after the JVM exits.
-- Batch runs skip affected drives when Direct I/O is on.
 
-**Limits and planned work (#268):** only one Direct I/O run per affected drive
-per session (the next run can't delete `jdm-data`). Planned: separate test
-folder per run, ask once per batch, prompt to restart JDiskMark only when free
-space runs out, and clear leftover folders at startup. Remove the workarounds
-once a fixed JDK is the minimum.
+**Consecutive runs (#268):** `LockedTestData` tracks locked folders and the
+space they hold per location (keyed by path and volume serial).
+
+- **Separate test folder per run:** once a drive holds locked data, later runs
+  (single or batch) use a new `jdm-data/run-N` folder instead of deleting
+  `jdm-data`. `LockedTestData.locationOf()` maps a run folder back to its drive
+  location for the lock probe.
+- **Batch:** `BatchPanel` asks once before the batch starts
+  (`Gui.askBatchDirectLockChoice()`) for all affected drives and never prompts
+  mid-batch. Runs skipped for lack of space say that locked data is the cause,
+  and the results screen lists drives with locked data and the space held.
+- **Restart only when space runs out:** `DriveChecker.checkDiskSpace()` counts
+  the locked space; when it alone causes the shortfall, a GUI run offers
+  **Restart JDiskMark** (`Gui.offerRestartForLockedData()`, links #260).
+  `App.restart()` relaunches the jpackage launcher (`jpackage.app-path`) or
+  java with the same options, via `Util.relaunchAfterExit()`, after the exit
+  cleanup has removed the locked folders. Results are always saved in the GUI,
+  so nothing is lost.
+- **Startup cleanup:** every path registered for removal after exit is also
+  written to `pending-removal.txt` in the app cache dir. At startup a
+  background task deletes the listed test folders that still exist; paths on
+  disconnected drives stay for next time. Drives are never scanned.
+
+Remove the workarounds once a fixed JDK is the minimum (track in #260).
 
 
 # 
