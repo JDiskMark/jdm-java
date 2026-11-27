@@ -18,10 +18,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
@@ -142,6 +144,8 @@ public class App {
     public static String os;
     public static String arch;
     public static String processorName;
+    private static final long HARDWARE_INFO_TIMEOUT_SECONDS = 10;
+    private static volatile CompletableFuture<Util.HardwareInfo> hardwareFuture;
     public static String jdk;
     public static String osLabel;
     // PII: OS username collection removed (#117 — use anonymous or a non-PII system
@@ -388,6 +392,7 @@ public class App {
         os = System.getProperty("os.name");
         arch = System.getProperty("os.arch");
         processorName = Util.getProcessorName();
+        startHardwareInfoCollection();
         jdk = Util.getJvmInfo();
         osLabel = UtilOs.getOsLabel(os);
 
@@ -469,10 +474,48 @@ public class App {
             // Logged after the window is shown so it appears as the first visible entry.
             java.nio.file.Path logDir = Logging.getLogDir();
             msg(String.format(
-                    "JDiskMark %s started — OS: %s | JDK: %s | CPU: %s | logs: %s",
-                    VERSION, os, jdk, processorName,
+                    "JDiskMark %s started — OS: %s | JDK: %s | logs: %s",
+                    VERSION, os, jdk,
                     logDir != null ? logDir.toAbsolutePath() : "(console only)"));
+            // hardware lookup runs in the background; log it when it completes
+            hardwareFuture.thenAccept(hardware -> msg("System — "
+                    + (hardware == null
+                            ? "hardware info unavailable"
+                            : "Machine: " + hardware.system().display()
+                                    + " | Board: " + hardware.boardDisplay())
+                    + " | CPU: " + processorName));
         }
+    }
+
+    /**
+     * Starts the motherboard and system vendor/model lookup on a daemon
+     * thread. The lookup can take a second or more (PowerShell on Windows,
+     * system_profiler on macOS), so it never runs on the startup path; it is
+     * abandoned after {@link #HARDWARE_INFO_TIMEOUT_SECONDS}.
+     */
+    private static void startHardwareInfoCollection() {
+        hardwareFuture = CompletableFuture
+                .supplyAsync(Util::getHardwareInfo, task -> {
+                    Thread t = new Thread(task, "jdm-hardware-info");
+                    t.setDaemon(true);
+                    t.start();
+                })
+                .orTimeout(HARDWARE_INFO_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .exceptionally(ex -> {
+                    Logger.getLogger(App.class.getName())
+                            .log(Level.WARNING, "Hardware info unavailable", ex);
+                    return null;
+                });
+    }
+
+    /**
+     * Returns the motherboard and system vendor/model, waiting at most the
+     * remainder of the collection timeout. Returns {@code null} if the lookup
+     * failed or timed out. Do not call from the EDT.
+     */
+    public static Util.HardwareInfo getHardwareInfo() {
+        CompletableFuture<Util.HardwareInfo> future = hardwareFuture;
+        return future == null ? null : future.join();
     }
 
     /**

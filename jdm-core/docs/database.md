@@ -18,7 +18,7 @@ The database directory is per install version, so a new version starts with an e
 
 | Table | Entity | Rows | Contents |
 |---|---|---|---|
-| `Benchmark` | `Benchmark` | one per run | UUID id (stored as VARCHAR), `systemId`, start/end time, `archived`, batch id. `BenchmarkConfig`, `BenchmarkSystemInfo` and `BenchmarkDriveInfo` are `@Embedded`, so their fields are columns in this row |
+| `Benchmark` | `Benchmark` | one per run | UUID id (stored as VARCHAR), `systemId`, start/end time, `archived`, batch id. `BenchmarkConfig`, `BenchmarkSystemInfo` (CPU, motherboard and system vendor and model, OS) and `BenchmarkDriveInfo` are `@Embedded`, so their fields are columns in this row |
 | `BenchmarkOperation` | `BenchmarkOperation` | one per operation (WRITE, READ) | `@OneToMany` from `Benchmark` (cascade all, orphan removal). Metrics (`bwAvg/Max/Min`, `accAvg`, `iops`), settings used, `status`, `failReason`, samples lob |
 | `SmartSnapshot` | `SmartSnapshot` | one per SMART capture | Identity id, `capturedAt`, device/model/serial/firmware, health summary columns, full `smartctl` output in `rawJson` |
 

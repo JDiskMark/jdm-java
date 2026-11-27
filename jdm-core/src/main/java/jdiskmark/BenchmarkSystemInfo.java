@@ -17,6 +17,18 @@ public class BenchmarkSystemInfo implements Serializable {
     String processorName;
     public String getProcessorName() { return processorName; }
     @Column
+    String motherboardVendor;
+    public String getMotherboardVendor() { return motherboardVendor; }
+    @Column
+    String motherboardModel;
+    public String getMotherboardModel() { return motherboardModel; }
+    @Column
+    String systemVendor;
+    public String getSystemVendor() { return systemVendor; }
+    @Column
+    String systemModel;
+    public String getSystemModel() { return systemModel; }
+    @Column
     String jdk;
     public String getJdk() { return jdk; }
     @Column

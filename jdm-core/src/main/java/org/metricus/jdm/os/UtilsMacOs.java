@@ -1,13 +1,17 @@
 package org.metricus.jdm.os;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -22,6 +26,7 @@ import jdiskmark.UtilOs;
 public final class UtilsMacOs {
 
     private static final Logger LOGGER = Logger.getLogger(UtilsMacOs.class.getName());
+    private static final long HARDWARE_TIMEOUT_SECONDS = 5;
 
     private UtilsMacOs() {}
 
@@ -292,6 +297,70 @@ public final class UtilsMacOs {
             LOGGER.log(Level.SEVERE, null, e);
         }
         return "";
+    }
+
+    /**
+     * Returns the Mac hardware model identifier (e.g. {@code Mac17,2}, via
+     * {@code sysctl -n hw.model}) as the board and the system family name
+     * (e.g. {@code MacBook Pro}, via {@code system_profiler}), both with Apple
+     * as the vendor. Each command is bounded by {@link #HARDWARE_TIMEOUT_SECONDS};
+     * parts that cannot be read are {@code null}.
+     */
+    public static Util.HardwareInfo getHardwareInfo() {
+        String identifier = runWithTimeout("sysctl", "-n", "hw.model");
+        String json = runWithTimeout("system_profiler", "-json", "SPHardwareDataType");
+        String family = parseMachineName(json);
+        return new Util.HardwareInfo(
+                identifier == null ? null : Util.Motherboard.of("Apple", identifier.trim()),
+                family == null ? null : Util.SystemModel.of("Apple", family));
+    }
+
+    /**
+     * Extracts {@code machine_name} from {@code system_profiler -json SPHardwareDataType}.
+     *
+     * <pre>
+     * {"SPHardwareDataType":[{"machine_name":"MacBook Pro","machine_model":"Mac17,2", ...}]}
+     * </pre>
+     *
+     * @return the family name, or {@code null} if absent or unparseable
+     */
+    public static String parseMachineName(String json) {
+        if (json == null || json.isBlank()) return null;
+        try {
+            JsonNode name = new ObjectMapper().readTree(json)
+                    .path("SPHardwareDataType").path(0).path("machine_name");
+            return name.isTextual() ? name.asText() : null;
+        } catch (IOException e) {
+            LOGGER.log(Level.FINE, "Unable to parse system_profiler output", e);
+            return null;
+        }
+    }
+
+    /** Runs a command and returns its stdout, or {@code null} on failure or timeout. */
+    private static String runWithTimeout(String... command) {
+        Process process = null;
+        try {
+            ProcessBuilder pb = new ProcessBuilder(command);
+            pb.environment().put("LC_ALL", "C");
+            pb.redirectError(ProcessBuilder.Redirect.DISCARD);
+            process = pb.start();
+            // hardware queries emit well under the pipe buffer, so read after exit
+            if (!process.waitFor(HARDWARE_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                LOGGER.log(Level.WARNING, "{0} timed out", String.join(" ", command));
+                return null;
+            }
+            String out = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            return out.isBlank() ? null : out;
+        } catch (IOException e) {
+            LOGGER.log(Level.FINE, "Unable to run " + String.join(" ", command), e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            if (process != null && process.isAlive()) {
+                process.destroyForcibly();
+            }
+        }
+        return null;
     }
 
     // -----------------------------------------------------------------------

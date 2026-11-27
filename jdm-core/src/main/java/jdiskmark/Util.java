@@ -555,6 +555,23 @@ public class Util {
     }
 
     /**
+     * Returns the motherboard and system vendor/model, or {@code null} on an
+     * unsupported platform. Parts that cannot be read are {@code null}. May
+     * run external commands, so call it off the EDT; see
+     * {@link App#getHardwareInfo()}.
+     */
+    public static HardwareInfo getHardwareInfo() {
+        if (App.isWindows()) {
+            return UtilsWinOs.getHardwareInfo();
+        } else if (App.isMacOs()) {
+            return UtilsMacOs.getHardwareInfo();
+        } else if (App.isLinux()) {
+            return UtilsLinuxOs.getHardwareInfo();
+        }
+        return null;
+    }
+
+    /**
      * Returns the filesystem type for the volume containing {@code path}
      * (e.g. "NTFS", "ext4"). Windows and Linux supported.
      */
@@ -588,6 +605,80 @@ public class Util {
 
     /** USB Vendor ID and Product ID pair, each formatted as 4-character lowercase hex. */
     public record UsbIds(String vendorId, String productId) {}
+
+    /**
+     * Motherboard (or system board) vendor and model. Either part is
+     * {@code null} when unavailable; build with {@link #of} so blank and
+     * firmware placeholder values are normalized to {@code null}.
+     */
+    public record Motherboard(String vendor, String model) {
+        private static final Set<String> PLACEHOLDERS = Set.of(
+                "default string", "system manufacturer", "system product name",
+                "not applicable", "not specified", "n/a", "none", "unknown",
+                "base board", "o.e.m.", "oem", "type1productconfigid");
+
+        public static Motherboard of(String vendor, String model) {
+            return new Motherboard(clean(vendor), clean(model));
+        }
+
+        public boolean isEmpty() {
+            return vendor == null && model == null;
+        }
+
+        /** Vendor and model joined for display, or {@code "unknown"}. */
+        public String display() {
+            if (isEmpty()) return "unknown";
+            if (vendor == null) return model;
+            if (model == null) return vendor;
+            return vendor + " " + model;
+        }
+
+        private static String clean(String value) {
+            if (value == null) return null;
+            String trimmed = value.replace("\0", "").trim();
+            String lower = trimmed.toLowerCase(java.util.Locale.ROOT);
+            if (trimmed.isEmpty() || lower.startsWith("to be filled") || PLACEHOLDERS.contains(lower)) {
+                return null;
+            }
+            return trimmed;
+        }
+    }
+
+    /**
+     * Whole-system vendor and model (e.g. {@code Dell Inc.} / {@code XPS 15 9520}),
+     * as opposed to the board inside it. Build with {@link #of}.
+     */
+    public record SystemModel(String vendor, String model) {
+        public static SystemModel of(String vendor, String model) {
+            Motherboard cleaned = Motherboard.of(vendor, model);
+            return new SystemModel(cleaned.vendor(), cleaned.model());
+        }
+
+        public boolean isEmpty() {
+            return vendor == null && model == null;
+        }
+
+        /** Vendor and model joined for display, or {@code "unknown"}. */
+        public String display() {
+            return new Motherboard(vendor, model).display();
+        }
+    }
+
+    /** Motherboard and system vendor/model; neither component is ever {@code null}. */
+    public record HardwareInfo(Motherboard motherboard, SystemModel system) {
+        public HardwareInfo {
+            if (motherboard == null) motherboard = new Motherboard(null, null);
+            if (system == null) system = new SystemModel(null, null);
+        }
+
+        /** Board for display, omitting its vendor when it matches the system vendor. */
+        public String boardDisplay() {
+            if (motherboard.vendor() != null && motherboard.vendor().equalsIgnoreCase(system.vendor())) {
+                return new Motherboard(null, motherboard.model()).display();
+            }
+            return motherboard.display();
+        }
+    }
 
     /**
      * Returns the USB version string for the device at {@code path}

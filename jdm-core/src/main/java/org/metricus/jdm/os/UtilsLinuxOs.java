@@ -25,6 +25,51 @@ public final class UtilsLinuxOs {
     private UtilsLinuxOs() {}
 
     /**
+     * Returns the motherboard and system vendor/model from the DMI sysfs
+     * files. See {@link #getMotherboard(Path, Path)} for the board fallbacks.
+     */
+    public static Util.HardwareInfo getHardwareInfo() {
+        Path dmiDir = Path.of("/sys/class/dmi/id");
+        return new Util.HardwareInfo(
+                getMotherboard(dmiDir, Path.of("/proc/device-tree/model")),
+                Util.SystemModel.of(
+                        readFirstLine(dmiDir.resolve("sys_vendor")),
+                        readFirstLine(dmiDir.resolve("product_name"))));
+    }
+
+    /**
+     * Returns the motherboard vendor and model from the DMI sysfs files.
+     * Falls back to the system vendor/product, then to the device tree model
+     * on ARM boards without DMI. The serial number is never read.
+     */
+    static Util.Motherboard getMotherboard(Path dmiDir, Path deviceTreeModel) {
+        Util.Motherboard board = Util.Motherboard.of(
+                readFirstLine(dmiDir.resolve("board_vendor")),
+                readFirstLine(dmiDir.resolve("board_name")));
+        if (board.model() == null) {
+            Util.Motherboard product = Util.Motherboard.of(
+                    readFirstLine(dmiDir.resolve("sys_vendor")),
+                    readFirstLine(dmiDir.resolve("product_name")));
+            if (product.model() != null) {
+                board = product;
+            }
+        }
+        if (board.isEmpty()) {
+            board = Util.Motherboard.of(null, readFirstLine(deviceTreeModel));
+        }
+        return board;
+    }
+
+    private static String readFirstLine(Path file) {
+        try {
+            return Files.isReadable(file) ? Files.readString(file).trim() : null;
+        } catch (IOException e) {
+            LOGGER.log(Level.FINE, "Unable to read " + file, e);
+            return null;
+        }
+    }
+
+    /**
      * Returns the negotiated USB link version (e.g. {@code "3.0"}, {@code "3.2 Gen 2"})
      * from sysfs for a Linux path, or {@code null} when not USB-attached.
      */

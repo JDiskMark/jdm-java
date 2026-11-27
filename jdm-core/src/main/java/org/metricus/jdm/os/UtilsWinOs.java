@@ -56,6 +56,51 @@ public final class UtilsWinOs {
     }
 
     /**
+     * Returns the baseboard ({@code Win32_BaseBoard}) and system
+     * ({@code Win32_ComputerSystem}) vendor/model in a single PowerShell
+     * call, bounded by {@link #TIMEOUT_SECONDS}. Parts that cannot be read
+     * are {@code null}.
+     */
+    public static Util.HardwareInfo getHardwareInfo() {
+        String script = """
+                $b = Get-CimInstance Win32_BaseBoard | Select-Object -First 1
+                $s = Get-CimInstance Win32_ComputerSystem | Select-Object -First 1
+                "BoardManufacturer=$($b.Manufacturer)"
+                "BoardProduct=$($b.Product)"
+                "SystemManufacturer=$($s.Manufacturer)"
+                "SystemModel=$($s.Model)"
+                """;
+        return parseHardwareInfo(runPowerShellLines(script, "hardware lookup"));
+    }
+
+    /**
+     * Parses the labeled lines emitted by {@link #getHardwareInfo()}
+     * ({@code BoardManufacturer=}, {@code BoardProduct=},
+     * {@code SystemManufacturer=}, {@code SystemModel=}); other lines are ignored.
+     */
+    public static Util.HardwareInfo parseHardwareInfo(List<String> lines) {
+        String boardVendor = null;
+        String boardModel = null;
+        String systemVendor = null;
+        String systemModel = null;
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (trimmed.startsWith("BoardManufacturer=")) {
+                boardVendor = trimmed.substring("BoardManufacturer=".length());
+            } else if (trimmed.startsWith("BoardProduct=")) {
+                boardModel = trimmed.substring("BoardProduct=".length());
+            } else if (trimmed.startsWith("SystemManufacturer=")) {
+                systemVendor = trimmed.substring("SystemManufacturer=".length());
+            } else if (trimmed.startsWith("SystemModel=")) {
+                systemModel = trimmed.substring("SystemModel=".length());
+            }
+        }
+        return new Util.HardwareInfo(
+                Util.Motherboard.of(boardVendor, boardModel),
+                Util.SystemModel.of(systemVendor, systemModel));
+    }
+
+    /**
      * Returns the negotiated USB interface version (e.g. {@code "2.0"}, {@code "3.0"},
      * {@code "3.2 Gen 2"}) for a Windows drive letter by querying its parent USB hub
      * via {@code IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX} and {@code _V2}.
