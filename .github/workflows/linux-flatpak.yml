@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     # The image tag must track runtime-version in jdm-dist/jdm-flatpak/net.jdiskmark.JDiskMark.yml
     container:
-      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-26.08
       options: --privileged
     permissions:
       contents: read
@@ -79,7 +79,7 @@ jobs:
         set -eu
         flatpak install --system --noninteractive --bundle jdm-dist/jdm-flatpak/target/*.flatpak
         flatpak info --show-metadata net.jdiskmark.JDiskMark | tee /tmp/metadata.txt
-        grep -q '^runtime=org.freedesktop.Platform/.*/25.08' /tmp/metadata.txt
+        grep -q '^runtime=org.freedesktop.Platform/.*/26.08' /tmp/metadata.txt
         grep -q '^command=jdiskmark' /tmp/metadata.txt
         FILES="$(flatpak info --show-location net.jdiskmark.JDiskMark)/files"
         for f in \
@@ -112,6 +112,9 @@ jobs:
         # a default CLI run must not save settings or log errors
         if find "$HOME/.jdm" -name jdm.properties 2>/dev/null | grep -q .; then echo "CLI wrote jdm.properties"; exit 1; fi
         if grep -q SEVERE /tmp/cli-run.txt; then echo "SEVERE logged during CLI run"; exit 1; fi
+        # logs belong in the sandbox state dir, not ./logs in the working directory
+        if grep -q 'Could not create log directory' /tmp/cli-run.txt; then echo "log directory not writable"; exit 1; fi
+        if ! find "$HOME" /root -path '*/.var/app/net.jdiskmark.JDiskMark/*' -name 'jdiskmark-*.log' 2>/dev/null | grep -q .; then echo "no log file in the Flatpak state dir"; exit 1; fi
 
     - name: Lint Flatpak (Flathub rules, informational)
       # finish-args such as --device=all and --filesystem=home are expected to be flagged until Flathub exceptions are requested.

@@ -93,10 +93,10 @@ flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flath
 
 #### 2. Install the required runtime
 
-JDiskMark depends on the `org.freedesktop.Platform 25.08` runtime. Install it from Flathub:
+JDiskMark depends on the `org.freedesktop.Platform 26.08` runtime. Install it from Flathub:
 
 ```sh
-flatpak install --user flathub org.freedesktop.Platform//25.08
+flatpak install --user flathub org.freedesktop.Platform//26.08
 ```
 
 #### 3. Install JDiskMark
