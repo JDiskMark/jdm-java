@@ -61,6 +61,7 @@ import org.jfree.chart.ui.HorizontalAlignment;
 import org.jfree.chart.ui.RectangleEdge;
 import org.jfree.chart.ui.RectangleInsets;
 import org.metricus.jdm.ui.Tabs;
+import org.metricus.jdm.util.LockedTestData;
 
 /**
  * Store GUI references for easy access
@@ -1567,17 +1568,53 @@ public final class Gui {
     
     private static final Logger SMART_LOG = Logger.getLogger(Gui.class.getName());
 
+    /** Latest drive title lookup; older lookups are discarded (EDT only). */
+    private static int driveTitleGeneration = 0;
+
+    /**
+     * Refreshes the drive panel and the chart drive title. Safe to call from
+     * any thread.
+     */
     static public void updateDiskInfo() {
-        String currentTitle = App.getDriveInfo();
-        boolean changed = displayedTitle != null
-                && !driveIdentity(displayedTitle).equals(driveIdentity(currentTitle));
-        // back on the plotted run's drive: restore its title so usage matches the data
-        chart.getTitle().setText((displayedTitle != null && !changed) ? displayedTitle : currentTitle);
-        setDriveChanged(changed);
-        setChartModifiedIndicator(settingsStale);
         if (drivePanel != null) {
             drivePanel.refresh();
         }
+        updateDriveTitle();
+    }
+
+    /**
+     * Looks up the selected drive's title (model, partition, usage) off the
+     * EDT, then updates the chart title and drive-changed indicator. Safe to
+     * call from any thread.
+     */
+    static void updateDriveTitle() {
+        runOnEdt(() -> {
+            int generation = ++driveTitleGeneration;
+            new javax.swing.SwingWorker<String, Void>() {
+                @Override
+                protected String doInBackground() {
+                    return App.getDriveInfo();
+                }
+
+                @Override
+                protected void done() {
+                    if (generation != driveTitleGeneration || chart == null) return;
+                    String currentTitle;
+                    try {
+                        currentTitle = get();
+                    } catch (InterruptedException | ExecutionException ex) {
+                        SMART_LOG.log(Level.WARNING, "drive title lookup failed", ex);
+                        return;
+                    }
+                    boolean changed = displayedTitle != null
+                            && !driveIdentity(displayedTitle).equals(driveIdentity(currentTitle));
+                    // back on the plotted run's drive: restore its title so usage matches the data
+                    chart.getTitle().setText((displayedTitle != null && !changed) ? displayedTitle : currentTitle);
+                    setDriveChanged(changed);
+                    setChartModifiedIndicator(settingsStale);
+                }
+            }.execute();
+        });
 
         // SMART data is fetched lazily via runSmart(), which is called
         // by the "Run SMART" button in SmartPanel and optionally after each
@@ -1613,23 +1650,23 @@ public final class Gui {
                     Direct I/O works on %s, but %s Java keeps Direct I/O
                     test files locked until JDiskMark is closed (Windows only; NTFS
                     drives are not affected). The test data can't be deleted after
-                    the run, so another benchmark on this drive won't run until
-                    JDiskMark is restarted.
+                    the run. Later runs on this drive use a new test folder, and
+                    JDiskMark offers a restart if free space runs out.
 
+                    Keep Direct I/O: run as configured. The test data is removed
+                        when JDiskMark closes. Not asked again for this drive.
                     Use Buffered I/O: turn Direct I/O off. The disk cache must be
                         cleared before READ (automatic when running as admin).
-                    Keep Direct I/O: run as configured. The test data is removed
-                        when JDiskMark closes.
                     Cancel Benchmark: don't run.
                     """.formatted(location, onDrives);
-            Object[] options = { "Use Buffered I/O", "Keep Direct I/O", "Cancel Benchmark" };
+            Object[] options = { "Keep Direct I/O", "Use Buffered I/O", "Cancel Benchmark" };
             int result = JOptionPane.showOptionDialog(mainFrame, message,
                     "Direct I/O Locks Test Files" + (fileSystem != null ? " on " + fileSystem : ""),
                     JOptionPane.DEFAULT_OPTION,
                     JOptionPane.WARNING_MESSAGE, null, options, options[0]);
             choice[0] = switch (result) {
-                case 0 -> BenchmarkRunner.DirectLockChoice.BUFFERED;
-                case 1 -> BenchmarkRunner.DirectLockChoice.KEEP;
+                case 0 -> BenchmarkRunner.DirectLockChoice.KEEP;
+                case 1 -> BenchmarkRunner.DirectLockChoice.BUFFERED;
                 default -> BenchmarkRunner.DirectLockChoice.CANCEL;
             };
         };
@@ -1647,15 +1684,77 @@ public final class Gui {
         return choice[0];
     }
 
-    /** Explains, after a run that kept Direct I/O, why the test data is still there (#257). */
+    /** Explains, after the first run that kept Direct I/O on a drive, why the test data is still there (#257). */
     public static void showDirectLockKeptNotice(File dataDir) {
         if (mainFrame == null) return;
         JOptionPane.showMessageDialog(mainFrame, """
                 The test data in %s is still locked by Java because Direct I/O
                 was kept on this drive. It is removed when JDiskMark closes.
 
-                Restart JDiskMark before running another benchmark on this drive.
+                You can keep benchmarking this drive: each run uses a new test
+                folder. The locked data still takes up space, so JDiskMark offers
+                a restart if the drive runs out of free space.
                 """.formatted(dataDir), "Test Data Locked", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    /**
+     * Asks once, before a batch, how to handle Direct I/O on drives where Java
+     * keeps the test files locked until exit (#268). Must be called on the EDT.
+     *
+     * @return the choice for the whole batch; CANCEL when the dialog is closed
+     */
+    public static BenchmarkRunner.DirectLockChoice askBatchDirectLockChoice(List<String> drives) {
+        String message = """
+                Direct I/O is on, and these drives use FAT32 or exFAT:
+                    %s
+
+                On Windows, Java keeps Direct I/O test files on such drives locked
+                until JDiskMark is closed (NTFS is not affected). Choose how the
+                batch should handle them; other drives are not affected.
+
+                Keep Direct I/O: each run uses a new test folder; the test data
+                    is removed when JDiskMark closes. Runs are skipped if a drive
+                    runs out of free space.
+                Use Buffered I/O: turn Direct I/O off on these drives. The disk
+                    cache must be cleared before READ (automatic as admin).
+                Cancel Batch: don't start.
+                """.formatted(String.join("\n    ", drives));
+        Object[] options = { "Keep Direct I/O", "Use Buffered I/O", "Cancel Batch" };
+        int result = JOptionPane.showOptionDialog(mainFrame, message, "Direct I/O Locks Test Files",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
+        return switch (result) {
+            case 0 -> BenchmarkRunner.DirectLockChoice.KEEP;
+            case 1 -> BenchmarkRunner.DirectLockChoice.BUFFERED;
+            default -> BenchmarkRunner.DirectLockChoice.CANCEL;
+        };
+    }
+
+    /**
+     * Offers to restart JDiskMark when a drive is out of space only because of
+     * Direct I/O test data Java keeps locked until exit (#268). Must be called
+     * on the EDT while no benchmark is running.
+     */
+    public static void offerRestartForLockedData(File location, String required, String available) {
+        String message = """
+                There isn't enough free space on %s for this benchmark.
+                    Required : %s
+                    Available: %s
+                    Locked   : %s of earlier Direct I/O test data
+
+                Because of a bug in Java (JDK), Direct I/O test files on FAT32 and
+                exFAT drives stay locked until JDiskMark closes, so their space
+                can't be freed while it is running.
+                Details: https://github.com/JDiskMark/jdm-java/issues/260
+
+                Restart JDiskMark to remove the locked test data and free the space.
+                Your settings and saved results are kept.
+                """.formatted(location, required, available, LockedTestData.describe(location));
+        Object[] options = { "Restart JDiskMark", "Cancel" };
+        int result = JOptionPane.showOptionDialog(mainFrame, message, "Locked Test Data Is Using Space",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0]);
+        if (result == 0) {
+            App.restart();
+        }
     }
 
     /**

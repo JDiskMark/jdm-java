@@ -30,6 +30,8 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingWorker;
+import org.metricus.jdm.util.DriveDetailsCache;
+import org.metricus.jdm.util.LockedTestData;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import org.jfree.chart.ChartPanel;
@@ -148,7 +150,10 @@ public class BatchPanel extends JPanel {
         driveSelectPanel.add(driveDeselectAll);
         JButton driveRefresh = new JButton("Refresh");
         driveRefresh.setToolTipText("Rescan drives");
-        driveRefresh.addActionListener(e -> populateDrives());
+        driveRefresh.addActionListener(e -> {
+            DriveDetailsCache.clear();
+            populateDrives();
+        });
         driveSelectPanel.add(Box.createHorizontalStrut(8));
         driveSelectPanel.add(driveRefresh);
         driveColumn.add(driveSelectPanel);
@@ -467,7 +472,7 @@ public class BatchPanel extends JPanel {
                 List<File> roots = listDriveRoots();
                 List<DriveEntry> entries = new ArrayList<>();
                 for (File root : roots) {
-                    String model = Util.getDriveModel(root);
+                    String model = DriveDetailsCache.get(root).model();
                     if (model == null || model.isBlank()) model = "Unknown";
                     DiskUsageInfo usage;
                     try {
@@ -589,6 +594,16 @@ public class BatchPanel extends JPanel {
         int cooldown = (int) cooldownSpinner.getValue();
         BatchConfig batchConfig = BatchConfig.of(selectedDrives, selectedProfiles, cooldown);
 
+        // Ask once, up front, how to handle drives with the Direct I/O lock (#268)
+        BenchmarkRunner.DirectLockChoice lockChoice = null;
+        List<String> lockDrives = directLockDrives(selectedDrives, selectedProfiles);
+        if (!lockDrives.isEmpty()) {
+            lockChoice = Gui.askBatchDirectLockChoice(lockDrives);
+            if (lockChoice == BenchmarkRunner.DirectLockChoice.CANCEL) {
+                return;
+            }
+        }
+
         statusListModel.clear();
         // Profile-first order to match BatchWorker execution
         for (BenchmarkProfile profile : selectedProfiles) {
@@ -610,6 +625,7 @@ public class BatchPanel extends JPanel {
         if (Gui.mainFrame != null) Gui.mainFrame.adjustSensitivity();
 
         worker = new BatchWorker(batchConfig);
+        worker.setDirectLockChoice(lockChoice);
         worker.setEventListener(this::handleEvent);
         worker.execute();
     }
@@ -680,6 +696,29 @@ public class BatchPanel extends JPanel {
 
     // ── Results Display ─────────────────────────────────────────────────────
 
+    /**
+     * Drives where Java would keep Direct I/O test files locked until exit:
+     * FAT32/exFAT on Windows, when a selected profile uses Direct I/O with the
+     * modern engine (#257, #268). The runner still probes each drive.
+     */
+    private static List<String> directLockDrives(List<File> drives, List<BenchmarkProfile> profiles) {
+        List<String> result = new ArrayList<>();
+        if (!App.isWindows()) return result;
+        boolean anyDirect = profiles.stream().anyMatch(p ->
+                p.isDirectEnable() && p.getIoEngine() == App.IoEngine.MODERN);
+        if (!anyDirect) return result;
+        for (File drive : drives) {
+            String fs = BenchmarkRunner.fileSystemType(drive.toPath());
+            if (fs == null) continue;
+            switch (fs.toLowerCase(java.util.Locale.ROOT)) {
+                case "fat", "fat12", "fat16", "fat32", "exfat" ->
+                        result.add(drive.getAbsolutePath() + " (" + fs + ")");
+                default -> { }
+            }
+        }
+        return result;
+    }
+
     private void showResults(BatchResult result) {
         currentResultBenchmarks.clear();
         for (BatchResult.RunResult rr : result.getResults()) {
@@ -698,6 +737,27 @@ public class BatchPanel extends JPanel {
         cardLayout.show(cardPanel, CARD_RESULTS);
         String profileNames = String.join(", ", result.getProfiles().stream().map(BenchmarkProfile::getName).toList());
         App.msg("Batch complete — " + profileNames + " | " + durationText);
+        showLockedDataNotice(result);
+    }
+
+    /** Lists drives whose Direct I/O test data stays locked until JDiskMark closes (#268). */
+    private void showLockedDataNotice(BatchResult result) {
+        java.util.Set<String> lines = new java.util.LinkedHashSet<>();
+        for (BatchResult.RunResult rr : result.getResults()) {
+            File location = DriveChecker.resolveLocationForRoot(rr.driveLocation());
+            String held = location != null ? LockedTestData.describe(location) : null;
+            if (held != null) lines.add(location.getAbsolutePath() + " — " + held);
+        }
+        if (lines.isEmpty()) return;
+        String list = String.join("\n    ", lines);
+        App.warn("Locked Direct I/O test data is removed when JDiskMark closes: " + String.join("; ", lines));
+        javax.swing.JOptionPane.showMessageDialog(this, """
+                Java keeps the Direct I/O test data on these drives locked until
+                JDiskMark closes, so it still takes up space:
+                    %s
+
+                It is removed automatically when you close or restart JDiskMark.
+                """.formatted(list), "Locked Test Data", javax.swing.JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void buildChart(List<BenchmarkProfile> profiles, List<BatchResult.RunResult> successful) {

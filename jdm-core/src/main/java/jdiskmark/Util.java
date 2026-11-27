@@ -26,6 +26,7 @@ import javax.swing.filechooser.FileSystemView;
 import org.metricus.jdm.os.UtilsLinuxOs;
 import org.metricus.jdm.os.UtilsMacOs;
 import org.metricus.jdm.os.UtilsWinOs;
+import org.metricus.jdm.util.LockedTestData;
 
 /**
  * Utility methods for JDiskMark
@@ -142,20 +143,62 @@ public class Util {
 
     private static void removeAfterExit(File path) {
         if (path == null || !App.isWindows()) return;
-        REMOVE_AFTER_EXIT.add(path.toPath().toAbsolutePath());
+        Path p = path.toPath().toAbsolutePath();
+        REMOVE_AFTER_EXIT.add(p);
+        LockedTestData.rememberPending(p);
+        addRemoveHook();
+    }
+
+    private static void addRemoveHook() {
         if (REMOVE_HOOK_ADDED.compareAndSet(false, true)) {
             Runtime.getRuntime().addShutdownHook(
                     new Thread(Util::launchRemoveAfterExit, "jdm-remove-after-exit"));
         }
     }
 
+    /** Command to start after the exit cleanup has run; null for none. */
+    private static volatile List<String> relaunchCommand = null;
+
+    /**
+     * Windows only: starts {@code command} once this process has ended and the
+     * folders registered for removal after exit are gone. Used to restart
+     * JDiskMark so locked Direct I/O test data is freed (#268).
+     */
+    static public void relaunchAfterExit(List<String> command) {
+        if (!App.isWindows() || command == null || command.isEmpty()) return;
+        relaunchCommand = List.copyOf(command);
+        addRemoveHook();
+    }
+
+    /** Single-quoted PowerShell literal. */
+    private static String psQuote(String s) {
+        return "'" + s.replace("'", "''") + "'";
+    }
+
     private static void launchRemoveAfterExit() {
+        // deepest paths first, so jdm-data/run-N is removed before jdm-data
+        List<Path> paths = new ArrayList<>(REMOVE_AFTER_EXIT);
+        paths.sort((a, b) -> Integer.compare(b.getNameCount(), a.getNameCount()));
         StringBuilder dirs = new StringBuilder();
-        for (Path p : REMOVE_AFTER_EXIT) {
+        for (Path p : paths) {
             if (dirs.length() > 0) dirs.append(',');
-            dirs.append('\'').append(p.toString().replace("'", "''")).append('\'');
+            dirs.append(psQuote(p.toString()));
         }
-        if (dirs.length() == 0) return;
+        List<String> relaunch = relaunchCommand;
+        if (dirs.length() == 0 && relaunch == null) return;
+        String start = "";
+        if (relaunch != null) {
+            StringBuilder args = new StringBuilder();
+            for (String arg : relaunch.subList(1, relaunch.size())) {
+                if (args.length() > 0) args.append(',');
+                // Start-Process joins arguments with spaces, so quote those that contain one
+                String a = arg.contains(" ") ? "\"" + arg.replace("\"", "\\\"") + "\"" : arg;
+                args.append(psQuote(a));
+            }
+            start = "Start-Process -FilePath " + psQuote(relaunch.get(0))
+                    + " -WorkingDirectory " + psQuote(System.getProperty("user.dir"))
+                    + (args.length() > 0 ? " -ArgumentList @(" + args + ")" : "") + "\n";
+        }
         String script = """
                 Wait-Process -Id %d -Timeout 120 -ErrorAction SilentlyContinue
                 foreach ($d in @(%s)) {
@@ -169,7 +212,7 @@ public class Util {
                         } catch { Start-Sleep -Milliseconds 250 }
                     }
                 }
-                """.formatted(ProcessHandle.current().pid(), dirs);
+                %s""".formatted(ProcessHandle.current().pid(), dirs, start);
         String encoded = Base64.getEncoder()
                 .encodeToString(script.getBytes(StandardCharsets.UTF_16LE));
         try {

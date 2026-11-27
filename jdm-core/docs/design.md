@@ -73,5 +73,129 @@ ChartPalette, ThemeColors, GraphPaletteMenu, GraphThemeMenu, AppIcon
 
 **util** — Portal, Exporter, Util, RoundingSerializer
 
+Already in `org.metricus.jdm.util`: DriveDetailsCache (per-drive OS lookup
+cache for the drive UI, validated by volume fingerprint; see #267),
+LockedTestData (Direct I/O test data Java keeps locked on Windows FAT32/exFAT;
+see #268)
+
+# Drive details caching
+
+`DriveDetailsCache` (#267) holds the slow per-drive OS lookups (PowerShell,
+`lsblk`, `diskutil`) used by the drive UI. Callers run it from `SwingWorker`
+background threads, never on the EDT.
+
+```mermaid
+classDiagram
+    class DriveDetailsCache {
+        -Map~String, Slot~ CACHE
+        +get(File location)$ Details
+        +clear()$
+        -fingerprint(File location)$ String
+        -load(File location)$ Details
+    }
+    class Details {
+        <<record>>
+        model
+        busType
+        usbVersion
+        filesystem
+        sectorSize
+        partitionId
+        +busDisplay() String
+    }
+    class Slot {
+        <<record>>
+        fingerprint
+        CompletableFuture~Details~ details
+    }
+    DriveDetailsCache *-- Slot
+    Slot --> Details
+    DriveDetailsCache ..> Util : load() on miss
+
+    DrivePanel ..> DriveDetailsCache : fetchDriveModel() dropdown
+    DrivePanel ..> DriveDetailsCache : fetchDriveAttributes() All Drives
+    DrivePanel ..> DriveDetailsCache : refreshDriveInfo() Summary
+    DrivePanel ..> DriveDetailsCache : refresh button clear()
+    App ..> DriveDetailsCache : getDriveInfo() chart title
+    BatchPanel ..> DriveDetailsCache : populateDrives() batch drive list
+```
+
+```mermaid
+sequenceDiagram
+    participant W as SwingWorker (caller)
+    participant C as DriveDetailsCache
+    participant FS as FileStore (fast)
+    participant U as Util / OS tools (slow)
+    W->>C: get(location)
+    C->>FS: fingerprint = name | type | total size | volume serial (Windows)
+    alt fingerprint unreadable (drive removed / not ready)
+        C->>U: load(), not cached
+    else cached slot with same fingerprint
+        C-->>W: cached Details (waits if lookup in flight)
+    else no slot, or fingerprint changed
+        C->>U: load() model, bus, USB version, fs, sector, partition
+        C->>C: store Slot(fingerprint, details)
+    end
+    C-->>W: Details
+```
+
+- **Key:** mount path (`G:\`, `/run/media/...`). The fingerprint check means a
+  drive letter or mount point reassigned to a different device is looked up
+  again without pressing ⟳.
+- **Not cached:** usage / free space and read/write access are always read fresh.
+- **Not used by benchmark or batch runs:** they call `Util` directly so the drive
+  details recorded with results are always current.
+- **Limitation:** Linux and macOS have no volume serial, so two devices with the
+  same mount path, device node, file system and exact size are indistinguishable
+  until ⟳ clears the cache.
+
+# Direct I/O file lock on Windows FAT32 / exFAT
+
+**Suspected JDK bug (#260, not yet filed):** on Windows, every
+`FileChannel.open(..., ExtendedOpenOption.DIRECT)` leaks a handle.
+`FileDispatcherImpl.setDirect0()` calls `ReOpenFile()` to query the sector size
+and never closes it. On FAT32/exFAT a deleted file stays pending-delete while
+any handle is open, so test files and their folder can't be deleted or
+re-created until JDiskMark exits. NTFS is unaffected. The handle lives in the
+JVM, so **closing JDiskMark frees it; no reboot is needed.** The same code is in
+Oracle JDK and Temurin (both OpenJDK builds). Verify with
+`java jdm-core/docs/repro/DirectIoLockRepro.java E:\` (exit code 1 = reproduced).
+
+**Current workarounds (#257, #268):**
+- `BenchmarkRunner.checkDirectIoLock()` probes once per location and volume
+  serial whether a Direct I/O file can be released; only affected volumes go on.
+- The user picks how to proceed (`DirectLockChoice`): **Keep** (default; Direct
+  I/O kept, test data removed after exit), **Buffered** (Direct I/O off, disk
+  cache cleared before READ) or **Cancel**. The GUI asks once per drive per
+  session via `Gui.askDirectLockChoice()`; the CLI uses
+  `--direct-lock=buffered|keep`.
+- Locked test data is registered with `Util.removeDirectoryAfterExit()`, which
+  deletes it from a separate process after the JVM exits.
+
+**Consecutive runs (#268):** `LockedTestData` tracks locked folders and the
+space they hold per location (keyed by path and volume serial).
+
+- **Separate test folder per run:** once a drive holds locked data, later runs
+  (single or batch) use a new `jdm-data/run-N` folder instead of deleting
+  `jdm-data`. `LockedTestData.locationOf()` maps a run folder back to its drive
+  location for the lock probe.
+- **Batch:** `BatchPanel` asks once before the batch starts
+  (`Gui.askBatchDirectLockChoice()`) for all affected drives and never prompts
+  mid-batch. Runs skipped for lack of space say that locked data is the cause,
+  and the results screen lists drives with locked data and the space held.
+- **Restart only when space runs out:** `DriveChecker.checkDiskSpace()` counts
+  the locked space; when it alone causes the shortfall, a GUI run offers
+  **Restart JDiskMark** (`Gui.offerRestartForLockedData()`, links #260).
+  `App.restart()` relaunches the jpackage launcher (`jpackage.app-path`) or
+  java with the same options, via `Util.relaunchAfterExit()`, after the exit
+  cleanup has removed the locked folders. Results are always saved in the GUI,
+  so nothing is lost.
+- **Startup cleanup:** every path registered for removal after exit is also
+  written to `pending-removal.txt` in the app cache dir. At startup a
+  background task deletes the listed test folders that still exist; paths on
+  disconnected drives stay for next time. Drives are never scanned.
+
+Remove the workarounds once a fixed JDK is the minimum (track in #260).
+
 
 # 

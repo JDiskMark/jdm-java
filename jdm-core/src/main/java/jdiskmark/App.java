@@ -36,6 +36,8 @@ import jdiskmark.Benchmark.BlockSequence;
 
 import org.metricus.jdm.ui.Palette;
 import org.metricus.jdm.ui.Theme;
+import org.metricus.jdm.util.DriveDetailsCache;
+import org.metricus.jdm.util.LockedTestData;
 
 /**
  * Primary class for global variables.
@@ -442,6 +444,8 @@ public class App {
                     App.saveConfig();
                 }
             });
+            // remove test data an earlier session left locked (#268)
+            LockedTestData.cleanupLeftoversAsync();
             // #117 First-run consent: ask once if the user has never been asked.
             // Fires for both test and production endpoints so the dialog can be
             // exercised from the IDE without any config changes.
@@ -1078,10 +1082,18 @@ public class App {
 
         // 5. create data dir reference
         dataDir = new File(locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
+        LockedTestData.awaitStartupCleanup();
 
         // 6. remove existing test data if present; abort if it can't be removed
-        // so the run doesn't fail on a locked or stale test file
-        if (autoRemoveData && dataDir.exists()) {
+        // so the run doesn't fail on a locked or stale test file. Test data an
+        // earlier Direct I/O run left locked on this drive can't be removed
+        // until JDiskMark exits, so this run uses a fresh folder instead (#268).
+        if (LockedTestData.hasLocked(locationDir)) {
+            dataDir = LockedTestData.nextRunDir(locationDir);
+            msg("Test data from an earlier Direct I/O run on this drive is locked until "
+                    + "JDiskMark closes (" + LockedTestData.describe(locationDir)
+                    + "); this run uses " + dataDir);
+        } else if (autoRemoveData && dataDir.exists()) {
             String failure = Util.deleteDirectoryReason(dataDir);
             if (failure != null) {
                 err("Unable to delete existing test data, benchmark aborted: " + failure
@@ -1302,8 +1314,9 @@ public class App {
         if (locationDir == null) {
             return LOCATION_NOT_SELECTED_ERROR;
         }
-        String driveModel = Util.getDriveModel(locationDir);
-        String partitionId = Util.getPartitionId(locationDir.toPath());
+        DriveDetailsCache.Details details = DriveDetailsCache.get(locationDir);
+        String driveModel = details.model();
+        String partitionId = details.partitionId();
         DiskUsageInfo usageInfo;
         try {
             usageInfo = Util.getDiskUsage(locationDir.toString());
@@ -1345,5 +1358,33 @@ public class App {
         dataDir = new File(locationDir.getAbsolutePath() + File.separator + DATADIRNAME);
         // --- Event: drive location changed ---
         msg("Drive location set to: " + locationDir.getAbsolutePath());
+    }
+
+    /**
+     * Windows only: restarts JDiskMark so Direct I/O test data Java keeps
+     * locked is freed (#268). The config is saved by the shutdown hook; the new
+     * instance starts after this process has ended and the locked folders are
+     * removed.
+     */
+    static public void restart() {
+        Util.relaunchAfterExit(relaunchCommand());
+        System.exit(0);
+    }
+
+    /** Command that starts this JDiskMark again: the jpackage launcher, or java with the same options. */
+    private static List<String> relaunchCommand() {
+        String appPath = System.getProperty("jpackage.app-path");
+        if (appPath != null && !appPath.isBlank()) {
+            return List.of(appPath);
+        }
+        File bin = new File(System.getProperty("java.home"), "bin");
+        File javaw = new File(bin, "javaw.exe");
+        List<String> cmd = new java.util.ArrayList<>();
+        cmd.add((javaw.exists() ? javaw : new File(bin, "java.exe")).getAbsolutePath());
+        cmd.addAll(java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments());
+        cmd.add("-cp");
+        cmd.add(System.getProperty("java.class.path"));
+        cmd.add(App.class.getName());
+        return cmd;
     }
 }

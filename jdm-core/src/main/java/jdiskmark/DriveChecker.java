@@ -5,6 +5,7 @@ import java.io.File;
 import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.metricus.jdm.util.LockedTestData;
 
 public class DriveChecker {
 
@@ -87,6 +88,27 @@ public class DriveChecker {
 
         if (usableSpace >= requiredWithMargin) {
             return true;
+        }
+
+        // Space held by Direct I/O test data Java keeps locked until exit (#268)
+        long held = LockedTestData.lockedBytes(locationDir);
+        if (held > 0 && usableSpace + held >= requiredWithMargin) {
+            String msg = String.format(
+                    "Not enough disk space to run benchmark.%n"
+                  + "Required : %s (+ 10%% margin)%n"
+                  + "Available: %s on %s%n"
+                  + "Locked   : %s of earlier Direct I/O test data, freed when JDiskMark restarts",
+                    formatBytes(requiredWithMargin),
+                    formatBytes(usableSpace),
+                    locationDir.getAbsolutePath(),
+                    LockedTestData.describe(locationDir));
+            LOG.log(Level.WARNING, msg);
+            App.err(msg);
+            if (showPopup && App.mode == App.Mode.GUI && Gui.mainFrame != null) {
+                Gui.offerRestartForLockedData(locationDir, formatBytes(requiredWithMargin),
+                        formatBytes(usableSpace));
+            }
+            return false;
         }
 
         String msg = String.format(

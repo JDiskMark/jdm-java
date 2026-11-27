@@ -68,6 +68,10 @@ The `jdm-core/docs/` folder contains authoritative design documents:
 - **No new Maven dependencies** in any `pom.xml` without explicit instruction.
 - **No new source files** without explicit instruction. When creating a file,
   confirm the target module and package first.
+- **New files go under `org.metricus.jdm`.** All new classes belong in the
+  `org.metricus.jdm` package tree (a sub-package per the package organisation in
+  `jdm-core/docs/design.md`, e.g. `org.metricus.jdm.util`), not in the legacy
+  `jdiskmark` package.
 - **Java 25 preview features** are enabled and may be used where appropriate.
 - **Commit message format:** `#N short description` (one line), blank line, then
   a body with context. Example: `#15 port thin deb to Maven`

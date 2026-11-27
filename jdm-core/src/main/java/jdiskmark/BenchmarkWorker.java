@@ -18,6 +18,7 @@ import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import org.metricus.jdm.ui.Tabs;
+import org.metricus.jdm.util.LockedTestData;
 
 /**
  * Thread running the disk benchmarking. only one of these threads can run at
@@ -72,7 +73,15 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
 
         @Override
         public BenchmarkRunner.DirectLockChoice onDirectIoLocked(String location, String fileSystem) {
-            return Gui.askDirectLockChoice(location, fileSystem);
+            // asked once per drive per session; later runs use a fresh test folder (#268)
+            if (LockedTestData.isKeepAccepted(location)) {
+                return BenchmarkRunner.DirectLockChoice.KEEP;
+            }
+            BenchmarkRunner.DirectLockChoice choice = Gui.askDirectLockChoice(location, fileSystem);
+            if (choice == BenchmarkRunner.DirectLockChoice.KEEP) {
+                LockedTestData.acceptKeep(location);
+            }
+            return choice;
         }
 
         @Override
@@ -178,12 +187,20 @@ public class BenchmarkWorker extends SwingWorker<Benchmark, Sample> {
             App.err(msg);
             return;
         }
+        long bytes = directLockKept ? LockedTestData.sizeOf(dataDir) : 0;
         String failure = Util.deleteDirectoryReason(dataDir);
         if (failure != null) {
             LOG.log(Level.SEVERE, "Unable to delete test data: {0}", failure);
-            App.err("Unable to delete test data: " + failure);
             Util.removeDirectoryAfterExit(dataDir);
-            showLockNotice = directLockKept;
+            if (directLockKept) {
+                // expected with the JDK Direct I/O lock; explain it once per drive
+                boolean first = LockedTestData.register(App.locationDir, dataDir, bytes);
+                App.warn("Test data in " + dataDir + " stays locked until JDiskMark closes ("
+                        + LockedTestData.describe(App.locationDir) + " held on this drive)");
+                showLockNotice = first;
+            } else {
+                App.err("Unable to delete test data: " + failure);
+            }
         }
     }
 
