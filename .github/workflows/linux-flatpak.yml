@@ -71,3 +71,46 @@ jobs:
         if-no-files-found: error
         # Disable zipping so it can be downloaded raw from the Actions tab
         archive: false
+
+    - name: Test - Install Bundle and Verify Metadata
+      run: |
+        set -eu
+        flatpak install --system --noninteractive --bundle jdm-dist/jdm-flatpak/target/*.flatpak
+        flatpak info --show-metadata net.jdiskmark.JDiskMark | tee /tmp/metadata.txt
+        grep -q '^runtime=org.freedesktop.Platform/.*/25.08' /tmp/metadata.txt
+        grep -q '^command=jdiskmark' /tmp/metadata.txt
+        FILES="$(flatpak info --show-location net.jdiskmark.JDiskMark)/files"
+        for f in \
+          bin/jdiskmark \
+          jre/bin/java \
+          lib/jdiskmark/jdiskmark.jar \
+          share/applications/net.jdiskmark.JDiskMark.desktop \
+          share/metainfo/net.jdiskmark.JDiskMark.metainfo.xml \
+          share/icons/hicolor/128x128/apps/net.jdiskmark.JDiskMark.png \
+          share/icons/hicolor/64x64/apps/net.jdiskmark.JDiskMark.png; do
+          test -f "$FILES/$f" || { echo "MISSING: $f"; exit 1; }
+        done
+
+    - name: Test - CLI Version
+      run: |
+        set -eu
+        flatpak run net.jdiskmark.JDiskMark --version | tee /tmp/version.txt
+        grep -q '^JDiskMark ' /tmp/version.txt
+
+    - name: Test - CLI Benchmark
+      # The Flatpak has --filesystem=home, so the test location and export live under $HOME.
+      run: |
+        set -eu
+        mkdir -p "$HOME/jdm-ci"
+        timeout 300 flatpak run net.jdiskmark.JDiskMark run \
+          -t WRITE -n 3 -b 4 -z 256 \
+          -l "$HOME/jdm-ci" -e "$HOME/jdm-ci/result.json"
+        test -s "$HOME/jdm-ci/result.json" || { echo "export missing or empty"; exit 1; }
+        head -c 600 "$HOME/jdm-ci/result.json"
+
+    - name: Lint Flatpak (Flathub rules, informational)
+      # finish-args such as --device=all and --filesystem=home are expected to be flagged until Flathub exceptions are requested.
+      continue-on-error: true
+      run: |
+        flatpak-builder-lint manifest jdm-dist/jdm-flatpak/target/staging/net.jdiskmark.JDiskMark.yml
+        flatpak-builder-lint repo jdm-dist/jdm-flatpak/target/repo
