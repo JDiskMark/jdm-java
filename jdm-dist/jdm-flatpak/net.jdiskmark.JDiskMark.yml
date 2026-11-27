@@ -8,10 +8,9 @@ sdk-extensions:
 command: jdiskmark
 
 finish-args:
-  # X11 / Wayland display access
+  # X11 display access (Swing runs through XWayland on Wayland sessions)
   - --share=ipc
   - --socket=x11
-  - --socket=wayland
   # Outbound network for optional benchmark sharing to the jdiskmark.net portal
   - --share=network
   # Access to all storage devices for disk benchmarking

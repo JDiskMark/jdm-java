@@ -4,6 +4,9 @@
   <metadata_license>MIT</metadata_license>
   <project_license>Apache-2.0</project_license>
   <name>JDiskMark</name>
+  <developer id="net.jdiskmark">
+    <name>JDiskMark</name>
+  </developer>
   <summary>Measure the read and write performance of your storage devices</summary>
   <description>
     <p>JDiskMark is a cross-platform disk benchmark utility written in Java.
@@ -19,6 +22,7 @@
   <url type="homepage">https://github.com/JDiskMark/jdm-java</url>
   <url type="bugtracker">https://github.com/JDiskMark/jdm-java/issues</url>
   <content_rating type="oars-1.1"/>
+  <launchable type="desktop-id">net.jdiskmark.JDiskMark.desktop</launchable>
   <releases>
     <release version="@project.version@" date="@release.date@"/>
   </releases>
