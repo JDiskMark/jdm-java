@@ -1,10 +1,12 @@
 package jdiskmark;
 
-import org.metricus.jdm.os.UtilOs;
 import java.io.File;
 import java.util.Scanner;
-import org.metricus.jdm.os.UtilsMac;
 import picocli.CommandLine.Command;
+
+import org.metricus.jdm.os.UtilsMac;
+import org.metricus.jdm.os.UtilsLinux;
+import org.metricus.jdm.os.UtilOs;
 
 @Command(name = "jdiskmark", mixinStandardHelpOptions = true,
         versionProvider = VersionProvider.class,
@@ -20,8 +22,8 @@ public class Cli {
         if (App.isLinux()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
-                UtilOs.flushDataToDriveLinux();
-                return UtilOs.dropWriteCacheLinux();
+                UtilsLinux.flushDataToDrive();
+                return UtilsLinux.dropWriteCache();
             }
             switch (UtilOs.dropCacheElevated()) {
                 case CLEARED -> { return true; }

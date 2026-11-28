@@ -1,10 +1,7 @@
 package jdiskmark;
 
-import org.metricus.jdm.util.Util;
-import org.metricus.jdm.os.UtilOs;
 import static jdiskmark.DriveChecker.validateTargetDirectory;
 
-import picocli.CommandLine;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -29,19 +26,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
-import org.metricus.jdm.os.UtilsMac;
-
 import javax.swing.SwingUtilities;
+import picocli.CommandLine;
 
 import jdiskmark.App.IoEngine;
 import jdiskmark.App.SectorAlignment;
 import jdiskmark.Benchmark.BenchmarkType;
 import jdiskmark.Benchmark.BlockSequence;
 
+import org.metricus.jdm.os.UtilsMac;
+import org.metricus.jdm.os.UtilsLinux;
+import org.metricus.jdm.os.UtilOs;
 import org.metricus.jdm.ui.Palette;
 import org.metricus.jdm.ui.Theme;
 import org.metricus.jdm.util.DriveDetailsCache;
 import org.metricus.jdm.util.LockedTestData;
+import org.metricus.jdm.util.Util;
 
 /**
  * Primary class for global variables.
@@ -589,7 +589,7 @@ public class App {
 
     public static void checkPermission() {
         if (App.isLinux()) {
-            isRoot = UtilOs.isRunningAsRootLinux();
+            isRoot = UtilsLinux.isRunningAsRoot();
         } else if (App.isMacOs()) {
             isRoot = UtilsMac.isRunningAsRoot();
         } else if (App.isWindows()) {

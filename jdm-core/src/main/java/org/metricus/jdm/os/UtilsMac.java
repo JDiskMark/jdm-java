@@ -16,6 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import jdiskmark.DiskUsageInfo;
 import org.metricus.jdm.util.Util;
 
@@ -196,7 +197,7 @@ public final class UtilsMac {
 
     /** Flushes pending writes to disk (delegates to the shared sync implementation). */
     public static void flushDataToDrive() {
-        UtilOs.flushDataToDriveLinux();
+        UtilsLinux.flushDataToDrive();
     }
 
     /**
@@ -246,7 +247,7 @@ public final class UtilsMac {
 
     /** Returns {@code true} when the process is running as root on macOS. */
     public static boolean isRunningAsRoot() {
-        return UtilOs.isRunningAsRootLinux();
+        return UtilsLinux.isRunningAsRoot();
     }
 
     // -----------------------------------------------------------------------

@@ -1,8 +1,5 @@
-
-
 package org.metricus.jdm.util;
 
-import org.metricus.jdm.os.UtilOs;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -24,8 +21,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.filechooser.FileSystemView;
+
 import jdiskmark.App;
 import jdiskmark.DiskUsageInfo;
+import org.metricus.jdm.os.UtilOs;
 import org.metricus.jdm.os.UtilsLinux;
 import org.metricus.jdm.os.UtilsMac;
 import org.metricus.jdm.os.UtilsWin;
@@ -365,14 +364,14 @@ public class Util {
             
             // handle whole-disk filesystem (no partition table) — pkname is empty
             if (deviceNames.isEmpty()) {
-                String vendorModel = UtilOs.getVendorModelLinux(partition);
+                String vendorModel = UtilsLinux.getVendorModel(partition);
                 return vendorModel != null ? vendorModel : ERROR_DRIVE_INFO;
             }
             
             // handle single physical drive
             if (deviceNames.size() == 1) {
                 String devicePath = "/dev/" + deviceNames.getFirst();
-                return UtilOs.getVendorModelLinux(devicePath);
+                return UtilsLinux.getVendorModel(devicePath);
             }
             
             // GH-3 handle multiple drives (LVM or RAID partitions)
@@ -380,7 +379,7 @@ public class Util {
                 StringBuilder sb = new StringBuilder();
                 for (String dName : deviceNames) {
                     String devicePath = "/dev/" + dName;
-                    deviceModel = UtilOs.getVendorModelLinux(devicePath);
+                    deviceModel = UtilsLinux.getVendorModel(devicePath);
                     if (sb.length() > 0) {
                         sb.append(":");
                     }
@@ -527,7 +526,7 @@ public class Util {
         } else if (App.isMacOs()) {
             return UtilsMac.parseDiskUsageInfo(outputLines);
         } else if (App.isLinux()) {
-            return UtilOs.parseDiskUsageInfoLinux(outputLines);
+            return UtilsLinux.parseDiskUsageInfo(outputLines);
         }
         return new DiskUsageInfo();
     }
@@ -565,7 +564,7 @@ public class Util {
         } else if (App.isMacOs()) {
             return UtilsMac.getProcessorName();
         } else if (App.isLinux()) {
-            return UtilOs.getProcessorNameLinux();
+            return UtilsLinux.getProcessorName();
         }
         return "processor name unknown";
     }
@@ -598,7 +597,7 @@ public class Util {
         } else if (App.isMacOs()) {
             return UtilsMac.getFilesystem(path);
         } else if (App.isLinux()) {
-            return UtilOs.getFilesystemLinux(path);
+            return UtilsLinux.getFilesystem(path);
         }
         return null;
     }
@@ -614,7 +613,7 @@ public class Util {
         } else if (App.isMacOs()) {
             return UtilsMac.getBusType(path);
         } else if (App.isLinux()) {
-            return UtilOs.getBusTypeLinux(path);
+            return UtilsLinux.getBusType(path);
         }
         return null;
     }
@@ -760,7 +759,7 @@ public class Util {
         } else if (App.isMacOs()) {
             return UtilsMac.getSectorSize(path);
         } else if (App.isLinux()) {
-            return UtilOs.getSectorSizeLinux(path);
+            return UtilsLinux.getSectorSize(path);
         }
         return null;
     }

@@ -1,18 +1,6 @@
 package jdiskmark;
 
-import org.metricus.jdm.os.UtilOs;
 import com.formdev.flatlaf.FlatLaf;
-
-import jdiskmark.Benchmark.IOMode;
-
-import org.metricus.jdm.ui.AppIcon;
-import org.metricus.jdm.ui.ButtonStyles;
-import org.metricus.jdm.ui.Palette;
-import org.metricus.jdm.ui.Theme;
-import org.metricus.jdm.ui.ThemeDefinition;
-import org.metricus.jdm.os.UtilsLinux;
-import org.metricus.jdm.os.UtilsMac;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -39,8 +27,6 @@ import static javax.swing.SwingWorker.StateValue.DONE;
 import static javax.swing.SwingWorker.StateValue.STARTED;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-import static jdiskmark.Benchmark.IOMode.READ;
-import static jdiskmark.Benchmark.IOMode.WRITE;
 import org.jfree.chart.ChartMouseEvent;
 import org.jfree.chart.ChartMouseListener;
 import org.jfree.chart.ChartPanel;
@@ -61,8 +47,20 @@ import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.chart.ui.HorizontalAlignment;
 import org.jfree.chart.ui.RectangleEdge;
 import org.jfree.chart.ui.RectangleInsets;
+
+import jdiskmark.Benchmark.IOMode;
+import static jdiskmark.Benchmark.IOMode.READ;
+import static jdiskmark.Benchmark.IOMode.WRITE;
+import org.metricus.jdm.os.UtilOs;
+import org.metricus.jdm.os.UtilsLinux;
+import org.metricus.jdm.os.UtilsMac;
 import org.metricus.jdm.ui.Tabs;
 import org.metricus.jdm.util.LockedTestData;
+import org.metricus.jdm.ui.AppIcon;
+import org.metricus.jdm.ui.ButtonStyles;
+import org.metricus.jdm.ui.Palette;
+import org.metricus.jdm.ui.Theme;
+import org.metricus.jdm.ui.ThemeDefinition;
 
 /**
  * Store GUI references for easy access
@@ -1805,7 +1803,7 @@ public final class Gui {
         // implementation.  Detect early so we can give the user a clear
         // message without launching a privileged shell and waiting for smartctl to fail.
         if (App.isLinux()) {
-            String busType = UtilOs.getBusTypeLinux(App.locationDir.toPath());
+            String busType = UtilsLinux.getBusType(App.locationDir.toPath());
             if ("USB".equalsIgnoreCase(busType)) {
                 smartPanel.clear();
                 smartPanel.setStatus(
@@ -1978,8 +1976,8 @@ public final class Gui {
         if (App.isLinux()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
-                UtilOs.flushDataToDriveLinux();
-                return UtilOs.dropWriteCacheLinux();
+                UtilsLinux.flushDataToDrive();
+                return UtilsLinux.dropWriteCache();
             }
             UtilOs.CacheDropResult linuxResult = UtilOs.dropCacheElevated();
             refreshCacheDropNotice();
