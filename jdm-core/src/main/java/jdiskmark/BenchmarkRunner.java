@@ -1,5 +1,7 @@
 package jdiskmark;
 
+import org.metricus.jdm.util.Util;
+import org.metricus.jdm.os.UtilOs;
 import static jdiskmark.GcDetector.MAX_GC_RETRIES;
 
 import java.io.File;

@@ -1,5 +1,7 @@
 package jdiskmark;
 
+import org.metricus.jdm.util.Util;
+import org.metricus.jdm.os.UtilOs;
 import java.awt.BorderLayout;
 import java.awt.Desktop;
 import java.awt.Font;

@@ -15,7 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import jdiskmark.Util;
+import org.metricus.jdm.util.Util;
 
 /**
  * Windows-specific utility methods for JDiskMark.

@@ -1,5 +1,6 @@
 package jdiskmark;
 // constants
+import org.metricus.jdm.util.Util;
 import static jdiskmark.Sample.Type.READ;
 import static jdiskmark.Sample.Type.WRITE;
 // global variables

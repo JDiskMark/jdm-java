@@ -1,5 +1,7 @@
 package jdiskmark;
 
+import org.metricus.jdm.util.Util;
+import org.metricus.jdm.os.UtilOs;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;

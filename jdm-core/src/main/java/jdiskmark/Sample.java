@@ -1,6 +1,7 @@
 package jdiskmark;
 
 // constants
+import org.metricus.jdm.util.Util;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import static jdiskmark.App.MEGABYTE;
 import static jdiskmark.Benchmark.BlockSequence.RANDOM;

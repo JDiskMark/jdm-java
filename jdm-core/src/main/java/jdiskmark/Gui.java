@@ -1,5 +1,6 @@
 package jdiskmark;
 
+import org.metricus.jdm.os.UtilOs;
 import com.formdev.flatlaf.FlatLaf;
 
 import jdiskmark.Benchmark.IOMode;

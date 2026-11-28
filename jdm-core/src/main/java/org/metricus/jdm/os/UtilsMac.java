@@ -17,8 +17,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import jdiskmark.DiskUsageInfo;
-import jdiskmark.Util;
-import jdiskmark.UtilOs;
+import org.metricus.jdm.util.Util;
 
 /**
  * macOS-specific utility methods for JDiskMark.

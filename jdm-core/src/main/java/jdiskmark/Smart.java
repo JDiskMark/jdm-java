@@ -88,7 +88,7 @@ public class Smart {
      *   <li>{@code /usr/sbin/smartctl} — system fallback for slim-DEB / other Unix.</li>
      * </ol>
      */
-    static String resolveSmartctlPath() {
+    public static String resolveSmartctlPath() {
         if (App.isWindows()) {
             // 1. Bundled copy — derive app dir from the running jar's location.
             //    jpackage on Windows does NOT set APPDIR (that's Linux-only).

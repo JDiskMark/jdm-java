@@ -1,5 +1,6 @@
 package jdiskmark;
 
+import org.metricus.jdm.os.UtilOs;
 import java.io.File;
 import java.util.Scanner;
 import org.metricus.jdm.os.UtilsMac;

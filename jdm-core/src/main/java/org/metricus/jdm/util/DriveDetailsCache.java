@@ -11,7 +11,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jdiskmark.Util;
 
 /**
  * Caches the slow, per-drive OS lookups (model, bus type, USB version, file

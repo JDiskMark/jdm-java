@@ -1,4 +1,4 @@
-package jdiskmark;
+package org.metricus.jdm.os;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,6 +24,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import jdiskmark.App;
+import jdiskmark.DiskUsageInfo;
+import jdiskmark.Smart;
+import jdiskmark.SmartEscalation;
 import org.metricus.jdm.os.UtilsLinux;
 
 /**
@@ -903,7 +907,7 @@ public class UtilOs {
         return false;
     }
     
-    static boolean isRunningAsAdminWindows() {
+    public static boolean isRunningAsAdminWindows() {
         try {
             ProcessBuilder pb = new ProcessBuilder("cmd", "/c", "net session");
             // Redirect output and error streams to avoid hanging if admin privileges are missing
@@ -961,7 +965,7 @@ public class UtilOs {
      * * @param outputLines
      * @return usage object
      */
-    static DiskUsageInfo parseDiskUsageInfoLinux(List<String> outputLines) {
+    public static DiskUsageInfo parseDiskUsageInfoLinux(List<String> outputLines) {
         String usageLine = outputLines.get(1); // Assuming the relevant information is on the second line
         String[] parts = usageLine.trim().split("\\s+");
 
@@ -1252,7 +1256,7 @@ public class UtilOs {
      * @param driveLetter single letter, e.g. "C"
      * @return filesystem type or {@code null} on failure
      */
-    static String getFilesystemWindows(String driveLetter) {
+    public static String getFilesystemWindows(String driveLetter) {
         String psCmd = "(Get-Volume -DriveLetter '" + driveLetter + "').FileSystemType";
         return runPowerShellOneLiner(psCmd);
     }
@@ -1264,7 +1268,7 @@ public class UtilOs {
      * @param driveLetter single letter, e.g. "C"
      * @return bus type or {@code null} on failure
      */
-    static String getBusTypeWindows(String driveLetter) {
+    public static String getBusTypeWindows(String driveLetter) {
         String psCmd = "Get-Partition -DriveLetter '" + driveLetter
                 + "' | Get-Disk | Select-Object -ExpandProperty BusType";
         return runPowerShellOneLiner(psCmd);
@@ -1278,7 +1282,7 @@ public class UtilOs {
      * @param driveLetter single letter, e.g. "C"
      * @return sector size string or {@code null} on failure
      */
-    static String getSectorSizeWindows(String driveLetter) {
+    public static String getSectorSizeWindows(String driveLetter) {
         String logicalStr = runPowerShellOneLiner(
                 "Get-Partition -DriveLetter '" + driveLetter
                         + "' | Get-Disk | Select-Object -ExpandProperty LogicalSectorSize");
@@ -1384,7 +1388,7 @@ public class UtilOs {
      * @param path path on the target filesystem
      * @return filesystem type or {@code null} on failure
      */
-    static String getFilesystemLinux(Path path) {
+    public static String getFilesystemLinux(Path path) {
         try {
             ProcessBuilder pb = new ProcessBuilder("df", "-T", path.toString());
             pb.environment().put("LC_ALL", "C");
@@ -1417,7 +1421,7 @@ public class UtilOs {
      * @param path path on the target filesystem
      * @return bus type (uppercased) or {@code null} on failure
      */
-    static String getBusTypeLinux(Path path) {
+    public static String getBusTypeLinux(Path path) {
         String partition = UtilsLinux.getPartitionFromFilePath(path);
         if (partition == null || partition.isBlank()) return null;
         for (String disk : UtilsLinux.getBaseDisks(partition)) {
@@ -1468,7 +1472,7 @@ public class UtilOs {
      * @param osName the value of {@code System.getProperty("os.name")}
      * @return the OS label, never {@code null} when {@code osName} is non-null
      */
-    static String getOsLabel(String osName) {
+    public static String getOsLabel(String osName) {
         String label = null;
         if (isLinux(osName)) {
             label = getLinuxDistroName();
@@ -1486,7 +1490,7 @@ public class UtilOs {
      * names with parentheses do not nest; other platforms show the label alone
      * since it already names the OS.
      */
-    static String formatOsDisplay(String os, String osLabel) {
+    public static String formatOsDisplay(String os, String osLabel) {
         if (osLabel == null || osLabel.isBlank() || osLabel.equals(os)) return os;
         if (os == null) return osLabel;
         return isLinux(os) ? os + " \u00B7 " + osLabel : osLabel;
@@ -1604,7 +1608,7 @@ public class UtilOs {
      * @param path path on the target filesystem
      * @return sector size string or {@code null} on failure
      */
-    static String getSectorSizeLinux(Path path) {
+    public static String getSectorSizeLinux(Path path) {
         String partition = UtilsLinux.getPartitionFromFilePath(path);
         if (partition == null || partition.isBlank()) return null;
         try {

@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jdiskmark.App;
-import jdiskmark.Util;
+import org.metricus.jdm.util.Util;
 
 /**
  * Linux-specific utility methods for JDiskMark.

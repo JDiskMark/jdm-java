@@ -1,7 +1,8 @@
 
 
-package jdiskmark;
+package org.metricus.jdm.util;
 
+import org.metricus.jdm.os.UtilOs;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -23,10 +24,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.filechooser.FileSystemView;
+import jdiskmark.App;
+import jdiskmark.DiskUsageInfo;
 import org.metricus.jdm.os.UtilsLinux;
 import org.metricus.jdm.os.UtilsMac;
 import org.metricus.jdm.os.UtilsWin;
-import org.metricus.jdm.util.LockedTestData;
 
 /**
  * Utility methods for JDiskMark

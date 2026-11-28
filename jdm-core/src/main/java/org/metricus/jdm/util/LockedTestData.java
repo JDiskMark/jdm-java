@@ -18,7 +18,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 import jdiskmark.App;
-import jdiskmark.Util;
 
 /**
  * Tracks test data that Java keeps locked on Windows FAT32/exFAT drives after
