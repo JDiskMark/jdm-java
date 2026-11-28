@@ -1,4 +1,4 @@
-package jdiskmark;
+package org.metricus.jdm.ui;
 
 import javax.swing.*;
 import java.awt.*;

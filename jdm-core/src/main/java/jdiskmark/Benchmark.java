@@ -180,9 +180,13 @@ public class Benchmark implements Serializable {
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column(name = "startTime", columnDefinition = "TIMESTAMP")
     LocalDateTime startTime;
+    public LocalDateTime getStartTime() { return startTime; }
+    
     @Convert(converter = LocalDateTimeAttributeConverter.class)
     @Column
     LocalDateTime endTime = null;
+    public LocalDateTime getEndTime() { return endTime; }
+    
     // exact offset/zone at start; LocalDateTime is ambiguous in the DST fall-back hour
     @Transient
     private ZonedDateTime startZoned;
@@ -438,7 +442,7 @@ public class Benchmark implements Serializable {
     }
 
     @JsonIgnore
-    static List<Benchmark> findByBatchId(UUID batchId) {
+    public static List<Benchmark> findByBatchId(UUID batchId) {
         EntityManager em = EM.getEntityManager();
         return em.createNamedQuery("Benchmark.findByBatchId", Benchmark.class)
                 .setParameter("batchId", batchId)

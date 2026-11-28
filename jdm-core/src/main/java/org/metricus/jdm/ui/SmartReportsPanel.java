@@ -1,4 +1,4 @@
-package jdiskmark;
+package org.metricus.jdm.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -16,6 +16,8 @@ import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import jdiskmark.Gui;
+import jdiskmark.SmartSnapshot;
 import net.miginfocom.swing.MigLayout;
 
 /**

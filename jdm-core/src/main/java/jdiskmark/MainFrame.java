@@ -1,6 +1,9 @@
 package jdiskmark;
 
 
+import org.metricus.jdm.ui.BatchPanel;
+import org.metricus.jdm.ui.BenchmarkControlPanel;
+import org.metricus.jdm.ui.SmartReportsPanel;
 import org.metricus.jdm.ui.AdvancedOptionsFrame;
 import org.metricus.jdm.ui.SmartPanel;
 import org.metricus.jdm.ui.DrivePanel;

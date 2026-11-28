@@ -1,5 +1,7 @@
-package jdiskmark;
+package org.metricus.jdm.ui;
 
+import org.metricus.jdm.ui.RightTableCellRenderer;
+import org.metricus.jdm.ui.CenterTableCellRenderer;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -31,6 +33,18 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import jdiskmark.App;
+import jdiskmark.BatchConfig;
+import jdiskmark.BatchEvent;
+import jdiskmark.BatchResult;
+import jdiskmark.BatchWorker;
+import jdiskmark.Benchmark;
+import jdiskmark.BenchmarkOperation;
+import jdiskmark.BenchmarkProfile;
+import jdiskmark.BenchmarkRunner;
+import jdiskmark.DiskUsageInfo;
+import jdiskmark.DriveChecker;
+import jdiskmark.Gui;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.CategoryAxis;
@@ -409,8 +423,8 @@ public class BatchPanel extends JPanel {
         buildChart(profiles, results);
         buildSummaryTable(results);
 
-        var first = benchmarks.getFirst().startTime;
-        var last = benchmarks.getLast().endTime;
+        var first = benchmarks.getFirst().getStartTime();
+        var last = benchmarks.getLast().getEndTime();
         String durationText = "—";
         if (first != null && last != null) {
             Duration dur = Duration.between(first, last);
@@ -651,9 +665,9 @@ public class BatchPanel extends JPanel {
                 StringBuilder sb = new StringBuilder("✅ ");
                 sb.append(b.getDriveInfoDisplay()).append(" — ").append(e.profile().getName());
                 for (BenchmarkOperation op : b.getOperations()) {
-                    switch (op.ioMode) {
-                        case WRITE -> sb.append("  W: ").append(DF.format(op.bwAvg)).append(" MB/s");
-                        case READ -> sb.append("  R: ").append(DF.format(op.bwAvg)).append(" MB/s");
+                    switch (op.getIoMode()) {
+                        case WRITE -> sb.append("  W: ").append(DF.format(op.getBandwidth())).append(" MB/s");
+                        case READ -> sb.append("  R: ").append(DF.format(op.getBandwidth())).append(" MB/s");
                     }
                 }
                 statusListModel.set(e.runIndex(), sb.toString());
@@ -772,9 +786,9 @@ public class BatchPanel extends JPanel {
             String driveName = rr.driveModel() != null ? rr.driveModel() : "—";
             String categoryKey = driveName + " [" + profileName + "]";
             for (BenchmarkOperation op : rr.benchmark().getOperations()) {
-                switch (op.ioMode) {
-                    case WRITE -> dataset.addValue(op.bwAvg, "Write", categoryKey);
-                    case READ -> dataset.addValue(op.bwAvg, "Read", categoryKey);
+                switch (op.getIoMode()) {
+                    case WRITE -> dataset.addValue(op.getBandwidth(), "Write", categoryKey);
+                    case READ -> dataset.addValue(op.getBandwidth(), "Read", categoryKey);
                 }
             }
         }
@@ -847,14 +861,14 @@ public class BatchPanel extends JPanel {
 
             if (rr.benchmark() != null) {
                 for (BenchmarkOperation op : rr.benchmark().getOperations()) {
-                    switch (op.ioMode) {
+                    switch (op.getIoMode()) {
                         case WRITE -> {
-                            writeBw = DF2.format(op.bwAvg);
-                            if (latency.equals("—")) latency = DF2.format(op.accAvg);
+                            writeBw = DF2.format(op.getBandwidth());
+                            if (latency.equals("—")) latency = DF2.format(op.getLatency());
                         }
                         case READ -> {
-                            readBw = DF2.format(op.bwAvg);
-                            latency = DF2.format(op.accAvg);
+                            readBw = DF2.format(op.getBandwidth());
+                            latency = DF2.format(op.getLatency());
                         }
                     }
                 }

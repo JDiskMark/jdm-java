@@ -1,4 +1,4 @@
-package jdiskmark;
+package org.metricus.jdm.ui;
 
 import com.formdev.flatlaf.FlatLightLaf;
 import java.awt.Color;
@@ -9,8 +9,12 @@ import java.awt.event.ActionEvent;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jdiskmark.App;
+import jdiskmark.Benchmark;
+import jdiskmark.BenchmarkConfig;
+import jdiskmark.BenchmarkProfile;
+import jdiskmark.Gui;
 import static jdiskmark.MainFrame.DF;
-import org.metricus.jdm.ui.ButtonStyles;
 
 public class BenchmarkControlPanel extends JPanel {
 
@@ -277,7 +281,7 @@ public class BenchmarkControlPanel extends JPanel {
      */
     public void showSettingsDrift() {
         Gui.refreshCacheDropNotice();
-        BenchmarkConfig lr = (App.benchmark != null) ? App.benchmark.config : null;
+        BenchmarkConfig lr = (App.benchmark != null) ? App.benchmark.getConfig() : null;
         if (lr == null) return; // no run yet
         Color amber     = Gui.BADGE_STALE_BG;
         Color defaultFg = UIManager.getColor("Label.foreground");
@@ -286,12 +290,12 @@ public class BenchmarkControlPanel extends JPanel {
 
         boolean anyStale = false;
         anyStale |= setRowStaleReturn(profileLabel,    App.activeProfile != lr.getProfile(),                     amber, defaultFg, boldFont, normalFont);
-        anyStale |= setRowStaleReturn(typeLabel,       App.benchmarkType != lr.benchmarkType,                     amber, defaultFg, boldFont, normalFont);
-        anyStale |= setRowStaleReturn(numThreadsLabel, App.numOfThreads  != lr.numThreads,                        amber, defaultFg, boldFont, normalFont);
-        anyStale |= setRowStaleReturn(orderLabel,      App.blockSequence != lr.blockOrder,                        amber, defaultFg, boldFont, normalFont);
-        anyStale |= setRowStaleReturn(numBlocksLabel,  App.numOfBlocks   != lr.numBlocks,                         amber, defaultFg, boldFont, normalFont);
-        anyStale |= setRowStaleReturn(blockSizeLabel,  App.blockSizeKb   != (int)(lr.blockSize / App.KILOBYTE),   amber, defaultFg, boldFont, normalFont);
-        anyStale |= setRowStaleReturn(numSamplesLabel, App.numOfSamples  != lr.numSamples,                        amber, defaultFg, boldFont, normalFont);
+        anyStale |= setRowStaleReturn(typeLabel,       App.benchmarkType != lr.getBenchmarkType(),                     amber, defaultFg, boldFont, normalFont);
+        anyStale |= setRowStaleReturn(numThreadsLabel, App.numOfThreads  != lr.getNumThreads(),                        amber, defaultFg, boldFont, normalFont);
+        anyStale |= setRowStaleReturn(orderLabel,      App.blockSequence != lr.getBlockOrder(),                        amber, defaultFg, boldFont, normalFont);
+        anyStale |= setRowStaleReturn(numBlocksLabel,  App.numOfBlocks   != lr.getNumBlocks(),                         amber, defaultFg, boldFont, normalFont);
+        anyStale |= setRowStaleReturn(blockSizeLabel,  App.blockSizeKb   != (int)(lr.getBlockSize() / App.KILOBYTE),   amber, defaultFg, boldFont, normalFont);
+        anyStale |= setRowStaleReturn(numSamplesLabel, App.numOfSamples  != lr.getNumSamples(),                        amber, defaultFg, boldFont, normalFont);
         // profile label keeps its existing modified-accent logic; skip here
 
         // Subtitle: combine row-level staleness with badge-level staleness

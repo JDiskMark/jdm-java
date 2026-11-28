@@ -1,5 +1,6 @@
 package jdiskmark;
 
+import org.metricus.jdm.ui.CenterTableCellRenderer;
 import org.metricus.jdm.ui.OperationTableSelectionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;

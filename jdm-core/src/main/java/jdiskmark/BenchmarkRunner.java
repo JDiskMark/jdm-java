@@ -452,7 +452,7 @@ public class BenchmarkRunner {
     }
 
     /** File system type of {@code dir} (e.g. "FAT32"), or {@code null} when it can't be read. */
-    static String fileSystemType(Path dir) {
+    public static String fileSystemType(Path dir) {
         try {
             String type = Files.getFileStore(dir).type();
             return (type == null || type.isBlank()) ? null : type;

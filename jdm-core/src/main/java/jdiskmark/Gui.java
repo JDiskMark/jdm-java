@@ -1,5 +1,8 @@
 package jdiskmark;
 
+import org.metricus.jdm.ui.BatchPanel;
+import org.metricus.jdm.ui.BenchmarkControlPanel;
+import org.metricus.jdm.ui.SmartReportsPanel;
 import org.metricus.jdm.ui.AdvancedOptionsFrame;
 import org.metricus.jdm.ui.SmartPanel;
 import org.metricus.jdm.ui.DrivePanel;
@@ -108,7 +111,7 @@ public final class Gui {
 
     // --- Stale-badge tracking ---
     /** Amber used when a badge value differs from the last-run config. */
-    static Color BADGE_STALE_BG   = new Color(0xC8, 0x78, 0x00); // deep amber
+    public static Color BADGE_STALE_BG   = new Color(0xC8, 0x78, 0x00); // deep amber
     static Color BADGE_DEFAULT_BG = new Color(40, 40, 40, 180);
     static Color BADGE_DEFAULT_FG = new Color(200, 200, 200);
     /** Foreground to use when a badge is stale (set together with BADGE_STALE_BG). */
@@ -1355,7 +1358,7 @@ public final class Gui {
      * Returns true if any badge setting differs from App.benchmark.config.
      * Used by BenchmarkControlPanel to combine badge + row staleness for the subtitle.
      */
-    static boolean isAnyBadgeStale() {
+    public static boolean isAnyBadgeStale() {
         if (App.benchmark == null) return false;
         BenchmarkConfig lr = App.benchmark.config;
         return App.directEnable    != Boolean.TRUE.equals(lr.directIoEnabled)
