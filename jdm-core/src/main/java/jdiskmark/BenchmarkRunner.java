@@ -1,12 +1,7 @@
 package jdiskmark;
 
-import org.metricus.jdm.util.Util;
-import org.metricus.jdm.os.UtilOs;
-import static jdiskmark.GcDetector.MAX_GC_RETRIES;
-
 import java.io.File;
 import java.io.IOException;
-
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.time.LocalDateTime;
@@ -34,12 +29,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+
 import jdiskmark.App.IoEngine;
 import jdiskmark.Benchmark.IOMode;
+import static jdiskmark.GcDetector.MAX_GC_RETRIES;
 import static jdiskmark.Benchmark.IOMode.READ;
 import static jdiskmark.Benchmark.IOMode.WRITE;
 import org.metricus.jdm.os.UtilsLinux;
+import org.metricus.jdm.os.UtilsWin;
 import org.metricus.jdm.util.LockedTestData;
+import org.metricus.jdm.util.Util;
+
 
 public class BenchmarkRunner {
     
@@ -213,8 +213,8 @@ public class BenchmarkRunner {
                         smart = Smart.getSmart(device);
                     }
                 } else if (App.isWindows()) {
-                    String driveLetter = UtilOs.getDriveLetterWindows(path);
-                    String driveNum = UtilOs.getPhysicalDriveNumberWindows(driveLetter);
+                    String driveLetter = UtilsWin.getDriveLetter(path);
+                    String driveNum = UtilsWin.getPhysicalDriveNumber(driveLetter);
                     if (driveNum != null) {
                         smart = Smart.getSmart("pd" + driveNum);
                     }

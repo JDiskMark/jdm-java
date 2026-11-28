@@ -17,7 +17,6 @@ import java.util.logging.Logger;
 
 import jdiskmark.App;
 import jdiskmark.DiskUsageInfo;
-import static org.metricus.jdm.os.UtilOs.LOGGER;
 import static org.metricus.jdm.os.UtilOs.isFlatpak;
 import org.metricus.jdm.util.Util;
 
@@ -41,6 +40,20 @@ public final class UtilsLinux {
                 Util.SystemModel.of(
                         readFirstLine(dmiDir.resolve("sys_vendor")),
                         readFirstLine(dmiDir.resolve("product_name"))));
+    }
+    
+
+    /** Reads /etc/machine-id (world-readable on all mainstream Linux distros). */
+    public static String readMachineId() throws IOException {
+        java.nio.file.Path mid = java.nio.file.Paths.get("/etc/machine-id");
+        if (java.nio.file.Files.exists(mid)) {
+            return java.nio.file.Files.readString(mid).trim();
+        }
+        java.nio.file.Path dbus = java.nio.file.Paths.get("/var/lib/dbus/machine-id");
+        if (java.nio.file.Files.exists(dbus)) {
+            return java.nio.file.Files.readString(dbus).trim();
+        }
+        return null;
     }
 
     /**
@@ -976,5 +989,75 @@ public final class UtilsLinux {
                 .replace("\\011", "\t")
                 .replace("\\012", "\n")
                 .replace("\\134", "\\");
+    }
+    
+    // -----------------------------------------------------------------------
+    // Drive attributes — Linux
+    // -----------------------------------------------------------------------
+
+    /**
+     * Returns the filesystem type for the given path on Linux (e.g. "ext4", "xfs").
+     * Uses {@code df -T}. No admin required.
+     *
+     * <p>Example output:
+     * <pre>
+     * Filesystem     Type  1K-blocks     Used Available Use% Mounted on
+     * /dev/sda2      ext4  238737052 54179492 172357524  24% /
+     * </pre>
+     *
+     * @param path path on the target filesystem
+     * @return filesystem type or {@code null} on failure
+     */
+    public static String getFilesystemLinux(Path path) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder("df", "-T", path.toString());
+            pb.environment().put("LC_ALL", "C");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    // Skip the header line; data lines start with /dev/ or a device name
+                    if (line.startsWith("/dev/") || line.contains("/dev/")) {
+                        String[] parts = line.trim().split("\\s+");
+                        if (parts.length >= 2) {
+                            return parts[1]; // Type column
+                        }
+                    }
+                }
+            }
+            process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (IOException | InterruptedException e) {
+            LOGGER.log(Level.WARNING, "df -T failed for " + path, e);
+        }
+        return null;
+    }
+
+    /**
+     * Returns the bus/interface type for the given path on Linux (e.g. "nvme", "sata", "usb").
+     * Uses {@code lsblk -no TRAN}. No admin required.
+     *
+     * @param path path on the target filesystem
+     * @return bus type (uppercased) or {@code null} on failure
+     */
+    public static String getBusTypeLinux(Path path) {
+        String partition = UtilsLinux.getPartitionFromFilePath(path);
+        if (partition == null || partition.isBlank()) return null;
+        for (String disk : UtilsLinux.getBaseDisks(partition)) {
+            String diskTran = lsblkTran("/dev/" + disk);
+            if (diskTran != null) return diskTran;
+        }
+        // TRAN is only reported on the parent disk device, not on partitions.
+        // Try the partition first; if empty, resolve the parent device and retry.
+        String tran = lsblkTran(partition);
+        if (tran != null) return tran;
+
+        List<String> parents = UtilsLinux.getDeviceNamesFromPartition(partition);
+        if (!parents.isEmpty()) {
+            tran = lsblkTran("/dev/" + parents.getFirst());
+            if (tran != null) return tran;
+        }
+        return null;
     }
 }

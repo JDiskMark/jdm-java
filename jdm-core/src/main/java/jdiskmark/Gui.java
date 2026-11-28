@@ -54,6 +54,7 @@ import static jdiskmark.Benchmark.IOMode.WRITE;
 import org.metricus.jdm.os.UtilOs;
 import org.metricus.jdm.os.UtilsLinux;
 import org.metricus.jdm.os.UtilsMac;
+import org.metricus.jdm.os.UtilsWin;
 import org.metricus.jdm.ui.Tabs;
 import org.metricus.jdm.util.LockedTestData;
 import org.metricus.jdm.ui.AppIcon;
@@ -1840,8 +1841,8 @@ public final class Gui {
                             return null;
                         }
                     } else if (App.isWindows()) {
-                        String driveLetter = UtilOs.getDriveLetterWindows(path);
-                        String driveNum = UtilOs.getPhysicalDriveNumberWindows(driveLetter);
+                        String driveLetter = UtilsWin.getDriveLetter(path);
+                        String driveNum = UtilsWin.getPhysicalDriveNumber(driveLetter);
                         if (driveNum != null) {
                             deviceRef[0] = "pd" + driveNum;
                         }
@@ -2035,7 +2036,7 @@ public final class Gui {
             if (App.isAdmin && emptyStandbyListExe.exists()) {
                 // GH-2 drop cahe, delays in place of flushing cache
                 try { Thread.sleep(1300); } catch (InterruptedException ex) {}
-                UtilOs.emptyStandbyListWindows(emptyStandbyListExe);
+                UtilsWin.emptyStandbyList(emptyStandbyListExe);
                 try { Thread.sleep(700); } catch (InterruptedException ex) {}
             } else  if (App.isAdmin && !emptyStandbyListExe.exists()) {
                 String message = """

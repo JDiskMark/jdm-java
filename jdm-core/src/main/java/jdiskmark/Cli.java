@@ -6,6 +6,7 @@ import picocli.CommandLine.Command;
 
 import org.metricus.jdm.os.UtilsMac;
 import org.metricus.jdm.os.UtilsLinux;
+import org.metricus.jdm.os.UtilsWin;
 import org.metricus.jdm.os.UtilOs;
 
 @Command(name = "jdiskmark", mixinStandardHelpOptions = true,
@@ -85,7 +86,7 @@ public class Cli {
             if (App.isAdmin && emptyStandbyListExe.exists()) {
                 // GH-2 drop cahe, delays in place of flushing cache
                 try { Thread.sleep(1300); } catch (InterruptedException ex) {}
-                UtilOs.emptyStandbyListWindows(emptyStandbyListExe);
+                UtilsWin.emptyStandbyList(emptyStandbyListExe);
                 try { Thread.sleep(700); } catch (InterruptedException ex) {}
             } else  if (App.isAdmin && !emptyStandbyListExe.exists()) {
                 String message = """

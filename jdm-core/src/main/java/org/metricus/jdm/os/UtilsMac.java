@@ -30,6 +30,59 @@ public final class UtilsMac {
 
     private UtilsMac() {}
 
+
+    /** Returns e.g. {@code "macOS 15.1"} via {@code sw_vers}, or {@code null}. */
+    public static String getMacOsLabel() {
+        String name = runForFirstLine("sw_vers", "-productName");
+        String version = runForFirstLine("sw_vers", "-productVersion");
+        if (version == null) version = System.getProperty("os.version");
+        if (version == null || version.isBlank()) return null;
+        return (name != null ? name : "macOS") + " " + version;
+    }
+    
+    private static String runForFirstLine(String... command) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(command);
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            String first;
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                first = reader.readLine();
+            }
+            boolean done = process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+            if (!done) process.destroy();
+            if (!done || process.exitValue() != 0 || first == null || first.isBlank()) {
+                return null;
+            }
+            return first.trim();
+        } catch (IOException | InterruptedException e) {
+            LOGGER.log(Level.WARNING, "Command failed: " + String.join(" ", command), e);
+            return null;
+        }
+    }
+    
+    /** Reads IOPlatformUUID via ioreg (no admin required on macOS). */
+    public static String readPlatformUuid() throws IOException, InterruptedException {
+        Process p = new ProcessBuilder(
+                "ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
+                .redirectErrorStream(true)
+                .start();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.contains("IOPlatformUUID")) {
+                    int eq = line.indexOf('=');
+                    if (eq >= 0) {
+                        return line.substring(eq + 1).trim().replace("\"", "");
+                    }
+                }
+            }
+        }
+        p.waitFor();
+        return null;
+    }
+    
     // -----------------------------------------------------------------------
     // Volume / device resolution
     // -----------------------------------------------------------------------

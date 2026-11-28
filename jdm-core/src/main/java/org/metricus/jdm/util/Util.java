@@ -401,7 +401,7 @@ public class Util {
             String driveLetter = dataDirPath.getRoot().toFile().toString().split(":")[0];
             if (driveLetter.length() == 1 && Character.isLetter(driveLetter.charAt(0))) {
                 // Only proceed if the driveLetter is a single character and a letter
-                deviceModel = UtilOs.getDriveModelWindows(driveLetter);
+                deviceModel = UtilsWin.getDriveModel(driveLetter);
                 //System.out.println("deviceModel=" + deviceModel);
                 return deviceModel;
             }
@@ -452,7 +452,7 @@ public class Util {
             } else if (App.isWindows()) {
                 String driveLetter = dataDirPath.getRoot().toFile().toString().split(":")[0];
                 if (driveLetter.length() == 1 && Character.isLetter(driveLetter.charAt(0))) {
-                    iface = UtilOs.getDriveInterfaceWindows(driveLetter);
+                    iface = UtilsWin.getDriveInterface(driveLetter);
                 }
             }
         } catch (Exception e) {
@@ -520,7 +520,7 @@ public class Util {
 
         if (App.isWindows()) {
             // GH-22 non local support for capacity reporting
-            return UtilOs.getCapacityWindows(UtilOs.getDriveLetterWindows(Paths.get(diskPath)));
+            return UtilsWin.getCapacity(UtilsWin.getDriveLetter(Paths.get(diskPath)));
             // Original capicity implementation w english and spanish support
             //return UtilOs.parseDiskUsageInfoWindows(outputLines);
         } else if (App.isMacOs()) {
@@ -533,7 +533,7 @@ public class Util {
 
     public static String getPartitionId(Path path) {
         if (App.isWindows()) {
-            String driveLetter = UtilOs.getDriveLetterWindows(path);
+            String driveLetter = UtilsWin.getDriveLetter(path);
             return driveLetter;
         } else if (App.isMacOs()) {
             String devicePath = UtilsMac.getDeviceFromPath(path);
@@ -560,7 +560,7 @@ public class Util {
     
     public static String getProcessorName() {
         if (App.isWindows()) {
-            return UtilOs.getProcessorNameWindows();
+            return UtilsWin.getProcessorName();
         } else if (App.isMacOs()) {
             return UtilsMac.getProcessorName();
         } else if (App.isLinux()) {
@@ -592,8 +592,8 @@ public class Util {
      */
     public static String getFilesystem(Path path) {
         if (App.isWindows()) {
-            String driveLetter = UtilOs.getDriveLetterWindows(path);
-            if (driveLetter != null) return UtilOs.getFilesystemWindows(driveLetter);
+            String driveLetter = UtilsWin.getDriveLetter(path);
+            if (driveLetter != null) return UtilsWin.getFilesystem(driveLetter);
         } else if (App.isMacOs()) {
             return UtilsMac.getFilesystem(path);
         } else if (App.isLinux()) {
@@ -608,8 +608,8 @@ public class Util {
      */
     public static String getBusType(Path path) {
         if (App.isWindows()) {
-            String driveLetter = UtilOs.getDriveLetterWindows(path);
-            if (driveLetter != null) return UtilOs.getBusTypeWindows(driveLetter);
+            String driveLetter = UtilsWin.getDriveLetter(path);
+            if (driveLetter != null) return UtilsWin.getBusType(driveLetter);
         } else if (App.isMacOs()) {
             return UtilsMac.getBusType(path);
         } else if (App.isLinux()) {
@@ -706,7 +706,7 @@ public class Util {
         } else if (App.isMacOs()) {
             return UtilsMac.getUsbVersion(path);
         } else if (App.isWindows()) {
-            String driveLetter = UtilOs.getDriveLetterWindows(path);
+            String driveLetter = UtilsWin.getDriveLetter(path);
             if (driveLetter != null) return UtilsWin.getUsbVersion(driveLetter);
         }
         return null;
@@ -723,7 +723,7 @@ public class Util {
         } else if (App.isMacOs()) {
             return UtilsMac.getUsbIds(path);
         } else if (App.isWindows()) {
-            String driveLetter = UtilOs.getDriveLetterWindows(path);
+            String driveLetter = UtilsWin.getDriveLetter(path);
             if (driveLetter != null) return UtilsWin.getUsbIds(driveLetter);
         }
         return null;
@@ -754,8 +754,8 @@ public class Util {
      */
     public static String getSectorSize(Path path) {
         if (App.isWindows()) {
-            String driveLetter = UtilOs.getDriveLetterWindows(path);
-            if (driveLetter != null) return UtilOs.getSectorSizeWindows(driveLetter);
+            String driveLetter = UtilsWin.getDriveLetter(path);
+            if (driveLetter != null) return UtilsWin.getSectorSize(driveLetter);
         } else if (App.isMacOs()) {
             return UtilsMac.getSectorSize(path);
         } else if (App.isLinux()) {

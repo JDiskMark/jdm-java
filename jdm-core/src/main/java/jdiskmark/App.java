@@ -36,6 +36,7 @@ import jdiskmark.Benchmark.BlockSequence;
 
 import org.metricus.jdm.os.UtilsMac;
 import org.metricus.jdm.os.UtilsLinux;
+import org.metricus.jdm.os.UtilsWin;
 import org.metricus.jdm.os.UtilOs;
 import org.metricus.jdm.ui.Palette;
 import org.metricus.jdm.ui.Theme;
@@ -593,7 +594,7 @@ public class App {
         } else if (App.isMacOs()) {
             isRoot = UtilsMac.isRunningAsRoot();
         } else if (App.isWindows()) {
-            isAdmin = UtilOs.isRunningAsAdminWindows();
+            isAdmin = UtilsWin.isRunningAsAdmin();
         }
         if (isRoot || isAdmin) {
             System.out.println("Running w elevated priviledges");
