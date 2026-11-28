@@ -1,7 +1,5 @@
 package jdiskmark;
 
-import org.metricus.jdm.util.Util;
-import org.metricus.jdm.os.UtilOs;
 import java.awt.BorderLayout;
 import java.awt.Desktop;
 import java.awt.Font;
@@ -10,8 +8,6 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -32,6 +28,11 @@ import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import org.metricus.jdm.util.DriveDetailsCache;
+
+import org.metricus.jdm.os.UtilOs;
+import org.metricus.jdm.os.UtilsLinux;
+import org.metricus.jdm.util.Util;
+
 
 /**
  * Drives tab — lets the user select the benchmark target drive, shows a
@@ -593,7 +594,7 @@ public class DrivePanel extends JPanel {
      */
     private static List<File> listDriveRoots() {
         if (App.isLinux()) {
-            return UtilOs.getMountedDrivesLinux();
+            return UtilsLinux.getMountedDrives();
         } else if (App.isMacOs()) {
             return org.metricus.jdm.os.UtilsMac.getMountedDrives();
         }

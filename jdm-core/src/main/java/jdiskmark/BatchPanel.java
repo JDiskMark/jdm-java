@@ -1,7 +1,5 @@
 package jdiskmark;
 
-import org.metricus.jdm.util.Util;
-import org.metricus.jdm.os.UtilOs;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -16,7 +14,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
@@ -32,8 +29,6 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingWorker;
-import org.metricus.jdm.util.DriveDetailsCache;
-import org.metricus.jdm.util.LockedTestData;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import org.jfree.chart.ChartPanel;
@@ -45,6 +40,12 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.chart.renderer.category.StandardBarPainter;
 import org.jfree.data.category.DefaultCategoryDataset;
+
+import org.metricus.jdm.os.UtilsLinux;
+import org.metricus.jdm.util.DriveDetailsCache;
+import org.metricus.jdm.util.LockedTestData;
+import org.metricus.jdm.util.Util;
+
 
 /**
  * Top-level tab panel for the batch drive benchmark workflow.
@@ -550,7 +551,7 @@ public class BatchPanel extends JPanel {
 
     private static List<File> listDriveRoots() {
         if (App.isLinux()) {
-            return UtilOs.getMountedDrivesLinux();
+            return UtilsLinux.getMountedDrives();
         } else if (App.isMacOs()) {
             return org.metricus.jdm.os.UtilsMac.getMountedDrives();
         }

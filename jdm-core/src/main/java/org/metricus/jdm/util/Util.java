@@ -432,7 +432,7 @@ public class Util {
                     if (deviceNames.size() > 1) {
                         StringBuilder sb = new StringBuilder();
                         for (String dName : deviceNames) {
-                            String dIface = UtilOs.getDriveInterfaceLinux("/dev/" + dName);
+                            String dIface = UtilsLinux.getDriveInterface("/dev/" + dName);
                             if (dIface != null) {
                                 if (sb.length() > 0) sb.append(":");
                                 sb.append(dIface);
@@ -443,7 +443,7 @@ public class Util {
                         String devicePath = deviceNames.isEmpty()
                                 ? partition
                                 : "/dev/" + deviceNames.getFirst();
-                        iface = UtilOs.getDriveInterfaceLinux(devicePath);
+                        iface = UtilsLinux.getDriveInterface(devicePath);
                     }
                 }
             } else if (App.isMacOs()) {
