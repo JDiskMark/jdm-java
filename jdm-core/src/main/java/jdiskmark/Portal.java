@@ -29,12 +29,12 @@ public class Portal {
     static public String uploadResourceLocator = TEST_UPLOAD_LOCATOR;
     static public String uploadProtocol = HTTPS;
 
-    static String getUploadUrl() {
+    public static String getUploadUrl() {
         return uploadProtocol + uploadResourceLocator;
     }
 
     // Helper method to check connectivity to the host
-    private static boolean isHostReachable(String host, int port) {
+    public static boolean isHostReachable(String host, int port) {
         try (Socket socket = new Socket()) {
             // Connect with a 2-second timeout
             socket.connect(new InetSocketAddress(host, port), 2000);
@@ -45,7 +45,7 @@ public class Portal {
         }
     }
 
-    static void upload(Benchmark benchmark) {
+    public static void upload(Benchmark benchmark) {
         String uploadUrl = getUploadUrl();
         URI uploadUri = URI.create(uploadUrl);
         String host = uploadUri.getHost();
@@ -98,7 +98,7 @@ public class Portal {
     }
 
     /** Returns the upload URL for SMART snapshots, derived from the active benchmark locator. */
-    static String getSmartUploadUrl() {
+    public static String getSmartUploadUrl() {
         String locator = uploadResourceLocator.replace(BENCHMARK_UPLOAD_PATH, SMART_UPLOAD_PATH);
         return uploadProtocol + locator;
     }
@@ -108,7 +108,7 @@ public class Portal {
      * path, and no port number (except localhost where the port is meaningful).
      * Reflects whichever endpoint is currently active (production/test/localhost).
      */
-    static String getPortalBrowseUrl() {
+    public static String getPortalBrowseUrl() {
         java.net.URI uri = java.net.URI.create(getUploadUrl());
         String host = uri.getHost();
         if ("localhost".equalsIgnoreCase(host)) {

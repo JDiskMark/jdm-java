@@ -1,4 +1,4 @@
-package jdiskmark;
+package org.metricus.jdm.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Desktop;
@@ -27,6 +27,10 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import jdiskmark.App;
+import jdiskmark.DiskUsageInfo;
+import jdiskmark.DriveChecker;
+import jdiskmark.Gui;
 import org.metricus.jdm.util.DriveDetailsCache;
 
 import org.metricus.jdm.os.UtilOs;

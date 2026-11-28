@@ -1,10 +1,15 @@
-package jdiskmark;
+package org.metricus.jdm.ui;
 
 import javax.swing.JTable;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import org.metricus.jdm.ui.Tabs;
+
+import jdiskmark.App;
+import jdiskmark.Benchmark;
+import jdiskmark.BenchmarkOperation;
+import jdiskmark.Gui;
 import static jdiskmark.BenchmarkPanel.START_TIME_COLUMN;
+
 
 public class OperationTableSelectionListener implements ListSelectionListener {
     final private JTable table;

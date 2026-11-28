@@ -1,4 +1,4 @@
-package jdiskmark;
+package org.metricus.jdm.ui;
 
 import java.awt.BorderLayout;
 import javax.swing.BorderFactory;
@@ -11,6 +11,10 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JSeparator;
+import jdiskmark.App;
+import jdiskmark.GcDetector;
+import jdiskmark.Gui;
+import jdiskmark.RenderFrequencyMode;
 import net.miginfocom.swing.MigLayout;
 
 /**

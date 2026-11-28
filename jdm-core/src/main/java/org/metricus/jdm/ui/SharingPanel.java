@@ -1,8 +1,11 @@
-package jdiskmark;
+package org.metricus.jdm.ui;
 
 import javax.swing.*;
 import java.awt.*;
 import java.net.URI;
+import jdiskmark.App;
+import jdiskmark.Gui;
+import jdiskmark.Portal;
 
 /**
  * Sharing tab panel (issue #117).

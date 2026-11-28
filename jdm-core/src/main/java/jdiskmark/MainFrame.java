@@ -1,6 +1,10 @@
 package jdiskmark;
 
 
+import org.metricus.jdm.ui.AdvancedOptionsFrame;
+import org.metricus.jdm.ui.SmartPanel;
+import org.metricus.jdm.ui.DrivePanel;
+import org.metricus.jdm.ui.SharingPanel;
 import org.metricus.jdm.util.Util;
 import java.awt.BorderLayout;
 import java.text.DecimalFormat;

@@ -1,5 +1,6 @@
 package jdiskmark;
 
+import org.metricus.jdm.ui.OperationTableSelectionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.LinkedList;
@@ -118,7 +119,7 @@ public class BenchmarkPanel extends javax.swing.JPanel {
         );
     }// </editor-fold>//GEN-END:initComponents
 
-    static final int START_TIME_COLUMN = 7;
+    public static final int START_TIME_COLUMN = 7;
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JScrollPane jScrollPane1;

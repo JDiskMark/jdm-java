@@ -1,4 +1,4 @@
-package jdiskmark;
+package org.metricus.jdm.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -15,8 +15,10 @@ import javax.swing.JTable;
 import javax.swing.Scrollable;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
+import jdiskmark.Gui;
+import jdiskmark.Smart;
+import jdiskmark.SmartSnapshot;
 import net.miginfocom.swing.MigLayout;
-import org.metricus.jdm.ui.ButtonStyles;
 
 /**
  * Displays parsed S.M.A.R.T. data in the main "SMART" tab.
@@ -105,7 +107,7 @@ public class SmartPanel extends JPanel {
     // -------------------------------------------------------------------------
     // Toolbar controls
     // -------------------------------------------------------------------------
-    JButton runButton;
+    public JButton runButton;
     private JButton saveButton;
     private JLabel  statusLabel;
 

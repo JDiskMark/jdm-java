@@ -1,5 +1,8 @@
 package jdiskmark;
 
+import org.metricus.jdm.ui.AdvancedOptionsFrame;
+import org.metricus.jdm.ui.SmartPanel;
+import org.metricus.jdm.ui.DrivePanel;
 import com.formdev.flatlaf.FlatLaf;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -277,7 +280,7 @@ public final class Gui {
      * Logs a user-initiated load. Not called on chart redraws.
      * @param benchmark the benchmark loaded
      */
-    static void logBenchmarkLoaded(Benchmark benchmark) {
+    public static void logBenchmarkLoaded(Benchmark benchmark) {
         if (benchmark == null || benchmark.startTime == null) return;
         App.msg("Loaded " + benchmark.getDriveInfo().driveModel
                 + " benchmark from " + benchmark.getStartTimeString());
@@ -792,7 +795,7 @@ public final class Gui {
      * Shows a brief "Copied!" toast near the given component, auto-dismissing
      * after 1.5 seconds.
      */
-    static void showCopiedToast(java.awt.Component relativeTo) {
+    public static void showCopiedToast(java.awt.Component relativeTo) {
         java.awt.Window ancestor = javax.swing.SwingUtilities.getWindowAncestor(relativeTo);
         javax.swing.JWindow toast = new javax.swing.JWindow(ancestor);
         javax.swing.JLabel label = new javax.swing.JLabel(" \u2713 System ID copied to clipboard ",
@@ -1587,7 +1590,7 @@ public final class Gui {
      * EDT, then updates the chart title and drive-changed indicator. Safe to
      * call from any thread.
      */
-    static void updateDriveTitle() {
+    public static void updateDriveTitle() {
         runOnEdt(() -> {
             int generation = ++driveTitleGeneration;
             new javax.swing.SwingWorker<String, Void>() {
