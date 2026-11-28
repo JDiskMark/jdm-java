@@ -450,7 +450,7 @@ public class Benchmark implements Serializable {
     }
 
     @JsonIgnore
-    static List<UUID> findDistinctBatchIds() {
+    public static List<UUID> findDistinctBatchIds() {
         EntityManager em = EM.getEntityManager();
         return em.createQuery(
                 "SELECT b.batchId FROM Benchmark b WHERE b.batchId IS NOT NULL GROUP BY b.batchId ORDER BY MIN(b.startTime) DESC",

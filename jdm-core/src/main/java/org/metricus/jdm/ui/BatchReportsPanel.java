@@ -1,4 +1,4 @@
-package jdiskmark;
+package org.metricus.jdm.ui;
 
 import java.awt.BorderLayout;
 import java.time.Duration;
@@ -8,12 +8,13 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import jdiskmark.Benchmark;
+import jdiskmark.Gui;
 
 /**
  * Bottom tab panel showing saved batch run history.
@@ -87,8 +88,8 @@ public class BatchReportsPanel extends JPanel {
                 int runs = benchmarks.size();
 
                 String duration = "—";
-                var first = benchmarks.getFirst().startTime;
-                var last = benchmarks.getLast().endTime;
+                var first = benchmarks.getFirst().getStartTime();
+                var last = benchmarks.getLast().getEndTime();
                 if (first != null && last != null) {
                     Duration dur = Duration.between(first, last);
                     duration = String.format("%dm %ds", dur.toMinutes(), dur.toSecondsPart());
