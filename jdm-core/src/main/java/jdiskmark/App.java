@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
-import org.metricus.jdm.os.UtilsMacOs;
+import org.metricus.jdm.os.UtilsMac;
 
 import javax.swing.SwingUtilities;
 
@@ -589,7 +589,7 @@ public class App {
         if (App.isLinux()) {
             isRoot = UtilOs.isRunningAsRootLinux();
         } else if (App.isMacOs()) {
-            isRoot = UtilsMacOs.isRunningAsRoot();
+            isRoot = UtilsMac.isRunningAsRoot();
         } else if (App.isWindows()) {
             isAdmin = UtilOs.isRunningAsAdminWindows();
         }

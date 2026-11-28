@@ -23,9 +23,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.filechooser.FileSystemView;
-import org.metricus.jdm.os.UtilsLinuxOs;
-import org.metricus.jdm.os.UtilsMacOs;
-import org.metricus.jdm.os.UtilsWinOs;
+import org.metricus.jdm.os.UtilsLinux;
+import org.metricus.jdm.os.UtilsMac;
+import org.metricus.jdm.os.UtilsWin;
 import org.metricus.jdm.util.LockedTestData;
 
 /**
@@ -355,11 +355,11 @@ public class Util {
         String deviceModel;
         if (App.isLinux()) {
             // get disk info for linux
-            String partition = UtilsLinuxOs.getPartitionFromFilePath(dataDirPath);
+            String partition = UtilsLinux.getPartitionFromFilePath(dataDirPath);
             if (partition == null) {
                 return ERROR_DRIVE_INFO;
             }
-            List<String> deviceNames = UtilsLinuxOs.getDeviceNamesFromPartition(partition);
+            List<String> deviceNames = UtilsLinux.getDeviceNamesFromPartition(partition);
             
             // handle whole-disk filesystem (no partition table) — pkname is empty
             if (deviceNames.isEmpty()) {
@@ -390,9 +390,9 @@ public class Util {
             return ERROR_DRIVE_INFO;
         } else if (App.isMacOs()) {
             // get disk info for os x
-            String devicePath = UtilsMacOs.getDeviceFromPath(dataDirPath);
+            String devicePath = UtilsMac.getDeviceFromPath(dataDirPath);
             System.out.println("devicePath=" + devicePath);
-            deviceModel = UtilsMacOs.getDeviceModel(devicePath);
+            deviceModel = UtilsMac.getDeviceModel(devicePath);
             //System.out.println("deviceModel=" + deviceModel);
             return deviceModel;
         } else if (App.isWindows()) {
@@ -422,11 +422,11 @@ public class Util {
         String iface = null;
         try {
             if (App.isLinux()) {
-                String partition = UtilsLinuxOs.getPartitionFromFilePath(dataDirPath);
+                String partition = UtilsLinux.getPartitionFromFilePath(dataDirPath);
                 if (partition != null) {
-                    List<String> deviceNames = UtilsLinuxOs.getBaseDisks(partition);
+                    List<String> deviceNames = UtilsLinux.getBaseDisks(partition);
                     if (deviceNames.isEmpty()) {
-                        deviceNames = UtilsLinuxOs.getDeviceNamesFromPartition(partition);
+                        deviceNames = UtilsLinux.getDeviceNamesFromPartition(partition);
                     }
                     if (deviceNames.size() > 1) {
                         StringBuilder sb = new StringBuilder();
@@ -446,8 +446,8 @@ public class Util {
                     }
                 }
             } else if (App.isMacOs()) {
-                String devicePath = UtilsMacOs.getDeviceFromPath(dataDirPath);
-                iface = UtilsMacOs.getDriveInterfaceMacOs(devicePath);
+                String devicePath = UtilsMac.getDeviceFromPath(dataDirPath);
+                iface = UtilsMac.getDriveInterfaceMacOs(devicePath);
             } else if (App.isWindows()) {
                 String driveLetter = dataDirPath.getRoot().toFile().toString().split(":")[0];
                 if (driveLetter.length() == 1 && Character.isLetter(driveLetter.charAt(0))) {
@@ -523,7 +523,7 @@ public class Util {
             // Original capicity implementation w english and spanish support
             //return UtilOs.parseDiskUsageInfoWindows(outputLines);
         } else if (App.isMacOs()) {
-            return UtilsMacOs.parseDiskUsageInfo(outputLines);
+            return UtilsMac.parseDiskUsageInfo(outputLines);
         } else if (App.isLinux()) {
             return UtilOs.parseDiskUsageInfoLinux(outputLines);
         }
@@ -535,13 +535,13 @@ public class Util {
             String driveLetter = UtilOs.getDriveLetterWindows(path);
             return driveLetter;
         } else if (App.isMacOs()) {
-            String devicePath = UtilsMacOs.getDeviceFromPath(path);
+            String devicePath = UtilsMac.getDeviceFromPath(path);
             if (devicePath != null && devicePath.contains("/dev/")) {
                 return devicePath.split("/dev/")[1];
             }
             return devicePath;
         } else {
-            String partitionPath = UtilsLinuxOs.getPartitionFromFilePath(path);
+            String partitionPath = UtilsLinux.getPartitionFromFilePath(path);
             if (partitionPath.contains("/dev/")) {
                 return partitionPath.split("/dev/")[1];
             }
@@ -561,7 +561,7 @@ public class Util {
         if (App.isWindows()) {
             return UtilOs.getProcessorNameWindows();
         } else if (App.isMacOs()) {
-            return UtilsMacOs.getProcessorName();
+            return UtilsMac.getProcessorName();
         } else if (App.isLinux()) {
             return UtilOs.getProcessorNameLinux();
         }
@@ -576,11 +576,11 @@ public class Util {
      */
     public static HardwareInfo getHardwareInfo() {
         if (App.isWindows()) {
-            return UtilsWinOs.getHardwareInfo();
+            return UtilsWin.getHardwareInfo();
         } else if (App.isMacOs()) {
-            return UtilsMacOs.getHardwareInfo();
+            return UtilsMac.getHardwareInfo();
         } else if (App.isLinux()) {
-            return UtilsLinuxOs.getHardwareInfo();
+            return UtilsLinux.getHardwareInfo();
         }
         return null;
     }
@@ -594,7 +594,7 @@ public class Util {
             String driveLetter = UtilOs.getDriveLetterWindows(path);
             if (driveLetter != null) return UtilOs.getFilesystemWindows(driveLetter);
         } else if (App.isMacOs()) {
-            return UtilsMacOs.getFilesystem(path);
+            return UtilsMac.getFilesystem(path);
         } else if (App.isLinux()) {
             return UtilOs.getFilesystemLinux(path);
         }
@@ -610,7 +610,7 @@ public class Util {
             String driveLetter = UtilOs.getDriveLetterWindows(path);
             if (driveLetter != null) return UtilOs.getBusTypeWindows(driveLetter);
         } else if (App.isMacOs()) {
-            return UtilsMacOs.getBusType(path);
+            return UtilsMac.getBusType(path);
         } else if (App.isLinux()) {
             return UtilOs.getBusTypeLinux(path);
         }
@@ -701,12 +701,12 @@ public class Util {
      */
     public static String getUsbVersion(Path path) {
         if (App.isLinux()) {
-            return UtilsLinuxOs.getUsbVersion(path);
+            return UtilsLinux.getUsbVersion(path);
         } else if (App.isMacOs()) {
-            return UtilsMacOs.getUsbVersion(path);
+            return UtilsMac.getUsbVersion(path);
         } else if (App.isWindows()) {
             String driveLetter = UtilOs.getDriveLetterWindows(path);
-            if (driveLetter != null) return UtilsWinOs.getUsbVersion(driveLetter);
+            if (driveLetter != null) return UtilsWin.getUsbVersion(driveLetter);
         }
         return null;
     }
@@ -718,12 +718,12 @@ public class Util {
     public static UsbIds getUsbIds(Path path) {
         if (path == null) return null;
         if (App.isLinux()) {
-            return UtilsLinuxOs.getUsbIds(path);
+            return UtilsLinux.getUsbIds(path);
         } else if (App.isMacOs()) {
-            return UtilsMacOs.getUsbIds(path);
+            return UtilsMac.getUsbIds(path);
         } else if (App.isWindows()) {
             String driveLetter = UtilOs.getDriveLetterWindows(path);
-            if (driveLetter != null) return UtilsWinOs.getUsbIds(driveLetter);
+            if (driveLetter != null) return UtilsWin.getUsbIds(driveLetter);
         }
         return null;
     }
@@ -756,7 +756,7 @@ public class Util {
             String driveLetter = UtilOs.getDriveLetterWindows(path);
             if (driveLetter != null) return UtilOs.getSectorSizeWindows(driveLetter);
         } else if (App.isMacOs()) {
-            return UtilsMacOs.getSectorSize(path);
+            return UtilsMac.getSectorSize(path);
         } else if (App.isLinux()) {
             return UtilOs.getSectorSizeLinux(path);
         }

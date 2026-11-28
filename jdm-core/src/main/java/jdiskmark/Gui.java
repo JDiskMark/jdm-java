@@ -9,8 +9,8 @@ import org.metricus.jdm.ui.ButtonStyles;
 import org.metricus.jdm.ui.Palette;
 import org.metricus.jdm.ui.Theme;
 import org.metricus.jdm.ui.ThemeDefinition;
-import org.metricus.jdm.os.UtilsLinuxOs;
-import org.metricus.jdm.os.UtilsMacOs;
+import org.metricus.jdm.os.UtilsLinux;
+import org.metricus.jdm.os.UtilsMac;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -1825,17 +1825,17 @@ public final class Gui {
                 try {
                     Path path = locDir.toPath();
                     if (App.isLinux()) {
-                        String partition = UtilsLinuxOs.getPartitionFromFilePath(path);
+                        String partition = UtilsLinux.getPartitionFromFilePath(path);
                         List<String> devices =
-                                UtilsLinuxOs.getDeviceNamesFromPartition(partition);
+                                UtilsLinux.getDeviceNamesFromPartition(partition);
                         if (devices == null || devices.isEmpty()) {
                             SMART_LOG.log(Level.WARNING, "runSmart: no device for {0}", locDir);
                             return null;
                         }
                         deviceRef[0] = devices.get(0);
                     } else if (App.isMacOs()) {
-                        String partitionPath = UtilsMacOs.getDeviceFromPath(path);
-                        deviceRef[0] = UtilsMacOs.getWholeDeviceName(partitionPath);
+                        String partitionPath = UtilsMac.getDeviceFromPath(path);
+                        deviceRef[0] = UtilsMac.getWholeDeviceName(partitionPath);
                         if (deviceRef[0] == null) {
                             SMART_LOG.log(Level.WARNING, "runSmart: no device for {0}", locDir);
                             return null;
@@ -2002,8 +2002,8 @@ public final class Gui {
         } else if (App.isMacOs()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
-                UtilsMacOs.flushDataToDrive();
-                return UtilsMacOs.dropWriteCache();
+                UtilsMac.flushDataToDrive();
+                return UtilsMac.dropWriteCache();
             }
             UtilOs.CacheDropResult macResult = UtilOs.dropCacheElevated();
             refreshCacheDropNotice();

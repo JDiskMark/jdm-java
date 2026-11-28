@@ -9,9 +9,9 @@ import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.metricus.jdm.os.UtilsLinuxOs;
-import org.metricus.jdm.os.UtilsMacOs;
-import org.metricus.jdm.os.UtilsWinOs;
+import org.metricus.jdm.os.UtilsLinux;
+import org.metricus.jdm.os.UtilsMac;
+import org.metricus.jdm.os.UtilsWin;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -171,43 +171,43 @@ class BenchmarkRunnerTest {
 
     @Test
     void parseUsbIdsFromPnpId_extractsLowercaseHex() {
-        Util.UsbIds ids = UtilsWinOs.parseUsbIdsFromPnpId("USB\\VID_0781&PID_5583\\0401A1B2C3");
+        Util.UsbIds ids = UtilsWin.parseUsbIdsFromPnpId("USB\\VID_0781&PID_5583\\0401A1B2C3");
         assertEquals(new Util.UsbIds("0781", "5583"), ids);
 
-        Util.UsbIds composite = UtilsWinOs.parseUsbIdsFromPnpId("USB\\VID_0BDA&PID_9210&MI_00\\6&1234&0");
+        Util.UsbIds composite = UtilsWin.parseUsbIdsFromPnpId("USB\\VID_0BDA&PID_9210&MI_00\\6&1234&0");
         assertEquals(new Util.UsbIds("0bda", "9210"), composite);
 
-        assertNull(UtilsWinOs.parseUsbIdsFromPnpId("USBSTOR\\DISK&VEN_SANDISK&PROD_3.2GEN1\\123"));
-        assertNull(UtilsWinOs.parseUsbIdsFromPnpId(null));
+        assertNull(UtilsWin.parseUsbIdsFromPnpId("USBSTOR\\DISK&VEN_SANDISK&PROD_3.2GEN1\\123"));
+        assertNull(UtilsWin.parseUsbIdsFromPnpId(null));
     }
 
     @Test
     void mapUsbVersion_mapsSpeedAndV2Flags() {
-        assertEquals("3.2 Gen 2", UtilsWinOs.mapUsbVersion(2, 0x07, true));
-        assertEquals("3.2 Gen 2", UtilsWinOs.mapUsbVersion(2, 0x04, true));
-        assertEquals("3.0", UtilsWinOs.mapUsbVersion(2, 0x03, true));
-        assertEquals("3.0", UtilsWinOs.mapUsbVersion(2, 0x01, true));
-        assertEquals("2.0", UtilsWinOs.mapUsbVersion(2, 0, true));
-        assertEquals("1.1", UtilsWinOs.mapUsbVersion(1, 0, true));
-        assertEquals("1.0", UtilsWinOs.mapUsbVersion(0, 0, true));
-        assertEquals("3.0", UtilsWinOs.mapUsbVersion(3, 0, true));
-        assertNull(UtilsWinOs.mapUsbVersion(99, 0, true));
+        assertEquals("3.2 Gen 2", UtilsWin.mapUsbVersion(2, 0x07, true));
+        assertEquals("3.2 Gen 2", UtilsWin.mapUsbVersion(2, 0x04, true));
+        assertEquals("3.0", UtilsWin.mapUsbVersion(2, 0x03, true));
+        assertEquals("3.0", UtilsWin.mapUsbVersion(2, 0x01, true));
+        assertEquals("2.0", UtilsWin.mapUsbVersion(2, 0, true));
+        assertEquals("1.1", UtilsWin.mapUsbVersion(1, 0, true));
+        assertEquals("1.0", UtilsWin.mapUsbVersion(0, 0, true));
+        assertEquals("3.0", UtilsWin.mapUsbVersion(3, 0, true));
+        assertNull(UtilsWin.mapUsbVersion(99, 0, true));
     }
 
     @Test
     void mapUsbVersion_doesNotReportHighSpeedAsUsb2WithoutV2() {
-        assertNull(UtilsWinOs.mapUsbVersion(2, 0, false));
-        assertNull(UtilsWinOs.mapUsbVersion(2, 0x07, false));
-        assertEquals("3.0", UtilsWinOs.mapUsbVersion(3, 0, false));
-        assertEquals("1.1", UtilsWinOs.mapUsbVersion(1, 0, false));
+        assertNull(UtilsWin.mapUsbVersion(2, 0, false));
+        assertNull(UtilsWin.mapUsbVersion(2, 0x07, false));
+        assertEquals("3.0", UtilsWin.mapUsbVersion(3, 0, false));
+        assertEquals("1.1", UtilsWin.mapUsbVersion(1, 0, false));
     }
 
     @Test
     void normalizeHexId_padsAndLowercases() {
-        assertEquals("0781", UtilsLinuxOs.normalizeHexId("0x0781\n"));
-        assertEquals("0781", UtilsLinuxOs.normalizeHexId("781"));
-        assertEquals("0bda", UtilsLinuxOs.normalizeHexId("0BDA"));
-        assertNull(UtilsLinuxOs.normalizeHexId("not-hex"));
+        assertEquals("0781", UtilsLinux.normalizeHexId("0x0781\n"));
+        assertEquals("0781", UtilsLinux.normalizeHexId("781"));
+        assertEquals("0bda", UtilsLinux.normalizeHexId("0BDA"));
+        assertNull(UtilsLinux.normalizeHexId("not-hex"));
     }
 
     @Test
@@ -229,7 +229,7 @@ class BenchmarkRunnerTest {
                 "    | }"
         );
         assertEquals(new Util.UsbIds("0781", "5583"),
-                UtilsMacOs.parseUsbIdsFromIoreg(lines, "disk4"));
-        assertNull(UtilsMacOs.parseUsbIdsFromIoreg(lines, "disk9"));
+                UtilsMac.parseUsbIdsFromIoreg(lines, "disk4"));
+        assertNull(UtilsMac.parseUsbIdsFromIoreg(lines, "disk9"));
     }
 }

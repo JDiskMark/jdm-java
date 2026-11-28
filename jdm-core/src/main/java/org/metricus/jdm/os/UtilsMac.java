@@ -23,12 +23,12 @@ import jdiskmark.UtilOs;
 /**
  * macOS-specific utility methods for JDiskMark.
  */
-public final class UtilsMacOs {
+public final class UtilsMac {
 
-    private static final Logger LOGGER = Logger.getLogger(UtilsMacOs.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(UtilsMac.class.getName());
     private static final long HARDWARE_TIMEOUT_SECONDS = 5;
 
-    private UtilsMacOs() {}
+    private UtilsMac() {}
 
     // -----------------------------------------------------------------------
     // Volume / device resolution

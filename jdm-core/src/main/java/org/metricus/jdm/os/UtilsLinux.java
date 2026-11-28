@@ -18,11 +18,11 @@ import jdiskmark.Util;
 /**
  * Linux-specific utility methods for JDiskMark.
  */
-public final class UtilsLinuxOs {
+public final class UtilsLinux {
 
-    private static final Logger LOGGER = Logger.getLogger(UtilsLinuxOs.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(UtilsLinux.class.getName());
 
-    private UtilsLinuxOs() {}
+    private UtilsLinux() {}
 
     /**
      * Returns the motherboard and system vendor/model from the DMI sysfs

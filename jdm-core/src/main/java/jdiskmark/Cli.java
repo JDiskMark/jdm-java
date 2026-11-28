@@ -2,7 +2,7 @@ package jdiskmark;
 
 import java.io.File;
 import java.util.Scanner;
-import org.metricus.jdm.os.UtilsMacOs;
+import org.metricus.jdm.os.UtilsMac;
 import picocli.CommandLine.Command;
 
 @Command(name = "jdiskmark", mixinStandardHelpOptions = true,
@@ -46,8 +46,8 @@ public class Cli {
         } else if (App.isMacOs()) {
             if (App.isRoot) {
                 // GH-2 automate catch dropping
-                UtilsMacOs.flushDataToDrive();
-                return UtilsMacOs.dropWriteCache();
+                UtilsMac.flushDataToDrive();
+                return UtilsMac.dropWriteCache();
             }
             switch (UtilOs.dropCacheElevated()) {
                 case CLEARED -> { return true; }

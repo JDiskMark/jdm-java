@@ -20,12 +20,12 @@ import jdiskmark.Util;
 /**
  * Windows-specific utility methods for JDiskMark.
  */
-public final class UtilsWinOs {
+public final class UtilsWin {
 
-    private static final Logger LOGGER = Logger.getLogger(UtilsWinOs.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(UtilsWin.class.getName());
     private static final long TIMEOUT_SECONDS = 15;
 
-    private UtilsWinOs() {}
+    private UtilsWin() {}
 
     /**
      * Get the USB Vendor ID and Product ID for a Windows drive letter by

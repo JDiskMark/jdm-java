@@ -24,7 +24,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.metricus.jdm.os.UtilsLinuxOs;
+import org.metricus.jdm.os.UtilsLinux;
 
 /**
  * OS Specific Utility methods for JDiskMark
@@ -1418,9 +1418,9 @@ public class UtilOs {
      * @return bus type (uppercased) or {@code null} on failure
      */
     static String getBusTypeLinux(Path path) {
-        String partition = UtilsLinuxOs.getPartitionFromFilePath(path);
+        String partition = UtilsLinux.getPartitionFromFilePath(path);
         if (partition == null || partition.isBlank()) return null;
-        for (String disk : UtilsLinuxOs.getBaseDisks(partition)) {
+        for (String disk : UtilsLinux.getBaseDisks(partition)) {
             String diskTran = lsblkTran("/dev/" + disk);
             if (diskTran != null) return diskTran;
         }
@@ -1429,7 +1429,7 @@ public class UtilOs {
         String tran = lsblkTran(partition);
         if (tran != null) return tran;
 
-        List<String> parents = UtilsLinuxOs.getDeviceNamesFromPartition(partition);
+        List<String> parents = UtilsLinux.getDeviceNamesFromPartition(partition);
         if (!parents.isEmpty()) {
             tran = lsblkTran("/dev/" + parents.getFirst());
             if (tran != null) return tran;
@@ -1605,7 +1605,7 @@ public class UtilOs {
      * @return sector size string or {@code null} on failure
      */
     static String getSectorSizeLinux(Path path) {
-        String partition = UtilsLinuxOs.getPartitionFromFilePath(path);
+        String partition = UtilsLinux.getPartitionFromFilePath(path);
         if (partition == null || partition.isBlank()) return null;
         try {
             ProcessBuilder pb = new ProcessBuilder("lsblk", "-no", "LOG-SEC,PHY-SEC", partition);

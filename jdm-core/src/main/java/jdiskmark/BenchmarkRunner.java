@@ -36,7 +36,7 @@ import jdiskmark.App.IoEngine;
 import jdiskmark.Benchmark.IOMode;
 import static jdiskmark.Benchmark.IOMode.READ;
 import static jdiskmark.Benchmark.IOMode.WRITE;
-import org.metricus.jdm.os.UtilsLinuxOs;
+import org.metricus.jdm.os.UtilsLinux;
 import org.metricus.jdm.util.LockedTestData;
 
 public class BenchmarkRunner {
@@ -200,8 +200,8 @@ public class BenchmarkRunner {
             try {
                 Path path = App.locationDir.toPath();
                 if (App.isLinux() || App.isMacOs()) {
-                    String partition = UtilsLinuxOs.getPartitionFromFilePath(path);
-                    List<String> devices = UtilsLinuxOs.getDeviceNamesFromPartition(partition);
+                    String partition = UtilsLinux.getPartitionFromFilePath(path);
+                    List<String> devices = UtilsLinux.getDeviceNamesFromPartition(partition);
                     if (devices != null && !devices.isEmpty()) {
                         String device = devices.get(0);
                         if (Smart.process == null || !Smart.process.isAlive()) {

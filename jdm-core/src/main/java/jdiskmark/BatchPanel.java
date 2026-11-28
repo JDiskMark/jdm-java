@@ -550,7 +550,7 @@ public class BatchPanel extends JPanel {
         if (App.isLinux()) {
             return UtilOs.getMountedDrivesLinux();
         } else if (App.isMacOs()) {
-            return org.metricus.jdm.os.UtilsMacOs.getMountedDrives();
+            return org.metricus.jdm.os.UtilsMac.getMountedDrives();
         }
         return List.of(File.listRoots());
     }
